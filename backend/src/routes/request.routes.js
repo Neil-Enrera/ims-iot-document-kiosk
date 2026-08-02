@@ -1,0 +1,19 @@
+const express = require('express');
+const router = express.Router();
+const requestController = require('../controllers/request.controller');
+const authenticate = require('../middleware/auth.middleware');
+const authorize = require('../middleware/role.middleware');
+const validate = require('../middleware/validation.middleware');
+const { createValidation, updateValidation, statusValidation, getAllValidation } = require('../validations/request.validation');
+
+router.get('/stats', authenticate, authorize('Administrator', 'Barangay Secretary', 'Barangay Captain'), requestController.stats);
+router.get('/', authenticate, authorize('Administrator', 'Barangay Secretary', 'Staff'), ...getAllValidation, validate, requestController.getAll);
+router.get('/:id', authenticate, authorize('Administrator', 'Barangay Secretary', 'Staff'), requestController.getById);
+router.post('/', authenticate, authorize('Administrator', 'Barangay Secretary', 'Staff'), ...createValidation, validate, requestController.create);
+router.put('/:id', authenticate, authorize('Administrator', 'Barangay Secretary'), ...updateValidation, validate, requestController.update);
+router.post('/:id/approve', authenticate, authorize('Administrator', 'Barangay Secretary', 'Barangay Captain'), ...statusValidation, validate, requestController.approve);
+router.post('/:id/reject', authenticate, authorize('Administrator', 'Barangay Secretary', 'Barangay Captain'), ...statusValidation, validate, requestController.reject);
+router.post('/:id/cancel', authenticate, authorize('Administrator', 'Barangay Secretary'), ...statusValidation, validate, requestController.cancel);
+router.post('/:id/release', authenticate, authorize('Administrator', 'Barangay Secretary'), ...statusValidation, validate, requestController.release);
+
+module.exports = router;

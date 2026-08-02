@@ -1,0 +1,33 @@
+const express = require('express');
+const router = express.Router();
+const healthRoutes = require('./health.routes');
+const authRoutes = require('./auth.routes');
+const userRoutes = require('./user.routes');
+const residentRoutes = require('./resident.routes');
+const rfidRoutes = require('./rfid.routes');
+const serviceRoutes = require('./service.routes');
+const requestRoutes = require('./request.routes');
+const dashboardRoutes = require('./dashboard.routes');
+const reportRoutes = require('./report.routes');
+const auditRoutes = require('./audit.routes');
+const fileRoutes = require('./file.routes');
+const notificationRoutes = require('./notification.routes');
+const settingRoutes = require('./setting.routes');
+const kioskRoutes = require('./kiosk.routes');
+
+router.use(healthRoutes);
+router.use('/auth', authRoutes);
+router.use('/users', userRoutes);
+router.use('/residents', residentRoutes);
+router.use('/rfid', rfidRoutes);
+router.use('/services', serviceRoutes);
+router.use('/requests', requestRoutes);
+router.use('/dashboard', dashboardRoutes);
+router.use('/reports', reportRoutes);
+router.use('/audit-logs', auditRoutes);
+router.use('/files', fileRoutes);
+router.use(notificationRoutes);
+router.use(settingRoutes);
+router.use(kioskRoutes);
+
+module.exports = router;

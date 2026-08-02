@@ -1,0 +1,196 @@
+import { Injectable } from '@angular/core';
+import { ApiService } from '../../core/services/api.service';
+import { User, Resident, RfidCard, Service, DocumentRequest, AuditLog, DashboardSummary } from '../interfaces/api.interfaces';
+import { Observable, map } from 'rxjs';
+
+@Injectable({ providedIn: 'root' })
+export class UserService {
+  constructor(private api: ApiService) {}
+
+  getAll(params?: any) {
+    return this.api.getList<User>('/users', params);
+  }
+
+  getById(id: number) {
+    return this.api.get<User>(`/users/${id}`);
+  }
+
+  create(data: any) {
+    return this.api.post<User>('/users', data);
+  }
+
+  update(id: number, data: any) {
+    return this.api.put<User>(`/users/${id}`, data);
+  }
+
+  delete(id: number) {
+    return this.api.delete(`/users/${id}`);
+  }
+
+  changeStatus(id: number, status: string) {
+    return this.api.patch(`/users/${id}/status`, { status });
+  }
+}
+
+@Injectable({ providedIn: 'root' })
+export class ResidentService {
+  constructor(private api: ApiService) {}
+
+  getAll(params?: any) {
+    return this.api.getList<Resident>('/residents', params);
+  }
+
+  getById(id: number) {
+    return this.api.get<Resident>(`/residents/${id}`);
+  }
+
+  create(data: any) {
+    return this.api.post<Resident>('/residents', data);
+  }
+
+  update(id: number, data: any) {
+    return this.api.put<Resident>(`/residents/${id}`, data);
+  }
+
+  archive(id: number) {
+    return this.api.patch(`/residents/${id}/archive`);
+  }
+
+  restore(id: number) {
+    return this.api.patch(`/residents/${id}/restore`);
+  }
+
+  delete(id: number) {
+    return this.api.delete(`/residents/${id}`);
+  }
+}
+
+@Injectable({ providedIn: 'root' })
+export class RfidService {
+  constructor(private api: ApiService) {}
+
+  getAll(params?: any) {
+    return this.api.getList<RfidCard>('/rfid', params);
+  }
+
+  getById(id: number) {
+    return this.api.get<RfidCard>(`/rfid/${id}`);
+  }
+
+  register(data: { residentId: number; cardUid: string }) {
+    return this.api.post<RfidCard>('/rfid', data);
+  }
+
+  verify(rfidUid: string) {
+    return this.api.post<any>('/rfid/verify', { rfidUid });
+  }
+
+  updateStatus(id: number, status: string) {
+    return this.api.patch(`/rfid/${id}/status`, { status });
+  }
+}
+
+@Injectable({ providedIn: 'root' })
+export class ServiceService {
+  constructor(private api: ApiService) {}
+
+  getAll(params?: any) {
+    return this.api.getList<Service>('/services', params);
+  }
+
+  getById(id: number) {
+    return this.api.get<Service>(`/services/${id}`);
+  }
+
+  create(data: any) {
+    return this.api.post<Service>('/services', data);
+  }
+
+  update(id: number, data: any) {
+    return this.api.put<Service>(`/services/${id}`, data);
+  }
+
+  toggleStatus(id: number, isActive: boolean) {
+    return this.api.patch(`/services/${id}/status`, { isActive });
+  }
+
+  delete(id: number) {
+    return this.api.delete(`/services/${id}`);
+  }
+}
+
+@Injectable({ providedIn: 'root' })
+export class RequestService {
+  constructor(private api: ApiService) {}
+
+  getAll(params?: any) {
+    return this.api.getList<DocumentRequest>('/requests', params);
+  }
+
+  getById(id: number) {
+    return this.api.get<DocumentRequest>(`/requests/${id}`);
+  }
+
+  create(data: { residentId: number; serviceId: number; purpose?: string }) {
+    return this.api.post<DocumentRequest>('/requests', data);
+  }
+
+  approve(id: number, remarks?: string) {
+    return this.api.post(`/requests/${id}/approve`, { remarks });
+  }
+
+  reject(id: number, remarks?: string) {
+    return this.api.post(`/requests/${id}/reject`, { remarks });
+  }
+
+  cancel(id: number, remarks?: string) {
+    return this.api.post(`/requests/${id}/cancel`, { remarks });
+  }
+
+  release(id: number, remarks?: string) {
+    return this.api.post(`/requests/${id}/release`, { remarks });
+  }
+
+  getStats() {
+    return this.api.get<any>('/requests/stats');
+  }
+}
+
+@Injectable({ providedIn: 'root' })
+export class DashboardService {
+  constructor(private api: ApiService) {}
+
+  getSummary() {
+    return this.api.get<DashboardSummary>('/dashboard/summary');
+  }
+
+  getRequestStats() {
+    return this.api.get<any>('/dashboard/requests');
+  }
+
+  getResidentStats() {
+    return this.api.get<any>('/dashboard/residents');
+  }
+
+  getActivities() {
+    return this.api.get<any>('/dashboard/activities');
+  }
+}
+
+@Injectable({ providedIn: 'root' })
+export class ReportService {
+  constructor(private api: ApiService) {}
+
+  getRequests(params: any) {
+    return this.api.get<any>('/reports/requests', params);
+  }
+}
+
+@Injectable({ providedIn: 'root' })
+export class AuditService {
+  constructor(private api: ApiService) {}
+
+  getAll(params?: any) {
+    return this.api.getList<AuditLog>('/audit-logs', params);
+  }
+}

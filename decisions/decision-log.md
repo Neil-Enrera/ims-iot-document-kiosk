@@ -1,0 +1,207 @@
+# Decision Log
+
+## Format
+
+Each decision follows this template:
+
+```markdown
+### DEC-XXX — [Title]
+
+**Status:** Proposed | Accepted | Rejected | Superseded by DEC-YYY
+**Date:** YYYY-MM-DD
+**Decision Maker(s):** _TBD_
+
+**Decision:**
+_Clear statement of what was decided._
+
+**Reason:**
+_Why this decision was made._
+
+**Alternatives Considered:**
+1. _Alternative 1_ — _why rejected_
+2. _Alternative 2_ — _why rejected_
+
+**Consequences:**
+_What this decision means for the project._
+```
+
+---
+
+## Decisions
+
+### DEC-001 — Remove payments table from schema
+
+**Status:** Accepted
+**Date:** 2026-07-29
+**Decision Maker(s):** Project Owner
+
+**Decision:**
+The `payments` table and all payment-related foreign keys, constraints, and seed data were removed from the database schema.
+
+**Reason:**
+The system is an Information Management System for document request processing. It does not handle payment processing, cashiering, or billing. The `processing_fee` field in `services` is informational only.
+
+**Alternatives Considered:**
+1. Keep payments table with a `status` field — rejected as it implies payment processing capability the system does not have.
+
+**Consequences:**
+- Simpler schema with fewer tables
+- No payment-related code to maintain
+- Clear scope boundary for the project
+
+---
+
+### DEC-002 — Replace address columns with barangays table + address_line
+
+**Status:** Accepted
+**Date:** 2026-07-29
+**Decision Maker(s):** Project Owner, Database Architect
+
+**Decision:**
+The six address columns (`house_no`, `street`, `purok`, `barangay`, `city`, `province`) in the `residents` table were replaced with two columns: `barangay_id` (foreign key to a new `barangays` table) and `address_line` (VARCHAR(255)).
+
+**Reason:**
+The client does not use Purok or Sitio. The system does not require searching or reporting by street or individual address components. A normalized `barangays` table supports future multi-barangay deployment if needed.
+
+**Alternatives Considered:**
+1. Keep all address columns — rejected as it adds unnecessary complexity for fields the client does not use.
+2. Use a single `address` TEXT column — rejected as it loses the ability to filter residents by barangay.
+
+**Consequences:**
+- One extra JOIN when querying residents with barangay details
+- Cleaner address structure
+- Future-proofed for multi-barangay expansion
+
+---
+
+### DEC-003 — Use ENUMs for status fields instead of VARCHAR
+
+**Status:** Accepted
+**Date:** 2026-07-29
+**Decision Maker(s):** Database Architect
+
+**Decision:**
+All status columns (`users.status`, `residents.status`, `rfid_cards.status`, `residents.gender`, `residents.civil_status`) were changed from VARCHAR to ENUM with predefined valid values.
+
+**Reason:**
+Prevents data drift where `"Active"`, `"active"`, and `"ACTIVE"` coexist as different values. ENUMs enforce data consistency at the database level.
+
+**Alternatives Considered:**
+1. Keep VARCHAR with CHECK constraints — rejected as ENUMs are simpler and more enforced.
+
+**Consequences:**
+- Adding new status values requires ALTER TABLE
+- Data is always consistent
+- Application code can rely on known values
+
+---
+
+### DEC-004 — Remove deleted_at soft delete columns
+
+**Status:** Accepted
+**Date:** 2026-07-29
+**Decision Maker(s):** Project Owner
+
+**Decision:**
+The `deleted_at` columns were removed from `users` and `residents` tables. The existing `status` ENUM fields (with values like `INACTIVE`, `MOVED`, `DECEASED`) serve the same purpose.
+
+**Reason:**
+Soft delete adds complexity — every query must filter on `deleted_at IS NULL`. Status ENUMs achieve the same result (marking records as inactive) without the overhead.
+
+**Alternatives Considered:**
+1. Keep soft delete and apply it consistently — rejected as unnecessary complexity for this project scope.
+
+**Consequences:**
+- Simpler queries (no WHERE deleted_at IS NULL needed)
+- Deleted records are permanently removed with DELETE
+- Status ENUMs provide the same functional outcome
+
+---
+
+### DEC-005 — Add CHECK constraints for request date ordering
+
+**Status:** Accepted
+**Date:** 2026-07-29
+**Decision Maker(s):** Database Architect
+
+**Decision:**
+Two CHECK constraints were added to the `requests` table:
+- `chk_request_dates`: `reviewed_date IS NULL OR reviewed_date >= request_date`
+- `chk_release_dates`: `release_date IS NULL OR release_date >= reviewed_date`
+
+**Reason:**
+Prevents invalid date orderings (e.g., a request being reviewed before it was submitted, or released before review). Enforces timeline integrity at the database level.
+
+**Alternatives Considered:**
+1. Application-level validation only — rejected as it can be bypassed by direct SQL inserts.
+
+**Consequences:**
+- Invalid date combinations are rejected by the database
+- Application code can trust date ordering
+- MySQL 8.0.16+ or MariaDB 10.2.1+ required
+
+---
+
+### DEC-006 — Remove processing_fee CHECK constraint
+
+**Status:** Accepted
+**Date:** 2026-07-30
+**Decision Maker(s):** Project Owner
+
+**Decision:**
+The CHECK constraint `chk_service_fee CHECK (processing_fee >= 0)` was removed from the `services` table.
+
+**Reason:**
+Not needed for the project scope. The `processing_fee` is informational and the application layer handles validation.
+
+**Alternatives Considered:**
+1. Keep the constraint — removed per project owner decision.
+
+**Consequences:**
+- Simpler schema
+- No database-level fee validation
+
+---
+
+### DEC-007 — Remove estimated_processing_time and reviewed_by columns
+
+**Status:** Accepted
+**Date:** 2026-07-30
+**Decision Maker(s):** Project Owner
+
+**Decision:**
+- `services.estimated_processing_time` column removed
+- `requests.reviewed_by` column and its FK constraint removed
+
+**Reason:**
+`estimated_processing_time` was not used by the system. `reviewed_by` was removed per project requirements — the request lifecycle is tracked by `status_id` and `request_status_history` instead.
+
+**Alternatives Considered:**
+1. Keep reviewed_by as an audit field — removed as `request_status_history` serves this purpose better.
+
+**Consequences:**
+- Simpler `requests` and `services` tables
+- Request audit trail handled entirely by `request_status_history`
+
+---
+
+### DEC-008 — Remove TASK-BACKEND-012 and TASK-FRONTEND-011 (Payment Processing)
+
+**Status:** Accepted
+**Date:** 2026-07-31
+**Decision Maker(s):** Project Owner
+
+**Decision:**
+TASK-BACKEND-012 (Payment Management API) and TASK-FRONTEND-011 (Payment Management Module) have been removed from the project scope. All payment-related documentation references are now outdated and superseded by this decision.
+
+**Reason:**
+The system is an Information Management System for document request processing. It does not handle payment processing, cashiering, or billing. The `processing_fee` field in `services` is informational only. This decision formalizes DEC-001 (Remove payments table) at the task level.
+
+**Alternatives Considered:**
+1. Keep payment tasks as optional — rejected as it creates confusion about project scope.
+
+**Consequences:**
+- TASK-BACKEND-012 and TASK-FRONTEND-011 deleted from docs/tasks/
+- No code changes required (no payment code was ever implemented)
+- Project scope is now clearly defined without payment processing
+- Total task count reduced from 77 to 75

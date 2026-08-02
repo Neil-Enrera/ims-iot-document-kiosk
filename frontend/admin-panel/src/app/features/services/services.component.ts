@@ -1,0 +1,137 @@
+import { Component, OnInit, signal } from '@angular/core';
+import { ServiceService } from '../../shared/services';
+import { Service } from '../../shared/interfaces/api.interfaces';
+import { TableComponent, TableColumn } from '../../shared/components/table.component';
+import { ButtonComponent } from '../../shared/components/button.component';
+import { CardComponent } from '../../shared/components/card.component';
+import { InputComponent } from '../../shared/components/input.component';
+import { PaginationComponent } from '../../shared/components/pagination.component';
+import { ModalComponent } from '../../shared/components/modal.component';
+import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.component';
+import { ServiceFormComponent } from './service-form.component';
+
+@Component({
+  selector: 'app-services',
+  standalone: true,
+  imports: [TableComponent, ButtonComponent, CardComponent, InputComponent, PaginationComponent, ModalComponent, ConfirmDialogComponent, ServiceFormComponent],
+  template: `
+    <div>
+      <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">Services</h1>
+        <app-button variant="primary" (onClick)="openCreateForm()">+ Add Service</app-button>
+      </div>
+
+      <app-card>
+        <div class="mb-4">
+          <app-input placeholder="Search services..." [value]="search()" (valueChange)="onSearch($event)" />
+        </div>
+
+        <app-table
+          [columns]="columns"
+          [data]="services()"
+          [loading]="loading()"
+          trackBy="service_id"
+          emptyMessage="No services found" />
+
+        @if (total() > limit) {
+          <app-pagination
+            [total]="total()"
+            [currentPage]="page()"
+            [limit]="limit"
+            (onPageChange)="onPageChange($event)" />
+        }
+      </app-card>
+
+      <!-- Create/Edit Modal -->
+      <app-modal [open]="showForm()" [title]="editingService() ? 'Edit Service' : 'Add Service'" (onClose)="closeForm()">
+        <app-service-form
+          [service]="editingService()"
+          [loading]="saving()"
+          (onSave)="onSave($event)"
+          (onCancel)="closeForm()"
+        />
+      </app-modal>
+
+      <!-- Delete Confirmation -->
+      <app-confirm-dialog
+        [open]="showDeleteConfirm()"
+        title="Delete Service"
+        [message]="'Are you sure you want to delete ' + (deletingService()?.service_name || '') + '?'"
+        confirmText="Delete"
+        variant="danger"
+        (onCancel)="showDeleteConfirm.set(false)"
+        (onConfirm)="confirmDelete()"
+      />
+    </div>
+  `
+})
+export class ServicesComponent implements OnInit {
+  services = signal<Service[]>([]);
+  loading = signal(true);
+  search = signal('');
+  page = signal(1);
+  limit = 20;
+  total = signal(0);
+
+  showForm = signal(false);
+  editingService = signal<Service | null>(null);
+  saving = signal(false);
+
+  showDeleteConfirm = signal(false);
+  deletingService = signal<Service | null>(null);
+
+  columns: TableColumn[] = [
+    { key: 'service_name', label: 'Service Name', sortable: true },
+    { key: 'description', label: 'Description' },
+    { key: 'processing_fee', label: 'Fee', align: 'right', sortable: true },
+    { key: 'processing_time', label: 'Processing Time' },
+    { key: 'requires_photo', label: 'Photo Required' },
+    { key: 'is_active', label: 'Status' }
+  ];
+
+  constructor(private serviceService: ServiceService) {}
+
+  ngOnInit() { this.loadServices(); }
+
+  loadServices() {
+    this.loading.set(true);
+    this.serviceService.getAll({ search: this.search(), page: this.page(), limit: this.limit }).subscribe({
+      next: (res) => { this.services.set(res.data); this.total.set(res.pagination.total); this.loading.set(false); },
+      error: () => this.loading.set(false)
+    });
+  }
+
+  onSearch(value: string) { this.search.set(value); this.page.set(1); this.loadServices(); }
+  onPageChange(page: number) { this.page.set(page); this.loadServices(); }
+
+  openCreateForm() {
+    this.editingService.set(null);
+    this.showForm.set(true);
+  }
+
+  closeForm() {
+    this.showForm.set(false);
+    this.editingService.set(null);
+    this.saving.set(false);
+  }
+
+  onSave(data: any) {
+    this.saving.set(true);
+    const request = this.editingService()
+      ? this.serviceService.update(this.editingService()!.service_id, data)
+      : this.serviceService.create(data);
+
+    request.subscribe({
+      next: () => { this.closeForm(); this.loadServices(); },
+      error: (err) => { this.saving.set(false); alert(err.error?.message || 'Failed to save service.'); }
+    });
+  }
+
+  confirmDelete() {
+    if (!this.deletingService()) return;
+    this.serviceService.delete(this.deletingService()!.service_id).subscribe({
+      next: () => { this.showDeleteConfirm.set(false); this.deletingService.set(null); this.loadServices(); },
+      error: (err) => { alert(err.error?.message || 'Failed to delete service.'); }
+    });
+  }
+}

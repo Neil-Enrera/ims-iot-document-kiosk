@@ -1,0 +1,69 @@
+const serviceRepository = require('../repositories/service.repository');
+
+const getAllServices = async ({ search, isActive, page = 1, limit = 20, sortBy = 'service_id', sortOrder = 'ASC' }) => {
+  const result = await serviceRepository.findAll({ search, isActive, page, limit, sortBy, sortOrder });
+  return { success: true, message: 'Services retrieved successfully.', data: result };
+};
+
+const getServiceById = async (serviceId) => {
+  const service = await serviceRepository.findById(serviceId);
+  if (!service) {
+    return { success: false, message: 'Service not found.' };
+  }
+  return { success: true, message: 'Service retrieved successfully.', data: service };
+};
+
+const createService = async (serviceData) => {
+  const existing = await serviceRepository.findByName(serviceData.serviceName);
+  if (existing) {
+    return { success: false, message: 'Service name already exists.' };
+  }
+
+  const serviceId = await serviceRepository.create(serviceData);
+  const service = await serviceRepository.findById(serviceId);
+
+  return { success: true, message: 'Service created successfully.', data: service };
+};
+
+const updateService = async (serviceId, serviceData) => {
+  const service = await serviceRepository.findById(serviceId);
+  if (!service) {
+    return { success: false, message: 'Service not found.' };
+  }
+
+  if (serviceData.serviceName !== service.service_name) {
+    const existing = await serviceRepository.findByName(serviceData.serviceName);
+    if (existing) {
+      return { success: false, message: 'Service name already exists.' };
+    }
+  }
+
+  await serviceRepository.update(serviceId, serviceData);
+  const updated = await serviceRepository.findById(serviceId);
+
+  return { success: true, message: 'Service updated successfully.', data: updated };
+};
+
+const changeStatus = async (serviceId, isActive) => {
+  const service = await serviceRepository.findById(serviceId);
+  if (!service) {
+    return { success: false, message: 'Service not found.' };
+  }
+
+  await serviceRepository.updateStatus(serviceId, isActive);
+  const updated = await serviceRepository.findById(serviceId);
+
+  return { success: true, message: 'Service status updated successfully.', data: updated };
+};
+
+const deleteService = async (serviceId) => {
+  const service = await serviceRepository.findById(serviceId);
+  if (!service) {
+    return { success: false, message: 'Service not found.' };
+  }
+
+  await serviceRepository.remove(serviceId);
+  return { success: true, message: 'Service deleted successfully.', data: null };
+};
+
+module.exports = { getAllServices, getServiceById, createService, updateService, changeStatus, deleteService };
