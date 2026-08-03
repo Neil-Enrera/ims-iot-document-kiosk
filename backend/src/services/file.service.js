@@ -1,14 +1,14 @@
 const fs = require('fs');
-const path = require('path');
 const fileRepository = require('../repositories/file.repository');
 
-const uploadFile = async (file, userId) => {
+const uploadFile = async (file, userId, category, description) => {
   const fileData = {
     originalName: file.originalname,
-    fileName: file.filename,
-    filePath: file.path,
     mimeType: file.mimetype,
-    size: file.size,
+    fileSize: file.size,
+    filePath: file.path,
+    category: category || null,
+    description: description || null,
     uploadedBy: userId
   };
 
@@ -39,9 +39,8 @@ const deleteFile = async (fileId) => {
     return { success: false, message: 'File not found.' };
   }
 
-  const filePath = path.join(__dirname, '../../', file.file_path);
-  if (fs.existsSync(filePath)) {
-    fs.unlinkSync(filePath);
+  if (fs.existsSync(file.file_path)) {
+    fs.unlinkSync(file.file_path);
   }
 
   await fileRepository.remove(fileId);
@@ -53,7 +52,7 @@ const getFilePath = async (fileId) => {
   if (!file) {
     return null;
   }
-  return path.join(__dirname, '../../', file.file_path);
+  return file.file_path;
 };
 
 module.exports = { uploadFile, getFileById, getAllFiles, deleteFile, getFilePath };

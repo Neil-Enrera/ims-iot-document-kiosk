@@ -6,7 +6,7 @@ const upload = async (req, res) => {
     if (!req.file) {
       return errorResponse(res, 400, 'No file uploaded.');
     }
-    const result = await fileService.uploadFile(req.file, req.user.userId);
+    const result = await fileService.uploadFile(req.file, req.user.userId, req.body.category, req.body.description);
     return createdResponse(res, result.message, result.data);
   } catch {
     return errorResponse(res, 500, 'Internal server error.');

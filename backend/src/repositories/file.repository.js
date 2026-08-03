@@ -1,27 +1,27 @@
 const pool = require('../config/database');
 
-const create = async ({ originalName, filePath, mimeType }) => {
+const create = async ({ originalName, mimeType, fileSize, filePath, category, description, uploadedBy }) => {
   const [result] = await pool.query(
-    'INSERT INTO request_attachments (request_id, file_name, file_type, file_path) VALUES (?, ?, ?, ?)',
-    [0, originalName, mimeType, filePath]
+    'INSERT INTO files (original_name, mime_type, file_size, file_path, category, description, uploaded_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    [originalName, mimeType, fileSize, filePath, category, description, uploadedBy]
   );
   return result.insertId;
 };
 
 const findById = async (fileId) => {
-  const [rows] = await pool.query('SELECT * FROM request_attachments WHERE attachment_id = ?', [fileId]);
+  const [rows] = await pool.query('SELECT * FROM files WHERE file_id = ?', [fileId]);
   return rows[0] || null;
 };
 
 const findAll = async ({ page, limit }) => {
   const offset = (page - 1) * limit;
-  const [rows] = await pool.query('SELECT * FROM request_attachments ORDER BY uploaded_at DESC LIMIT ? OFFSET ?', [limit, offset]);
-  const [countResult] = await pool.query('SELECT COUNT(*) AS total FROM request_attachments');
+  const [rows] = await pool.query('SELECT * FROM files ORDER BY created_at DESC LIMIT ? OFFSET ?', [limit, offset]);
+  const [countResult] = await pool.query('SELECT COUNT(*) AS total FROM files');
   return { files: rows, total: countResult[0].total, page, limit };
 };
 
 const remove = async (fileId) => {
-  const [result] = await pool.query('DELETE FROM request_attachments WHERE attachment_id = ?', [fileId]);
+  const [result] = await pool.query('DELETE FROM files WHERE file_id = ?', [fileId]);
   return result.affectedRows > 0;
 };
 

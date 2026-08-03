@@ -120,6 +120,34 @@ Use one of the following categories:
 
 ---
 
+# Version 2.1.1
+
+**Status:** Active Development
+
+**Date:** 2026-08-03
+
+## Fixed
+
+- File Management page uploads failing with `500 Internal server error` on every attempt.
+  - **Root cause:** `file.repository.js` inserted standalone files into `request_attachments` with a sentinel `request_id = 0`, but `request_attachments.request_id` is a `NOT NULL` foreign key to `requests` — the insert always violated the FK.
+  - **Fix:** New dedicated `files` table (migration 008) for the standalone document repository; `file.repository`, `file.service`, and `file.controller` rewritten against it.
+  - The File page now persists `category` and `description`, returns the fields the admin UI expects (`file_id`, `original_name`, `mime_type`, `file_size`, `category`, `created_at`), and supports `.xlsx`, `.xls`, and `.csv` uploads (previously rejected by the multer filter).
+  - `upload.middleware.js` storage destination now auto-creates its folder (same pattern as template uploads).
+
+**Modules Affected:** Backend, Database
+
+**Database Changes:** Yes — migration 008 creates the `files` table (`original_name`, `mime_type`, `file_size`, `file_path`, `category`, `description`, `uploaded_by`, `created_at`).
+
+**API Changes:** No new endpoints; `POST /files/upload` now accepts `category`/`description` multipart fields.
+
+**Architecture Changes:** No
+
+**Breaking Changes:** No — `request_attachments` remains the table for request-bound attachments (kiosk photos); standalone files use the new `files` table.
+
+**Testing Performed:** Unit tests (29/29), backend lint clean on changed files, curl e2e covering upload → list → download → delete with field round-trip, orphaned-file cleanup.
+
+---
+
 # Change Entry Template
 
 ## Version

@@ -8,7 +8,10 @@ const ALLOWED_TYPES = {
   'image/png': ['.png'],
   'application/pdf': ['.pdf'],
   'application/msword': ['.doc'],
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx']
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+  'application/vnd.ms-excel': ['.xls'],
+  'text/csv': ['.csv']
 };
 
 const MAX_SIZES = {
@@ -19,7 +22,9 @@ const MAX_SIZES = {
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const folder = file.mimetype.startsWith('image/') ? 'uploads/resident-photos' : 'uploads/documents';
-    cb(null, path.join(__dirname, '../../', folder));
+    const dir = path.join(__dirname, '../../', folder);
+    fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = crypto.randomBytes(16).toString('hex');
