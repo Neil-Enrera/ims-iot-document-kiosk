@@ -59,6 +59,28 @@ const changeStatus = async (req, res) => {
   }
 };
 
+const uploadTemplate = async (req, res) => {
+  try {
+    const result = await serviceService.uploadTemplate(req.params.id, req.file);
+    if (!result.success) return errorResponse(res, 400, result.message);
+    return successResponse(res, result.message, result.data);
+  } catch (error) {
+    console.error('Service template upload error:', error);
+    return errorResponse(res, 500, 'Internal server error.');
+  }
+};
+
+const removeTemplate = async (req, res) => {
+  try {
+    const result = await serviceService.removeTemplate(req.params.id);
+    if (!result.success) return errorResponse(res, 404, result.message);
+    return successResponse(res, result.message, result.data);
+  } catch (error) {
+    console.error('Service template remove error:', error);
+    return errorResponse(res, 500, 'Internal server error.');
+  }
+};
+
 const remove = async (req, res) => {
   try {
     const result = await serviceService.deleteService(req.params.id);
@@ -69,4 +91,4 @@ const remove = async (req, res) => {
   }
 };
 
-module.exports = { getAll, getById, create, update, changeStatus, remove };
+module.exports = { getAll, getById, create, update, changeStatus, uploadTemplate, removeTemplate, remove };

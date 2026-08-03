@@ -24,13 +24,29 @@ export interface Resident {
   status: string;
 }
 
+export type FormFieldType =
+  | 'text' | 'textarea' | 'number' | 'date' | 'tel' | 'email'
+  | 'select' | 'checkbox' | 'radio' | 'signature' | 'photo' | 'file';
+
 export interface FormField {
   key: string;
   label: string;
-  type: 'text' | 'textarea' | 'number' | 'date' | 'tel' | 'email' | 'select';
+  type: FormFieldType;
   required: boolean;
   placeholder?: string;
+  helperText?: string;
+  defaultValue?: string;
   options?: string[];
+  accept?: string;
+  maxSize?: number;
+  validation?: {
+    min?: number;
+    max?: number;
+    minLength?: number;
+    maxLength?: number;
+    pattern?: string;
+    patternMessage?: string;
+  };
 }
 
 export interface Service {

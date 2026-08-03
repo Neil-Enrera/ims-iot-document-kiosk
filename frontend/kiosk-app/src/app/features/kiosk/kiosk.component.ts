@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, signal, ElementRef, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { KioskService, Resident, Service, GuestInfo } from './kiosk.service';
+import { KioskService, Resident, Service, GuestInfo, FormField } from './kiosk.service';
 import { IdentificationService } from './identification.service';
 import { RfidScanService } from './rfid-scan.service';
 import { ButtonComponent } from './button.component';
@@ -493,36 +493,110 @@ export type BarangayStep =
                         <label class="block text-blue-300 text-sm mb-1">
                           {{ field.label }} @if (field.required) { <span class="text-red-300">*</span> }
                         </label>
-                        @if (field.type === 'select') {
-                          <select
-                            [(ngModel)]="formValues()[field.key]"
-                            [name]="field.key"
-                            (ngModelChange)="updateFormValue(field.key, $event)"
-                            class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-4 focus:ring-blue-400"
-                            [class.border-red-500]="formErrors()[field.key]">
-                            <option value="">Select...</option>
-                            @for (opt of field.options || []; track opt) {
-                              <option [value]="opt">{{ opt }}</option>
+
+                        @switch (field.type) {
+                          @case ('select') {
+                            <select
+                              [(ngModel)]="formValues()[field.key]"
+                              [name]="field.key"
+                              (ngModelChange)="updateFormValue(field.key, $event)"
+                              class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-4 focus:ring-blue-400"
+                              [class.border-red-500]="formErrors()[field.key]">
+                              <option value="">Select...</option>
+                              @for (opt of field.options || []; track opt) {
+                                <option [value]="opt">{{ opt }}</option>
+                              }
+                            </select>
+                          }
+                          @case ('textarea') {
+                            <textarea
+                              [(ngModel)]="formValues()[field.key]"
+                              [name]="field.key"
+                              (ngModelChange)="updateFormValue(field.key, $event)"
+                              [placeholder]="field.placeholder"
+                              rows="3"
+                              class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-4 focus:ring-blue-400"
+                              [class.border-red-500]="formErrors()[field.key]"></textarea>
+                          }
+                          @case ('radio') {
+                            <div class="space-y-2">
+                              @for (opt of field.options || []; track opt) {
+                                <label class="flex items-center gap-3 bg-white rounded-lg px-4 py-3 cursor-pointer">
+                                  <input type="radio" [name]="field.key" [value]="opt"
+                                         [checked]="formValues()[field.key] === opt"
+                                         (change)="updateFormValue(field.key, opt)"
+                                         class="w-5 h-5 accent-blue-600" />
+                                  <span class="text-gray-800">{{ opt }}</span>
+                                </label>
+                              }
+                            </div>
+                          }
+                          @case ('checkbox') {
+                            <div class="space-y-2">
+                              @for (opt of field.options || []; track opt) {
+                                <label class="flex items-center gap-3 bg-white rounded-lg px-4 py-3 cursor-pointer">
+                                  <input type="checkbox" [value]="opt"
+                                         [checked]="isCheckboxChecked(field, opt)"
+                                         (change)="toggleCheckboxOption(field, opt, $event)"
+                                         class="w-5 h-5 accent-blue-600" />
+                                  <span class="text-gray-800">{{ opt }}</span>
+                                </label>
+                              }
+                            </div>
+                          }
+                          @case ('signature') {
+                            @if (!formValues()[field.key]) {
+                              <app-signature-pad [showError]="!!formErrors()[field.key]" (signature)="onFieldSignature(field.key, $event)" />
+                            } @else {
+                              <div class="bg-white rounded-lg p-3">
+                                <img [src]="formValues()[field.key]" alt="Signature" class="h-24 bg-white rounded" />
+                                <div class="mt-2">
+                                  <button type="button" class="text-blue-300 hover:text-white text-sm" (click)="clearFieldValue(field.key)">Clear</button>
+                                </div>
+                              </div>
                             }
-                          </select>
-                        } @else if (field.type === 'textarea') {
-                          <textarea
-                            [(ngModel)]="formValues()[field.key]"
-                            [name]="field.key"
-                            (ngModelChange)="updateFormValue(field.key, $event)"
-                            [placeholder]="field.placeholder"
-                            rows="3"
-                            class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-4 focus:ring-blue-400"
-                            [class.border-red-500]="formErrors()[field.key]"></textarea>
-                        } @else {
-                          <input
-                            [type]="field.type"
-                            [(ngModel)]="formValues()[field.key]"
-                            [name]="field.key"
-                            (ngModelChange)="updateFormValue(field.key, $event)"
-                            [placeholder]="field.placeholder"
-                            class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-4 focus:ring-blue-400"
-                            [class.border-red-500]="formErrors()[field.key]" />
+                          }
+                          @case ('photo') {
+                            <div>
+                              @if (activePhotoField() === field.key) {
+                                <div class="bg-black rounded-2xl overflow-hidden mb-2">
+                                  <video #inlineVideoEl autoplay playsinline class="w-full aspect-video object-cover"></video>
+                                </div>
+                                <div class="flex gap-3 justify-center">
+                                  <app-button variant="primary" size="lg" (onClick)="captureInlinePhoto(field.key)">Take Photo</app-button>
+                                  <app-button variant="secondary" size="lg" (onClick)="cancelInlinePhoto(field.key)">Cancel</app-button>
+                                </div>
+                              } @else if (formValues()[field.key]) {
+                                <img [src]="formValues()[field.key]" alt="Captured photo" class="w-40 h-40 rounded-2xl object-cover border-4 border-white mb-2" />
+                                <div class="flex gap-3">
+                                  <app-button variant="secondary" size="lg" (onClick)="retakeInlinePhoto(field.key)">Retake</app-button>
+                                </div>
+                              } @else {
+                                <app-button variant="primary" size="lg" (onClick)="startInlineCamera(field.key)">Open Camera</app-button>
+                              }
+                            </div>
+                          }
+                          @case ('file') {
+                            <input type="file" [accept]="field.accept || '*'" (change)="onFileSelected(field, $event)"
+                                   class="w-full text-blue-100 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white" />
+                            @if (formValues()[field.key]) {
+                              <p class="text-xs text-green-300 mt-1">File attached</p>
+                            }
+                          }
+                          @default {
+                            <input
+                              [type]="field.type"
+                              [(ngModel)]="formValues()[field.key]"
+                              [name]="field.key"
+                              (ngModelChange)="updateFormValue(field.key, $event)"
+                              [placeholder]="field.placeholder"
+                              class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-4 focus:ring-blue-400"
+                              [class.border-red-500]="formErrors()[field.key]" />
+                          }
+                        }
+
+                        @if (field.helperText) {
+                          <p class="text-blue-300/70 text-xs mt-1">{{ field.helperText }}</p>
                         }
                         @if (formErrors()[field.key]) {
                           <p class="text-red-300 text-xs mt-1">{{ formErrors()[field.key] }}</p>
@@ -602,6 +676,19 @@ export type BarangayStep =
                       <p class="font-bold text-lg text-green-300">FREE</p>
                     }
                   </div>
+                  @if (selectedService()?.form_fields && selectedService()!.form_fields!.length > 0) {
+                    <div>
+                      <p class="text-blue-300 text-sm mb-2">Application Details</p>
+                      <div class="space-y-2">
+                        @for (field of selectedService()!.form_fields!; track field.key) {
+                          <div class="flex justify-between items-start gap-4 text-sm">
+                            <span class="text-blue-300 flex-1">{{ field.label }}</span>
+                            <span class="text-white font-medium text-right">{{ displayFormValue(field, formValues()[field.key]) }}</span>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
                 </div>
                 <div class="flex gap-4 mt-6">
                   <app-button variant="secondary" size="lg" class="flex-1" (onClick)="goBack()">Back</app-button>
@@ -971,6 +1058,7 @@ export type BarangayStep =
 })
 export class KioskComponent implements OnInit, OnDestroy {
   @ViewChild('videoEl') videoEl!: ElementRef<HTMLVideoElement>;
+  @ViewChild('inlineVideoEl') inlineVideoEl!: ElementRef<HTMLVideoElement>;
 
   mode = signal<KioskMode>('home');
 
@@ -1002,6 +1090,10 @@ export class KioskComponent implements OnInit, OnDestroy {
   // Dynamic form state
   formValues = signal<Record<string, unknown>>({});
   formErrors = signal<Record<string, string>>({});
+
+  // Inline per-field capture state
+  inlinePhotos = signal<Record<string, string>>({});
+  activePhotoField = signal<string | null>(null);
 
   // Guest (temporary session) state
   guestForm = {
@@ -1240,11 +1332,19 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.selectedService.set(service);
     this.formValues.set({});
     this.formErrors.set({});
+    this.inlinePhotos.set({});
+    this.activePhotoField.set(null);
     this.currentStep.set('requirements');
     this.resetIdleTimer();
   }
 
   proceedToForm() {
+    const defaults: Record<string, unknown> = {};
+    for (const field of this.selectedService()?.form_fields || []) {
+      if (field.defaultValue) defaults[field.key] = field.defaultValue;
+    }
+    this.formValues.set(defaults);
+
     const resident = this.resident();
     if (resident) {
       const nameParts = [resident.first_name, resident.middle_name, resident.last_name, resident.suffix].filter(Boolean);
@@ -1266,7 +1366,7 @@ export class KioskComponent implements OnInit, OnDestroy {
         const value = source[key];
         if (value !== null && value !== undefined) prefilled[key] = value;
       }
-      this.formValues.set(prefilled);
+      this.formValues.update(v => ({ ...v, ...prefilled }));
     }
     this.currentStep.set('form');
     this.resetIdleTimer();
@@ -1283,14 +1383,103 @@ export class KioskComponent implements OnInit, OnDestroy {
     }
   }
 
+  clearFieldValue(key: string) {
+    this.updateFormValue(key, null);
+  }
+
+  private isEmptyValue(value: unknown): boolean {
+    if (value === null || value === undefined) return true;
+    if (typeof value === 'string') return value.trim() === '';
+    if (Array.isArray(value)) return value.length === 0;
+    return false;
+  }
+
+  // ---- Checkbox group ----
+  isCheckboxChecked(field: FormField, opt: string): boolean {
+    const arr = this.formValues()[field.key];
+    return Array.isArray(arr) && (arr as string[]).includes(opt);
+  }
+
+  toggleCheckboxOption(field: FormField, opt: string, event: Event) {
+    const checked = (event.target as HTMLInputElement).checked;
+    const current = this.formValues()[field.key];
+    const arr = Array.isArray(current) ? [...(current as string[])] : [];
+    if (checked && !arr.includes(opt)) arr.push(opt);
+    if (!checked) {
+      const idx = arr.indexOf(opt);
+      if (idx > -1) arr.splice(idx, 1);
+    }
+    this.updateFormValue(field.key, arr);
+  }
+
+  // ---- Signature field ----
+  onFieldSignature(key: string, dataUrl: string) {
+    this.updateFormValue(key, dataUrl);
+  }
+
+  // ---- Photo field (inline capture) ----
+  startInlineCamera(key: string) {
+    this.activePhotoField.set(key);
+    this.resetIdleTimer();
+    setTimeout(() => this.startCamera(), 100);
+  }
+
+  captureInlinePhoto(key: string) {
+    if (!this.inlineVideoEl?.nativeElement) return;
+    const dataUrl = this.drawFrame(this.inlineVideoEl.nativeElement);
+    this.inlinePhotos.update(p => ({ ...p, [key]: dataUrl }));
+    this.updateFormValue(key, dataUrl);
+    this.activePhotoField.set(null);
+    this.stopCamera();
+  }
+
+  cancelInlinePhoto(key: string) {
+    this.activePhotoField.set(null);
+    this.stopCamera();
+  }
+
+  retakeInlinePhoto(key: string) {
+    this.startInlineCamera(key);
+  }
+
+  // ---- File upload field ----
+  onFileSelected(field: FormField, event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    const maxBytes = field.maxSize || 5 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      this.formErrors.update(e => ({
+        ...e,
+        [field.key]: `${field.label} must be under ${Math.round(maxBytes / (1024 * 1024))} MB.`
+      }));
+      input.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.updateFormValue(field.key, reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // ---- Review display ----
+  displayFormValue(field: FormField, value: unknown): string {
+    if (this.isEmptyValue(value)) return '—';
+    if (Array.isArray(value)) return (value as string[]).join(', ');
+    if (typeof value === 'string' && value.startsWith('data:')) return 'Captured';
+    return String(value);
+  }
+
   validateForm() {
     const fields = this.selectedService()?.form_fields || [];
     let hasErrors = false;
     const newErrors: Record<string, string> = {};
     for (const field of fields) {
       const value = this.formValues()[field.key];
-      if (field.required && (!value || (typeof value === 'string' && !value.trim()))) {
-        newErrors[field.key] = `${field.label} is required.`;
+      const message = this.validateField(field, value);
+      if (message) {
+        newErrors[field.key] = message;
         hasErrors = true;
       }
     }
@@ -1305,6 +1494,37 @@ export class KioskComponent implements OnInit, OnDestroy {
       this.currentStep.set('review');
       this.resetIdleTimer();
     }
+  }
+
+  private validateField(field: FormField, value: unknown): string | null {
+    const empty = this.isEmptyValue(value);
+    if (empty) {
+      if (field.required) return `${field.label} is required.`;
+      return null;
+    }
+
+    const v = field.validation;
+    if (!v) return null;
+
+    if (typeof value === 'string' && !value.startsWith('data:')) {
+      const str = value.trim();
+      if (v.minLength && str.length < v.minLength) {
+        return `${field.label} must be at least ${v.minLength} characters.`;
+      }
+      if (v.maxLength && str.length > v.maxLength) {
+        return `${field.label} must be at most ${v.maxLength} characters.`;
+      }
+      if (v.pattern && !new RegExp(v.pattern).test(str)) {
+        return v.patternMessage || `${field.label} has an invalid format.`;
+      }
+    }
+
+    if (field.type === 'number' && typeof value === 'number') {
+      if (v.min !== undefined && value < v.min) return `${field.label} must be at least ${v.min}.`;
+      if (v.max !== undefined && value > v.max) return `${field.label} must be at most ${v.max}.`;
+    }
+
+    return null;
   }
 
   // Guest temporary session form validation
@@ -1467,14 +1687,13 @@ export class KioskComponent implements OnInit, OnDestroy {
   // CAMERA
   // ============================================================
 
-  startCamera() {
+  startCamera(target?: HTMLVideoElement) {
     if (this.stream) return;
     navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: 'user' } })
       .then(stream => {
         this.stream = stream;
-        if (this.videoEl?.nativeElement) {
-          this.videoEl.nativeElement.srcObject = stream;
-        }
+        const el = target || this.videoEl?.nativeElement;
+        if (el) el.srcObject = stream;
         this.errorMessage.set('');
       })
       .catch((err) => {
@@ -1490,13 +1709,17 @@ export class KioskComponent implements OnInit, OnDestroy {
     }
   }
 
+  private drawFrame(el: HTMLVideoElement): string {
+    const canvas = document.createElement('canvas');
+    canvas.width = el.videoWidth;
+    canvas.height = el.videoHeight;
+    canvas.getContext('2d')?.drawImage(el, 0, 0);
+    return canvas.toDataURL('image/jpeg', 0.8);
+  }
+
   capturePhoto() {
     if (!this.videoEl?.nativeElement) return;
-    const canvas = document.createElement('canvas');
-    canvas.width = this.videoEl.nativeElement.videoWidth;
-    canvas.height = this.videoEl.nativeElement.videoHeight;
-    canvas.getContext('2d')?.drawImage(this.videoEl.nativeElement, 0, 0);
-    this.capturedPhoto.set(canvas.toDataURL('image/jpeg', 0.8));
+    this.capturedPhoto.set(this.drawFrame(this.videoEl.nativeElement));
     this.stopCamera();
   }
 
@@ -1593,6 +1816,7 @@ export class KioskComponent implements OnInit, OnDestroy {
         return;
       }
       if (step === 'form') {
+        this.stopCamera();
         this.currentStep.set('requirements');
         return;
       }
@@ -1602,7 +1826,10 @@ export class KioskComponent implements OnInit, OnDestroy {
       }
       const steps: DocStep[] = ['welcome', 'guest-info', 'services', 'requirements', 'form', 'photo', 'review', 'success'];
       const idx = steps.indexOf(step);
-      if (idx > 0) this.currentStep.set(steps[idx - 1]);
+      if (idx > 0) {
+        if (step === 'photo') this.stopCamera();
+        this.currentStep.set(steps[idx - 1]);
+      }
       return;
     }
 
@@ -1693,6 +1920,8 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.guestForm = { fullName: '', birthDate: '', address: '', contactNumber: '', email: '' };
     this.formValues.set({});
     this.formErrors.set({});
+    this.inlinePhotos.set({});
+    this.activePhotoField.set(null);
     this.resetIdleTimer();
   }
 

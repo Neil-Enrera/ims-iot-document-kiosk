@@ -1,4 +1,5 @@
 import { Component, OnInit, signal } from '@angular/core';
+import { Observable, of } from 'rxjs';
 import { ServiceService } from '../../shared/services';
 import { Service } from '../../shared/interfaces/api.interfaces';
 import { TableComponent, TableColumn } from '../../shared/components/table.component';
@@ -122,9 +123,28 @@ export class ServicesComponent implements OnInit {
       : this.serviceService.create(data);
 
     request.subscribe({
-      next: () => { this.closeForm(); this.loadServices(); },
+      next: (res) => {
+        const serviceId = res.data.service_id;
+        this.handleTemplate(serviceId, data).subscribe({
+          next: () => { this.closeForm(); this.loadServices(); },
+          error: (err) => {
+            this.saving.set(false);
+            alert(err.error?.message || 'Service saved, but the template could not be uploaded.');
+          }
+        });
+      },
       error: (err) => { this.saving.set(false); alert(err.error?.message || 'Failed to save service.'); }
     });
+  }
+
+  private handleTemplate(serviceId: number, data: any): Observable<any> {
+    if (data.templateFile) {
+      return this.serviceService.uploadTemplate(serviceId, data.templateFile);
+    }
+    if (data.templateRemove) {
+      return this.serviceService.removeTemplate(serviceId);
+    }
+    return of(null);
   }
 
   confirmDelete() {

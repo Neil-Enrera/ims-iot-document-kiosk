@@ -105,6 +105,33 @@ const update = async (serviceId, { serviceName, description, processingFee, requ
   return result.affectedRows > 0;
 };
 
+const saveTemplate = async (serviceId, { path, originalName, mime, size }) => {
+  const [result] = await pool.query(
+    `UPDATE services
+     SET template_path = ?, template_original_name = ?, template_mime = ?, template_size = ?
+     WHERE service_id = ?`,
+    [path, originalName, mime, size, serviceId]
+  );
+  return result.affectedRows > 0;
+};
+
+const clearTemplate = async (serviceId) => {
+  const [result] = await pool.query(
+    `UPDATE services SET template_path = NULL, template_original_name = NULL, template_mime = NULL, template_size = NULL
+     WHERE service_id = ?`,
+    [serviceId]
+  );
+  return result.affectedRows > 0;
+};
+
+const findTemplate = async (serviceId) => {
+  const [rows] = await pool.query(
+    `SELECT template_path, template_original_name, template_mime, template_size FROM services WHERE service_id = ?`,
+    [serviceId]
+  );
+  return rows[0] || null;
+};
+
 const updateStatus = async (serviceId, isActive) => {
   const [result] = await pool.query('UPDATE services SET is_active = ? WHERE service_id = ?', [isActive, serviceId]);
   return result.affectedRows > 0;
@@ -115,4 +142,4 @@ const remove = async (serviceId) => {
   return result.affectedRows > 0;
 };
 
-module.exports = { findAll, findById, findByName, create, update, updateStatus, remove };
+module.exports = { findAll, findById, findByName, create, update, updateStatus, remove, saveTemplate, clearTemplate, findTemplate };

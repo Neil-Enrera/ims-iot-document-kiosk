@@ -68,13 +68,29 @@ export interface RfidCard {
   resident_name?: string;
 }
 
+export type FormFieldType =
+  | 'text' | 'textarea' | 'number' | 'date' | 'tel' | 'email'
+  | 'select' | 'checkbox' | 'radio' | 'signature' | 'photo' | 'file';
+
 export interface FormField {
   key: string;
   label: string;
-  type: 'text' | 'textarea' | 'number' | 'date' | 'tel' | 'email' | 'select';
+  type: FormFieldType;
   required: boolean;
   placeholder?: string;
+  helperText?: string;
+  defaultValue?: string;
   options?: string[];
+  accept?: string;
+  maxSize?: number;
+  validation?: {
+    min?: number;
+    max?: number;
+    minLength?: number;
+    maxLength?: number;
+    pattern?: string;
+    patternMessage?: string;
+  };
 }
 
 export interface Service {
@@ -88,6 +104,10 @@ export interface Service {
   processing_time: string | null;
   requires_photo: boolean;
   approval_workflow: string | null;
+  template_path: string | null;
+  template_original_name: string | null;
+  template_mime: string | null;
+  template_size: number | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;

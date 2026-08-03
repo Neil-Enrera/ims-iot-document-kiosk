@@ -114,6 +114,16 @@ export class ServiceService {
     return this.api.patch(`/services/${id}/status`, { isActive });
   }
 
+  uploadTemplate(id: number, file: File) {
+    const formData = new FormData();
+    formData.append('template', file);
+    return this.api.post<Service>(`/services/${id}/template`, formData);
+  }
+
+  removeTemplate(id: number) {
+    return this.api.delete<Service>(`/services/${id}/template`);
+  }
+
   delete(id: number) {
     return this.api.delete(`/services/${id}`);
   }

@@ -90,6 +90,36 @@ Use one of the following categories:
 
 ---
 
+# Version 2.1.0
+
+**Status:** Active Development
+
+**Date:** 2026-08-03
+
+## Added
+
+- Template-driven dynamic application forms for document request services.
+- Official document template upload per service (PDF/DOCX/image), stored under `uploads/templates/`, referenced via `services.template_*` columns (migration 007).
+- Manual field configuration (no OCR/AI): text, textarea, number, date, tel, email, select (dropdown), checkbox, radio, signature, photo capture, file upload.
+- Per-field options: required/optional, display order (up/down), helper text, default value, and validation rules (min/max, minLength/maxLength, pattern, file accept/max size).
+- New admin endpoints: `POST /services/:id/template`, `DELETE /services/:id/template`.
+- Kiosk renders all field types inline (checkbox/radio groups, signature pad, inline webcam capture, file upload) and shows a label → value summary in the Review step.
+- `validateForm()` enforces required + configured validation rules for all field types.
+
+**Modules Affected:** Backend, Database, Admin Panel, Kiosk
+
+**Database Changes:** Yes — migration 007 adds `template_path`, `template_original_name`, `template_mime`, `template_size` to `services`.
+
+**API Changes:** Yes — `POST /services/:id/template`, `DELETE /services/:id/template`; `form_fields` schema extended with new field types and optional keys.
+
+**Architecture Changes:** No
+
+**Breaking Changes:** No — `form_fields` JSON is backward compatible (new optional keys).
+
+**Testing Performed:** Unit tests (29/29), build verification (kiosk + admin), e2e script covering template upload/remove, all 12 field types, and form_data round-trip.
+
+---
+
 # Change Entry Template
 
 ## Version

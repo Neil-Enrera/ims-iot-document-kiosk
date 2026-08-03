@@ -1,6 +1,7 @@
 const multer = require('multer');
 const path = require('path');
 const crypto = require('crypto');
+const fs = require('fs');
 
 const ALLOWED_TYPES = {
   'image/jpeg': ['.jpg', '.jpeg'],
@@ -41,4 +42,24 @@ const upload = multer({
   limits: { fileSize: MAX_SIZES.document }
 });
 
-module.exports = upload;
+// Document template uploads (official barangay templates for services)
+const templateStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = path.join(__dirname, '../../uploads/templates');
+    fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = crypto.randomBytes(16).toString('hex');
+    const ext = path.extname(file.originalname);
+    cb(null, `${uniqueSuffix}${ext}`);
+  }
+});
+
+const uploadTemplate = multer({
+  storage: templateStorage,
+  fileFilter,
+  limits: { fileSize: MAX_SIZES.document }
+});
+
+module.exports = { upload, uploadTemplate };

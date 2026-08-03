@@ -3,7 +3,7 @@ const router = express.Router();
 const fileController = require('../controllers/file.controller');
 const authenticate = require('../middleware/auth.middleware');
 const authorize = require('../middleware/role.middleware');
-const upload = require('../middleware/upload.middleware');
+const { upload } = require('../middleware/upload.middleware');
 
 router.get('/', authenticate, authorize('Administrator', 'Barangay Secretary', 'Staff'), fileController.getAll);
 router.get('/:id', authenticate, fileController.getById);

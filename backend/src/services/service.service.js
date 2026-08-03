@@ -1,4 +1,6 @@
 const serviceRepository = require('../repositories/service.repository');
+const fs = require('fs');
+const path = require('path');
 
 const getAllServices = async ({ search, isActive, page = 1, limit = 20, sortBy = 'service_id', sortOrder = 'ASC' }) => {
   const result = await serviceRepository.findAll({ search, isActive, page, limit, sortBy, sortOrder });
@@ -66,4 +68,59 @@ const deleteService = async (serviceId) => {
   return { success: true, message: 'Service deleted successfully.', data: null };
 };
 
-module.exports = { getAllServices, getServiceById, createService, updateService, changeStatus, deleteService };
+const uploadTemplate = async (serviceId, file) => {
+  const service = await serviceRepository.findById(serviceId);
+  if (!service) {
+    return { success: false, message: 'Service not found.' };
+  }
+  if (!file) {
+    return { success: false, message: 'A template file is required.' };
+  }
+
+  const template = {
+    path: `templates/${file.filename}`,
+    originalName: file.originalname,
+    mime: file.mimetype,
+    size: file.size
+  };
+
+  // Remove previous template file if one exists
+  const previous = await serviceRepository.findTemplate(serviceId);
+  if (previous && previous.template_path) {
+    try {
+      const oldPath = path.join(__dirname, '../../uploads', previous.template_path);
+      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+    } catch (err) {
+      console.error('Failed to remove previous template:', err);
+    }
+  }
+
+  await serviceRepository.saveTemplate(serviceId, template);
+  const updated = await serviceRepository.findById(serviceId);
+
+  return { success: true, message: 'Template uploaded successfully.', data: updated };
+};
+
+const removeTemplate = async (serviceId) => {
+  const service = await serviceRepository.findById(serviceId);
+  if (!service) {
+    return { success: false, message: 'Service not found.' };
+  }
+
+  const previous = await serviceRepository.findTemplate(serviceId);
+  if (previous && previous.template_path) {
+    try {
+      const oldPath = path.join(__dirname, '../../uploads', previous.template_path);
+      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+    } catch (err) {
+      console.error('Failed to remove template file:', err);
+    }
+  }
+
+  await serviceRepository.clearTemplate(serviceId);
+  const updated = await serviceRepository.findById(serviceId);
+
+  return { success: true, message: 'Template removed successfully.', data: updated };
+};
+
+module.exports = { getAllServices, getServiceById, createService, updateService, changeStatus, deleteService, uploadTemplate, removeTemplate };

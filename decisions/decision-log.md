@@ -205,3 +205,25 @@ The system is an Information Management System for document request processing. 
 - No code changes required (no payment code was ever implemented)
 - Project scope is now clearly defined without payment processing
 - Total task count reduced from 77 to 75
+
+---
+
+### DEC-009 — Template-driven application forms (manual field mapping, no OCR/AI)
+
+**Status:** Accepted
+**Date:** 2026-08-03
+**Decision Maker(s):** Project Owner
+
+**Decision:**
+Document request application forms are generated from administrator-configured fields. Administrators upload the official barangay document template (PDF/DOCX/image) per service as the official reference, then manually map the fields that appear on the resident's application form. The system performs no OCR or AI-based field extraction.
+
+**Reason:**
+The application form must always match the official barangay document template. Manual mapping ensures accuracy, flexibility, and consistency while avoiding errors caused by automatic field detection, and it keeps the system future-proof when official templates change.
+
+**Alternatives Considered:**
+1. OCR/AI field extraction from uploaded templates — rejected per requirements; error-prone and unnecessary since administrators can map fields directly against the official template.
+
+**Consequences:**
+- `services` gained template file columns (migration 007) and `form_fields` now supports 12 field types plus validation/helper-text config.
+- Two new template endpoints (`POST`/`DELETE /services/:id/template`); kiosk dynamic form and review steps extended.
+- Scope limited to document request services; the dedicated Barangay ID application flow is unaffected.
