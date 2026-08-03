@@ -13,10 +13,13 @@ export interface Resident {
   birth_date: string | null;
   gender: string | null;
   civil_status: string | null;
+  blood_type: string | null;
   barangay_id: number;
   address_line: string;
   contact_number: string | null;
   email: string | null;
+  emergency_contact_name: string | null;
+  emergency_contact_number: string | null;
   photo: string | null;
   status: string;
 }
@@ -73,6 +76,45 @@ export interface ApiResponse<T> {
   data: T;
 }
 
+export interface GuestInfo {
+  full_name: string;
+  middle_name?: string;
+  birth_date?: string;
+  address?: string;
+  contact_number?: string;
+  email?: string;
+}
+
+export interface RfidVerifyResult {
+  recognized: boolean;
+  message?: string;
+  resident?: Resident;
+  rfid?: any;
+}
+
+export interface BarangayIdApplication {
+  application_id: number;
+  application_number: string;
+  first_name: string;
+  middle_name: string | null;
+  last_name: string;
+  suffix: string | null;
+  birth_date: string | null;
+  gender: string | null;
+  civil_status: string | null;
+  occupation: string | null;
+  blood_type: string | null;
+  address_line: string;
+  contact_number: string | null;
+  email: string | null;
+  emergency_contact_name: string | null;
+  emergency_contact_number: string | null;
+  photo: string | null;
+  signature: string | null;
+  status: string;
+  application_number_display?: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class KioskService {
   private readonly apiUrl = environment.apiUrl;
@@ -95,7 +137,8 @@ export class KioskService {
   }
 
   createRequest(data: {
-    resident_id: number;
+    resident_id?: number;
+    guest?: GuestInfo;
     service_id: number;
     purpose?: string;
     remarks?: string;
@@ -113,16 +156,22 @@ export class KioskService {
     birthDate?: string;
     gender?: string;
     civilStatus?: string;
+    occupation?: string;
+    bloodType?: string;
     addressLine: string;
     contactNumber?: string;
     email?: string;
-    bloodType?: string;
     emergencyContactName?: string;
     emergencyContactNumber?: string;
     photo?: string;
+    signature?: string;
     form_data?: Record<string, unknown>;
-  }): Observable<ApiResponse<DocumentRequest>> {
-    return this.http.post<ApiResponse<DocumentRequest>>(`${this.apiUrl}/kiosk/barangay-id`, data);
+  }): Observable<ApiResponse<BarangayIdApplication>> {
+    return this.http.post<ApiResponse<BarangayIdApplication>>(`${this.apiUrl}/kiosk/barangay-id`, data);
+  }
+
+  verifyRfid(rfidUid: string): Observable<ApiResponse<RfidVerifyResult>> {
+    return this.http.post<ApiResponse<RfidVerifyResult>>(`${this.apiUrl}/kiosk/rfid/verify`, { rfidUid });
   }
 
   getHardwareStatus(): Observable<ApiResponse<HardwareStatus>> {

@@ -2,22 +2,25 @@ const pool = require('../config/database');
 
 const findAll = async ({ search, statusId, residentId, serviceId, dateFrom, dateTo, page, limit, sortBy, sortOrder }) => {
   let query = `SELECT rq.*, rs.status_name, s.service_name, s.processing_fee,
-    CONCAT(r.first_name, ' ', IFNULL(r.middle_name, ''), ' ', r.last_name) AS resident_name,
-    r.resident_code
+    COALESCE(
+      CONCAT(r.first_name, ' ', IFNULL(r.middle_name, ''), ' ', r.last_name),
+      JSON_UNQUOTE(JSON_EXTRACT(rq.form_data, '$._guest.full_name'))
+    ) AS resident_name,
+    COALESCE(r.resident_code, 'GUEST') AS resident_code
     FROM requests rq
     JOIN request_statuses rs ON rq.status_id = rs.status_id
     JOIN services s ON rq.service_id = s.service_id
-    JOIN residents r ON rq.resident_id = r.resident_id`;
-  let countQuery = 'SELECT COUNT(*) AS total FROM requests rq';
+    LEFT JOIN residents r ON rq.resident_id = r.resident_id`;
+  let countQuery = 'SELECT COUNT(*) AS total FROM requests rq LEFT JOIN residents r ON rq.resident_id = r.resident_id JOIN services s ON rq.service_id = s.service_id';
   const conditions = [];
   const params = [];
   const countParams = [];
 
   if (search) {
-    conditions.push('(rq.request_number LIKE ? OR r.first_name LIKE ? OR r.last_name LIKE ? OR s.service_name LIKE ?)');
+    conditions.push('(rq.request_number LIKE ? OR r.first_name LIKE ? OR r.last_name LIKE ? OR s.service_name LIKE ? OR JSON_UNQUOTE(JSON_EXTRACT(rq.form_data, \'$._guest.full_name\')) LIKE ?)');
     const term = `%${search}%`;
-    params.push(term, term, term, term);
-    countParams.push(term, term, term, term);
+    params.push(term, term, term, term, term);
+    countParams.push(term, term, term, term, term);
   }
 
   if (statusId) {
@@ -90,12 +93,15 @@ const parseJsonField = (value) => {
 const findById = async (requestId) => {
   const [rows] = await pool.query(
     `SELECT rq.*, rs.status_name, s.service_name, s.processing_fee,
-      CONCAT(r.first_name, ' ', IFNULL(r.middle_name, ''), ' ', r.last_name) AS resident_name,
-      r.resident_code, r.contact_number, r.email, r.address_line
+      COALESCE(
+        CONCAT(r.first_name, ' ', IFNULL(r.middle_name, ''), ' ', r.last_name),
+        JSON_UNQUOTE(JSON_EXTRACT(rq.form_data, '$._guest.full_name'))
+      ) AS resident_name,
+      COALESCE(r.resident_code, 'GUEST') AS resident_code, r.contact_number, r.email, r.address_line
       FROM requests rq
       JOIN request_statuses rs ON rq.status_id = rs.status_id
       JOIN services s ON rq.service_id = s.service_id
-      JOIN residents r ON rq.resident_id = r.resident_id
+      LEFT JOIN residents r ON rq.resident_id = r.resident_id
       WHERE rq.request_id = ?`,
     [requestId]
   );

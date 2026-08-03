@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
 const logger = require('./config/logger');
@@ -9,6 +10,7 @@ const errorHandler = require('./middleware/error.middleware');
 const app = express();
 
 app.use(helmet());
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use(cors({ 
   origin: [
     process.env.FRONTEND_URL || 'http://localhost:4200',

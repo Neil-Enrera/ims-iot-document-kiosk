@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { ApiService } from '../../core/services/api.service';
-import { User, Resident, RfidCard, Service, DocumentRequest, AuditLog, DashboardSummary } from '../interfaces/api.interfaces';
+import { User, Resident, RfidCard, Service, DocumentRequest, AuditLog, DashboardSummary, BarangayIdApplication } from '../interfaces/api.interfaces';
 import { Observable, map } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
@@ -153,6 +153,27 @@ export class RequestService {
 
   getStats() {
     return this.api.get<any>('/requests/stats');
+  }
+}
+
+@Injectable({ providedIn: 'root' })
+export class ApplicationService {
+  constructor(private api: ApiService) {}
+
+  getAll(params?: any) {
+    return this.api.getList<BarangayIdApplication>('/applications', params);
+  }
+
+  getById(id: number) {
+    return this.api.get<BarangayIdApplication>(`/applications/${id}`);
+  }
+
+  approve(id: number, remarks?: string) {
+    return this.api.post<BarangayIdApplication>(`/applications/${id}/approve`, { remarks });
+  }
+
+  reject(id: number, remarks?: string) {
+    return this.api.post<BarangayIdApplication>(`/applications/${id}/reject`, { remarks });
   }
 }
 

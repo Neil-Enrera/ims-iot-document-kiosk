@@ -51,7 +51,11 @@ const findById = async (rfidCardId) => {
 
 const findByUid = async (cardUid) => {
   const [rows] = await pool.query(
-    'SELECT rc.*, r.first_name, r.last_name, r.resident_code, r.contact_number, r.email, r.address_line FROM rfid_cards rc JOIN residents r ON rc.resident_id = r.resident_id WHERE rc.card_uid = ?',
+    `SELECT rc.*, r.first_name, r.middle_name, r.last_name, r.suffix, r.resident_code,
+            r.birth_date, r.gender, r.civil_status, r.blood_type,
+            r.contact_number, r.email, r.address_line,
+            r.emergency_contact_name, r.emergency_contact_number
+     FROM rfid_cards rc JOIN residents r ON rc.resident_id = r.resident_id WHERE rc.card_uid = ?`,
     [cardUid]
   );
   return rows[0] || null;

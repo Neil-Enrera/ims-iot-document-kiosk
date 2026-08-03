@@ -126,6 +126,36 @@ export interface DocumentRequest {
   resident_code: string;
 }
 
+export interface BarangayIdApplication {
+  application_id: number;
+  application_number: string;
+  first_name: string;
+  middle_name: string | null;
+  last_name: string;
+  suffix: string | null;
+  birth_date: string | null;
+  gender: string | null;
+  civil_status: string | null;
+  occupation: string | null;
+  blood_type: string | null;
+  address_line: string;
+  contact_number: string | null;
+  email: string | null;
+  emergency_contact_name: string | null;
+  emergency_contact_number: string | null;
+  photo: string | null;
+  signature: string | null;
+  form_data: Record<string, unknown> | null;
+  status: string;
+  review_remarks: string | null;
+  reviewed_by: number | null;
+  reviewed_at: string | null;
+  resident_id: number | null;
+  created_at: string;
+  updated_at: string;
+  reviewed_by_name: string | null;
+}
+
 export interface AuditLog {
   audit_log_id: number;
   user_id: number;

@@ -1,5 +1,7 @@
 const kioskService = require('../services/kiosk.service');
 const residentService = require('../services/resident.service');
+const applicationService = require('../services/application.service');
+const rfidService = require('../services/rfid.service');
 const auditRepository = require('../repositories/audit.repository');
 const notificationService = require('../services/notification.service');
 const sseManager = require('../services/notification-sse');
@@ -68,28 +70,54 @@ const parseJsonField = (value) => {
 };
 
 // Public request creation for kiosk (no auth required)
+// Supports both:
+//   - identified residents (resident_id + optional form_data)
+//   - temporary guest sessions (guest {full_name, birth_date, address, contact_number, email?} + form_data)
 const createRequest = async (req, res) => {
   try {
-    const { service_id, resident_id } = req.body;
-    console.log('[Kiosk] createRequest body:', JSON.stringify({ service_id, resident_id, hasPhoto: !!req.body.photo, hasFormData: !!req.body.form_data }));
-    if (!service_id || !resident_id) {
-      return errorResponse(res, 400, 'Service and resident are required.');
+    const { service_id, resident_id, guest } = req.body;
+    console.log('[Kiosk] createRequest body:', JSON.stringify({ service_id, resident_id, hasGuest: !!guest, hasPhoto: !!req.body.photo, hasFormData: !!req.body.form_data }));
+
+    if (!service_id) {
+      return errorResponse(res, 400, 'Service is required.');
+    }
+    if (!resident_id && !guest) {
+      return errorResponse(res, 400, 'Resident or guest information is required.');
     }
 
     const formData = req.body.form_data !== undefined ? req.body.form_data : req.body.formData;
 
-    // Get resident and service details for notification
-    const [residents] = await pool.query('SELECT resident_id, first_name, last_name, resident_code FROM residents WHERE resident_id = ?', [resident_id]);
+    // Get service details for notification
     const [services] = await pool.query('SELECT * FROM services WHERE service_id = ?', [service_id]);
-
-    const resident = residents[0];
     const service = services[0];
-
-    if (!resident) return errorResponse(res, 404, 'Resident not found.');
     if (!service) return errorResponse(res, 404, 'Service not found.');
 
+    let resident = null;
+    let applicant = null;
+
+    if (resident_id) {
+      const [residents] = await pool.query('SELECT resident_id, first_name, last_name, resident_code FROM residents WHERE resident_id = ?', [resident_id]);
+      resident = residents[0];
+      if (!resident) return errorResponse(res, 404, 'Resident not found.');
+      applicant = { ...resident, isGuest: false };
+    } else {
+      const guestInfo = guest || {};
+      if (!guestInfo.full_name) {
+        return errorResponse(res, 400, 'Guest full name is required.');
+      }
+      applicant = {
+        resident_id: null,
+        first_name: guestInfo.full_name,
+        middle_name: guestInfo.middle_name || null,
+        last_name: '',
+        resident_code: 'GUEST',
+        isGuest: true,
+        guestInfo
+      };
+    }
+
     const { requestId, requestNumber, requestDate } = await insertKioskRequest({
-      resident,
+      resident: applicant,
       service,
       photo: req.body.photo,
       formData,
@@ -108,102 +136,31 @@ const createRequest = async (req, res) => {
   }
 };
 
-// Public Barangay ID application: creates a new resident + request (no auth)
+// Public Barangay ID application: creates an APPLICATION record (no resident yet)
+// Staff review the application, then approve -> creates resident + RFID assignment
 const createBarangayIdApplication = async (req, res) => {
   try {
     const {
       firstName, middleName, lastName, suffix, birthDate, gender, civilStatus,
-      addressLine, contactNumber, email, bloodType, emergencyContactName,
-      emergencyContactNumber, photo
+      addressLine, contactNumber, email, occupation, bloodType,
+      emergencyContactName, emergencyContactNumber, photo, signature, formData
     } = req.body;
 
-    console.log('[Kiosk] createBarangayIdApplication body:', JSON.stringify({ firstName, lastName, hasPhoto: !!photo }));
+    console.log('[Kiosk] createBarangayIdApplication body:', JSON.stringify({ firstName, lastName, hasPhoto: !!photo, hasSignature: !!signature }));
 
-    // Generate a resident code for the new applicant
-    const residentCode = await residentService.generateResidentCode();
+    const result = await applicationService.createApplication({
+      firstName, middleName, lastName, suffix, birthDate, gender, civilStatus,
+      addressLine, contactNumber, email, occupation, bloodType,
+      emergencyContactName, emergencyContactNumber, photo, signature, formData
+    }, req.ip);
 
-    // Default barangay is San Manuel (id 1); allow override for flexibility
-    const barangayId = req.body.barangayId || 1;
+    if (!result.success) return errorResponse(res, 400, result.message);
 
-    // Save the captured photo to the resident record
-    let photoPath = null;
-    if (photo) {
-      try {
-        const photoDir = path.join(__dirname, '../../uploads/resident-photos');
-        if (!fs.existsSync(photoDir)) {
-          fs.mkdirSync(photoDir, { recursive: true });
-        }
-        const base64Data = photo.replace(/^data:image\/\w+;base64,/, '');
-        const buffer = Buffer.from(base64Data, 'base64');
-        const fileName = `resident_${Date.now()}.jpg`;
-        const filePath = path.join(photoDir, fileName);
-        fs.writeFileSync(filePath, buffer);
-        photoPath = `resident-photos/${fileName}`;
-      } catch (photoError) {
-        console.error('Failed to save Barangay ID resident photo:', photoError);
-      }
-    }
-
-    // Create the resident
-    const [result] = await pool.query(
-      `INSERT INTO residents (resident_code, first_name, middle_name, last_name, suffix, birth_date, gender, civil_status, barangay_id, address_line, contact_number, email, photo, blood_type, emergency_contact_name, emergency_contact_number, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE')`,
-      [
-        residentCode, firstName, middleName || null, lastName, suffix || null,
-        birthDate || null, gender || null, civilStatus || null, barangayId,
-        addressLine, contactNumber || null, email || null, photoPath,
-        bloodType || null, emergencyContactName || null, emergencyContactNumber || null
-      ]
-    );
-    const residentId = result.insertId;
-
-    // Look up the Barangay ID service
-    const [services] = await pool.query(
-      `SELECT * FROM services WHERE service_name = 'Barangay ID' AND is_active = 1 LIMIT 1`
-    );
-    const service = services[0];
-    if (!service) {
-      return errorResponse(res, 400, 'Barangay ID service is not configured.');
-    }
-
-    const resident = {
-      resident_id: residentId,
-      first_name: firstName,
-      last_name: lastName,
-      resident_code: residentCode
-    };
-
-    const formData = {
-      first_name: firstName,
-      middle_name: middleName || null,
-      last_name: lastName,
-      suffix: suffix || null,
-      birth_date: birthDate || null,
-      gender: gender || null,
-      civil_status: civilStatus || null,
-      address_line: addressLine,
-      contact_number: contactNumber || null,
-      email: email || null,
-      blood_type: bloodType || null,
-      emergency_contact_name: emergencyContactName || null,
-      emergency_contact_number: emergencyContactNumber || null
-    };
-
-    const { requestId, requestNumber, requestDate } = await insertKioskRequest({
-      resident,
-      service,
-      photo,
-      formData,
-      req
-    });
-
-    return createdResponse(res, 'Barangay ID application submitted successfully.', {
-      resident_id: residentId,
-      resident_code: residentCode,
-      request_id: requestId,
-      request_number: requestNumber,
-      request_date: requestDate,
-      status: 'Pending'
+    const app = result.data;
+    return createdResponse(res, result.message, {
+      application_id: app.application_id,
+      application_number: app.application_number,
+      status: app.status
     });
   } catch (error) {
     console.error('Kiosk createBarangayIdApplication error:', error);
@@ -211,19 +168,60 @@ const createBarangayIdApplication = async (req, res) => {
   }
 };
 
+// Public RFID verification for the kiosk (no auth required)
+const verifyRfid = async (req, res) => {
+  try {
+    const { rfidUid } = req.body;
+    if (!rfidUid) {
+      return errorResponse(res, 400, 'RFID UID is required.');
+    }
+    const result = await rfidService.getResidentByUid(rfidUid);
+    if (!result.success) {
+      return successResponse(res, 'RFID not recognized.', { recognized: false, message: result.message });
+    }
+    return successResponse(res, 'RFID recognized.', {
+      recognized: true,
+      resident: result.data.resident,
+      rfid: result.data.rfid
+    });
+  } catch (error) {
+    console.error('Kiosk verifyRfid error:', error);
+    return errorResponse(res, 500, 'Internal server error.');
+  }
+};
+
 // Shared helper: inserts a request row, saves photo attachment, creates audit + notification + SSE
+// resident may be a real resident or a guest applicant (resident.resident_id === null, isGuest === true)
 const insertKioskRequest = async ({ resident, service, photo, formData, req }) => {
-  // Generate request number
-  const [countResult] = await pool.query('SELECT COUNT(*) as cnt FROM requests');
-  const count = countResult[0]?.cnt || 0;
-  const requestNumber = `REQ-${String(count + 1).padStart(5, '0')}`;
+  // Generate request number from the highest existing suffix (avoids duplicates after deletions/out-of-order ids)
+  const [maxResult] = await pool.query(
+    "SELECT MAX(CAST(SUBSTRING_INDEX(request_number, '-', -1) AS UNSIGNED)) AS max_num FROM requests"
+  );
+  const next = (maxResult[0]?.max_num || 0) + 1;
+  const requestNumber = `REQ-${String(next).padStart(5, '0')}`;
 
   // Get default status_id (Pending)
   const [statusResult] = await pool.query("SELECT status_id FROM request_statuses WHERE status_name = 'Pending' LIMIT 1");
   const status = statusResult[0];
   const statusId = status?.status_id || 1;
 
-  // Create request
+  // For guest sessions, merge the basic guest information into form_data
+  let storedFormData = formData || {};
+  if (resident.isGuest && resident.guestInfo) {
+    storedFormData = {
+      ...storedFormData,
+      _guest: {
+        full_name: resident.guestInfo.full_name,
+        middle_name: resident.guestInfo.middle_name || null,
+        birth_date: resident.guestInfo.birth_date || null,
+        address: resident.guestInfo.address || null,
+        contact_number: resident.guestInfo.contact_number || null,
+        email: resident.guestInfo.email || null
+      }
+    };
+  }
+
+  // Create request (resident_id may be NULL for guest sessions)
   const [result] = await pool.query(
     `INSERT INTO requests (resident_id, service_id, request_number, status_id, request_date, form_data, service_snapshot, created_at)
      VALUES (?, ?, ?, ?, NOW(), ?, ?, NOW())`,
@@ -232,7 +230,7 @@ const insertKioskRequest = async ({ resident, service, photo, formData, req }) =
       service.service_id,
       requestNumber,
       statusId,
-      formData ? JSON.stringify(formData) : null,
+      Object.keys(storedFormData).length ? JSON.stringify(storedFormData) : null,
       JSON.stringify({
         service_id: service.service_id,
         service_name: service.service_name,
@@ -287,11 +285,14 @@ const insertKioskRequest = async ({ resident, service, photo, formData, req }) =
   }
 
   // Create notifications for all admins
-  const residentName = `${resident.first_name} ${resident.last_name}`;
+  const residentName = resident.isGuest
+    ? resident.guestInfo.full_name
+    : `${resident.first_name} ${resident.last_name}`;
+  const residentCode = resident.isGuest ? 'GUEST' : resident.resident_code;
   try {
     await notificationService.createNotificationForAdmins(
       'New Document Request',
-      `${residentName} (${resident.resident_code}) requested ${service.service_name} — ${requestNumber}`,
+      `${residentName} (${residentCode}) requested ${service.service_name} — ${requestNumber}`,
       'info',
       'request',
       requestId
@@ -321,4 +322,4 @@ const getHardwareStatus = async (req, res) => {
   }
 };
 
-module.exports = { searchResidents, getResident, getServices, createRequest, createBarangayIdApplication, getHardwareStatus };
+module.exports = { searchResidents, getResident, getServices, createRequest, createBarangayIdApplication, verifyRfid, getHardwareStatus };

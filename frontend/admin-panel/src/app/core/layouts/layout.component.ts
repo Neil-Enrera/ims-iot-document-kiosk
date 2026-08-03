@@ -23,6 +23,8 @@ import { NotificationService, Notification } from '../../features/notifications/
              class="block px-3 py-2 rounded hover:bg-blue-700 transition">Residents</a>
           <a routerLink="/requests" routerLinkActive="bg-blue-700"
              class="block px-3 py-2 rounded hover:bg-blue-700 transition">Requests</a>
+          <a routerLink="/applications" routerLinkActive="bg-blue-700"
+             class="block px-3 py-2 rounded hover:bg-blue-700 transition">Barangay ID Apps</a>
           <a routerLink="/services" routerLinkActive="bg-blue-700"
              class="block px-3 py-2 rounded hover:bg-blue-700 transition">Services</a>
           <a routerLink="/rfid" routerLinkActive="bg-blue-700"
@@ -96,6 +98,8 @@ import { NotificationService, Notification } from '../../features/notifications/
                class="block px-3 py-2 rounded hover:bg-blue-700 transition">Residents</a>
             <a routerLink="/requests" routerLinkActive="bg-blue-700" (click)="toggleSidebar()"
                class="block px-3 py-2 rounded hover:bg-blue-700 transition">Requests</a>
+            <a routerLink="/applications" routerLinkActive="bg-blue-700" (click)="toggleSidebar()"
+               class="block px-3 py-2 rounded hover:bg-blue-700 transition">Barangay ID Apps</a>
             <a routerLink="/services" routerLinkActive="bg-blue-700" (click)="toggleSidebar()"
                class="block px-3 py-2 rounded hover:bg-blue-700 transition">Services</a>
             <a routerLink="/rfid" routerLinkActive="bg-blue-700" (click)="toggleSidebar()"

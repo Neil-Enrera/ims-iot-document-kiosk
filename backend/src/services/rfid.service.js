@@ -68,8 +68,16 @@ const verifyCard = async (cardUid) => {
     return { success: false, message: 'RFID card is not active.' };
   }
 
-  const { first_name, last_name, resident_code, contact_number, email, address_line, ...rfidData } = card;
-  const resident = { first_name, last_name, resident_code, contact_number, email, address_line };
+  const {
+    first_name, middle_name, last_name, suffix, resident_code, birth_date,
+    gender, civil_status, blood_type, contact_number, email, address_line,
+    emergency_contact_name, emergency_contact_number, ...rfidData
+  } = card;
+  const resident = {
+    first_name, middle_name, last_name, suffix, resident_code, birth_date,
+    gender, civil_status, blood_type, contact_number, email, address_line,
+    emergency_contact_name, emergency_contact_number
+  };
 
   return { success: true, message: 'RFID verified successfully.', data: { resident, rfid: rfidData } };
 };
@@ -80,8 +88,16 @@ const getResidentByUid = async (cardUid) => {
     return { success: false, message: 'RFID card not found.' };
   }
 
-  const { first_name, last_name, resident_code, contact_number, email, address_line, ...rfidData } = card;
-  const resident = { first_name, last_name, resident_code, contact_number, email, address_line };
+  const {
+    first_name, middle_name, last_name, suffix, resident_code, birth_date,
+    gender, civil_status, blood_type, contact_number, email, address_line,
+    emergency_contact_name, emergency_contact_number, ...rfidData
+  } = card;
+  const resident = {
+    first_name, middle_name, last_name, suffix, resident_code, birth_date,
+    gender, civil_status, blood_type, contact_number, email, address_line,
+    emergency_contact_name, emergency_contact_number
+  };
 
   return { success: true, message: 'Resident retrieved successfully.', data: { resident, rfid: rfidData } };
 };

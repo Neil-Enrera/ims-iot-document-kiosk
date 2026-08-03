@@ -1,130 +1,185 @@
-import { Component, OnInit, OnDestroy, signal, ElementRef, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, ElementRef, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { KioskService, Resident, Service } from './kiosk.service';
+import { KioskService, Resident, Service, GuestInfo } from './kiosk.service';
 import { IdentificationService } from './identification.service';
+import { RfidScanService } from './rfid-scan.service';
 import { ButtonComponent } from './button.component';
+import { SignaturePadComponent } from './signature-pad.component';
 
-export type KioskMode = 'home' | 'documents' | 'barangay';
+export type KioskMode = 'home' | 'rfid' | 'guest' | 'documents' | 'barangay';
 
-export type DocStep = 
-  | 'search'     // 0: find resident
-  | 'loading'    // 1: loading resident
-  | 'welcome'    // 2: show resident info
-  | 'services'   // 3: select service
-  | 'requirements' // 4: show service requirements
-  | 'form'       // 5: dynamic form
-  | 'photo'      // 6: capture photo
-  | 'review'     // 7: review & confirm
-  | 'success';   // 8: success
+// Documents flow (shared by RFID-resident and guest temporary sessions)
+export type DocStep =
+  | 'welcome'     // 0: resident welcome (RFID path only)
+  | 'guest-info'  // 0: guest basic info (temporary session path only)
+  | 'services'    // 1: select service
+  | 'requirements'// 2: show service requirements
+  | 'form'        // 3: dynamic form
+  | 'photo'       // 4: capture photo (only if service requires)
+  | 'review'      // 5: review & confirm
+  | 'success';    // 6: success
 
-export type BarangayStep = 
-  | 'form'       // 0: application form
-  | 'photo'      // 1: capture photo
-  | 'review'     // 2: review & confirm
-  | 'success';   // 3: success
+// RFID scan flow
+export type RfidStep = 'scan' | 'search' | 'error';
+
+// Barangay ID application flow
+export type BarangayStep =
+  | 'requirements' // 0: show ID requirements
+  | 'form'         // 1: registration form
+  | 'photo'        // 2: capture photo (required)
+  | 'signature'    // 3: capture digital signature (required)
+  | 'review'       // 4: review & submit
+  | 'success';     // 5: success
 
 @Component({
   selector: 'app-kiosk',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonComponent],
+  imports: [CommonModule, FormsModule, ButtonComponent, SignaturePadComponent],
   template: `
     <div class="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 text-white select-none flex">
 
       <!-- MAIN KIOSK AREA -->
       <div class="flex-1 relative">
 
-        <!-- ============ HOME: Landing / identification method ============ -->
+        <!-- ============ HOME: Landing ============ -->
         @if (mode() === 'home') {
           <div class="absolute inset-0 flex flex-col items-center justify-center p-8">
-            <div class="text-center max-w-2xl w-full">
+            <div class="text-center max-w-3xl w-full">
               <div class="mb-6">
                 <svg class="w-24 h-24 mx-auto text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
               </div>
-              <h1 class="text-3xl font-bold mb-2">Barangay San Manuel</h1>
-              <p class="text-lg text-blue-200 mb-8">Document Request Kiosk</p>
+              <h1 class="text-4xl font-bold mb-2">Barangay San Manuel</h1>
+              <p class="text-xl text-blue-200 mb-10">Document Request Kiosk</p>
 
-              <div class="grid grid-cols-1 gap-4">
-                <button class="w-full bg-blue-600 hover:bg-blue-500 rounded-2xl p-6 flex items-center gap-4 text-left transition-all border-2 border-blue-400"
-                        (click)="startBarangay()">
-                  <div class="w-14 h-14 bg-blue-900 rounded-xl flex items-center justify-center shrink-0">
-                    <svg class="w-8 h-8 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5zm6-10.125a1.875 1.875 0 11-3.75 0 1.875 1.875 0 013.75 0zm1.294 6.336a6.721 6.721 0 01-3.17.789 6.721 6.721 0 01-3.168-.789 3.376 3.376 0 016.338 0z"/>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <!-- Scan Barangay ID -->
+                <button class="w-full bg-blue-600 hover:bg-blue-500 rounded-3xl p-8 flex flex-col items-center gap-4 text-center transition-all border-2 border-blue-400 shadow-xl hover:scale-[1.02]"
+                        (click)="startRfid()">
+                  <div class="w-20 h-20 bg-blue-900 rounded-2xl flex items-center justify-center">
+                    <svg class="w-12 h-12 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                     </svg>
                   </div>
-                  <div class="flex-1">
-                    <p class="text-xl font-bold">Barangay ID</p>
-                    <p class="text-blue-200 text-sm">Apply for a new Barangay ID card</p>
+                  <div>
+                    <p class="text-2xl font-bold">Scan Barangay ID</p>
+                    <p class="text-blue-200 text-sm mt-1">Tap your RFID card on the scanner</p>
                   </div>
-                  <svg class="w-8 h-8 text-blue-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg class="w-8 h-8 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                   </svg>
                 </button>
 
-                <button class="w-full bg-blue-800/50 hover:bg-blue-700/50 rounded-2xl p-6 flex items-center gap-4 text-left transition-all border-2 border-blue-700"
-                        (click)="startDocuments()">
-                  <div class="w-14 h-14 bg-blue-900 rounded-xl flex items-center justify-center shrink-0">
-                    <svg class="w-8 h-8 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
+                <!-- Continue Without Barangay ID -->
+                <button class="w-full bg-blue-800/60 hover:bg-blue-700/60 rounded-3xl p-8 flex flex-col items-center gap-4 text-center transition-all border-2 border-blue-600 shadow-xl hover:scale-[1.02]"
+                        (click)="continueWithout()">
+                  <div class="w-20 h-20 bg-blue-900 rounded-2xl flex items-center justify-center">
+                    <svg class="w-12 h-12 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
                     </svg>
                   </div>
-                  <div class="flex-1">
-                    <p class="text-xl font-bold">Find Your Record</p>
-                    <p class="text-blue-200 text-sm">Request documents using your existing record</p>
+                  <div>
+                    <p class="text-2xl font-bold">Continue Without Barangay ID</p>
+                    <p class="text-blue-200 text-sm mt-1">Request documents or apply for a Barangay ID</p>
                   </div>
-                  <svg class="w-8 h-8 text-blue-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg class="w-8 h-8 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                   </svg>
                 </button>
               </div>
-
-              @if (identificationService.isTemporarySearch) {
-                <div class="mt-6 bg-yellow-500/15 border border-yellow-400 rounded-xl px-4 py-3 text-left">
-                  <p class="text-yellow-200 text-xs font-medium">Temporary Development Method</p>
-                  <p class="text-yellow-200/80 text-xs mt-1">
-                    RFID scanner not installed yet. Use "Find Your Record" to search your existing account.
-                  </p>
-                </div>
-              }
-
-              @if (errorMessage()) {
-                <div class="mt-6 bg-red-500/20 border border-red-400 rounded-xl p-4">
-                  <p class="text-red-200">{{ errorMessage() }}</p>
-                </div>
-              }
             </div>
           </div>
         }
 
-        <!-- ============ DOCUMENTS: Find Your Record workflow ============ -->
-        @if (mode() === 'documents') {
+        <!-- ============ RFID: Scan Barangay ID ============ -->
+        @if (mode() === 'rfid') {
 
-          <!-- DOC STEP 0: Search Resident -->
-          @if (currentStep() === 'search') {
+          <!-- RFID STEP: scan -->
+          @if (rfidStep() === 'scan') {
             <div class="absolute inset-0 flex flex-col items-center justify-center p-8">
-              <div class="max-w-lg w-full">
-                <div class="flex items-center justify-between mb-6">
-                  <div>
-                    <h2 class="text-2xl font-bold">Find Your Record</h2>
-                    <p class="text-blue-300 text-sm mt-1">Search for an existing account</p>
-                  </div>
+              <div class="max-w-lg w-full text-center">
+                <div class="flex items-center justify-between mb-8">
                   <button class="text-blue-300 hover:text-white text-lg" (click)="goBack()">Back</button>
+                  <span></span>
                 </div>
 
-                @if (identificationService.isTemporarySearch) {
-                  <div class="mb-4 bg-yellow-500/15 border border-yellow-400 rounded-xl px-4 py-3">
-                    <p class="text-yellow-200 text-sm font-medium">Temporary Development Method</p>
+                <h2 class="text-3xl font-bold mb-4">Scan Barangay ID</h2>
+                <p class="text-blue-200 mb-8">Please tap your RFID-enabled Barangay ID card on the scanner.</p>
+
+                <div class="relative w-64 h-64 mx-auto mb-8">
+                  <div class="absolute inset-0 rounded-full bg-blue-500/20 animate-ping"></div>
+                  <div class="absolute inset-6 rounded-full bg-blue-600/40 animate-pulse"></div>
+                  <div class="absolute inset-12 bg-blue-800 rounded-full border-4 border-blue-400 flex items-center justify-center">
+                    <svg class="w-24 h-24 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z"/>
+                    </svg>
+                  </div>
+                </div>
+
+                @if (!rfidConnected()) {
+                  <div class="bg-yellow-500/15 border border-yellow-400 rounded-xl px-4 py-3 mb-6 text-left">
+                    <p class="text-yellow-200 text-sm font-medium">RFID Scanner Not Detected</p>
                     <p class="text-yellow-200/80 text-xs mt-1">
-                      RFID scanner not installed yet. Search your name to continue.
+                      The scanner hardware is not connected. Use "Find My Record" to continue manually.
                     </p>
                   </div>
                 }
 
+                <app-button variant="secondary" size="lg" class="w-full" (onClick)="rfidStep.set('search')">
+                  Find My Record
+                </app-button>
+                <div class="mt-4">
+                  <button class="text-blue-300 hover:text-white text-lg" (click)="continueWithout()">
+                    Continue Without Barangay ID
+                  </button>
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- RFID STEP: error / not recognized -->
+          @if (rfidStep() === 'error') {
+            <div class="absolute inset-0 flex flex-col items-center justify-center p-8">
+              <div class="max-w-lg w-full text-center">
+                <div class="w-24 h-24 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
+                  </svg>
+                </div>
+                <h2 class="text-3xl font-bold mb-4">Barangay ID Not Found</h2>
+                <p class="text-xl text-blue-200 mb-8">
+                  {{ rfidError() }}
+                  <br/>
+                  Please try again or continue without a Barangay ID.
+                </p>
+                <div class="flex flex-col gap-4">
+                  <app-button variant="primary" size="lg" class="w-full" (onClick)="retryRfid()">Scan Again</app-button>
+                  <app-button variant="secondary" size="lg" class="w-full" (onClick)="continueWithout()">
+                    Continue Without Barangay ID
+                  </app-button>
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- RFID STEP: search fallback -->
+          @if (rfidStep() === 'search') {
+            <div class="absolute inset-0 flex flex-col items-center justify-center p-8">
+              <div class="max-w-lg w-full">
+                <div class="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 class="text-2xl font-bold">Find My Record</h2>
+                    <p class="text-blue-300 text-sm mt-1">Search for your existing account</p>
+                  </div>
+                  <button class="text-blue-300 hover:text-white text-lg" (click)="rfidStep.set('scan')">Back</button>
+                </div>
+
                 <div class="bg-blue-800/50 rounded-2xl p-6 backdrop-blur">
                   <p class="text-blue-300 text-sm mb-4">Type your name or resident code to begin</p>
-
                   <div class="relative">
                     <input
                       type="text"
@@ -186,16 +241,54 @@ export type BarangayStep =
               </div>
             </div>
           }
+        }
 
-          <!-- DOC STEP 1: Loading -->
-          @if (currentStep() === 'loading') {
-            <div class="absolute inset-0 flex flex-col items-center justify-center">
-              <div class="animate-spin w-16 h-16 border-4 border-blue-300 border-t-transparent rounded-full mb-6"></div>
-              <p class="text-xl text-blue-200">Loading your information...</p>
+        <!-- ============ GUEST: Continue Without Barangay ID options ============ -->
+        @if (mode() === 'guest') {
+          <div class="absolute inset-0 flex flex-col items-center justify-center p-8">
+            <div class="max-w-3xl w-full">
+              <div class="flex items-center justify-between mb-8">
+                <h2 class="text-3xl font-bold">Continue Without Barangay ID</h2>
+                <button class="text-blue-300 hover:text-white text-lg" (click)="goBack()">Back</button>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <!-- Request Documents -->
+                <button class="w-full bg-blue-600 hover:bg-blue-500 rounded-3xl p-8 flex flex-col items-center gap-4 text-center transition-all border-2 border-blue-400 shadow-xl hover:scale-[1.02]"
+                        (click)="startGuestRequest()">
+                  <div class="w-20 h-20 bg-blue-900 rounded-2xl flex items-center justify-center">
+                    <svg class="w-12 h-12 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p class="text-2xl font-bold">Request Documents</p>
+                    <p class="text-blue-200 text-sm mt-1">Request barangay documents in a temporary session</p>
+                  </div>
+                </button>
+
+                <!-- Apply for Barangay ID -->
+                <button class="w-full bg-blue-800/60 hover:bg-blue-700/60 rounded-3xl p-8 flex flex-col items-center gap-4 text-center transition-all border-2 border-blue-600 shadow-xl hover:scale-[1.02]"
+                        (click)="startBarangay()">
+                  <div class="w-20 h-20 bg-blue-900 rounded-2xl flex items-center justify-center">
+                    <svg class="w-12 h-12 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5zm6-10.125a1.875 1.875 0 11-3.75 0 1.875 1.875 0 013.75 0zm1.294 6.336a6.721 6.721 0 01-3.17.789 6.721 6.721 0 01-3.168-.789 3.376 3.376 0 016.338 0z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p class="text-2xl font-bold">Apply for Barangay ID</p>
+                    <p class="text-blue-200 text-sm mt-1">Submit an application for a new Barangay ID</p>
+                  </div>
+                </button>
+              </div>
             </div>
-          }
+          </div>
+        }
 
-          <!-- DOC STEP 2: Welcome / Resident Info -->
+        <!-- ============ DOCUMENTS: Request flow (resident + guest temporary session) ============ -->
+        @if (mode() === 'documents') {
+
+          <!-- DOC STEP 0a: Welcome (RFID path only) -->
           @if (currentStep() === 'welcome' && resident()) {
             <div class="absolute inset-0 flex flex-col items-center justify-center p-8">
               <div class="max-w-lg w-full">
@@ -227,7 +320,65 @@ export type BarangayStep =
             </div>
           }
 
-          <!-- DOC STEP 3: Service Selection -->
+          <!-- DOC STEP 0b: Guest basic info (temporary session only) -->
+          @if (currentStep() === 'guest-info') {
+            <div class="absolute inset-0 flex flex-col items-center justify-center p-8 overflow-y-auto">
+              <div class="max-w-lg w-full my-8">
+                <div class="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 class="text-2xl font-bold">Enter Your Information</h2>
+                    <p class="text-blue-300 text-sm mt-1">Your details are used only for this request</p>
+                  </div>
+                  <button class="text-blue-300 hover:text-white text-lg" (click)="goBack()">Back</button>
+                </div>
+
+                <div class="bg-blue-800/50 rounded-2xl p-6 backdrop-blur space-y-4">
+                  <div>
+                    <label class="block text-blue-300 text-sm mb-1">Full Name *</label>
+                    <input type="text" [(ngModel)]="guestForm.fullName"
+                           placeholder="Enter your full name"
+                           class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-400" />
+                  </div>
+                  <div>
+                    <label class="block text-blue-300 text-sm mb-1">Date of Birth *</label>
+                    <input type="date" [(ngModel)]="guestForm.birthDate"
+                           class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-4 focus:ring-blue-400" />
+                  </div>
+                  <div>
+                    <label class="block text-blue-300 text-sm mb-1">Address *</label>
+                    <input type="text" [(ngModel)]="guestForm.address"
+                           placeholder="Complete address"
+                           class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-400" />
+                  </div>
+                  <div>
+                    <label class="block text-blue-300 text-sm mb-1">Contact Number *</label>
+                    <input type="tel" [(ngModel)]="guestForm.contactNumber"
+                           placeholder="09XX XXX XXXX"
+                           class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-400" />
+                  </div>
+                  <div>
+                    <label class="block text-blue-300 text-sm mb-1">Email (optional)</label>
+                    <input type="email" [(ngModel)]="guestForm.email"
+                           placeholder="you@example.com"
+                           class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-400" />
+                  </div>
+                </div>
+
+                @if (formError()) {
+                  <div class="mt-4 bg-red-500/20 border border-red-400 rounded-xl p-4">
+                    <p class="text-red-200">{{ formError() }}</p>
+                  </div>
+                }
+
+                <div class="flex gap-4 mt-6">
+                  <app-button variant="secondary" size="lg" class="flex-1" (onClick)="goBack()">Back</app-button>
+                  <app-button variant="primary" size="lg" class="flex-1" (onClick)="validateGuestForm()">Continue</app-button>
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- DOC STEP 1: Service Selection -->
           @if (currentStep() === 'services') {
             <div class="absolute inset-0 flex flex-col p-8">
               <div class="max-w-3xl mx-auto w-full flex-1 flex flex-col">
@@ -235,7 +386,7 @@ export type BarangayStep =
                   <h2 class="text-3xl font-bold">Select a Service</h2>
                   <button class="text-blue-300 hover:text-white text-lg" (click)="cancel()">Cancel</button>
                 </div>
-                <div class="grid gap-4 flex-1">
+                <div class="grid gap-4 flex-1 overflow-y-auto">
                   @for (service of services(); track service.service_id) {
                     <button class="bg-blue-800/50 hover:bg-blue-700/50 rounded-xl p-6 text-left transition-all backdrop-blur border-2 border-transparent hover:border-blue-400"
                             (click)="selectService(service)">
@@ -262,7 +413,7 @@ export type BarangayStep =
             </div>
           }
 
-          <!-- DOC STEP 4: Requirements -->
+          <!-- DOC STEP 2: Requirements -->
           @if (currentStep() === 'requirements') {
             <div class="absolute inset-0 flex flex-col p-8">
               <div class="max-w-3xl mx-auto w-full flex-1 flex flex-col">
@@ -325,7 +476,7 @@ export type BarangayStep =
             </div>
           }
 
-          <!-- DOC STEP 5: Dynamic Form -->
+          <!-- DOC STEP 3: Dynamic Form -->
           @if (currentStep() === 'form') {
             <div class="absolute inset-0 flex flex-col p-8 overflow-y-auto">
               <div class="max-w-2xl mx-auto w-full flex-1">
@@ -335,7 +486,7 @@ export type BarangayStep =
                 </div>
                 <div class="bg-blue-800/50 rounded-2xl p-6 backdrop-blur space-y-4">
                   <p class="text-blue-200">Fill in the required information for {{ selectedService()?.service_name }}.</p>
-                  
+
                   @if (selectedService()?.form_fields && selectedService()!.form_fields!.length > 0) {
                     @for (field of selectedService()!.form_fields!; track field.key) {
                       <div class="space-y-1">
@@ -343,8 +494,8 @@ export type BarangayStep =
                           {{ field.label }} @if (field.required) { <span class="text-red-300">*</span> }
                         </label>
                         @if (field.type === 'select') {
-                          <select 
-                            [(ngModel)]="formValues()[field.key]" 
+                          <select
+                            [(ngModel)]="formValues()[field.key]"
                             [name]="field.key"
                             (ngModelChange)="updateFormValue(field.key, $event)"
                             class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-4 focus:ring-blue-400"
@@ -355,8 +506,8 @@ export type BarangayStep =
                             }
                           </select>
                         } @else if (field.type === 'textarea') {
-                          <textarea 
-                            [(ngModel)]="formValues()[field.key]" 
+                          <textarea
+                            [(ngModel)]="formValues()[field.key]"
                             [name]="field.key"
                             (ngModelChange)="updateFormValue(field.key, $event)"
                             [placeholder]="field.placeholder"
@@ -364,9 +515,9 @@ export type BarangayStep =
                             class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-4 focus:ring-blue-400"
                             [class.border-red-500]="formErrors()[field.key]"></textarea>
                         } @else {
-                          <input 
+                          <input
                             [type]="field.type"
-                            [(ngModel)]="formValues()[field.key]" 
+                            [(ngModel)]="formValues()[field.key]"
                             [name]="field.key"
                             (ngModelChange)="updateFormValue(field.key, $event)"
                             [placeholder]="field.placeholder"
@@ -390,7 +541,7 @@ export type BarangayStep =
             </div>
           }
 
-          <!-- DOC STEP 6: Photo Capture (only if service requires photo) -->
+          <!-- DOC STEP 4: Photo Capture (only if service requires photo) -->
           @if (currentStep() === 'photo') {
             <div class="absolute inset-0 flex flex-col items-center justify-center p-8">
               <div class="max-w-lg w-full">
@@ -416,23 +567,26 @@ export type BarangayStep =
             </div>
           }
 
-          <!-- DOC STEP 7: Review & Confirm -->
+          <!-- DOC STEP 5: Review & Confirm -->
           @if (currentStep() === 'review') {
             <div class="absolute inset-0 flex flex-col items-center justify-center p-8">
               <div class="max-w-lg w-full">
                 <h2 class="text-3xl font-bold mb-6 text-center">Review Your Request</h2>
                 <div class="bg-blue-800/50 rounded-2xl p-6 backdrop-blur space-y-4">
                   <div class="flex items-center gap-4">
-                    @if (resident()!.photo || capturedPhoto()) {
-                      <img [src]="capturedPhoto() || resident()!.photo" class="w-16 h-16 rounded-full object-cover" />
+                    @if (displayPhoto()) {
+                      <img [src]="displayPhoto()" class="w-16 h-16 rounded-full object-cover" />
                     } @else {
                       <div class="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">
-                        {{ resident()!.first_name.charAt(0) }}{{ resident()!.last_name.charAt(0) }}
+                        {{ displayName().charAt(0) }}
                       </div>
                     }
                     <div>
-                      <p class="font-bold text-lg">{{ resident()!.first_name }} {{ resident()!.last_name }}</p>
-                      <p class="text-blue-200 text-sm">{{ resident()!.address_line }}</p>
+                      <p class="font-bold text-lg">{{ displayName() }}</p>
+                      <p class="text-blue-200 text-sm">{{ displayAddress() }}</p>
+                      @if (displayCode()) {
+                        <p class="text-blue-300 text-xs mt-1">{{ displayCode() }}</p>
+                      }
                     </div>
                   </div>
                   <hr class="border-blue-700" />
@@ -457,7 +611,7 @@ export type BarangayStep =
             </div>
           }
 
-          <!-- DOC STEP 8: Success -->
+          <!-- DOC STEP 6: Success -->
           @if (currentStep() === 'success') {
             <div class="absolute inset-0 flex flex-col items-center justify-center p-8">
               <div class="max-w-lg w-full text-center">
@@ -479,7 +633,65 @@ export type BarangayStep =
         <!-- ============ BARANGAY ID: Application workflow ============ -->
         @if (mode() === 'barangay') {
 
-          <!-- BAR STEP 0: Application Form -->
+          <!-- BAR STEP 0: Requirements -->
+          @if (barangayStep() === 'requirements') {
+            <div class="absolute inset-0 flex flex-col p-8">
+              <div class="max-w-3xl mx-auto w-full flex-1 flex flex-col">
+                <div class="flex items-center justify-between mb-8">
+                  <h2 class="text-3xl font-bold">Barangay ID Requirements</h2>
+                  <button class="text-blue-300 hover:text-white text-lg" (click)="goBack()">Back</button>
+                </div>
+                <div class="flex-1 overflow-y-auto space-y-6">
+                  <div class="bg-blue-800/50 rounded-xl p-6 backdrop-blur">
+                    <h3 class="text-xl font-bold mb-4">Before You Apply</h3>
+                    <p class="text-blue-200 mb-6">Please prepare the following. A photo and signature will be captured at the kiosk.</p>
+                    @if (barangayService()?.requirements && barangayService()!.requirements!.length > 0) {
+                      <div class="mb-6">
+                        <h4 class="font-bold text-lg mb-3 text-blue-100">What to Bring</h4>
+                        <ul class="space-y-2">
+                          @for (req of barangayService()!.requirements!; track req) {
+                            <li class="flex items-start gap-3 bg-blue-900/30 p-3 rounded-lg">
+                              <svg class="w-5 h-5 text-green-300 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                              </svg>
+                              <span class="text-blue-100">{{ req }}</span>
+                            </li>
+                          }
+                        </ul>
+                      </div>
+                    }
+                    @if (barangayService()?.required_documents && barangayService()!.required_documents!.length > 0) {
+                      <div class="mb-6">
+                        <h4 class="font-bold text-lg mb-3 text-blue-100">Required Documents</h4>
+                        <ul class="space-y-2">
+                          @for (doc of barangayService()!.required_documents!; track doc) {
+                            <li class="flex items-start gap-3 bg-blue-900/30 p-3 rounded-lg">
+                              <svg class="w-5 h-5 text-yellow-300 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                              </svg>
+                              <span class="text-blue-100">{{ doc }}</span>
+                            </li>
+                          }
+                        </ul>
+                      </div>
+                    }
+                    <div class="bg-blue-900/30 p-4 rounded-lg">
+                      <p class="text-blue-100 text-sm">
+                        <strong>Note:</strong> Your application will be reviewed by barangay staff. Once approved, your
+                        resident record is created and your Barangay ID is issued.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex gap-4 pt-4 border-t border-blue-700">
+                  <app-button variant="secondary" size="lg" class="flex-1" (onClick)="goBack()">Back</app-button>
+                  <app-button variant="primary" size="lg" class="flex-1" (onClick)="proceedToBarangayForm()">Continue</app-button>
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- BAR STEP 1: Application Form -->
           @if (barangayStep() === 'form') {
             <div class="absolute inset-0 flex flex-col items-center justify-center p-8 overflow-y-auto">
               <div class="max-w-lg w-full my-8">
@@ -526,7 +738,7 @@ export type BarangayStep =
                              class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-4 focus:ring-blue-400" />
                     </div>
                     <div class="col-span-2 sm:col-span-1">
-                      <label class="block text-blue-300 text-sm mb-1">Gender *</label>
+                      <label class="block text-blue-300 text-sm mb-1">Sex *</label>
                       <select [(ngModel)]="barangayForm.gender"
                               class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-4 focus:ring-blue-400">
                         <option value="">Select...</option>
@@ -548,6 +760,11 @@ export type BarangayStep =
                       </select>
                     </div>
                     <div class="col-span-2 sm:col-span-1">
+                      <label class="block text-blue-300 text-sm mb-1">Occupation</label>
+                      <input type="text" [(ngModel)]="barangayForm.occupation"
+                             class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-400" />
+                    </div>
+                    <div class="col-span-2 sm:col-span-1">
                       <label class="block text-blue-300 text-sm mb-1">Blood Type</label>
                       <select [(ngModel)]="barangayForm.bloodType"
                               class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-4 focus:ring-blue-400">
@@ -563,7 +780,7 @@ export type BarangayStep =
                       </select>
                     </div>
                     <div class="col-span-2 sm:col-span-1">
-                      <label class="block text-blue-300 text-sm mb-1">Contact Number</label>
+                      <label class="block text-blue-300 text-sm mb-1">Contact Number *</label>
                       <input type="tel" [(ngModel)]="barangayForm.contactNumber"
                              class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-400" />
                     </div>
@@ -578,7 +795,7 @@ export type BarangayStep =
                              class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-400" />
                     </div>
                     <div class="col-span-2">
-                      <label class="block text-blue-300 text-sm mb-1">Emergency Contact Name *</label>
+                      <label class="block text-blue-300 text-sm mb-1">Emergency Contact Person *</label>
                       <input type="text" [(ngModel)]="barangayForm.emergencyContactName"
                              class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-400" />
                     </div>
@@ -604,7 +821,7 @@ export type BarangayStep =
             </div>
           }
 
-          <!-- BAR STEP 1: Photo Capture (required) -->
+          <!-- BAR STEP 2: Photo Capture (required) -->
           @if (barangayStep() === 'photo') {
             <div class="absolute inset-0 flex flex-col items-center justify-center p-8">
               <div class="max-w-lg w-full">
@@ -635,10 +852,26 @@ export type BarangayStep =
             </div>
           }
 
-          <!-- BAR STEP 2: Review & Submit -->
-          @if (barangayStep() === 'review') {
+          <!-- BAR STEP 3: Signature Capture (required) -->
+          @if (barangayStep() === 'signature') {
             <div class="absolute inset-0 flex flex-col items-center justify-center p-8">
               <div class="max-w-lg w-full">
+                <h2 class="text-3xl font-bold mb-6 text-center">Capture Your Signature</h2>
+                <p class="text-blue-200 text-center mb-6">Sign using your finger or a stylus.</p>
+                <app-signature-pad (signature)="onSignatureCaptured($event)" />
+                @if (errorMessage()) {
+                  <div class="mt-6 bg-red-500/20 border border-red-400 rounded-xl p-4">
+                    <p class="text-red-200">{{ errorMessage() }}</p>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- BAR STEP 4: Review & Submit -->
+          @if (barangayStep() === 'review') {
+            <div class="absolute inset-0 flex flex-col items-center justify-center p-8 overflow-y-auto">
+              <div class="max-w-lg w-full my-8">
                 <h2 class="text-3xl font-bold mb-6 text-center">Review Your Application</h2>
                 <div class="bg-blue-800/50 rounded-2xl p-6 backdrop-blur space-y-4">
                   <div class="flex items-center gap-4">
@@ -665,7 +898,7 @@ export type BarangayStep =
                       <p class="font-medium">{{ barangayForm.birthDate || '—' }}</p>
                     </div>
                     <div>
-                      <p class="text-blue-300 text-sm">Gender</p>
+                      <p class="text-blue-300 text-sm">Sex</p>
                       <p class="font-medium">{{ barangayForm.gender || '—' }}</p>
                     </div>
                     <div>
@@ -675,6 +908,10 @@ export type BarangayStep =
                     <div>
                       <p class="text-blue-300 text-sm">Blood Type</p>
                       <p class="font-medium">{{ barangayForm.bloodType || 'Unknown' }}</p>
+                    </div>
+                    <div>
+                      <p class="text-blue-300 text-sm">Occupation</p>
+                      <p class="font-medium">{{ barangayForm.occupation || '—' }}</p>
                     </div>
                     <div>
                       <p class="text-blue-300 text-sm">Contact Number</p>
@@ -688,6 +925,12 @@ export type BarangayStep =
                       <p class="text-blue-300 text-sm">Emergency Contact</p>
                       <p class="font-medium">{{ barangayForm.emergencyContactName || '—' }} — {{ barangayForm.emergencyContactNumber || '—' }}</p>
                     </div>
+                    @if (capturedSignature()) {
+                      <div class="col-span-2">
+                        <p class="text-blue-300 text-sm mb-1">Signature</p>
+                        <img [src]="capturedSignature()" class="h-16 bg-white rounded-lg" />
+                      </div>
+                    }
                   </div>
                 </div>
                 <div class="flex gap-4 mt-6">
@@ -703,7 +946,7 @@ export type BarangayStep =
             </div>
           }
 
-          <!-- BAR STEP 3: Success -->
+          <!-- BAR STEP 5: Success -->
           @if (barangayStep() === 'success') {
             <div class="absolute inset-0 flex flex-col items-center justify-center p-8">
               <div class="max-w-lg w-full text-center">
@@ -713,9 +956,10 @@ export type BarangayStep =
                   </svg>
                 </div>
                 <h2 class="text-3xl font-bold mb-4">Application Submitted!</h2>
-                <p class="text-xl text-blue-200 mb-2">Your Barangay ID application number is:</p>
+                <p class="text-xl text-blue-200 mb-2">Your Barangay ID application has been submitted successfully.</p>
+                <p class="text-xl text-blue-200 mb-2">Application Number:</p>
                 <p class="text-4xl font-bold text-yellow-300 mb-6">{{ requestNumber() }}</p>
-                <p class="text-blue-200 mb-8">Please wait for your Barangay ID to be processed. You will be notified when it is ready for release.</p>
+                <p class="text-blue-200 mb-8">Your application will be reviewed by the barangay staff before approval.</p>
                 <app-button variant="primary" size="lg" (onClick)="finish()">Done</app-button>
               </div>
             </div>
@@ -730,16 +974,23 @@ export class KioskComponent implements OnInit, OnDestroy {
 
   mode = signal<KioskMode>('home');
 
+  // RFID flow
+  rfidStep = signal<RfidStep>('scan');
+  rfidError = signal('');
+  rfidConnected = signal(false);
+
   // Documents flow steps
-  currentStep = signal<DocStep>('search');
+  currentStep = signal<DocStep>('welcome');
 
   // Barangay ID flow steps
-  barangayStep = signal<BarangayStep>('form');
+  barangayStep = signal<BarangayStep>('requirements');
 
   resident = signal<Resident | null>(null);
   services = signal<Service[]>([]);
   selectedService = signal<Service | null>(null);
+  barangayService = signal<Service | null>(null);
   capturedPhoto = signal<string | null>(null);
+  capturedSignature = signal<string | null>(null);
   requestNumber = signal('');
   errorMessage = signal('');
   formError = signal('');
@@ -752,6 +1003,15 @@ export class KioskComponent implements OnInit, OnDestroy {
   formValues = signal<Record<string, unknown>>({});
   formErrors = signal<Record<string, string>>({});
 
+  // Guest (temporary session) state
+  guestForm = {
+    fullName: '',
+    birthDate: '',
+    address: '',
+    contactNumber: '',
+    email: ''
+  };
+
   barangayForm = {
     firstName: '',
     middleName: '',
@@ -760,10 +1020,11 @@ export class KioskComponent implements OnInit, OnDestroy {
     birthDate: '',
     gender: '',
     civilStatus: '',
+    occupation: '',
+    bloodType: '',
     addressLine: '',
     contactNumber: '',
     email: '',
-    bloodType: '',
     emergencyContactName: '',
     emergencyContactNumber: ''
   };
@@ -771,25 +1032,49 @@ export class KioskComponent implements OnInit, OnDestroy {
   private stream: MediaStream | null = null;
   private idleTimer: any;
   private searchDebounce: any;
+  private rfidScanSub: any = null;
+  private rfidConnectionSub: any = null;
 
   constructor(
     private kioskService: KioskService,
-    public identificationService: IdentificationService
+    public identificationService: IdentificationService,
+    private rfidScanService: RfidScanService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
     this.resetIdleTimer();
+    this.rfidScanSub = this.rfidScanService.scans().subscribe(event => this.handleRfidScan(event.uid));
+    this.rfidConnectionSub = this.rfidScanService.connection().subscribe(connected => {
+      this.rfidConnected.set(connected);
+    });
+    // Preload the Barangay ID service requirements for the application flow
+    this.loadBarangayService();
   }
 
   ngOnDestroy() {
     this.stopCamera();
+    this.rfidScanService.disconnect();
+    if (this.rfidScanSub) this.rfidScanSub.unsubscribe();
+    if (this.rfidConnectionSub) this.rfidConnectionSub.unsubscribe();
     clearTimeout(this.idleTimer);
     clearTimeout(this.searchDebounce);
   }
 
   loadServices() {
     this.kioskService.getServices().subscribe({
-      next: (result: any) => this.services.set(result?.data || [])
+      next: (result: any) => {
+        this.services.set(result?.data || []);
+        this.barangayService.set((result?.data || []).find((s: Service) => s.service_name === 'Barangay ID') || null);
+      }
+    });
+  }
+
+  private loadBarangayService() {
+    this.kioskService.getServices().subscribe({
+      next: (result: any) => {
+        this.barangayService.set((result?.data || []).find((s: Service) => s.service_name === 'Barangay ID') || null);
+      }
     });
   }
 
@@ -797,12 +1082,38 @@ export class KioskComponent implements OnInit, OnDestroy {
   // MODE TRANSITIONS
   // ============================================================
 
-  startDocuments() {
+  startRfid() {
     this.stopCamera();
     this.errorMessage.set('');
-    this.clearSearch();
+    this.rfidError.set('');
+    this.mode.set('rfid');
+    this.rfidStep.set('scan');
+    this.rfidScanService.connect();
+    this.resetIdleTimer();
+  }
+
+  retryRfid() {
+    this.rfidError.set('');
+    this.rfidStep.set('scan');
+    this.rfidScanService.connect();
+    this.resetIdleTimer();
+  }
+
+  continueWithout() {
+    this.stopCamera();
+    this.errorMessage.set('');
+    this.rfidScanService.disconnect();
+    this.mode.set('guest');
+    this.resetIdleTimer();
+  }
+
+  startGuestRequest() {
+    this.stopCamera();
+    this.errorMessage.set('');
+    this.formError.set('');
+    this.guestForm = { fullName: '', birthDate: '', address: '', contactNumber: '', email: '' };
     this.mode.set('documents');
-    this.currentStep.set('search');
+    this.currentStep.set('guest-info');
     this.resetIdleTimer();
   }
 
@@ -811,9 +1122,10 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.errorMessage.set('');
     this.formError.set('');
     this.capturedPhoto.set(null);
+    this.capturedSignature.set(null);
     this.resetBarangayForm();
     this.mode.set('barangay');
-    this.barangayStep.set('form');
+    this.barangayStep.set('requirements');
     this.resetIdleTimer();
   }
 
@@ -826,17 +1138,49 @@ export class KioskComponent implements OnInit, OnDestroy {
       birthDate: '',
       gender: '',
       civilStatus: '',
+      occupation: '',
+      bloodType: '',
       addressLine: '',
       contactNumber: '',
       email: '',
-      bloodType: '',
       emergencyContactName: '',
       emergencyContactNumber: ''
     };
   }
 
   // ============================================================
-  // DOCUMENTS FLOW: MANUAL RESIDENT SELECTION
+  // RFID FLOW
+  // ============================================================
+
+  private handleRfidScan(uid: string) {
+    if (this.mode() !== 'rfid' || this.rfidStep() !== 'scan') return;
+    this.rfidScanService.disconnect();
+    this.kioskService.verifyRfid(uid).subscribe({
+      next: (result: any) => {
+        const data = result?.data;
+        if (data?.recognized && data.resident) {
+          this.rfidStep.set('search');
+          this.resident.set(data.resident);
+          this.mode.set('documents');
+          this.currentStep.set('welcome');
+          this.resetIdleTimer();
+          this.cdr.detectChanges();
+        } else {
+          this.rfidError.set('Your card was not recognized.');
+          this.rfidStep.set('error');
+          this.resetIdleTimer();
+        }
+      },
+      error: () => {
+        this.rfidError.set('We could not read your card.');
+        this.rfidStep.set('error');
+        this.resetIdleTimer();
+      }
+    });
+  }
+
+  // ============================================================
+  // DOCUMENTS FLOW: MANUAL RESIDENT SEARCH
   // ============================================================
 
   onSearchChange(query: string) {
@@ -862,17 +1206,17 @@ export class KioskComponent implements OnInit, OnDestroy {
 
   selectResident(r: any) {
     this.errorMessage.set('');
-    this.currentStep.set('loading');
+    this.rfidStep.set('search');
 
     this.kioskService.getResident(r.resident_id).subscribe({
       next: (result: any) => {
         this.resident.set(result.data);
+        this.mode.set('documents');
         this.currentStep.set('welcome');
         this.resetIdleTimer();
       },
       error: () => {
         this.errorMessage.set('Failed to load resident info.');
-        this.currentStep.set('search');
       }
     });
   }
@@ -901,8 +1245,35 @@ export class KioskComponent implements OnInit, OnDestroy {
   }
 
   proceedToForm() {
+    const resident = this.resident();
+    if (resident) {
+      const nameParts = [resident.first_name, resident.middle_name, resident.last_name, resident.suffix].filter(Boolean);
+      const source: Record<string, any> = {
+        full_name: nameParts.join(' '),
+        address: resident.address_line,
+        address_line: resident.address_line,
+        birth_date: this.formatDate(resident.birth_date),
+        gender: resident.gender,
+        civil_status: resident.civil_status,
+        blood_type: resident.blood_type,
+        contact_number: resident.contact_number,
+        email: resident.email,
+        emergency_contact_name: resident.emergency_contact_name,
+        emergency_contact_number: resident.emergency_contact_number
+      };
+      const prefilled: Record<string, any> = {};
+      for (const key of Object.keys(source)) {
+        const value = source[key];
+        if (value !== null && value !== undefined) prefilled[key] = value;
+      }
+      this.formValues.set(prefilled);
+    }
     this.currentStep.set('form');
     this.resetIdleTimer();
+  }
+
+  private formatDate(value: string | null): string {
+    return value ? value.slice(0, 10) : '';
   }
 
   updateFormValue(key: string, value: any) {
@@ -936,9 +1307,40 @@ export class KioskComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Guest temporary session form validation
+  validateGuestForm() {
+    this.formError.set('');
+    const g = this.guestForm;
+    if (!g.fullName.trim()) {
+      this.formError.set('Full name is required.');
+      return;
+    }
+    if (!g.birthDate) {
+      this.formError.set('Date of birth is required.');
+      return;
+    }
+    if (!g.address.trim()) {
+      this.formError.set('Address is required.');
+      return;
+    }
+    if (!g.contactNumber.trim()) {
+      this.formError.set('Contact number is required.');
+      return;
+    }
+    this.errorMessage.set('');
+    this.loadServices();
+    this.currentStep.set('services');
+    this.resetIdleTimer();
+  }
+
   // ============================================================
   // BARANGAY ID FLOW
   // ============================================================
+
+  proceedToBarangayForm() {
+    this.barangayStep.set('form');
+    this.resetIdleTimer();
+  }
 
   validateBarangayForm() {
     this.formError.set('');
@@ -956,7 +1358,7 @@ export class KioskComponent implements OnInit, OnDestroy {
       return;
     }
     if (!f.gender) {
-      this.formError.set('Gender is required.');
+      this.formError.set('Sex is required.');
       return;
     }
     if (!f.civilStatus) {
@@ -965,6 +1367,10 @@ export class KioskComponent implements OnInit, OnDestroy {
     }
     if (!f.addressLine.trim()) {
       this.formError.set('Address is required.');
+      return;
+    }
+    if (!f.contactNumber.trim()) {
+      this.formError.set('Contact number is required.');
       return;
     }
     if (!f.emergencyContactName.trim()) {
@@ -982,6 +1388,12 @@ export class KioskComponent implements OnInit, OnDestroy {
   }
 
   confirmBarangayPhoto() {
+    this.barangayStep.set('signature');
+    this.resetIdleTimer();
+  }
+
+  onSignatureCaptured(dataUrl: string) {
+    this.capturedSignature.set(dataUrl);
     this.barangayStep.set('review');
     this.resetIdleTimer();
   }
@@ -990,6 +1402,11 @@ export class KioskComponent implements OnInit, OnDestroy {
     if (!this.capturedPhoto()) {
       this.errorMessage.set('A photo is required for your Barangay ID.');
       this.barangayStep.set('photo');
+      return;
+    }
+    if (!this.capturedSignature()) {
+      this.errorMessage.set('A signature is required for your Barangay ID.');
+      this.barangayStep.set('signature');
       return;
     }
 
@@ -1004,10 +1421,11 @@ export class KioskComponent implements OnInit, OnDestroy {
       birth_date: this.barangayForm.birthDate || null,
       gender: this.barangayForm.gender || null,
       civil_status: this.barangayForm.civilStatus || null,
+      occupation: this.barangayForm.occupation.trim() || null,
+      blood_type: this.barangayForm.bloodType || null,
       address_line: this.barangayForm.addressLine.trim(),
       contact_number: this.barangayForm.contactNumber.trim() || null,
       email: this.barangayForm.email.trim() || null,
-      blood_type: this.barangayForm.bloodType || null,
       emergency_contact_name: this.barangayForm.emergencyContactName.trim(),
       emergency_contact_number: this.barangayForm.emergencyContactNumber.trim()
     };
@@ -1020,17 +1438,19 @@ export class KioskComponent implements OnInit, OnDestroy {
       birthDate: this.barangayForm.birthDate || undefined,
       gender: this.barangayForm.gender || undefined,
       civilStatus: this.barangayForm.civilStatus || undefined,
+      occupation: this.barangayForm.occupation.trim() || undefined,
+      bloodType: this.barangayForm.bloodType || undefined,
       addressLine: this.barangayForm.addressLine.trim(),
       contactNumber: this.barangayForm.contactNumber.trim() || undefined,
       email: this.barangayForm.email.trim() || undefined,
-      bloodType: this.barangayForm.bloodType || undefined,
-      emergencyContactName: this.barangayForm.emergencyContactName.trim() || undefined,
-      emergencyContactNumber: this.barangayForm.emergencyContactNumber.trim() || undefined,
+      emergencyContactName: this.barangayForm.emergencyContactName.trim(),
+      emergencyContactNumber: this.barangayForm.emergencyContactNumber.trim(),
       photo: this.capturedPhoto() || undefined,
+      signature: this.capturedSignature() || undefined,
       form_data: formData
     }).subscribe({
       next: (result: any) => {
-        this.requestNumber.set(result?.data?.request_number || 'N/A');
+        this.requestNumber.set(result?.data?.application_number || 'N/A');
         this.barangayStep.set('success');
         this.submitting.set(false);
       },
@@ -1098,25 +1518,72 @@ export class KioskComponent implements OnInit, OnDestroy {
   }
 
   // ============================================================
+  // DISPLAY HELPERS (resident or guest)
+  // ============================================================
+
+  isGuestSession(): boolean {
+    return this.mode() === 'documents' && this.currentStep() !== 'welcome' && !this.resident();
+  }
+
+  displayName(): string {
+    if (this.resident()) return `${this.resident()!.first_name} ${this.resident()!.last_name}`;
+    return this.guestForm.fullName || 'Guest';
+  }
+
+  displayAddress(): string {
+    if (this.resident()) return this.resident()!.address_line || '';
+    return this.guestForm.address || '';
+  }
+
+  displayCode(): string {
+    if (this.resident()) return this.resident()!.resident_code || '';
+    return 'Temporary Session';
+  }
+
+  displayPhoto(): string | null {
+    if (this.capturedPhoto()) return this.capturedPhoto();
+    return this.resident()?.photo || null;
+  }
+
+  // ============================================================
   // NAVIGATION
   // ============================================================
 
   goBack() {
-    if (this.mode() === 'documents') {
-      const step = this.currentStep();
-      if (step === 'search') {
-        // From Search screen back to Home
-        this.mode.set('home');
+    if (this.mode() === 'rfid') {
+      if (this.rfidStep() === 'search') {
+        this.rfidStep.set('scan');
         return;
       }
+      if (this.rfidStep() === 'error') {
+        this.rfidStep.set('scan');
+        return;
+      }
+      // From scan back to Home
+      this.rfidScanService.disconnect();
+      this.mode.set('home');
+      return;
+    }
+
+    if (this.mode() === 'guest') {
+      this.mode.set('home');
+      return;
+    }
+
+    if (this.mode() === 'documents') {
+      const step = this.currentStep();
       if (step === 'welcome') {
-        // From Welcome back to Search so a different resident can be picked
-        this.clearSearch();
-        this.currentStep.set('search');
+        this.resident.set(null);
+        this.mode.set('rfid');
+        this.rfidStep.set('scan');
+        this.rfidScanService.connect();
+        return;
+      }
+      if (step === 'guest-info') {
+        this.mode.set('guest');
         return;
       }
       if (step === 'review') {
-        // From Review step: back to the previous step based on photo visibility
         if (this.selectedService()?.requires_photo) {
           this.currentStep.set('photo');
           setTimeout(() => this.startCamera(), 100);
@@ -1133,8 +1600,7 @@ export class KioskComponent implements OnInit, OnDestroy {
         this.currentStep.set('services');
         return;
       }
-      // For loading, photo - just go back one step in order
-      const steps: DocStep[] = ['search', 'loading', 'welcome', 'services', 'requirements', 'form', 'photo', 'review', 'success'];
+      const steps: DocStep[] = ['welcome', 'guest-info', 'services', 'requirements', 'form', 'photo', 'review', 'success'];
       const idx = steps.indexOf(step);
       if (idx > 0) this.currentStep.set(steps[idx - 1]);
       return;
@@ -1142,43 +1608,56 @@ export class KioskComponent implements OnInit, OnDestroy {
 
     if (this.mode() === 'barangay') {
       const step = this.barangayStep();
-      if (step === 'form') {
-        // From Application Form back to Home
-        this.mode.set('home');
+      if (step === 'requirements') {
+        this.mode.set('guest');
         return;
       }
       if (step === 'review') {
-        // From Review back to Photo
+        this.barangayStep.set('signature');
+        return;
+      }
+      if (step === 'signature') {
         this.barangayStep.set('photo');
         this.capturedPhoto.set(null);
         setTimeout(() => this.startCamera(), 100);
         return;
       }
-      const bSteps: BarangayStep[] = ['form', 'photo', 'review', 'success'];
+      const bSteps: BarangayStep[] = ['requirements', 'form', 'photo', 'signature', 'review', 'success'];
       const idx = bSteps.indexOf(step);
       if (idx > 0) this.barangayStep.set(bSteps[idx - 1]);
     }
   }
 
   submitRequest() {
-    const resident = this.resident();
     const service = this.selectedService();
-
-    if (!resident || !service) {
-      this.errorMessage.set('Missing resident or service information. Please start over.');
-      this.currentStep.set('search');
+    if (!service) {
+      this.errorMessage.set('Missing service information. Please start over.');
       return;
     }
 
     this.submitting.set(true);
     this.errorMessage.set('');
 
-    this.kioskService.createRequest({
+    const resident = this.resident();
+    const data: any = {
       service_id: service.service_id,
-      resident_id: resident.resident_id,
       photo: this.capturedPhoto() || undefined,
       form_data: this.formValues()
-    }).subscribe({
+    };
+
+    if (resident) {
+      data.resident_id = resident.resident_id;
+    } else {
+      data.guest = {
+        full_name: this.guestForm.fullName.trim(),
+        birth_date: this.guestForm.birthDate || undefined,
+        address: this.guestForm.address.trim(),
+        contact_number: this.guestForm.contactNumber.trim(),
+        email: this.guestForm.email.trim() || undefined
+      };
+    }
+
+    this.kioskService.createRequest(data).subscribe({
       next: (result: any) => {
         this.requestNumber.set(result?.data?.request_number || 'N/A');
         this.currentStep.set('success');
@@ -1196,18 +1675,22 @@ export class KioskComponent implements OnInit, OnDestroy {
   finish() {
     this.kioskService.reset();
     this.stopCamera();
+    this.rfidScanService.disconnect();
     this.mode.set('home');
-    this.currentStep.set('search');
-    this.barangayStep.set('form');
+    this.currentStep.set('welcome');
+    this.barangayStep.set('requirements');
+    this.rfidStep.set('scan');
     this.resident.set(null);
     this.selectedService.set(null);
     this.capturedPhoto.set(null);
+    this.capturedSignature.set(null);
     this.requestNumber.set('');
     this.errorMessage.set('');
     this.formError.set('');
     this.searchQuery = '';
     this.searchResults.set([]);
     this.resetBarangayForm();
+    this.guestForm = { fullName: '', birthDate: '', address: '', contactNumber: '', email: '' };
     this.formValues.set({});
     this.formErrors.set({});
     this.resetIdleTimer();

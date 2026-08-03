@@ -58,6 +58,7 @@ Thumbs.db
 # Uploads
 /uploads/*
 !/uploads/.gitkeep
+backend/uploads/
 
 # Generated analysis output
 /graphify-out/
