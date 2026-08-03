@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { NotificationService, Notification } from './notification.service';
-import { TableComponent, TableColumn } from '../../shared/components/table.component';
+import { TableColumn } from '../../shared/components/table.component';
 import { ButtonComponent } from '../../shared/components/button.component';
 import { CardComponent } from '../../shared/components/card.component';
 import { InputComponent } from '../../shared/components/input.component';
@@ -11,7 +11,7 @@ import { DatePipe } from '@angular/common';
 @Component({
   selector: 'app-notifications',
   standalone: true,
-  imports: [TableComponent, ButtonComponent, CardComponent, InputComponent, PaginationComponent, ConfirmDialogComponent, DatePipe],
+  imports: [ButtonComponent, CardComponent, InputComponent, PaginationComponent, ConfirmDialogComponent, DatePipe],
   template: `
     <div>
       <div class="flex justify-between items-center mb-6">

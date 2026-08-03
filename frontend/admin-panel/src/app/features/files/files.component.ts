@@ -7,13 +7,12 @@ import { InputComponent } from '../../shared/components/input.component';
 import { PaginationComponent } from '../../shared/components/pagination.component';
 import { ModalComponent } from '../../shared/components/modal.component';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.component';
-import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-files',
   standalone: true,
-  imports: [TableComponent, ButtonComponent, CardComponent, InputComponent, PaginationComponent, ModalComponent, ConfirmDialogComponent, DatePipe, FormsModule],
+  imports: [TableComponent, ButtonComponent, CardComponent, InputComponent, PaginationComponent, ModalComponent, ConfirmDialogComponent, FormsModule],
   template: `
     <div>
       <div class="flex justify-between items-center mb-6">

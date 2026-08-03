@@ -2,13 +2,12 @@ import { Component, OnInit, signal } from '@angular/core';
 import { SettingsService, Setting } from './settings.service';
 import { ButtonComponent } from '../../shared/components/button.component';
 import { CardComponent } from '../../shared/components/card.component';
-import { InputComponent } from '../../shared/components/input.component';
 import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [ButtonComponent, CardComponent, InputComponent, FormsModule],
+  imports: [ButtonComponent, CardComponent, FormsModule],
   template: `
     <div>
       <div class="flex justify-between items-center mb-6">
