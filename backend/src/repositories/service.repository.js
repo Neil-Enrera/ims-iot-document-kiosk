@@ -86,11 +86,12 @@ const create = async ({ serviceName, description, processingFee, requiresPhoto, 
   return result.insertId;
 };
 
-const update = async (serviceId, { serviceName, description, processingFee, requiresPhoto, requirements, formFields, requiredDocuments, processingTime, approvalWorkflow }) => {
+const update = async (serviceId, { serviceName, description, processingFee, requiresPhoto, requirements, formFields, requiredDocuments, processingTime, approvalWorkflow, isActive }) => {
   const [result] = await pool.query(
     `UPDATE services
      SET service_name = ?, description = ?, processing_fee = ?, requires_photo = ?,
-         requirements = ?, form_fields = ?, required_documents = ?, processing_time = ?, approval_workflow = ?
+         requirements = ?, form_fields = ?, required_documents = ?, processing_time = ?, approval_workflow = ?,
+         is_active = ?
      WHERE service_id = ?`,
     [
       serviceName, description, processingFee, requiresPhoto || false,
@@ -99,6 +100,7 @@ const update = async (serviceId, { serviceName, description, processingFee, requ
       JSON.stringify(requiredDocuments ?? null),
       processingTime || null,
       approvalWorkflow || null,
+      isActive !== false,
       serviceId
     ]
   );

@@ -148,6 +148,33 @@ Use one of the following categories:
 
 ---
 
+# Version 2.2.0
+
+**Status:** Active Development
+
+**Date:** 2026-08-03
+
+## Added
+
+- **Edit Service** action in the Services module: an Edit button per table row opens the existing modal with the current service fully populated (name, description, requirements, dynamic form fields, processing time, fee, template, toggles). Row click also opens edit.
+- **Status (Active/Inactive)** toggle in the service form; `is_active` is now saved through the create/update API (previously only settable via the separate status endpoint).
+- **Delete Service** action per table row (previously implemented but unreachable).
+- Shared `app-table` now supports a per-row actions template via `rowActionsTemplate`.
+
+**Modules Affected:** Admin Panel, Backend
+
+**Database Changes:** No
+
+**API Changes:** `POST /services` and `PUT /services/:id` now accept an optional `isActive` boolean.
+
+**Architecture Changes:** No
+
+**Breaking Changes:** No
+
+**Testing Performed:** Unit tests (29/29), admin build, live create → update → delete round-trip verifying name/fee/photo/status/requirements persist, validation returns 400 on empty name or non-boolean `isActive`.
+
+---
+
 # Change Entry Template
 
 ## Version

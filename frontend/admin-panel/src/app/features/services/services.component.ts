@@ -32,7 +32,22 @@ import { ServiceFormComponent } from './service-form.component';
           [data]="services()"
           [loading]="loading()"
           trackBy="service_id"
-          emptyMessage="No services found" />
+          emptyMessage="No services found"
+          [rowActionsTemplate]="rowActions"
+          (onRowClick)="openEditForm($event)">
+          <ng-template #rowActions let-service>
+            <div class="flex justify-end gap-3">
+              <button
+                type="button"
+                (click)="openEditForm(service); $event.stopPropagation()"
+                class="text-blue-600 hover:underline text-sm">Edit</button>
+              <button
+                type="button"
+                (click)="openDeleteConfirm(service); $event.stopPropagation()"
+                class="text-red-600 hover:underline text-sm">Delete</button>
+            </div>
+          </ng-template>
+        </app-table>
 
         @if (total() > limit) {
           <app-pagination
@@ -108,6 +123,16 @@ export class ServicesComponent implements OnInit {
   openCreateForm() {
     this.editingService.set(null);
     this.showForm.set(true);
+  }
+
+  openEditForm(service: Service) {
+    this.editingService.set(service);
+    this.showForm.set(true);
+  }
+
+  openDeleteConfirm(service: Service) {
+    this.deletingService.set(service);
+    this.showDeleteConfirm.set(true);
   }
 
   closeForm() {

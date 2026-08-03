@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 export interface TableColumn {
@@ -32,12 +32,15 @@ export interface TableColumn {
                 </div>
               </th>
             }
+            @if (rowActionsTemplate) {
+              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
+            }
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
           @if (loading) {
             <tr>
-              <td [attr.colspan]="columns.length" class="px-6 py-12 text-center text-gray-500">
+              <td [attr.colspan]="columns.length + (rowActionsTemplate ? 1 : 0)" class="px-6 py-12 text-center text-gray-500">
                 <div class="flex justify-center items-center">
                   <svg class="animate-spin h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -49,7 +52,7 @@ export interface TableColumn {
             </tr>
           } @else if (data.length === 0) {
             <tr>
-              <td [attr.colspan]="columns.length" class="px-6 py-12 text-center text-gray-500">
+              <td [attr.colspan]="columns.length + (rowActionsTemplate ? 1 : 0)" class="px-6 py-12 text-center text-gray-500">
                 {{ emptyMessage }}
               </td>
             </tr>
@@ -62,6 +65,13 @@ export interface TableColumn {
                       [class.text-right]="col.align === 'right'">
                     <ng-container [ngTemplateOutlet]="cellTemplate"
                                   [ngTemplateOutletContext]="{ $implicit: row[col.key], row: row, col: col }">
+                    </ng-container>
+                  </td>
+                }
+                @if (rowActionsTemplate) {
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-right">
+                    <ng-container [ngTemplateOutlet]="rowActionsTemplate"
+                                  [ngTemplateOutletContext]="{ $implicit: row }">
                     </ng-container>
                   </td>
                 }
@@ -84,6 +94,7 @@ export class TableComponent {
   @Input() trackBy = 'id';
   @Input() sortColumn = '';
   @Input() sortDirection: 'ASC' | 'DESC' = 'ASC';
+  @Input() rowActionsTemplate: TemplateRef<any> | null = null;
 
   @Output() onSort = new EventEmitter<string>();
   @Output() onRowClick = new EventEmitter<any>();
