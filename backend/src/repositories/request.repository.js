@@ -6,11 +6,22 @@ const findAll = async ({ search, statusId, residentId, serviceId, dateFrom, date
       CONCAT(r.first_name, ' ', IFNULL(r.middle_name, ''), ' ', r.last_name),
       JSON_UNQUOTE(JSON_EXTRACT(rq.form_data, '$._guest.full_name'))
     ) AS resident_name,
-    COALESCE(r.resident_code, 'GUEST') AS resident_code
+    COALESCE(r.resident_code, 'GUEST') AS resident_code,
+    sta.assigned_staff
     FROM requests rq
     JOIN request_statuses rs ON rq.status_id = rs.status_id
     JOIN services s ON rq.service_id = s.service_id
-    LEFT JOIN residents r ON rq.resident_id = r.resident_id`;
+    LEFT JOIN residents r ON rq.resident_id = r.resident_id
+    LEFT JOIN (
+      SELECT h.request_id, CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) AS assigned_staff
+      FROM request_status_history h
+      JOIN users u ON h.changed_by = u.user_id
+      JOIN (
+        SELECT request_id, MAX(history_id) AS max_history_id
+        FROM request_status_history
+        GROUP BY request_id
+      ) lm ON lm.max_history_id = h.history_id
+    ) sta ON sta.request_id = rq.request_id`;
   let countQuery = 'SELECT COUNT(*) AS total FROM requests rq LEFT JOIN residents r ON rq.resident_id = r.resident_id JOIN services s ON rq.service_id = s.service_id';
   const conditions = [];
   const params = [];
@@ -97,11 +108,22 @@ const findById = async (requestId) => {
         CONCAT(r.first_name, ' ', IFNULL(r.middle_name, ''), ' ', r.last_name),
         JSON_UNQUOTE(JSON_EXTRACT(rq.form_data, '$._guest.full_name'))
       ) AS resident_name,
-      COALESCE(r.resident_code, 'GUEST') AS resident_code, r.contact_number, r.email, r.address_line
+      COALESCE(r.resident_code, 'GUEST') AS resident_code, r.contact_number, r.email, r.address_line,
+      sta.assigned_staff
       FROM requests rq
       JOIN request_statuses rs ON rq.status_id = rs.status_id
       JOIN services s ON rq.service_id = s.service_id
       LEFT JOIN residents r ON rq.resident_id = r.resident_id
+      LEFT JOIN (
+        SELECT h.request_id, CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) AS assigned_staff
+        FROM request_status_history h
+        JOIN users u ON h.changed_by = u.user_id
+        JOIN (
+          SELECT request_id, MAX(history_id) AS max_history_id
+          FROM request_status_history
+          GROUP BY request_id
+        ) lm ON lm.max_history_id = h.history_id
+      ) sta ON sta.request_id = rq.request_id
       WHERE rq.request_id = ?`,
     [requestId]
   );
@@ -156,7 +178,7 @@ const updateStatus = async (requestId, statusId, changedBy, remarks) => {
   const oldStatusId = current[0]?.status_id || null;
 
   await pool.query(
-    'UPDATE requests SET status_id = ?, reviewed_date = IF(? IN (2,3), NOW(), reviewed_date), release_date = IF(? = 5, NOW(), release_date) WHERE request_id = ?',
+    'UPDATE requests SET status_id = ?, reviewed_date = IF(? IN (4,8), NOW(), reviewed_date), release_date = IF(? = 7, NOW(), release_date) WHERE request_id = ?',
     [statusId, statusId, statusId, requestId]
   );
 
@@ -170,9 +192,9 @@ const updateStatus = async (requestId, statusId, changedBy, remarks) => {
 
 const getStats = async () => {
   const [total] = await pool.query('SELECT COUNT(*) AS total FROM requests');
-  const [pending] = await pool.query("SELECT COUNT(*) AS total FROM requests WHERE status_id = 1");
-  const [approved] = await pool.query("SELECT COUNT(*) AS total FROM requests WHERE status_id = 2");
-  const [released] = await pool.query("SELECT COUNT(*) AS total FROM requests WHERE status_id = 5");
+  const [pending] = await pool.query('SELECT COUNT(*) AS total FROM requests WHERE status_id = 1');
+  const [inProcess] = await pool.query('SELECT COUNT(*) AS total FROM requests WHERE status_id IN (4, 5)');
+  const [released] = await pool.query('SELECT COUNT(*) AS total FROM requests WHERE status_id = 7');
   const [byService] = await pool.query(
     'SELECT s.service_name, COUNT(*) AS count FROM requests rq JOIN services s ON rq.service_id = s.service_id GROUP BY s.service_name'
   );
@@ -180,7 +202,7 @@ const getStats = async () => {
   return {
     total: total[0].total,
     pending: pending[0].total,
-    approved: approved[0].total,
+    approved: inProcess[0].total,
     released: released[0].total,
     byService
   };

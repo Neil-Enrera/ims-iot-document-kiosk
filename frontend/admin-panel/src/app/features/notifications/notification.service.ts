@@ -68,7 +68,7 @@ export class NotificationService {
     });
 
     // Listen for request status changes
-    ['request-created', 'request-approved', 'request-rejected', 'request-cancelled', 'request-released', 'request-updated'].forEach(eventType => {
+    ['request-created', 'request-status-changed', 'request-approved', 'request-rejected', 'request-cancelled', 'request-released', 'request-updated'].forEach(eventType => {
       this.eventSource?.addEventListener(eventType, (event) => {
         const data = JSON.parse(event.data);
         this.sseEvent$.next({ type: eventType, data });

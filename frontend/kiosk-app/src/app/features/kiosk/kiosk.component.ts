@@ -710,7 +710,8 @@ export type BarangayStep =
                 <h2 class="text-3xl font-bold mb-4">Request Submitted!</h2>
                 <p class="text-xl text-blue-200 mb-2">Your request number is:</p>
                 <p class="text-4xl font-bold text-yellow-300 mb-6">{{ requestNumber() }}</p>
-                <p class="text-blue-200 mb-8">Please wait for your document to be processed. You will be notified when it is ready for release.</p>
+                <p class="text-blue-200 mb-3">Please proceed to the Barangay Staff and submit the required documents.</p>
+                <p class="text-blue-200 mb-8">After submitting your requirements, monitor your Request Number on the Status Display Board for updates.</p>
                 <app-button variant="primary" size="lg" (onClick)="finish()">Done</app-button>
               </div>
             </div>

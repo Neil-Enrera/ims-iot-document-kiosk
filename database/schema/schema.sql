@@ -268,13 +268,17 @@ INSERT INTO user_roles (role_name, description) VALUES
 ('Barangay Captain', 'Approves requests');
 
 -- Default request workflow statuses
+-- Workflow: Submitted → Waiting for Requirements → Requirements Received
+--           → Under Review → Document Processing → Ready for Release → Released
 INSERT INTO request_statuses (status_name, description) VALUES
-('Pending', 'Waiting for review'),
-('Approved', 'Approved by staff'),
-('Rejected', 'Rejected'),
-('Processing', 'Being processed by staff'),
+('Submitted', 'Submitted by resident through the kiosk'),
+('Waiting for Requirements', 'Waiting for the resident to submit required documents'),
+('Requirements Received', 'Required documents have been received'),
+('Under Review', 'Being reviewed by staff'),
+('Document Processing', 'Document is being processed'),
 ('Ready for Release', 'Ready to release'),
 ('Released', 'Released to resident'),
+('Rejected', 'Rejected'),
 ('Cancelled', 'Cancelled by staff or resident');
 
 -- Default barangay (Barangay San Manuel)

@@ -128,7 +128,7 @@ const createRequest = async (req, res) => {
       request_id: requestId,
       request_number: requestNumber,
       request_date: requestDate,
-      status: 'Pending'
+      status: 'Submitted'
     });
   } catch (error) {
     console.error('Kiosk createRequest error:', error);
@@ -200,8 +200,8 @@ const insertKioskRequest = async ({ resident, service, photo, formData, req }) =
   const next = (maxResult[0]?.max_num || 0) + 1;
   const requestNumber = `REQ-${String(next).padStart(5, '0')}`;
 
-  // Get default status_id (Pending)
-  const [statusResult] = await pool.query("SELECT status_id FROM request_statuses WHERE status_name = 'Pending' LIMIT 1");
+  // Get default status_id (Submitted)
+  const [statusResult] = await pool.query("SELECT status_id FROM request_statuses WHERE status_name = 'Submitted' LIMIT 1");
   const status = statusResult[0];
   const statusId = status?.status_id || 1;
 
@@ -313,6 +313,35 @@ const insertKioskRequest = async ({ resident, service, photo, formData, req }) =
   return { requestId, requestNumber, requestDate: new Date() };
 };
 
+// Public status display board (no auth required)
+// Returns only request numbers grouped by board column for resident privacy.
+const getStatusDisplay = async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT rq.request_number, rq.request_id, rs.status_name
+       FROM requests rq
+       JOIN request_statuses rs ON rq.status_id = rs.status_id
+       WHERE rs.status_name IN ('Under Review', 'Document Processing', 'Ready for Release')
+       ORDER BY rq.request_id ASC`
+    );
+
+    const data = {
+      updatedAt: new Date().toISOString(),
+      underReview: rows
+        .filter(r => r.status_name === 'Under Review' || r.status_name === 'Document Processing')
+        .map(r => r.request_number),
+      readyForRelease: rows
+        .filter(r => r.status_name === 'Ready for Release')
+        .map(r => r.request_number)
+    };
+
+    return successResponse(res, 'Status display retrieved.', data);
+  } catch (error) {
+    console.error('Kiosk getStatusDisplay error:', error);
+    return errorResponse(res, 500, 'Internal server error.');
+  }
+};
+
 const getHardwareStatus = async (req, res) => {
   try {
     const status = await kioskService.getHardwareStatus();
@@ -322,4 +351,4 @@ const getHardwareStatus = async (req, res) => {
   }
 };
 
-module.exports = { searchResidents, getResident, getServices, createRequest, createBarangayIdApplication, verifyRfid, getHardwareStatus };
+module.exports = { searchResidents, getResident, getServices, createRequest, createBarangayIdApplication, verifyRfid, getStatusDisplay, getHardwareStatus };

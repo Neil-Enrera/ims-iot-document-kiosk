@@ -4,7 +4,7 @@ const getSummary = async () => {
   const [residents] = await pool.query("SELECT COUNT(*) AS total FROM residents WHERE status = 'ACTIVE'");
   const [requests] = await pool.query('SELECT COUNT(*) AS total FROM requests');
   const [pending] = await pool.query('SELECT COUNT(*) AS total FROM requests WHERE status_id = 1');
-  const [released] = await pool.query('SELECT COUNT(*) AS total FROM requests WHERE status_id = 5');
+  const [released] = await pool.query('SELECT COUNT(*) AS total FROM requests WHERE status_id = 7');
   const [activeServices] = await pool.query('SELECT COUNT(*) AS total FROM services WHERE is_active = 1');
   const [todayRequests] = await pool.query('SELECT COUNT(*) AS total FROM requests WHERE DATE(request_date) = CURDATE()');
 

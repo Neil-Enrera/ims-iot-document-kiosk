@@ -2,23 +2,29 @@ const requestRepository = require('../repositories/request.repository');
 const residentRepository = require('../repositories/resident.repository');
 const serviceRepository = require('../repositories/service.repository');
 
+// Workflow: Submitted -> Waiting for Requirements -> Requirements Received
+//           -> Under Review -> Document Processing -> Ready for Release -> Released
 const VALID_TRANSITIONS = {
-  1: [2, 3, 9],   // Pending -> Approved, Rejected, Cancelled
-  2: [6, 4, 9],   // Approved -> Processing, Ready for Release, Cancelled
-  3: [],           // Rejected -> (end)
-  6: [4],          // Processing -> Ready for Release
-  4: [5],          // Ready for Release -> Released
-  5: [],           // Released -> (end)
+  1: [2, 8, 9],   // Submitted -> Waiting for Requirements, Rejected, Cancelled
+  2: [3, 8, 9],   // Waiting for Requirements -> Requirements Received, Rejected, Cancelled
+  3: [4, 8, 9],   // Requirements Received -> Under Review, Rejected, Cancelled
+  4: [5, 6, 8, 9],// Under Review -> Document Processing, Ready for Release, Rejected, Cancelled
+  5: [6, 8, 9],   // Document Processing -> Ready for Release, Rejected, Cancelled
+  6: [7],          // Ready for Release -> Released
+  7: [],           // Released -> (end)
+  8: [],           // Rejected -> (end)
   9: []            // Cancelled -> (end)
 };
 
 const STATUS_IDS = {
-  PENDING: 1,
-  APPROVED: 2,
-  REJECTED: 3,
-  READY_FOR_RELEASE: 4,
-  RELEASED: 5,
-  PROCESSING: 6,
+  SUBMITTED: 1,
+  WAITING_FOR_REQUIREMENTS: 2,
+  REQUIREMENTS_RECEIVED: 3,
+  UNDER_REVIEW: 4,
+  DOCUMENT_PROCESSING: 5,
+  READY_FOR_RELEASE: 6,
+  RELEASED: 7,
+  REJECTED: 8,
   CANCELLED: 9
 };
 
@@ -54,7 +60,7 @@ const createRequest = async ({ residentId, serviceId, purpose, remarks }) => {
   const { insertId } = await requestRepository.create({
     residentId,
     serviceId,
-    statusId: STATUS_IDS.PENDING,
+    statusId: STATUS_IDS.SUBMITTED,
     purpose,
     remarks,
     requestDate: new Date().toISOString().slice(0, 19).replace('T', ' ')
@@ -98,7 +104,7 @@ const changeStatus = async (requestId, statusId, userId, remarks) => {
 };
 
 const approveRequest = async (requestId, userId, remarks) => {
-  return changeStatus(requestId, STATUS_IDS.APPROVED, userId, remarks || 'Approved');
+  return changeStatus(requestId, STATUS_IDS.UNDER_REVIEW, userId, remarks || 'Approved');
 };
 
 const rejectRequest = async (requestId, userId, remarks) => {

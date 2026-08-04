@@ -161,6 +161,10 @@ export class RequestService {
     return this.api.post(`/requests/${id}/release`, { remarks });
   }
 
+  changeStatus(id: number, statusId: number, remarks?: string) {
+    return this.api.put(`/requests/${id}/status`, { statusId, remarks });
+  }
+
   getStats() {
     return this.api.get<any>('/requests/stats');
   }

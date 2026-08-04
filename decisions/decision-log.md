@@ -227,3 +227,29 @@ The application form must always match the official barangay document template. 
 - `services` gained template file columns (migration 007) and `form_fields` now supports 12 field types plus validation/helper-text config.
 - Two new template endpoints (`POST`/`DELETE /services/:id/template`); kiosk dynamic form and review steps extended.
 - Scope limited to document request services; the dedicated Barangay ID application flow is unaffected.
+
+---
+
+### DEC-010 — Replace request status workflow with Status Display Board workflow
+
+**Status:** Accepted
+**Date:** 2026-08-04
+**Decision Maker(s):** Project Owner
+
+**Decision:**
+The document request status workflow was replaced with a linear 7-step workflow that maps to the Status Display Board:
+`Submitted → Waiting for Requirements → Requirements Received → Under Review → Document Processing → Ready for Release → Released`, with `Rejected` and `Cancelled` as terminal states. The previous workflow (`Pending → Approved → Processing → Ready for Release → Released`) was removed.
+
+**Reason:**
+The Status Display Board shows residents only two columns (Under Review and Ready for Release). The new workflow lets staff record the real-world document journey (submission of requirements, verification, processing) so the board reflects accurate progress and reduces unnecessary inquiries at the office.
+
+**Alternatives Considered:**
+1. Keep the existing 5-state workflow and map display columns onto it — rejected as it could not represent "Waiting for Requirements" and "Requirements Received", which are central to the physical document-submission process.
+
+**Consequences:**
+- Migration `009` renames/renumbers statuses; `ON UPDATE CASCADE` keeps `requests` and `request_status_history` consistent.
+- `request.service.js` `VALID_TRANSITIONS` now enforce a strictly forward workflow (Under Review may skip directly to Ready for Release; terminal states cannot be reopened).
+- Admin Panel request management now uses a status dropdown instead of approve/reject/release buttons.
+- A public, read-only Status Display Board page at `/status-display` (in the kiosk app) polls a new public `GET /kiosk/status-display` endpoint every 7 seconds.
+- New generic `PUT /requests/:id/status` endpoint; `request-status-changed` SSE event added for admin auto-refresh.
+

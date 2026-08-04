@@ -63,9 +63,15 @@ export interface TableColumn {
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
                       [class.text-center]="col.align === 'center'"
                       [class.text-right]="col.align === 'right'">
-                    <ng-container [ngTemplateOutlet]="cellTemplate"
-                                  [ngTemplateOutletContext]="{ $implicit: row[col.key], row: row, col: col }">
-                    </ng-container>
+                    @if (cellTemplates[col.key]) {
+                      <ng-container [ngTemplateOutlet]="cellTemplates[col.key]"
+                                    [ngTemplateOutletContext]="{ $implicit: row[col.key], row: row, col: col }">
+                      </ng-container>
+                    } @else {
+                      <ng-container [ngTemplateOutlet]="cellTemplate"
+                                    [ngTemplateOutletContext]="{ $implicit: row[col.key], row: row, col: col }">
+                      </ng-container>
+                    }
                   </td>
                 }
                 @if (rowActionsTemplate) {
@@ -95,6 +101,7 @@ export class TableComponent {
   @Input() sortColumn = '';
   @Input() sortDirection: 'ASC' | 'DESC' = 'ASC';
   @Input() rowActionsTemplate: TemplateRef<any> | null = null;
+  @Input() cellTemplates: Record<string, TemplateRef<any>> = {};
 
   @Output() onSort = new EventEmitter<string>();
   @Output() onRowClick = new EventEmitter<any>();

@@ -95,6 +95,18 @@ const cancel = async (req, res) => {
   }
 };
 
+const changeStatus = async (req, res) => {
+  try {
+    const result = await requestService.changeStatus(req.params.id, parseInt(req.body.statusId, 10), req.user.userId, req.body.remarks);
+    if (!result.success) return errorResponse(res, 400, result.message);
+    auditRepository.log({ userId: req.user.userId, action: `Changed status of request #${req.params.id} to ${result.data.status_name}`, module: 'Requests', ipAddress: req.ip });
+    sseManager.broadcastEvent('request-status-changed', { requestId: parseInt(req.params.id), data: result.data });
+    return successResponse(res, result.message, result.data);
+  } catch {
+    return errorResponse(res, 500, 'Internal server error.');
+  }
+};
+
 const release = async (req, res) => {
   try {
     const result = await requestService.releaseRequest(req.params.id, req.user.userId, req.body.remarks);
@@ -116,4 +128,4 @@ const stats = async (req, res) => {
   }
 };
 
-module.exports = { getAll, getById, create, update, approve, reject, cancel, release, stats };
+module.exports = { getAll, getById, create, update, approve, reject, cancel, changeStatus, release, stats };

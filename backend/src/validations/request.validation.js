@@ -19,6 +19,12 @@ const statusValidation = [
   body('remarks').optional().trim()
 ];
 
+const changeStatusValidation = [
+  param('id').isInt({ min: 1 }).withMessage('Invalid request ID.'),
+  body('statusId').isInt({ min: 1 }).withMessage('Status ID is required.'),
+  body('remarks').optional().trim()
+];
+
 const getAllValidation = [
   query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer.'),
   query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be 1-100.'),
@@ -27,4 +33,4 @@ const getAllValidation = [
   query('serviceId').optional().isInt({ min: 1 }).withMessage('Invalid service ID.')
 ];
 
-module.exports = { createValidation, updateValidation, statusValidation, getAllValidation };
+module.exports = { createValidation, updateValidation, statusValidation, changeStatusValidation, getAllValidation };

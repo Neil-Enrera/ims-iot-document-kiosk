@@ -86,6 +86,12 @@ export interface HardwareStatus {
   uptime: number;
 }
 
+export interface StatusDisplay {
+  updatedAt: string;
+  underReview: string[];
+  readyForRelease: string[];
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   message: string;
@@ -192,6 +198,10 @@ export class KioskService {
 
   getHardwareStatus(): Observable<ApiResponse<HardwareStatus>> {
     return this.http.get<ApiResponse<HardwareStatus>>(`${this.apiUrl}/kiosk/hardware/status`);
+  }
+
+  getStatusDisplay(): Observable<ApiResponse<StatusDisplay>> {
+    return this.http.get<ApiResponse<StatusDisplay>>(`${this.apiUrl}/kiosk/status-display`);
   }
 
   reset() {

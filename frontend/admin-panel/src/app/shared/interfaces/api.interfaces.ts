@@ -144,6 +144,20 @@ export interface DocumentRequest {
   processing_fee: number;
   resident_name: string;
   resident_code: string;
+  assigned_staff: string | null;
+  history?: RequestStatusHistory[];
+}
+
+export interface RequestStatusHistory {
+  history_id: number;
+  request_id: number;
+  old_status_id: number | null;
+  new_status_id: number;
+  changed_by: number | null;
+  remarks: string | null;
+  changed_at: string;
+  status_name: string;
+  changed_by_name: string | null;
 }
 
 export interface BarangayIdApplication {
