@@ -144,11 +144,10 @@ const APPLICATION_COMMON_FIELDS = [
               <div>
                 <p class="text-sm font-medium text-gray-800">{{ service!.template_original_name }}</p>
                 <p class="text-xs text-gray-500">{{ formatBytes(service!.template_size) }} · {{ service!.template_mime }}</p>
-                <a [href]="templatePreviewUrl()" target="_blank" rel="noopener" class="text-xs text-blue-600 hover:underline">View template</a>
               </div>
             </div>
             <div class="flex items-center gap-2">
-              <button type="button" (click)="previewTemplate()" class="text-xs text-blue-600 hover:underline">Preview</button>
+              <button type="button" (click)="previewTemplate()" class="text-xs text-blue-600 hover:underline">Preview Template</button>
               <button type="button" (click)="removeCurrentTemplate()" class="text-xs text-red-500 hover:underline">Remove</button>
             </div>
           </div>
