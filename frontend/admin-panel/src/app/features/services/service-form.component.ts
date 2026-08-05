@@ -429,11 +429,12 @@ export class ServiceFormComponent implements OnChanges {
     if (!this.service?.service_id || !this.service.template_path) return;
     this.templatePreviewTitle = this.service.template_original_name || 'Template Preview';
     this.templatePreviewBlob = null;
-    this.showTemplatePreview = true;
+    this.placeholderScanError = '';
     const url = `${this.assetBase}/uploads/${this.service.template_path}`;
     this.http.get(url, { responseType: 'blob' }).subscribe({
       next: (blob) => {
         this.templatePreviewBlob = blob;
+        this.showTemplatePreview = true;
       },
       error: () => {
         this.placeholderScanError = 'Could not load template for preview.';

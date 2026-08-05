@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, ViewChild, ElementRef, signal } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges, ViewChild, ElementRef, signal } from '@angular/core';
 import { renderAsync } from 'docx-preview';
 
 @Component({
@@ -54,8 +54,8 @@ export class DocumentPreviewModalComponent implements OnChanges {
 
   private renderedKey: string | Blob | null = null;
 
-  ngOnChanges() {
-    if (this.open && this.container?.nativeElement) {
+  ngOnChanges(changes: SimpleChanges) {
+    if (this.open && this.container?.nativeElement && (this.blob || this.blobUrl)) {
       this.render();
     }
   }
@@ -69,6 +69,11 @@ export class DocumentPreviewModalComponent implements OnChanges {
     const container = this.container.nativeElement;
     const key = this.blobUrl ?? this.blob;
     if (this.renderedKey === key) return;
+    if (!this.blob && !this.blobUrl) {
+      this.rendering.set(false);
+      this.error.set('No document to preview.');
+      return;
+    }
     this.error.set('');
     this.rendering.set(true);
     container.innerHTML = '';
