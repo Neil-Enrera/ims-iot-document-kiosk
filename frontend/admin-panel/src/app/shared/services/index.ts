@@ -151,11 +151,23 @@ export class DocumentService {
   }
 
   fetchBlob(requestId: number, documentId: number) {
-    return this.http.get(this.downloadUrl(requestId, documentId), { responseType: 'blob' });
+    return this.http.get(this.previewUrl(requestId, documentId), { responseType: 'blob' });
   }
 
   downloadUrl(requestId: number, documentId: number): string {
     return this.api.baseUrl + `/requests/${requestId}/documents/${documentId}/download`;
+  }
+
+  previewUrl(requestId: number, documentId: number): string {
+    return this.api.baseUrl + `/requests/${requestId}/documents/${documentId}/preview`;
+  }
+
+  previewBlobUrl(requestId: number, documentId: number): string {
+    return this.previewUrl(requestId, documentId);
+  }
+
+  review(requestId: number, documentId: number, status: string, remarks?: string) {
+    return this.api.post<any>(`/requests/${requestId}/documents/${documentId}/review/${status}`, { remarks });
   }
 }
 

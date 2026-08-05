@@ -139,6 +139,17 @@ const cancelRequest = async (requestId, userId, remarks) => {
 };
 
 const releaseRequest = async (requestId, userId, remarks) => {
+  const request = await requestRepository.findById(requestId);
+  if (!request) {
+    return { success: false, message: 'Request not found.' };
+  }
+
+  const documents = await documentService.listDocuments(requestId);
+  const approved = (documents.data || []).filter(d => d.approval_status === 'approved');
+  if (approved.length === 0) {
+    return { success: false, message: 'Cannot release the request until at least one generated document has been approved.' };
+  }
+
   return changeStatus(requestId, STATUS_IDS.RELEASED, userId, remarks || 'Released');
 };
 

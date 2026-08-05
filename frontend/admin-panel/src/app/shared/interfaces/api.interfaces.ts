@@ -135,6 +135,11 @@ export interface GeneratedDocument {
   generated_at: string;
   generated_by_first: string | null;
   generated_by_last: string | null;
+  approval_status: 'pending' | 'approved' | 'rejected' | 'returned';
+  generation_warnings: string[] | null;
+  reviewed_by: number | null;
+  reviewed_at: string | null;
+  review_remarks: string | null;
 }
 
 export interface DocumentRequest {

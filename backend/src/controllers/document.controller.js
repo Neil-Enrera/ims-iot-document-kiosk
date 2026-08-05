@@ -39,8 +39,40 @@ const download = async (req, res) => {
     const result = await documentService.getDocument(req.params.documentId);
     if (!result.success) return errorResponse(res, 404, result.message);
     const doc = result.data;
+    if (doc.approval_status !== 'approved') {
+      return errorResponse(res, 403, 'This document has not been approved yet and cannot be downloaded.');
+    }
     return res.download(doc.filePath, doc.file_name);
   } catch {
+    return errorResponse(res, 500, 'Internal server error.');
+  }
+};
+
+// Serve the document inline so the admin panel can render it in a preview modal.
+// Unlike download, preview is allowed for pending/returned documents so reviewers
+// can inspect the completed document before approving it.
+const preview = async (req, res) => {
+  try {
+    const result = await documentService.getDocument(req.params.documentId);
+    if (!result.success) return errorResponse(res, 404, result.message);
+    const doc = result.data;
+    return res.sendFile(doc.filePath);
+  } catch {
+    return errorResponse(res, 500, 'Internal server error.');
+  }
+};
+
+const review = async (req, res) => {
+  try {
+    const result = await documentService.reviewDocument(req.params.documentId, {
+      status: req.params.status,
+      reviewedBy: req.user.userId,
+      remarks: req.body.remarks
+    });
+    if (!result.success) return errorResponse(res, 400, result.message);
+    return successResponse(res, result.message, result.data);
+  } catch (error) {
+    console.error('Document review error:', error);
     return errorResponse(res, 500, 'Internal server error.');
   }
 };
@@ -69,4 +101,4 @@ const scanPlaceholders = async (req, res) => {
   }
 };
 
-module.exports = { generate, list, getById, download, remove, scanPlaceholders };
+module.exports = { generate, list, getById, download, preview, review, remove, scanPlaceholders };

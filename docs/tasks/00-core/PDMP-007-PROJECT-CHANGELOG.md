@@ -62,6 +62,42 @@ Use one of the following categories:
 
 ---
 
+# Version 2.3.0
+
+**Status:** Active Development
+
+**Date:** 2026-08-05
+
+## Added
+
+- **Document Preview & Approval Workflow** in the Admin Panel for generated documents:
+  - New `DocumentPreviewModalComponent` (Angular + `docx-preview`) renders completed DOCX documents inline in a modal, preserving formatting, tables, images, and styles — replacing the previous "open in new tab" approach that failed for DOCX.
+  - **Template Preview** in Service Form: Admin can preview the uploaded DOCX template and view a detected placeholders list (chips) after clicking "Scan Template". Auto-detected placeholders are pre-populated into the mapping table.
+  - **Generated Document Preview** in Request Details: Admin clicks "Preview" to review the completed document before approval.
+  - **Per-document approval status** (`pending` → `approved` | `rejected` | `returned`) with reviewer, timestamp, and remarks stored on `generated_documents` (migration 013).
+  - **Approve / Reject / Return** action buttons on each pending document in the Request Details modal.
+  - **Download / Print gating**: Only documents with `approval_status = approved` can be downloaded or printed. Pending/returned documents show preview only.
+  - **Generation warnings** surfaced in the UI: missing placeholders, unmapped tags, orphaned application field references — computed during auto-generation and persisted.
+
+- **Release gating**: Request cannot transition to **Released** (status 7) until at least one generated document is `approved`. Prevents releasing documents before admin review.
+
+**Modules Affected:** Backend, Database, Admin Panel
+
+**Database Changes:** Yes — migration 013 adds `approval_status`, `generation_warnings`, `reviewed_by`, `reviewed_at`, `review_remarks` to `generated_documents` (FK to `users`).
+
+**API Changes:** 
+- `GET /requests/:id/documents/:documentId/preview` — serves DOCX inline for preview modal (unrestricted for review)
+- `GET /requests/:id/documents/:documentId/download` — gated to `approved` documents only
+- `POST /requests/:id/documents/:documentId/review/:status` — approve/reject/return with optional `remarks`
+
+**Architecture Changes:** No
+
+**Breaking Changes:** No — existing documents default to `pending`; download now requires approval (was previously unrestricted).
+
+**Testing Performed:** Backend tests (32/32), ESLint clean on changed files, manual E2E: create request → advance to Document Processing (auto-generates) → preview generated DOCX → approve → download → release (succeeds); attempt release without approved doc (blocked); reject/return workflow verified; template preview + placeholder detection verified.
+
+---
+
 # Version 2.2.1
 
 **Status:** Active Development

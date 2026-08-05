@@ -232,6 +232,10 @@ const generateDocument = async ({ requestId, userId }) => {
     return { success: false, message: 'This service has no placeholder mappings configured.' };
   }
 
+  // Validate placeholders: tags found in the template vs. configured mappings.
+  // Any tag without a mapping would render blank, so surface it as a warning.
+  const warnings = validatePlaceholderMappings(service, mappings);
+
   // Gather lookup data
   const resident = request.resident_id ? await findResident(request.resident_id) : null;
   const barangay = await findBarangay(resident?.barangay_id);
@@ -296,12 +300,39 @@ const generateDocument = async ({ requestId, userId }) => {
       filePath: doc.filePath,
       fileType: doc.fileType,
       fileSize: doc.fileSize,
-      generatedBy: userId
+      generatedBy: userId,
+      generationWarnings: warnings
     });
     doc.documentId = documentId;
   }
 
-  return { success: true, message: 'Document generated successfully.', data: { generated, requestNumber: request.request_number } };
+  return { success: true, message: 'Document generated successfully.', data: { generated, requestNumber: request.request_number, warnings } };
+};
+
+// Compare the placeholders found in the uploaded template with the configured
+// mappings, and warn about tags that would render blank. Also flags mappings
+// pointing to application fields that were not captured on the request form.
+const validatePlaceholderMappings = (service, mappings) => {
+  const warnings = [];
+  const templateTags = scanTemplatePlaceholders(service);
+  if (!templateTags.length) {
+    warnings.push('No {{placeholders}} detected in the template — the generated document will be blank where data should appear.');
+    return warnings;
+  }
+
+  const mapped = new Set(mappings.map(m => m.placeholder));
+  const unmapped = templateTags.filter(tag => !mapped.has(tag));
+  if (unmapped.length) {
+    warnings.push(`Placeholders without a mapping (will render blank): ${unmapped.map(t => `{{${t}}}`).join(', ')}`);
+  }
+
+  const appFields = new Set((service.form_fields || []).map(f => f.key));
+  const orphanAppMappings = mappings.filter(m => m.source === 'application' && !appFields.has(m.field));
+  if (orphanAppMappings.length) {
+    warnings.push(`Application mappings reference form fields not collected on the form: ${orphanAppMappings.map(m => m.field).join(', ')}`);
+  }
+
+  return warnings;
 };
 
 const tryConvertToPdf = async (docxPath) => {
@@ -433,10 +464,41 @@ const deleteDocument = async (documentId) => {
   return { success: true, message: 'Document deleted successfully.', data: null };
 };
 
+// ============================================================
+// Document review / approval workflow
+// ============================================================
+
+const ALLOWED_APPROVAL_STATUSES = ['approved', 'rejected', 'returned'];
+
+// Approve / reject / return a generated document. A document that has already
+// reached a terminal review state cannot be re-reviewed.
+const reviewDocument = async (documentId, { status, reviewedBy, remarks }) => {
+  if (!ALLOWED_APPROVAL_STATUSES.includes(status)) {
+    return { success: false, message: `Invalid approval status "${status}".` };
+  }
+  const document = await documentRepository.findById(documentId);
+  if (!document) {
+    return { success: false, message: 'Document not found.' };
+  }
+  if (document.approval_status === 'approved' || document.approval_status === 'rejected') {
+    return { success: false, message: `This document has already been marked "${document.approval_status}" and cannot be re-reviewed.` };
+  }
+  if (remarks && typeof remarks === 'string' && remarks.length > 500) {
+    return { success: false, message: 'Review remarks must be 500 characters or fewer.' };
+  }
+  await documentRepository.updateApproval(documentId, {
+    status,
+    reviewedBy: reviewedBy || null,
+    reviewRemarks: (remarks && remarks.trim()) || null
+  });
+  return { success: true, message: `Document marked as "${status}".`, data: { documentId, approvalStatus: status } };
+};
+
 module.exports = {
   generateDocument,
   listDocuments,
   getDocument,
   deleteDocument,
-  scanTemplatePlaceholders
+  scanTemplatePlaceholders,
+  reviewDocument
 };

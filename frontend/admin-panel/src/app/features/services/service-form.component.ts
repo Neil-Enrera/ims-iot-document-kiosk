@@ -6,6 +6,7 @@ import { ButtonComponent } from '../../shared/components/button.component';
 import { Service, FormField, FormFieldType, DocumentMapping, DocumentMappingSource } from '../../shared/interfaces/api.interfaces';
 import { ServiceService } from '../../shared/services';
 import { environment } from '../../../environments/environment';
+import { DocumentPreviewModalComponent } from '../../shared/components/document-preview-modal.component';
 
 interface EditableFormField extends FormField {
   optionsText?: string;
@@ -76,7 +77,7 @@ const APPLICATION_COMMON_FIELDS = [
 @Component({
   selector: 'app-service-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, InputComponent, ButtonComponent],
+  imports: [CommonModule, FormsModule, InputComponent, ButtonComponent, DocumentPreviewModalComponent],
   template: `
     <form (ngSubmit)="onSubmit()" class="space-y-4">
       <app-input label="Service Name *" [value]="form.serviceName" (valueChange)="form.serviceName = $event" [error]="errors['serviceName']" />
@@ -144,7 +145,10 @@ const APPLICATION_COMMON_FIELDS = [
                 <a [href]="templatePreviewUrl()" target="_blank" rel="noopener" class="text-xs text-blue-600 hover:underline">View template</a>
               </div>
             </div>
-            <button type="button" (click)="removeCurrentTemplate()" class="text-xs text-red-500 hover:underline">Remove</button>
+            <div class="flex items-center gap-2">
+              <button type="button" (click)="previewTemplate()" class="text-xs text-blue-600 hover:underline">Preview</button>
+              <button type="button" (click)="removeCurrentTemplate()" class="text-xs text-red-500 hover:underline">Remove</button>
+            </div>
           </div>
         } @else if (templateRemove) {
           <div class="flex items-center justify-between bg-red-50 border border-red-200 rounded p-2 mb-2">
@@ -153,6 +157,17 @@ const APPLICATION_COMMON_FIELDS = [
           </div>
         } @else {
           <p class="text-xs text-gray-400 mb-2">No template uploaded yet.</p>
+        }
+
+        @if (detectedPlaceholders.length > 0) {
+          <div class="mb-2 bg-gray-50 border rounded p-2">
+            <p class="text-xs font-medium text-gray-700 mb-1">Detected placeholders in template:</p>
+            <div class="flex flex-wrap gap-1">
+              @for (tag of detectedPlaceholders; track tag) {
+                <span class="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded border border-blue-200">{{'{{'}}{{ tag }}{{'}}'}}</span>
+              }
+            </div>
+          </div>
         }
 
         <input
@@ -315,6 +330,14 @@ const APPLICATION_COMMON_FIELDS = [
         <app-button variant="primary" type="submit" [loading]="loading">{{ editMode ? 'Update' : 'Create' }}</app-button>
       </div>
     </form>
+
+    <!-- Template Preview Modal -->
+    <app-document-preview-modal
+      [open]="showTemplatePreview"
+      [title]="templatePreviewTitle"
+      [blob]="templatePreviewBlob"
+      (onClose)="showTemplatePreview = false"
+    />
   `
 })
 export class ServiceFormComponent implements OnChanges {
@@ -351,6 +374,12 @@ export class ServiceFormComponent implements OnChanges {
   templateRemove = false;
   scanningPlaceholders = false;
   placeholderScanError = '';
+
+  // Template preview modal
+  showTemplatePreview = false;
+  templatePreviewBlob: Blob | null = null;
+  templatePreviewTitle = '';
+  detectedPlaceholders: string[] = [];
 
   private readonly assetBase = environment.apiUrl.replace(/\/api\/v1$/, '');
 
@@ -392,6 +421,26 @@ export class ServiceFormComponent implements OnChanges {
   // ---- Template helpers ----
   templatePreviewUrl(): string {
     return this.service?.template_path ? `${this.assetBase}/uploads/${this.service.template_path}` : '';
+  }
+
+  previewTemplate() {
+    if (!this.service?.service_id || !this.service.template_path) return;
+    this.templatePreviewTitle = this.service.template_original_name || 'Template Preview';
+    this.templatePreviewBlob = null;
+    this.showTemplatePreview = true;
+    this.serviceService.getById(this.service.service_id).subscribe({
+      next: (res) => {
+        const templatePath = res.data?.template_path;
+        if (templatePath) {
+          const url = `${this.assetBase}/uploads/${templatePath}`;
+          fetch(url).then(r => r.blob()).then(blob => {
+            this.templatePreviewBlob = blob;
+          }).catch(() => {
+            this.placeholderScanError = 'Could not load template for preview.';
+          });
+        }
+      }
+    });
   }
 
   isTemplateImage(): boolean {
@@ -489,9 +538,11 @@ export class ServiceFormComponent implements OnChanges {
     }
     this.scanningPlaceholders = true;
     this.placeholderScanError = '';
+    this.detectedPlaceholders = [];
     this.serviceService.scanTemplatePlaceholders(this.service.service_id).subscribe({
       next: (res) => {
         const tags: string[] = res.data || [];
+        this.detectedPlaceholders = tags;
         const existing = new Set(this.form.documentMappings.map(m => m.placeholder));
         tags.forEach(tag => {
           if (!existing.has(tag)) {

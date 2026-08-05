@@ -9,6 +9,7 @@ import { InputComponent } from '../../shared/components/input.component';
 import { PaginationComponent } from '../../shared/components/pagination.component';
 import { ButtonComponent } from '../../shared/components/button.component';
 import { ModalComponent } from '../../shared/components/modal.component';
+import { DocumentPreviewModalComponent } from '../../shared/components/document-preview-modal.component';
 import { RequestFormComponent } from './request-form.component';
 
 interface RequestDetail extends DocumentRequest {
@@ -18,7 +19,7 @@ interface RequestDetail extends DocumentRequest {
 @Component({
   selector: 'app-requests',
   standalone: true,
-  imports: [TableComponent, CardComponent, InputComponent, PaginationComponent, ButtonComponent, ModalComponent, RequestFormComponent],
+  imports: [TableComponent, CardComponent, InputComponent, PaginationComponent, ButtonComponent, ModalComponent, RequestFormComponent, DocumentPreviewModalComponent],
   template: `
     <div>
       <div class="flex justify-between items-center mb-6">
@@ -169,15 +170,57 @@ interface RequestDetail extends DocumentRequest {
           @if (documents().length > 0) {
             <div class="space-y-2">
               @for (doc of documents(); track doc.document_id) {
-                <div class="flex items-center justify-between border rounded p-2 text-sm bg-white">
-                  <div class="min-w-0">
-                    <p class="font-medium text-gray-900 truncate" [title]="doc.file_name">{{ doc.file_name }}</p>
-                    <p class="text-xs text-gray-500">{{ formatDate(doc.generated_at) }} · {{ formatBytes(doc.file_size) }}</p>
+                <div class="border rounded p-2 text-sm bg-white">
+                  <div class="flex items-center justify-between">
+                    <div class="min-w-0">
+                      <p class="font-medium text-gray-900 truncate" [title]="doc.file_name">{{ doc.file_name }}</p>
+                      <p class="text-xs text-gray-500">{{ formatDate(doc.generated_at) }} · {{ formatBytes(doc.file_size) }}</p>
+                    </div>
+                    <div class="flex shrink-0 items-center gap-2">
+                      @if (approvalBadge(doc.approval_status); as badge) {
+                        <span [class]="badge.class">{{ badge.label }}</span>
+                      }
+                    </div>
                   </div>
-                  <div class="flex shrink-0 gap-2">
+
+                  @if (doc.generation_warnings && doc.generation_warnings.length > 0) {
+                    <div class="mt-2 rounded bg-amber-50 border border-amber-200 px-2 py-1.5">
+                      <p class="text-xs font-medium text-amber-800">Generation warnings</p>
+                      @for (warn of doc.generation_warnings; track warn) {
+                        <p class="text-xs text-amber-700">• {{ warn }}</p>
+                      }
+                    </div>
+                  }
+
+                  <div class="mt-2 flex flex-wrap items-center gap-2">
                     <button type="button" (click)="previewDocument(doc)" class="text-xs text-blue-600 hover:underline">Preview</button>
-                    <button type="button" (click)="downloadDocument(doc)" class="text-xs text-blue-600 hover:underline">Download</button>
-                    <button type="button" (click)="printDocument(doc)" class="text-xs text-blue-600 hover:underline">Print</button>
+                    <button
+                      type="button"
+                      (click)="downloadDocument(doc)"
+                      [disabled]="doc.approval_status !== 'approved'"
+                      class="text-xs text-blue-600 hover:underline disabled:opacity-40 disabled:cursor-not-allowed"
+                      [title]="doc.approval_status === 'approved' ? 'Download' : 'Download only available after approval'">
+                      Download
+                    </button>
+                    <button
+                      type="button"
+                      (click)="printDocument(doc)"
+                      [disabled]="doc.approval_status !== 'approved'"
+                      class="text-xs text-blue-600 hover:underline disabled:opacity-40 disabled:cursor-not-allowed"
+                      [title]="doc.approval_status === 'approved' ? 'Print' : 'Print only available after approval'">
+                      Print
+                    </button>
+
+                    @if (doc.approval_status === 'pending') {
+                      <span class="text-gray-300">|</span>
+                      <button type="button" (click)="reviewDocument(doc, 'approved')" class="text-xs text-green-600 hover:underline">Approve</button>
+                      <button type="button" (click)="reviewDocument(doc, 'returned')" class="text-xs text-amber-600 hover:underline">Return</button>
+                      <button type="button" (click)="reviewDocument(doc, 'rejected')" class="text-xs text-red-600 hover:underline">Reject</button>
+                    }
+
+                    @if (doc.review_remarks) {
+                      <span class="text-xs text-gray-500" [title]="doc.review_remarks">Remarks: {{ doc.review_remarks }}</span>
+                    }
                   </div>
                 </div>
               }
@@ -210,6 +253,15 @@ interface RequestDetail extends DocumentRequest {
           }
         }
       </app-modal>
+
+      <!-- Document Preview Modal -->
+      <app-document-preview-modal
+        [open]="showPreview()"
+        [title]="previewTitle"
+        [blob]="previewBlob"
+        (onClose)="closePreview()"
+      />
+
     </div>
   `
 })
@@ -452,10 +504,6 @@ export class RequestsComponent implements OnInit, OnDestroy {
     });
   }
 
-  previewDocument(doc: GeneratedDocument) {
-    this.openDocument(doc);
-  }
-
   downloadDocument(doc: GeneratedDocument) {
     const request = this.selectedRequest();
     if (!request) return;
@@ -478,6 +526,71 @@ export class RequestsComponent implements OnInit, OnDestroy {
 
   printDocument(doc: GeneratedDocument) {
     this.openDocument(doc);
+  }
+
+  // --- Document Preview Modal State ---
+  showPreview = signal(false);
+  previewBlob: Blob | null = null;
+  previewTitle = '';
+
+  // --- Document Review / Approval ---
+  reviewing = signal(false);
+
+  previewDocument(doc: GeneratedDocument) {
+    const request = this.selectedRequest();
+    if (!request) return;
+    this.previewTitle = doc.file_name;
+    this.previewBlob = null;
+    this.showPreview.set(true);
+    this.documentService.fetchBlob(request.request_id, doc.document_id).subscribe({
+      next: (blob) => {
+        this.previewBlob = blob;
+      },
+      error: () => {
+        this.docError.set('Could not load the document for preview.');
+      }
+    });
+  }
+
+  closePreview() {
+    this.showPreview.set(false);
+    this.previewBlob = null;
+    this.previewTitle = '';
+  }
+
+  approvalBadge(status: string): { class: string; label: string } | null {
+    switch (status) {
+      case 'approved':
+        return { class: 'inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold text-green-700 bg-green-100', label: 'Approved' };
+      case 'rejected':
+        return { class: 'inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold text-red-700 bg-red-100', label: 'Rejected' };
+      case 'returned':
+        return { class: 'inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold text-amber-700 bg-amber-100', label: 'Returned' };
+      case 'pending':
+        return { class: 'inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold text-gray-700 bg-gray-100', label: 'Pending Review' };
+      default:
+        return null;
+    }
+  }
+
+  reviewDocument(doc: GeneratedDocument, status: 'approved' | 'rejected' | 'returned') {
+    const request = this.selectedRequest();
+    if (!request) return;
+
+    const remarks = status === 'approved' ? '' : prompt(`Enter remarks for ${status}:`);
+    if (status !== 'approved' && remarks === null) return; // user cancelled
+
+    this.reviewing.set(true);
+    this.documentService.review(request.request_id, doc.document_id, status, remarks || '').subscribe({
+      next: () => {
+        this.reviewing.set(false);
+        this.loadDocuments(request.request_id);
+      },
+      error: (err) => {
+        this.reviewing.set(false);
+        this.docError.set(err.error?.message || 'Failed to review document.');
+      }
+    });
   }
 
   formatBytes(bytes: number | null | undefined): string {
