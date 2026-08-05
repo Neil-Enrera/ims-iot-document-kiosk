@@ -3,12 +3,19 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { InputComponent } from '../../shared/components/input.component';
 import { ButtonComponent } from '../../shared/components/button.component';
-import { Service, FormField, FormFieldType } from '../../shared/interfaces/api.interfaces';
+import { Service, FormField, FormFieldType, DocumentMapping, DocumentMappingSource } from '../../shared/interfaces/api.interfaces';
+import { ServiceService } from '../../shared/services';
 import { environment } from '../../../environments/environment';
 
 interface EditableFormField extends FormField {
   optionsText?: string;
   validation: NonNullable<FormField['validation']>;
+}
+
+interface EditableMapping {
+  placeholder: string;
+  source: DocumentMappingSource;
+  field: string;
 }
 
 const FIELD_TYPES: { value: FormFieldType; label: string }[] = [
@@ -28,6 +35,43 @@ const FIELD_TYPES: { value: FormFieldType; label: string }[] = [
 
 const OPTIONS_TYPES: FormFieldType[] = ['select', 'radio', 'checkbox'];
 const TEXT_TYPES: FormFieldType[] = ['text', 'textarea', 'tel', 'email'];
+
+const MAPPING_SOURCES: { value: DocumentMappingSource; label: string }[] = [
+  { value: 'resident', label: 'Resident Information' },
+  { value: 'application', label: 'Application Form' },
+  { value: 'system', label: 'System Generated' }
+];
+
+const RESIDENT_FIELDS: { value: string; label: string }[] = [
+  { value: 'full_name', label: 'Full Name' },
+  { value: 'first_name', label: 'First Name' },
+  { value: 'middle_name', label: 'Middle Name' },
+  { value: 'last_name', label: 'Last Name' },
+  { value: 'suffix', label: 'Suffix' },
+  { value: 'birth_date', label: 'Birth Date' },
+  { value: 'gender', label: 'Gender' },
+  { value: 'civil_status', label: 'Civil Status' },
+  { value: 'address_line', label: 'Address' },
+  { value: 'contact_number', label: 'Contact Number' },
+  { value: 'email', label: 'Email' },
+  { value: 'resident_code', label: 'Resident Code' },
+  { value: 'blood_type', label: 'Blood Type' },
+  { value: 'emergency_contact_name', label: 'Emergency Contact Name' },
+  { value: 'emergency_contact_number', label: 'Emergency Contact Number' }
+];
+
+const SYSTEM_FIELDS: { value: string; label: string }[] = [
+  { value: 'request_number', label: 'Request Number' },
+  { value: 'current_date', label: 'Current / Issued Date' },
+  { value: 'barangay_name', label: 'Barangay Name' },
+  { value: 'city_name', label: 'City Name' },
+  { value: 'processed_by', label: 'Processed By (Staff)' }
+];
+
+const APPLICATION_COMMON_FIELDS = [
+  'purpose', 'remarks', 'office_address', 'business_name', 'pole_type',
+  'street', 'requestor_name', 'full_name', 'address'
+];
 
 @Component({
   selector: 'app-service-form',
@@ -204,6 +248,56 @@ const TEXT_TYPES: FormFieldType[] = ['text', 'textarea', 'tel', 'email'];
         }
       </div>
 
+      <!-- Document Placeholder Mappings -->
+      <div class="border rounded-lg p-3 space-y-2">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <label class="text-sm font-medium text-gray-700">Document Placeholder Mappings</label>
+          <div class="flex items-center gap-2">
+            <button type="button" (click)="scanPlaceholders()" [disabled]="scanningPlaceholders" class="text-sm text-blue-600 hover:underline disabled:opacity-50">
+              {{ scanningPlaceholders ? 'Scanning...' : 'Scan Template' }}
+            </button>
+            <button type="button" (click)="addMapping()" class="text-sm text-blue-600 hover:underline">+ Add Mapping</button>
+          </div>
+        </div>
+        <p class="text-xs text-gray-500 mb-2">
+          Map each <code>{{'{{placeholder}}'}}</code> in the DOCX template to a value source. The system replaces these
+          after the request is approved. Use "Scan Template" to auto-detect the placeholders in the uploaded DOCX.
+        </p>
+        @if (placeholderScanError) {
+          <p class="text-xs text-amber-600">{{ placeholderScanError }}</p>
+        }
+        @if (errors['documentMappings']) {
+          <p class="text-xs text-red-500">{{ errors['documentMappings'] }}</p>
+        }
+        @if (form.documentMappings.length === 0) {
+          <p class="text-xs text-gray-500">No mappings defined. The document will not be generated until at least one placeholder is mapped.</p>
+        }
+        @for (mapping of form.documentMappings; track $index) {
+          <div class="grid grid-cols-12 gap-2 items-center border rounded p-2 bg-gray-50">
+            <div class="col-span-4">
+              <input [(ngModel)]="mapping.placeholder" [name]="'mapPlaceholder' + $index" placeholder="{{'{{placeholder}}'}}" class="w-full px-2 py-1 border rounded text-xs border-gray-300" />
+            </div>
+            <div class="col-span-3">
+              <select [(ngModel)]="mapping.source" [name]="'mapSource' + $index" (ngModelChange)="onMappingSourceChange(mapping)" class="w-full px-2 py-1 border rounded text-xs border-gray-300">
+                @for (s of MAPPING_SOURCES; track s.value) {
+                  <option [value]="s.value">{{ s.label }}</option>
+                }
+              </select>
+            </div>
+            <div class="col-span-3">
+              <select [(ngModel)]="mapping.field" [name]="'mapField' + $index" class="w-full px-2 py-1 border rounded text-xs border-gray-300">
+                @for (opt of fieldOptions(mapping.source); track opt.value) {
+                  <option [value]="opt.value">{{ opt.label }}</option>
+                }
+              </select>
+            </div>
+            <div class="col-span-2 flex justify-end">
+              <button type="button" (click)="removeMapping($index)" class="text-xs text-red-500 hover:underline">Remove</button>
+            </div>
+          </div>
+        }
+      </div>
+
       @if (serverError) {
         <p class="text-sm text-red-500">{{ serverError }}</p>
       }
@@ -222,6 +316,9 @@ export class ServiceFormComponent implements OnChanges {
   @Output() onCancel = new EventEmitter<void>();
 
   FIELD_TYPES = FIELD_TYPES;
+  MAPPING_SOURCES = MAPPING_SOURCES;
+  RESIDENT_FIELDS = RESIDENT_FIELDS;
+  SYSTEM_FIELDS = SYSTEM_FIELDS;
 
   editMode = false;
   serverError = '';
@@ -236,14 +333,19 @@ export class ServiceFormComponent implements OnChanges {
     isActive: true,
     requirementsText: '',
     requiredDocumentsText: '',
-    formFields: [] as EditableFormField[]
+    formFields: [] as EditableFormField[],
+    documentMappings: [] as EditableMapping[]
   };
   errors: Record<string, string> = {};
 
   templateFile: File | null = null;
   templateRemove = false;
+  scanningPlaceholders = false;
+  placeholderScanError = '';
 
   private readonly assetBase = environment.apiUrl.replace(/\/api\/v1$/, '');
+
+  constructor(private serviceService: ServiceService) {}
 
   ngOnChanges() {
     if (this.service) {
@@ -263,11 +365,18 @@ export class ServiceFormComponent implements OnChanges {
           optionsText: (f.options || []).join(', '),
           validation: f.validation ? { ...f.validation } : {},
           maxSize: f.type === 'file' && f.maxSize ? f.maxSize / (1024 * 1024) : undefined
+        })),
+        documentMappings: (this.service.document_mappings || []).map(m => ({
+          placeholder: m.placeholder,
+          source: m.source,
+          field: m.field
         }))
       };
     }
     this.templateFile = null;
     this.templateRemove = false;
+    this.scanningPlaceholders = false;
+    this.placeholderScanError = '';
   }
 
   // ---- Template helpers ----
@@ -334,6 +443,60 @@ export class ServiceFormComponent implements OnChanges {
     return TEXT_TYPES.includes(type);
   }
 
+  // ---- Placeholder mapping helpers ----
+  addMapping() {
+    this.form.documentMappings.push({ placeholder: '', source: 'resident', field: 'full_name' });
+  }
+
+  removeMapping(index: number) {
+    this.form.documentMappings.splice(index, 1);
+  }
+
+  applicationFields(): string[] {
+    const keys = this.form.formFields.map(f => f.key).filter(Boolean);
+    return [...new Set([...APPLICATION_COMMON_FIELDS, ...keys])];
+  }
+
+  fieldOptions(source: DocumentMappingSource): { value: string; label: string }[] {
+    if (source === 'resident') return RESIDENT_FIELDS;
+    if (source === 'system') return SYSTEM_FIELDS;
+    return this.applicationFields().map(k => ({ value: k, label: k }));
+  }
+
+  onMappingSourceChange(mapping: EditableMapping) {
+    const options = this.fieldOptions(mapping.source);
+    if (options.length) mapping.field = options[0].value;
+  }
+
+  scanPlaceholders() {
+    if (!this.service?.service_id) {
+      this.placeholderScanError = 'Save the service first, or use an existing service to scan the template placeholders.';
+      return;
+    }
+    if (!this.service.template_path) {
+      this.placeholderScanError = 'Upload a DOCX template first, then scan its placeholders.';
+      return;
+    }
+    this.scanningPlaceholders = true;
+    this.placeholderScanError = '';
+    this.serviceService.scanTemplatePlaceholders(this.service.service_id).subscribe({
+      next: (res) => {
+        const tags: string[] = res.data || [];
+        const existing = new Set(this.form.documentMappings.map(m => m.placeholder));
+        tags.forEach(tag => {
+          if (!existing.has(tag)) {
+            this.form.documentMappings.push({ placeholder: tag, source: 'resident', field: 'full_name' });
+          }
+        });
+        this.scanningPlaceholders = false;
+      },
+      error: () => {
+        this.scanningPlaceholders = false;
+        this.placeholderScanError = 'Could not scan the template. Make sure it is a DOCX file with {{placeholder}} tags.';
+      }
+    });
+  }
+
   validate(): boolean {
     this.errors = {};
     if (!this.form.serviceName.trim()) this.errors['serviceName'] = 'Service name is required.';
@@ -344,6 +507,12 @@ export class ServiceFormComponent implements OnChanges {
       }
       if (OPTIONS_TYPES.includes(f.type) && !(f.optionsText || '').trim()) {
         this.errors['formFields'] = `Field "${f.label}" needs at least one option.`;
+        break;
+      }
+    }
+    for (const m of this.form.documentMappings) {
+      if (!m.placeholder.trim() || !m.field.trim()) {
+        this.errors['documentMappings'] = 'Every placeholder mapping needs a placeholder and a field.';
         break;
       }
     }
@@ -392,6 +561,11 @@ export class ServiceFormComponent implements OnChanges {
       requirements: this.form.requirementsText.split('\n').map(s => s.trim()).filter(Boolean),
       requiredDocuments: this.form.requiredDocumentsText.split('\n').map(s => s.trim()).filter(Boolean),
       formFields,
+      documentMappings: this.form.documentMappings.map(m => ({
+        placeholder: m.placeholder.trim(),
+        source: m.source,
+        field: m.field.trim()
+      })) as DocumentMapping[],
       templateFile: this.templateFile,
       templateRemove: this.templateRemove
     });

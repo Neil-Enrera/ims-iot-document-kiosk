@@ -24,6 +24,24 @@ const validateFormFields = (value) => {
   return true;
 };
 
+// Document placeholder mappings — each entry ties a {{placeholder}} in the
+// official template to a value source:
+//   source: 'resident' | 'application' | 'system'
+//   field : resident column / form_data key / system value key
+const validateDocumentMappings = (value) => {
+  if (value === undefined || value === null) return true;
+  if (!Array.isArray(value)) return false;
+  const ALLOWED_SOURCES = ['resident', 'application', 'system'];
+
+  for (const mapping of value) {
+    if (!mapping || typeof mapping !== 'object') return false;
+    if (typeof mapping.placeholder !== 'string' || !mapping.placeholder.trim()) return false;
+    if (!ALLOWED_SOURCES.includes(mapping.source)) return false;
+    if (typeof mapping.field !== 'string' || !mapping.field.trim()) return false;
+  }
+  return true;
+};
+
 const createValidation = [
   body('serviceName').trim().notEmpty().withMessage('Service name is required.')
     .isLength({ max: 100 }).withMessage('Service name must be 100 characters or less.'),
@@ -35,7 +53,8 @@ const createValidation = [
   body('formFields').optional().custom(validateFormFields).withMessage('Form fields contain invalid field definitions.'),
   body('requiredDocuments').optional().isArray().withMessage('Required documents must be an array.'),
   body('processingTime').optional().trim(),
-  body('approvalWorkflow').optional().trim()
+  body('approvalWorkflow').optional().trim(),
+  body('documentMappings').optional().custom(validateDocumentMappings).withMessage('Document mappings contain invalid placeholder definitions.')
 ];
 
 const updateValidation = [
@@ -50,7 +69,8 @@ const updateValidation = [
   body('formFields').optional().custom(validateFormFields).withMessage('Form fields contain invalid field definitions.'),
   body('requiredDocuments').optional().isArray().withMessage('Required documents must be an array.'),
   body('processingTime').optional().trim(),
-  body('approvalWorkflow').optional().trim()
+  body('approvalWorkflow').optional().trim(),
+  body('documentMappings').optional().custom(validateDocumentMappings).withMessage('Document mappings contain invalid placeholder definitions.')
 ];
 
 const statusValidation = [

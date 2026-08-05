@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const serviceController = require('../controllers/service.controller');
+const documentController = require('../controllers/document.controller');
 const authenticate = require('../middleware/auth.middleware');
 const authorize = require('../middleware/role.middleware');
 const validate = require('../middleware/validation.middleware');
@@ -14,6 +15,7 @@ router.put('/:id', authenticate, authorize('Administrator'), ...updateValidation
 router.patch('/:id/status', authenticate, authorize('Administrator'), ...statusValidation, validate, serviceController.changeStatus);
 router.post('/:id/template', authenticate, authorize('Administrator'), uploadTemplate.single('template'), serviceController.uploadTemplate);
 router.delete('/:id/template', authenticate, authorize('Administrator'), serviceController.removeTemplate);
+router.get('/:id/template/placeholders', authenticate, authorize('Administrator', 'Barangay Secretary'), documentController.scanPlaceholders);
 router.delete('/:id', authenticate, authorize('Administrator'), serviceController.remove);
 
 module.exports = router;

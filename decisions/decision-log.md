@@ -231,7 +231,6 @@ The application form must always match the official barangay document template. 
 ---
 
 ### DEC-010 — Replace request status workflow with Status Display Board workflow
-
 **Status:** Accepted
 **Date:** 2026-08-04
 **Decision Maker(s):** Project Owner
@@ -252,4 +251,32 @@ The Status Display Board shows residents only two columns (Under Review and Read
 - Admin Panel request management now uses a status dropdown instead of approve/reject/release buttons.
 - A public, read-only Status Display Board page at `/status-display` (in the kiosk app) polls a new public `GET /kiosk/status-display` endpoint every 7 seconds.
 - New generic `PUT /requests/:id/status` endpoint; `request-status-changed` SSE event added for admin auto-refresh.
+
+---
+
+### DEC-011 — Template-driven automatic document generation
+
+**Status:** Accepted
+**Date:** 2026-08-05
+**Decision Maker(s):** Project Owner
+
+**Decision:**
+Each document-request service may store an official DOCX template along with a set of `{{placeholder}}` mappings. When a request reaches **Document Processing** (approved stage), the system automatically renders the template by replacing each placeholder with the matching value (resident record, submitted `form_data`, or a system-generated value), and stores the completed document separately from the never-modified template. Staff can preview, download, or print generated documents.
+
+**Reason:**
+The goal is to remove manual retyping by barangay staff. Template-driven generation means adding or updating a service (create service → upload DOCX template with `{{placeholders}}` → configure mappings → save) requires no source-code changes, keeping the system scalable and maintainable. Placeholder mappings replace the (rejected in DEC-009) concept of OCR but extend the same manual-configuration philosophy from the application form to the final official document.
+
+**Alternatives Considered:**
+1. OCR/AI extraction from scanned templates — rejected per DEC-009; error-prone and unnecessary.
+2. Hardcoding document fields per service in code — rejected as it requires code changes for each new/updated service.
+3. Pure PDF templates only — rejected as DOCX is the natural editable office format and placeholder replacement is well supported by `docxtemplater`.
+
+**Consequences:**
+- Migration `010` adds `services.document_mappings` (JSON) and a `generated_documents` table.
+- New document endpoints under `/requests/:id/documents`; `GET /services/:id/template/placeholders` assists mapping configuration.
+- `request.service.js` auto-generates the document on transition to Document Processing; failures are logged and do not block the status change.
+- Generated files are stored in `uploads/generated-documents/`; PDF conversion is optional and only runs if LibreOffice (`soffice`) is available.
+- Admin Panel service form gains placeholder-mapping configuration (with "Scan Template"); request details modal gains a generated-documents section with Generate / Preview / Download / Print.
+
+---
 

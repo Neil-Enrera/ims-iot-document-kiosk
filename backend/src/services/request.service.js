@@ -1,6 +1,7 @@
 const requestRepository = require('../repositories/request.repository');
 const residentRepository = require('../repositories/resident.repository');
 const serviceRepository = require('../repositories/service.repository');
+const documentService = require('./document.service');
 
 // Workflow: Submitted -> Waiting for Requirements -> Requirements Received
 //           -> Under Review -> Document Processing -> Ready for Release -> Released
@@ -99,6 +100,16 @@ const changeStatus = async (requestId, statusId, userId, remarks) => {
 
   await requestRepository.updateStatus(requestId, statusId, userId, remarks);
   const updated = await requestRepository.findById(requestId);
+
+  // Automatically generate the official document when the request reaches
+  // Document Processing. Generation failures do not block the status change.
+  if (statusId === STATUS_IDS.DOCUMENT_PROCESSING) {
+    try {
+      await documentService.generateDocument({ requestId, userId });
+    } catch (error) {
+      console.error(`Auto document generation failed for request ${requestId}:`, error.message);
+    }
+  }
 
   return { success: true, message: 'Request status updated successfully.', data: updated };
 };

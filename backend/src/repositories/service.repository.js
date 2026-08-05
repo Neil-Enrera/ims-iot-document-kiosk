@@ -47,7 +47,8 @@ const parseServiceRows = (rows) => {
     ...row,
     requirements: parseJson(row.requirements),
     form_fields: parseJson(row.form_fields),
-    required_documents: parseJson(row.required_documents)
+    required_documents: parseJson(row.required_documents),
+    document_mappings: parseJson(row.document_mappings)
   }));
 };
 
@@ -70,28 +71,29 @@ const findByName = async (serviceName) => {
   return rows[0] || null;
 };
 
-const create = async ({ serviceName, description, processingFee, requiresPhoto, requirements, formFields, requiredDocuments, processingTime, approvalWorkflow }) => {
+const create = async ({ serviceName, description, processingFee, requiresPhoto, requirements, formFields, requiredDocuments, processingTime, approvalWorkflow, documentMappings }) => {
   const [result] = await pool.query(
-    `INSERT INTO services (service_name, description, processing_fee, requires_photo, requirements, form_fields, required_documents, processing_time, approval_workflow)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO services (service_name, description, processing_fee, requires_photo, requirements, form_fields, required_documents, processing_time, approval_workflow, document_mappings)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       serviceName, description, processingFee, requiresPhoto || false,
       JSON.stringify(requirements ?? null),
       JSON.stringify(formFields ?? null),
       JSON.stringify(requiredDocuments ?? null),
       processingTime || null,
-      approvalWorkflow || null
+      approvalWorkflow || null,
+      JSON.stringify(documentMappings ?? null)
     ]
   );
   return result.insertId;
 };
 
-const update = async (serviceId, { serviceName, description, processingFee, requiresPhoto, requirements, formFields, requiredDocuments, processingTime, approvalWorkflow, isActive }) => {
+const update = async (serviceId, { serviceName, description, processingFee, requiresPhoto, requirements, formFields, requiredDocuments, processingTime, approvalWorkflow, isActive, documentMappings }) => {
   const [result] = await pool.query(
     `UPDATE services
      SET service_name = ?, description = ?, processing_fee = ?, requires_photo = ?,
          requirements = ?, form_fields = ?, required_documents = ?, processing_time = ?, approval_workflow = ?,
-         is_active = ?
+         is_active = ?, document_mappings = ?
      WHERE service_id = ?`,
     [
       serviceName, description, processingFee, requiresPhoto || false,
@@ -101,6 +103,7 @@ const update = async (serviceId, { serviceName, description, processingFee, requ
       processingTime || null,
       approvalWorkflow || null,
       isActive !== false,
+      JSON.stringify(documentMappings ?? null),
       serviceId
     ]
   );

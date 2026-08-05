@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { ApiService } from '../../core/services/api.service';
-import { User, Resident, RfidCard, Service, DocumentRequest, AuditLog, DashboardSummary, BarangayIdApplication } from '../interfaces/api.interfaces';
+import { HttpClient } from '@angular/common/http';
+import { User, Resident, RfidCard, Service, DocumentRequest, AuditLog, DashboardSummary, BarangayIdApplication, GeneratedDocument } from '../interfaces/api.interfaces';
 import { Observable, map } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
@@ -124,8 +125,33 @@ export class ServiceService {
     return this.api.delete<Service>(`/services/${id}/template`);
   }
 
+  scanTemplatePlaceholders(id: number) {
+    return this.api.get<string[]>(`/services/${id}/template/placeholders`);
+  }
+
   delete(id: number) {
     return this.api.delete(`/services/${id}`);
+  }
+}
+
+@Injectable({ providedIn: 'root' })
+export class DocumentService {
+  constructor(private api: ApiService, private http: HttpClient) {}
+
+  list(requestId: number) {
+    return this.api.get<GeneratedDocument[]>(`/requests/${requestId}/documents`);
+  }
+
+  generate(requestId: number) {
+    return this.api.post<any>(`/requests/${requestId}/documents/generate`, {});
+  }
+
+  fetchBlob(requestId: number, documentId: number) {
+    return this.http.get(this.downloadUrl(requestId, documentId), { responseType: 'blob' });
+  }
+
+  downloadUrl(requestId: number, documentId: number): string {
+    return this.api.baseUrl + `/requests/${requestId}/documents/${documentId}/download`;
   }
 }
 

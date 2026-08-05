@@ -8,6 +8,10 @@ import { environment } from '../../../environments/environment';
 export class ApiService {
   private readonly BASE_URL = environment.apiUrl;
 
+  get baseUrl(): string {
+    return this.BASE_URL;
+  }
+
   constructor(private http: HttpClient) {}
 
   get<T>(path: string, params?: Record<string, any>): Observable<ApiResponse<T>> {

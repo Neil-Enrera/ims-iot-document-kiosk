@@ -1,8 +1,8 @@
 import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { RequestService } from '../../shared/services';
+import { RequestService, DocumentService } from '../../shared/services';
 import { NotificationService } from '../notifications/notification.service';
-import { DocumentRequest, RequestStatusHistory } from '../../shared/interfaces/api.interfaces';
+import { DocumentRequest, RequestStatusHistory, GeneratedDocument } from '../../shared/interfaces/api.interfaces';
 import { TableComponent, TableColumn } from '../../shared/components/table.component';
 import { CardComponent } from '../../shared/components/card.component';
 import { InputComponent } from '../../shared/components/input.component';
@@ -131,6 +131,41 @@ interface RequestDetail extends DocumentRequest {
             </div>
           </dl>
 
+          <div class="flex items-center justify-between mt-6 mb-2">
+            <h4 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Generated Documents</h4>
+            <button
+              type="button"
+              [disabled]="generatingDoc()"
+              (click)="generateDocument()"
+              class="text-xs font-medium text-blue-600 hover:underline disabled:opacity-50">
+              {{ generatingDoc() ? 'Generating...' : 'Generate Document' }}
+            </button>
+          </div>
+          @if (documents().length > 0) {
+            <div class="space-y-2">
+              @for (doc of documents(); track doc.document_id) {
+                <div class="flex items-center justify-between border rounded p-2 text-sm bg-white">
+                  <div class="min-w-0">
+                    <p class="font-medium text-gray-900 truncate" [title]="doc.file_name">{{ doc.file_name }}</p>
+                    <p class="text-xs text-gray-500">{{ formatDate(doc.generated_at) }} · {{ formatBytes(doc.file_size) }}</p>
+                  </div>
+                  <div class="flex shrink-0 gap-2">
+                    <button type="button" (click)="previewDocument(doc)" class="text-xs text-blue-600 hover:underline">Preview</button>
+                    <button type="button" (click)="downloadDocument(doc)" class="text-xs text-blue-600 hover:underline">Download</button>
+                    <button type="button" (click)="printDocument(doc)" class="text-xs text-blue-600 hover:underline">Print</button>
+                  </div>
+                </div>
+              }
+            </div>
+          } @else {
+            <p class="text-sm text-gray-500">
+              No documents generated yet{{ docNotice() }}. Use "Generate Document" above once the request is approved.
+            </p>
+          }
+          @if (docError()) {
+            <p class="text-xs text-red-500 mt-2">{{ docError() }}</p>
+          }
+
           <h4 class="mt-6 mb-3 text-sm font-semibold text-gray-700 uppercase tracking-wide">Status History</h4>
           @if (request.history && request.history.length > 0) {
             <ol class="border-l-2 border-gray-200 space-y-3 pl-4">
@@ -168,6 +203,10 @@ export class RequestsComponent implements OnInit, OnDestroy {
   saving = signal(false);
   showDetails = signal(false);
   selectedRequest = signal<RequestDetail | null>(null);
+  documents = signal<GeneratedDocument[]>([]);
+  generatingDoc = signal(false);
+  docError = signal('');
+  docNotice = signal('');
 
   private sseSubscription: any = null;
 
@@ -199,6 +238,7 @@ export class RequestsComponent implements OnInit, OnDestroy {
 
   constructor(
     private requestService: RequestService,
+    private documentService: DocumentService,
     private notificationService: NotificationService,
     private route: ActivatedRoute,
     private router: Router
@@ -317,12 +357,108 @@ export class RequestsComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.selectedRequest.set(res.data as RequestDetail);
         this.showDetails.set(true);
+        this.loadDocuments(request.request_id);
       },
       error: () => {
         this.selectedRequest.set(request as RequestDetail);
         this.showDetails.set(true);
+        this.loadDocuments(request.request_id);
       }
     });
+  }
+
+  loadDocuments(requestId: number) {
+    this.docError.set('');
+    this.docNotice.set('');
+    this.documents.set([]);
+    this.documentService.list(requestId).subscribe({
+      next: (res) => {
+        this.documents.set(res.data || []);
+        if (this.documents().length === 0 && !this.canGenerateDocument()) {
+          this.docNotice.set(' (only approved/processing requests can generate documents)');
+        }
+      },
+      error: () => {
+        this.docError.set('Could not load generated documents.');
+      }
+    });
+  }
+
+  canGenerateDocument(): boolean {
+    const statusId = this.selectedRequest()?.status_id;
+    return statusId === 4 || statusId === 5 || statusId === 6 || statusId === 7;
+  }
+
+  generateDocument() {
+    const request = this.selectedRequest();
+    if (!request) return;
+    if (!this.canGenerateDocument()) {
+      this.docError.set('Only approved requests (Under Review and onwards) can generate official documents.');
+      return;
+    }
+    this.generatingDoc.set(true);
+    this.docError.set('');
+    this.documentService.generate(request.request_id).subscribe({
+      next: () => {
+        this.generatingDoc.set(false);
+        this.loadDocuments(request.request_id);
+      },
+      error: (err) => {
+        this.generatingDoc.set(false);
+        this.docError.set(err.error?.message || 'Failed to generate document.');
+        this.loadDocuments(request.request_id);
+      }
+    });
+  }
+
+  openDocument(doc: GeneratedDocument) {
+    const request = this.selectedRequest();
+    if (!request) return;
+    this.documentService.fetchBlob(request.request_id, doc.document_id).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const isPdf = doc.file_type === 'application/pdf';
+        window.open(url, isPdf ? '_blank' : '_blank');
+      },
+      error: () => {
+        this.docError.set('Could not open the document.');
+      }
+    });
+  }
+
+  previewDocument(doc: GeneratedDocument) {
+    this.openDocument(doc);
+  }
+
+  downloadDocument(doc: GeneratedDocument) {
+    const request = this.selectedRequest();
+    if (!request) return;
+    this.documentService.fetchBlob(request.request_id, doc.document_id).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = doc.file_name;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      },
+      error: () => {
+        this.docError.set('Could not download the document.');
+      }
+    });
+  }
+
+  printDocument(doc: GeneratedDocument) {
+    this.openDocument(doc);
+  }
+
+  formatBytes(bytes: number | null | undefined): string {
+    if (!bytes) return '0 B';
+    const mb = bytes / (1024 * 1024);
+    if (mb >= 1) return `${mb.toFixed(2)} MB`;
+    return `${Math.round(bytes / 1024)} KB`;
   }
 
   formatDate(value: string | null | undefined): string {

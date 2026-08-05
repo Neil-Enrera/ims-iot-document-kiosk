@@ -93,6 +93,14 @@ export interface FormField {
   };
 }
 
+export type DocumentMappingSource = 'resident' | 'application' | 'system';
+
+export interface DocumentMapping {
+  placeholder: string;
+  source: DocumentMappingSource;
+  field: string;
+}
+
 export interface Service {
   service_id: number;
   service_name: string;
@@ -108,9 +116,24 @@ export interface Service {
   template_original_name: string | null;
   template_mime: string | null;
   template_size: number | null;
+  document_mappings: DocumentMapping[] | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface GeneratedDocument {
+  document_id: number;
+  request_id: number;
+  service_id: number;
+  file_name: string;
+  file_path: string;
+  file_type: string;
+  file_size: number | null;
+  generated_by: number | null;
+  generated_at: string;
+  generated_by_first: string | null;
+  generated_by_last: string | null;
 }
 
 export interface DocumentRequest {

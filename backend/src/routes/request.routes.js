@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const requestController = require('../controllers/request.controller');
+const documentRoutes = require('./document.routes');
 const authenticate = require('../middleware/auth.middleware');
 const authorize = require('../middleware/role.middleware');
 const validate = require('../middleware/validation.middleware');
@@ -16,5 +17,8 @@ router.post('/:id/approve', authenticate, authorize('Administrator', 'Barangay S
 router.post('/:id/reject', authenticate, authorize('Administrator', 'Barangay Secretary', 'Barangay Captain'), ...statusValidation, validate, requestController.reject);
 router.post('/:id/cancel', authenticate, authorize('Administrator', 'Barangay Secretary'), ...statusValidation, validate, requestController.cancel);
 router.post('/:id/release', authenticate, authorize('Administrator', 'Barangay Secretary'), ...statusValidation, validate, requestController.release);
+
+// Automatic document generation endpoints
+router.use('/:id/documents', documentRoutes);
 
 module.exports = router;

@@ -6,6 +6,7 @@
 - TASK-BACKEND-001 through TASK-BACKEND-018: ALL 17 backend tasks complete
 - TASK-FRONTEND-001 through TASK-FRONTEND-017: ALL 16 frontend tasks complete (011 removed per DEC-008)
 - TASK-FRONTEND-019: Status Display Board module complete (DEC-010 workflow + /status-display board)
+- TASK-BACKEND-019: Automatic Document Generation module complete (DEC-011, migration 010, docx template rendering)
 
 ## In Progress
 - (none — all frontend and backend tasks complete)
@@ -20,7 +21,7 @@
 |-------|--------|
 | Foundation | ✅ COMPLETE |
 | Database | ✅ COMPLETE |
-| Backend | ✅ COMPLETE (17/17) |
+| Backend | ✅ COMPLETE (18/18) |
 | Frontend | ✅ COMPLETE (17/17) |
 | Kiosk/IoT | Not started |
 | Testing | Not started |
@@ -55,3 +56,4 @@
 | 2026-07-30 | Foundation phase, DB schema | backend/*, database/* |
 | 2026-07-31 | Backend complete (17 tasks), Frontend complete (16 tasks) | All modules |
 | 2026-08-04 | Status Display Board module (DEC-010, TASK-FRONTEND-019): new request workflow, admin status dropdown, /status-display board | database/migrations/009, backend/*, frontend/admin-panel/requests, frontend/kiosk-app/status-display |
+| 2026-08-05 | Automatic Document Generation (DEC-011, TASK-BACKEND-019): docx template placeholders, admin placeholder mappings, auto-generate on Document Processing, document preview/download/print | database/migrations/010, backend/src/services/document.service.js, backend/src/routes/document.routes.js, frontend/admin-panel/services + requests |
