@@ -113,7 +113,6 @@ export class ServicesComponent implements OnInit {
     { key: 'service_name', label: 'Service Name', sortable: true },
     { key: 'description', label: 'Description' },
     { key: 'processing_fee', label: 'Fee', align: 'right', sortable: true },
-    { key: 'processing_time', label: 'Processing Time' },
     { key: 'requires_photo', label: 'Photo Required' },
     { key: 'is_active', label: 'Status' },
     { key: 'show_in_kiosk', label: 'In Kiosk' }
