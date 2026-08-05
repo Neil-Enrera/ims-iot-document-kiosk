@@ -7,6 +7,8 @@ import { Service, FormField, FormFieldType, DocumentMapping, DocumentMappingSour
 import { ServiceService } from '../../shared/services';
 import { environment } from '../../../environments/environment';
 import { DocumentPreviewModalComponent } from '../../shared/components/document-preview-modal.component';
+import { ApiService } from '../../core/services/api.service';
+import { HttpClient } from '@angular/common/http';
 
 interface EditableFormField extends FormField {
   optionsText?: string;
@@ -383,7 +385,7 @@ export class ServiceFormComponent implements OnChanges {
 
   private readonly assetBase = environment.apiUrl.replace(/\/api\/v1$/, '');
 
-  constructor(private serviceService: ServiceService) {}
+  constructor(private serviceService: ServiceService, private api: ApiService, private http: HttpClient) {}
 
   ngOnChanges() {
     if (this.service) {
@@ -428,17 +430,13 @@ export class ServiceFormComponent implements OnChanges {
     this.templatePreviewTitle = this.service.template_original_name || 'Template Preview';
     this.templatePreviewBlob = null;
     this.showTemplatePreview = true;
-    this.serviceService.getById(this.service.service_id).subscribe({
-      next: (res) => {
-        const templatePath = res.data?.template_path;
-        if (templatePath) {
-          const url = `${this.assetBase}/uploads/${templatePath}`;
-          fetch(url).then(r => r.blob()).then(blob => {
-            this.templatePreviewBlob = blob;
-          }).catch(() => {
-            this.placeholderScanError = 'Could not load template for preview.';
-          });
-        }
+    const url = `${this.assetBase}/uploads/${this.service.template_path}`;
+    this.http.get(url, { responseType: 'blob' }).subscribe({
+      next: (blob) => {
+        this.templatePreviewBlob = blob;
+      },
+      error: () => {
+        this.placeholderScanError = 'Could not load template for preview.';
       }
     });
   }

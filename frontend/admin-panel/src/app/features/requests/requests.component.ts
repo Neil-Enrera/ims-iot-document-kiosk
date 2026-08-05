@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { RequestService, DocumentService } from '../../shared/services';
 import { NotificationService } from '../notifications/notification.service';
-import { DocumentRequest, RequestStatusHistory, GeneratedDocument } from '../../shared/interfaces/api.interfaces';
+import { DocumentRequest, RequestStatusHistory, GeneratedDocument, FormField } from '../../shared/interfaces/api.interfaces';
 import { TableComponent, TableColumn } from '../../shared/components/table.component';
 import { CardComponent } from '../../shared/components/card.component';
 import { InputComponent } from '../../shared/components/input.component';
@@ -156,6 +156,27 @@ interface RequestDetail extends DocumentRequest {
               <dd class="col-span-2 text-gray-900">{{ request.remarks || '-' }}</dd>
             </div>
           </dl>
+
+          <!-- Form Data Preview -->
+          @if (request.form_data && hasFormData(request.form_data)) {
+            <div class="flex items-center justify-between mt-6 mb-2">
+              <h4 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Submitted Form Data</h4>
+              <button
+                type="button"
+                (click)="previewRequestData(request)"
+                class="text-xs font-medium text-blue-600 hover:underline">
+                Preview Form Data
+              </button>
+            </div>
+            <div class="bg-gray-50 rounded p-3 text-sm max-h-60 overflow-y-auto">
+              @for (entry of formDataEntries(request.form_data); track entry.key) {
+                <div class="mb-2">
+                  <span class="font-medium text-gray-700">{{ formatFieldLabel(entry.key) }}:</span>
+                  <span class="ml-2 text-gray-900 whitespace-pre-wrap">{{ entry.value }}</span>
+                </div>
+              }
+            </div>
+          }
 
           <div class="flex items-center justify-between mt-6 mb-2">
             <h4 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Generated Documents</h4>
@@ -619,5 +640,62 @@ export class RequestsComponent implements OnInit, OnDestroy {
     return this.daysRemaining(value) <= 2
       ? `${base} text-red-700 bg-red-100`
       : `${base} text-amber-800 bg-amber-100`;
+  }
+
+  // --- Request Form Data Preview ---
+  previewRequestData(request: DocumentRequest) {
+    // The form_data is already in the request object
+    // This could open a modal, but for now we show it inline
+    // Could be extended to a full modal if needed
+  }
+
+  formDataEntries(formData: Record<string, unknown>): { key: string; value: string }[] {
+    return Object.entries(formData).map(([key, value]) => ({
+      key,
+      value: value === null || value === undefined ? '-' : String(value)
+    }));
+  }
+
+  formatFieldLabel(key: string): string {
+    const labelMap: Record<string, string> = {
+      full_name: 'Full Name',
+      first_name: 'First Name',
+      middle_name: 'Middle Name',
+      last_name: 'Last Name',
+      suffix: 'Suffix',
+      birth_date: 'Birth Date',
+      birthdate: 'Birth Date',
+      gender: 'Gender',
+      sex: 'Gender',
+      civil_status: 'Civil Status',
+      address_line: 'Address',
+      address: 'Address',
+      contact_number: 'Contact Number',
+      contact: 'Contact Number',
+      email: 'Email',
+      resident_code: 'Resident Code',
+      blood_type: 'Blood Type',
+      emergency_contact_name: 'Emergency Contact Name',
+      emergency_contact_number: 'Emergency Contact Number',
+      purpose: 'Purpose',
+      occupation: 'Occupation',
+      business_name: 'Business Name',
+      owner_name: 'Owner Name',
+      business_address: 'Business Address',
+      nature_of_business: 'Nature of Business',
+      pole_type: 'Pole Type',
+      street: 'Street',
+      office_address: 'Office Address',
+      requestor_name: 'Requestor Name',
+      years_of_residency: 'Years of Residency',
+      monthly_income: 'Monthly Income',
+      household_members: 'Household Members',
+      _guest: 'Guest Info'
+    };
+    return labelMap[key] || key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  }
+
+  hasFormData(formData: Record<string, unknown>): boolean {
+    return formData && Object.keys(formData).length > 0;
   }
 }
