@@ -2,6 +2,7 @@ const pool = require('../config/database');
 
 const findAll = async ({ search, statusId, residentId, serviceId, dateFrom, dateTo, page, limit, sortBy, sortOrder }) => {
   let query = `SELECT rq.*, rs.status_name, s.service_name, s.processing_fee,
+    (rq.status_id = 6 AND rq.expires_at IS NOT NULL AND rq.expires_at < NOW()) AS is_expired,
     COALESCE(
       CONCAT(r.first_name, ' ', IFNULL(r.middle_name, ''), ' ', r.last_name),
       JSON_UNQUOTE(JSON_EXTRACT(rq.form_data, '$._guest.full_name'))
@@ -104,6 +105,7 @@ const parseJsonField = (value) => {
 const findById = async (requestId) => {
   const [rows] = await pool.query(
     `SELECT rq.*, rs.status_name, s.service_name, s.processing_fee,
+      (rq.status_id = 6 AND rq.expires_at IS NOT NULL AND rq.expires_at < NOW()) AS is_expired,
       COALESCE(
         CONCAT(r.first_name, ' ', IFNULL(r.middle_name, ''), ' ', r.last_name),
         JSON_UNQUOTE(JSON_EXTRACT(rq.form_data, '$._guest.full_name'))
@@ -173,13 +175,17 @@ const update = async (requestId, { serviceId, purpose, remarks }) => {
   return result.affectedRows > 0;
 };
 
-const updateStatus = async (requestId, statusId, changedBy, remarks) => {
+const updateStatus = async (requestId, statusId, changedBy, remarks, expiresAt = null) => {
   const [current] = await pool.query('SELECT status_id FROM requests WHERE request_id = ?', [requestId]);
   const oldStatusId = current[0]?.status_id || null;
 
   await pool.query(
-    'UPDATE requests SET status_id = ?, reviewed_date = IF(? IN (4,8), NOW(), reviewed_date), release_date = IF(? = 7, NOW(), release_date) WHERE request_id = ?',
-    [statusId, statusId, statusId, requestId]
+    `UPDATE requests SET status_id = ?,
+      reviewed_date = IF(? IN (4,8), NOW(), reviewed_date),
+      release_date = IF(? = 7, NOW(), release_date),
+      expires_at = IF(? = 6, IFNULL(?, expires_at), IF(? = 7, NULL, expires_at))
+      WHERE request_id = ?`,
+    [statusId, statusId, statusId, statusId, expiresAt, statusId, requestId]
   );
 
   await pool.query(

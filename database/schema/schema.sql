@@ -163,6 +163,7 @@ CREATE TABLE requests (
     request_date DATETIME NOT NULL,
     reviewed_date DATETIME,
     release_date DATETIME,
+    expires_at DATETIME,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_request_resident

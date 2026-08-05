@@ -160,6 +160,8 @@ export interface DocumentRequest {
   request_date: string;
   reviewed_date: string | null;
   release_date: string | null;
+  expires_at: string | null;
+  is_expired: boolean;
   created_at: string;
   updated_at: string;
   status_name: string;

@@ -322,6 +322,7 @@ const getStatusDisplay = async (req, res) => {
        FROM requests rq
        JOIN request_statuses rs ON rq.status_id = rs.status_id
        WHERE rs.status_name IN ('Under Review', 'Document Processing', 'Ready for Release')
+         AND NOT (rs.status_name = 'Ready for Release' AND rq.expires_at IS NOT NULL AND rq.expires_at < NOW())
        ORDER BY rq.request_id ASC`
     );
 

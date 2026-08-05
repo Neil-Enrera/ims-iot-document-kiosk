@@ -1,6 +1,7 @@
 const requestRepository = require('../repositories/request.repository');
 const residentRepository = require('../repositories/resident.repository');
 const serviceRepository = require('../repositories/service.repository');
+const settingRepository = require('../repositories/setting.repository');
 const documentService = require('./document.service');
 
 // Workflow: Submitted -> Waiting for Requirements -> Requirements Received
@@ -98,7 +99,18 @@ const changeStatus = async (requestId, statusId, userId, remarks) => {
     return { success: false, message: 'Invalid status transition.' };
   }
 
-  await requestRepository.updateStatus(requestId, statusId, userId, remarks);
+  // When a document is finished (Ready for Release), open a claim window.
+  // If the resident does not claim within the configured days, the done
+  // document is considered expired. Releasing closes the window.
+  let expiresAt = null;
+  if (statusId === STATUS_IDS.READY_FOR_RELEASE) {
+    const claimDays = await getClaimWindowDays();
+    if (claimDays > 0) {
+      expiresAt = new Date(Date.now() + claimDays * 24 * 60 * 60 * 1000);
+    }
+  }
+
+  await requestRepository.updateStatus(requestId, statusId, userId, remarks, expiresAt);
   const updated = await requestRepository.findById(requestId);
 
   // Automatically generate the official document when the request reaches
@@ -130,9 +142,15 @@ const releaseRequest = async (requestId, userId, remarks) => {
   return changeStatus(requestId, STATUS_IDS.RELEASED, userId, remarks || 'Released');
 };
 
+const getClaimWindowDays = async () => {
+  const setting = await settingRepository.findByKey('document_claim_days');
+  const days = parseInt(setting?.setting_value, 10);
+  return Number.isInteger(days) && days > 0 ? days : 0;
+};
+
 const getStats = async () => {
   const stats = await requestRepository.getStats();
   return { success: true, message: 'Statistics retrieved successfully.', data: stats };
 };
 
-module.exports = { getAllRequests, getRequestById, createRequest, updateRequest, changeStatus, approveRequest, rejectRequest, cancelRequest, releaseRequest, getStats };
+module.exports = { getAllRequests, getRequestById, createRequest, updateRequest, changeStatus, approveRequest, rejectRequest, cancelRequest, releaseRequest, getClaimWindowDays, getStats };

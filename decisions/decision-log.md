@@ -280,3 +280,28 @@ The goal is to remove manual retyping by barangay staff. Template-driven generat
 
 ---
 
+### DEC-012 — Claim window (expiry) for done documents
+
+**Status:** Accepted
+**Date:** 2026-08-05
+**Decision Maker(s):** Project Owner
+
+**Decision:**
+Done (finished) documents get a configurable claim window. When a request reaches **Ready for Release**, the system records an `expires_at` deadline equal to the ready/release timestamp plus `document_claim_days` (default 15, configurable in System Settings → Document). A ready-for-release document is considered **expired** when `expires_at < NOW()`; releasing the document (claimed) clears the deadline. Expiry is a soft flag — it never deletes or modifies the generated document file.
+
+**Reason:**
+Done documents that residents never claim accumulate as clutter and mislead the Status Display Board ("Ready for Release" is shown as a live, actionable column). An explicit, configurable claim window lets staff see which finished documents are at risk (an "Expires in Xd / Expired" badge) and prevents stale records from blocking attention. Soft expiry preserves the generated file for future re-release rather than destroying completed work.
+
+**Alternatives Considered:**
+1. Auto-delete expired generated files — rejected as destructive; losing finished official documents could require full re-generation.
+2. Hardcode a fixed claim window — rejected as different barangay workflows need different retention periods; making it a System Setting keeps it configurable without code changes.
+3. Treat expiry as a new terminal workflow status — rejected as it would complicate the linear 7-step workflow and the status dropdown; an `is_expired` flag is simpler and still surfaces in the UI.
+
+**Consequences:**
+- Migration `011` adds `requests.expires_at` (DATETIME) and the `document_claim_days` System Setting.
+- `request.service.js` sets `expires_at` on transition to Ready for Release and clears it on Released; `request.repository.js` returns a computed `is_expired` flag.
+- Ready-for-release requests that have expired are hidden from the public Status Display Board.
+- Admin Panel Document Requests list gains a "Claim Expiry" column with an Expired / X-day countdown badge, and the request details modal shows the claim deadline.
+
+---
+

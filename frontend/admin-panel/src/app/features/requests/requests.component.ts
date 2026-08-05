@@ -51,7 +51,7 @@ interface RequestDetail extends DocumentRequest {
           [sortDirection]="sortDirection()"
           trackBy="request_id"
           emptyMessage="No requests found"
-          [cellTemplates]="{ status_name: statusCell }"
+          [cellTemplates]="{ status_name: statusCell, expires_at: expiryCell }"
           [rowActionsTemplate]="rowActions"
           (onSort)="onSort($event)">
 
@@ -65,6 +65,19 @@ interface RequestDetail extends DocumentRequest {
                 <option [value]="opt.value">{{ opt.label }}</option>
               }
             </select>
+          </ng-template>
+
+          <ng-template #expiryCell let-value let-row="row">
+            @if (row.is_expired) {
+              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold text-red-700 bg-red-100">Expired</span>
+            } @else if (row.expires_at) {
+              <span
+                [class]="expiryBadgeClass(row.expires_at)">
+                {{ daysRemaining(row.expires_at) }}d left
+              </span>
+            } @else {
+              <span class="text-gray-400">-</span>
+            }
           </ng-template>
 
           <ng-template #rowActions let-request>
@@ -117,6 +130,18 @@ interface RequestDetail extends DocumentRequest {
               <dt class="text-gray-500 font-medium">Current Status</dt>
               <dd class="col-span-2 text-gray-900">{{ request.status_name }}</dd>
             </div>
+            @if (request.expires_at) {
+              <div class="grid grid-cols-3 gap-2">
+                <dt class="text-gray-500 font-medium">Claim Expiry</dt>
+                <dd class="col-span-2">
+                  @if (request.is_expired) {
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold text-red-700 bg-red-100">Expired</span>
+                  } @else {
+                    <span class="text-gray-900">{{ formatDate(request.expires_at) }} · {{ daysRemaining(request.expires_at) }}d left</span>
+                  }
+                </dd>
+              </div>
+            }
             <div class="grid grid-cols-3 gap-2">
               <dt class="text-gray-500 font-medium">Assigned Staff</dt>
               <dd class="col-span-2 text-gray-900">{{ request.assigned_staff || '-' }}</dd>
@@ -216,6 +241,7 @@ export class RequestsComponent implements OnInit, OnDestroy {
     { key: 'service_name', label: 'Service' },
     { key: 'request_date', label: 'Date Submitted', sortable: true },
     { key: 'status_name', label: 'Status' },
+    { key: 'expires_at', label: 'Claim Expiry' },
     { key: 'remarks', label: 'Notes' }
   ];
 
@@ -467,5 +493,18 @@ export class RequestsComponent implements OnInit, OnDestroy {
     return isNaN(date.getTime())
       ? value
       : date.toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  }
+
+  daysRemaining(value: string): number {
+    const expires = new Date(value).getTime();
+    if (isNaN(expires)) return 0;
+    return Math.max(0, Math.ceil((expires - Date.now()) / (24 * 60 * 60 * 1000)));
+  }
+
+  expiryBadgeClass(value: string): string {
+    const base = 'inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold';
+    return this.daysRemaining(value) <= 2
+      ? `${base} text-red-700 bg-red-100`
+      : `${base} text-amber-800 bg-amber-100`;
   }
 }
