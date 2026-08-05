@@ -59,6 +59,16 @@ const changeStatus = async (req, res) => {
   }
 };
 
+const changeKioskVisibility = async (req, res) => {
+  try {
+    const result = await serviceService.changeKioskVisibility(req.params.id, req.body.showInKiosk);
+    if (!result.success) return errorResponse(res, 404, result.message);
+    return successResponse(res, result.message, result.data);
+  } catch {
+    return errorResponse(res, 500, 'Internal server error.');
+  }
+};
+
 const uploadTemplate = async (req, res) => {
   try {
     const result = await serviceService.uploadTemplate(req.params.id, req.file);
@@ -91,4 +101,4 @@ const remove = async (req, res) => {
   }
 };
 
-module.exports = { getAll, getById, create, update, changeStatus, uploadTemplate, removeTemplate, remove };
+module.exports = { getAll, getById, create, update, changeStatus, changeKioskVisibility, uploadTemplate, removeTemplate, remove };

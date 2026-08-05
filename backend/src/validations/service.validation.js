@@ -49,6 +49,7 @@ const createValidation = [
   body('processingFee').optional().isFloat({ min: 0 }).withMessage('Processing fee must be a non-negative number.'),
   body('requiresPhoto').optional().isBoolean().withMessage('requiresPhoto must be a boolean.'),
   body('isActive').optional().isBoolean().withMessage('isActive must be a boolean.'),
+  body('showInKiosk').optional().isBoolean().withMessage('showInKiosk must be a boolean.'),
   body('requirements').optional().isArray().withMessage('Requirements must be an array.'),
   body('formFields').optional().custom(validateFormFields).withMessage('Form fields contain invalid field definitions.'),
   body('requiredDocuments').optional().isArray().withMessage('Required documents must be an array.'),
@@ -65,6 +66,7 @@ const updateValidation = [
   body('processingFee').optional().isFloat({ min: 0 }).withMessage('Processing fee must be a non-negative number.'),
   body('requiresPhoto').optional().isBoolean().withMessage('requiresPhoto must be a boolean.'),
   body('isActive').optional().isBoolean().withMessage('isActive must be a boolean.'),
+  body('showInKiosk').optional().isBoolean().withMessage('showInKiosk must be a boolean.'),
   body('requirements').optional().isArray().withMessage('Requirements must be an array.'),
   body('formFields').optional().custom(validateFormFields).withMessage('Form fields contain invalid field definitions.'),
   body('requiredDocuments').optional().isArray().withMessage('Required documents must be an array.'),
@@ -78,11 +80,16 @@ const statusValidation = [
   body('isActive').isBoolean().withMessage('isActive must be a boolean.')
 ];
 
+const kioskVisibilityValidation = [
+  param('id').isInt({ min: 1 }).withMessage('Invalid service ID.'),
+  body('showInKiosk').isBoolean().withMessage('showInKiosk must be a boolean.')
+];
+
 const getAllValidation = [
   query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer.'),
   query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be 1-100.'),
-  query('sortBy').optional().isIn(['service_id', 'service_name', 'processing_fee', 'is_active', 'created_at']).withMessage('Invalid sort column.'),
+  query('sortBy').optional().isIn(['service_id', 'service_name', 'processing_fee', 'is_active', 'show_in_kiosk', 'created_at']).withMessage('Invalid sort column.'),
   query('sortOrder').optional().isIn(['ASC', 'DESC']).withMessage('Sort order must be ASC or DESC.')
 ];
 
-module.exports = { createValidation, updateValidation, statusValidation, getAllValidation };
+module.exports = { createValidation, updateValidation, statusValidation, kioskVisibilityValidation, getAllValidation };

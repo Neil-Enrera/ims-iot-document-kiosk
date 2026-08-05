@@ -305,3 +305,28 @@ Done documents that residents never claim accumulate as clutter and mislead the 
 
 ---
 
+### DEC-013 — Independent kiosk visibility for services
+
+**Status:** Accepted
+**Date:** 2026-08-05
+**Decision Maker(s):** Project Owner
+
+**Decision:**
+Services gain a second, independent status flag: **Show in Kiosk** (`services.show_in_kiosk`, default true). It is separate from the existing **Active** status. The Kiosk selection screen only lists services where `is_active = 1 AND show_in_kiosk = 1`. Unchecking "Show in Kiosk" removes a service from the Kiosk while keeping it Active and fully usable in the admin panel (new requests, document generation).
+
+**Reason:**
+Previously the only way to hide a service from the Kiosk was to deactivate it, which also made the service unusable in the admin panel. Barangay staff may want to stop offering a service at the self-service Kiosk (e.g. temporarily) but still accept and process requests for it through the office. A dedicated, reversible flag ("Show in Kiosk") expresses this intent without the destructive connotation of removing the service or collapsing its admin usability.
+
+**Alternatives Considered:**
+1. Reuse only the existing `is_active` flag for kiosk visibility — rejected, as it conflates "service is usable" with "service is offered at the Kiosk" and cannot represent an office-only service.
+2. A destructive "Remove from Kiosk" action that deletes the service — rejected; it implies the service is gone and would break request/document history, whereas hiding is reversible and preserves data.
+3. A terminal workflow-like "Hidden" state — rejected; a single boolean flag matches the existing `is_active` pattern and is simpler.
+
+**Consequences:**
+- Migration `012` adds `services.show_in_kiosk` (BOOLEAN, default TRUE).
+- Kiosk public services query now filters on both `is_active` and `show_in_kiosk`.
+- New endpoints `PATCH /services/:id/kiosk-visibility` and `PATCH /services/:id/status` operate the two flags independently.
+- Admin Panel Service form gains a "Show in Kiosk" toggle; the Services list gains an "In Kiosk" column (Shown / Hidden).
+
+---
+

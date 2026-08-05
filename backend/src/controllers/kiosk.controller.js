@@ -46,7 +46,7 @@ const getServices = async (req, res) => {
     const [rows] = await pool.query(
       `SELECT service_id, service_name, description, requirements, form_fields, required_documents,
               processing_fee, processing_time, requires_photo, approval_workflow, is_active
-       FROM services WHERE is_active = 1 ORDER BY service_name`
+       FROM services WHERE is_active = 1 AND show_in_kiosk = 1 ORDER BY service_name`
     );
     const services = rows.map(s => ({
       ...s,

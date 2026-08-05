@@ -108,6 +108,14 @@ const APPLICATION_COMMON_FIELDS = [
         <span class="text-sm font-medium text-gray-700">Status (Active / Inactive)</span>
       </div>
 
+      <div class="flex items-center gap-3">
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" [(ngModel)]="form.showInKiosk" name="showInKiosk" class="sr-only peer" />
+          <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+        </label>
+        <span class="text-sm font-medium text-gray-700">Show in Kiosk</span>
+      </div>
+
       <!-- Official Document Template -->
       <div class="border rounded-lg p-3">
         <label class="block text-sm font-medium text-gray-700 mb-1">Official Document Template</label>
@@ -331,6 +339,7 @@ export class ServiceFormComponent implements OnChanges {
     approvalWorkflow: '',
     requiresPhoto: false,
     isActive: true,
+    showInKiosk: true,
     requirementsText: '',
     requiredDocumentsText: '',
     formFields: [] as EditableFormField[],
@@ -358,6 +367,7 @@ export class ServiceFormComponent implements OnChanges {
         approvalWorkflow: this.service.approval_workflow || '',
         requiresPhoto: this.service.requires_photo || false,
         isActive: !!this.service.is_active,
+        showInKiosk: this.service.show_in_kiosk !== false,
         requirementsText: (this.service.requirements || []).join('\n'),
         requiredDocumentsText: (this.service.required_documents || []).join('\n'),
         formFields: (this.service.form_fields || []).map(f => ({
@@ -558,6 +568,7 @@ export class ServiceFormComponent implements OnChanges {
       approvalWorkflow: this.form.approvalWorkflow.trim() || undefined,
       requiresPhoto: this.form.requiresPhoto,
       isActive: this.form.isActive,
+      showInKiosk: this.form.showInKiosk,
       requirements: this.form.requirementsText.split('\n').map(s => s.trim()).filter(Boolean),
       requiredDocuments: this.form.requiredDocumentsText.split('\n').map(s => s.trim()).filter(Boolean),
       formFields,

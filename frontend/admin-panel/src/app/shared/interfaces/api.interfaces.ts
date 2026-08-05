@@ -118,6 +118,7 @@ export interface Service {
   template_size: number | null;
   document_mappings: DocumentMapping[] | null;
   is_active: boolean;
+  show_in_kiosk: boolean;
   created_at: string;
   updated_at: string;
 }
