@@ -211,6 +211,7 @@ const generateDocument = async ({ requestId, userId }) => {
   if (!request) {
     return { success: false, message: 'Request not found.' };
   }
+  request.form_data = parseJson(request.form_data) || {};
 
   const service = await loadServiceWithMappings(request.service_id);
   if (!service) {

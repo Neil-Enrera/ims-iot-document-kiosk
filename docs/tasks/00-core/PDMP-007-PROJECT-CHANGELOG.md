@@ -62,6 +62,32 @@ Use one of the following categories:
 
 ---
 
+# Version 2.2.1
+
+**Status:** Active Development
+
+**Date:** 2026-08-05
+
+## Fixed
+
+- Automatic document generation produced documents with **empty application-form values** (resident name, address, purpose, etc. all blank) while system fields (request number, date, barangay, processed by) rendered correctly.
+  - **Root cause:** `document.service.js` fetched the request via a raw `pool.query`, so `request.form_data` came back as a MySQL JSON **string**; the lookup code treated it as an object (`lookup.application = request.form_data || {}`), so every `application`-sourced mapping resolved to `''`. The guest fallback (`request.form_data?._guest`) was broken for the same reason.
+  - **Fix:** One line in `generateDocument` — `request.form_data = parseJson(request.form_data) || {}` — so both the application lookup and the `_guest` fallback operate on a parsed object.
+
+**Modules Affected:** Backend
+
+**Database Changes:** No
+
+**API Changes:** No
+
+**Architecture Changes:** No
+
+**Breaking Changes:** No
+
+**Testing Performed:** Backend tests (32/32), ESLint clean on the changed file, live API E2E across the full workflow (create service → upload DOCX template → kiosk form visible → submit request → advance to Document Processing → auto-generate → download generated DOCX). 29/29 E2E checks pass: all placeholders substituted (full name, multiline address with preserved line breaks, date, civil status, special-char escaping, purpose, request number, processed by), no leftover `{{tags}}`, template formatting preserved, admin notification created with correct message.
+
+---
+
 # Version 2.0.0
 
 **Status:** Initial PDMP Release
