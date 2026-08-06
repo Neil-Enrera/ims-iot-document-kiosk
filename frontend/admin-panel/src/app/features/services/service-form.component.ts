@@ -525,6 +525,12 @@ export class ServiceFormComponent implements OnChanges {
     if (options.length) mapping.field = options[0].value;
   }
 
+  // Normalize a placeholder to its bare tag name so mappings always match the
+  // tags the docxtemplater lexer extracts (e.g. "{{Name}}" -> "Name").
+  private normalizePlaceholder(placeholder: string): string {
+    return placeholder.trim().replace(/^\{\{/, '').replace(/\}\}$/, '');
+  }
+
   scanPlaceholders() {
     if (!this.service?.service_id) {
       this.placeholderScanError = 'Save the service first, or use an existing service to scan the template placeholders.';
@@ -539,9 +545,12 @@ export class ServiceFormComponent implements OnChanges {
     this.detectedPlaceholders = [];
     this.serviceService.scanTemplatePlaceholders(this.service.service_id).subscribe({
       next: (res) => {
-        const tags: string[] = res.data || [];
+        const tags: string[] = (res.data || []).map(t => this.normalizePlaceholder(t)).filter(Boolean);
         this.detectedPlaceholders = tags;
-        const existing = new Set(this.form.documentMappings.map(m => m.placeholder));
+        if (tags.length === 0) {
+          this.placeholderScanError = 'No {{placeholder}} tags were found in this template. The DOCX must use placeholders like {{full_name}} or {{address}} (typed inside double curly braces) instead of underscores or blank lines for automatic fill-in to work.';
+        }
+        const existing = new Set(this.form.documentMappings.map(m => this.normalizePlaceholder(m.placeholder)));
         tags.forEach(tag => {
           if (!existing.has(tag)) {
             this.form.documentMappings.push({ placeholder: tag, source: 'resident', field: 'full_name' });
@@ -622,7 +631,7 @@ export class ServiceFormComponent implements OnChanges {
       requiredDocuments: this.form.requiredDocumentsText.split('\n').map(s => s.trim()).filter(Boolean),
       formFields,
       documentMappings: this.form.documentMappings.map(m => ({
-        placeholder: m.placeholder.trim(),
+        placeholder: this.normalizePlaceholder(m.placeholder),
         source: m.source,
         field: m.field.trim()
       })) as DocumentMapping[],

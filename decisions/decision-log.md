@@ -330,3 +330,31 @@ Previously the only way to hide a service from the Kiosk was to deactivate it, w
 
 ---
 
+### DEC-014 — Fix document preview rendering and normalize `{{placeholder}}` tags
+
+**Status:** Accepted
+**Date:** 2026-08-06
+**Decision Maker(s):** Project Owner
+
+**Decision:**
+Two defects in the DEC-011 document workflow were fixed:
+
+1. **Preview rendering (frontend)** — `DocumentPreviewModalComponent` no longer uses `ngOnChanges` + `@ViewChild(static: true)` to render. The preview container only exists inside an `@if (open)` block, so a static query resolved it once as `undefined` at init and never rendered. It now uses `ngAfterViewChecked()` (fires after the conditional view is created) with a dynamic `@ViewChild(container, { static: false })`; `render()` is idempotent via a `renderedKey` claimed synchronously, and re-entrant checks are safe. This fixes both the "Preview Template" button and the per-document "Preview".
+
+2. **Placeholder normalization (backend + frontend)** — placeholder lookups are normalized (`trim`, strip `{{ }}`) everywhere a scan or mapping is compared, so `{{Name}}`, `Name`, and `  name  ` all match the bare tags the `docxtemplater` lexer extracts. `scanTemplatePlaceholders` now never throws on a missing/invalid/non-DOCX template (returns `[]`), and `generateDocument` rejects non-DOCX templates with a clear message instead of a 500.
+
+**Reason:**
+Preview of both the official template and generated documents rendered blank (the render never ran) and the scan used brace-less/underscore placeholder files. Normalization makes mappings robust against trivial formatting variations so placeholder replacement actually fills in data.
+
+**Alternatives Considered:**
+1. `ngAfterViewInit` instead of `ngAfterViewChecked` — rejected because `open`/`blob` inputs arrive over different change-detection cycles (template vs. generated preview), so a single init hook misses them.
+2. Move the render to the parent component — rejected; keeps the modal self-contained.
+
+**Consequences:**
+- `document-preview-modal.component.ts`: `AfterViewChecked` lifecycle + dynamic `ViewChild` + idempotent `render()`.
+- `document.service.js`: `normalizeTag()` local helper, throw-safe `scanTemplatePlaceholders`, non-DOCX guard.
+- `service-form.component.ts`: `normalizePlaceholder()` and clearer "no {{tags}}" guidance.
+- Verified: `tsc --noEmit` clean, 14 frontend tests, 32 backend tests, backend ESLint clean, live HTTP preview endpoints return 200 with correct content-type. **Existing uploaded templates (services 27/29/30/36) still contain no `{{placeholders}}` — those files must be redone with braces for automatic fill-in; preview will now render whatever is in the file even if it is blank of tags.**
+
+---
+

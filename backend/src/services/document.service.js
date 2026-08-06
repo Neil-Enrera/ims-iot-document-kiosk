@@ -151,23 +151,41 @@ const loadTemplatePath = (service) => {
   return fs.existsSync(templatePath) ? templatePath : null;
 };
 
+// Normalize a placeholder reference to its bare tag name. The admin may store
+// mappings as "name", "{{name}}" or "  name  " — the lexer parses the bare tag,
+// so every lookup key must be normalized the same way to actually match.
+const normalizeTag = (tag) => String(tag || '')
+  .trim()
+  .replace(/^\{\{/, '')
+  .replace(/\}\}$/, '');
+
 // Extract {{placeholder}} tags from a DOCX template using docxtemplater's lexer.
+// Returns bare tag names (without the {{ }} delimiters), deduplicated. Never
+// throws: a missing/invalid/non-DOCX template simply yields an empty array so
+// callers can surface a helpful message instead of a 500.
 const scanTemplatePlaceholders = (service) => {
   const templatePath = loadTemplatePath(service);
   if (!templatePath || !templatePath.endsWith('.docx')) return [];
 
-  const content = fs.readFileSync(templatePath, 'binary');
-  const zip = new PizZip(content);
-  const doc = new Docxtemplater(zip, { delimiters: { start: '{{', end: '}}' } });
+  let content;
+  let zip;
+  try {
+    content = fs.readFileSync(templatePath, 'binary');
+    zip = new PizZip(content);
+  } catch {
+    return [];
+  }
 
   let tags;
   try {
+    const doc = new Docxtemplater(zip, { delimiters: { start: '{{', end: '}}' } });
     tags = collectTemplateTags(doc);
   } catch {
-    // getTags can fail on modules; fall back to a regex over the raw xml
+    // getTags can fail on modules or unusual documents; fall back to a regex
+    // over the raw xml.
     tags = fallbackScanTemplatePlaceholders(zip);
   }
-  return tags;
+  return [...new Set(tags.map(normalizeTag).filter(Boolean))];
 };
 
 // docxtemplater's getTags() returns { headers, footers, document, ... }
@@ -226,6 +244,9 @@ const generateDocument = async ({ requestId, userId }) => {
   if (!templatePath) {
     return { success: false, message: 'The document template file is missing on the server.' };
   }
+  if (!templatePath.endsWith('.docx')) {
+    return { success: false, message: 'Automatic document generation requires a DOCX template. The uploaded template is not a .docx file.' };
+  }
 
   const mappings = Array.isArray(service.document_mappings) ? service.document_mappings : [];
   if (mappings.length === 0) {
@@ -249,7 +270,7 @@ const generateDocument = async ({ requestId, userId }) => {
 
   const data = {};
   for (const mapping of mappings) {
-    data[mapping.placeholder] = resolveMapping({ mapping, lookup });
+    data[normalizeTag(mapping.placeholder)] = resolveMapping({ mapping, lookup });
   }
 
   // Render the template
@@ -316,11 +337,11 @@ const validatePlaceholderMappings = (service, mappings) => {
   const warnings = [];
   const templateTags = scanTemplatePlaceholders(service);
   if (!templateTags.length) {
-    warnings.push('No {{placeholders}} detected in the template — the generated document will be blank where data should appear.');
+    warnings.push('No {{placeholder}} tags detected in the template (e.g. {{full_name}}, {{address}}). The DOCX must use {{double_braces}} placeholders instead of blank lines/underscores for automatic fill-in to work.');
     return warnings;
   }
 
-  const mapped = new Set(mappings.map(m => m.placeholder));
+  const mapped = new Set(mappings.map(m => normalizeTag(m.placeholder)));
   const unmapped = templateTags.filter(tag => !mapped.has(tag));
   if (unmapped.length) {
     warnings.push(`Placeholders without a mapping (will render blank): ${unmapped.map(t => `{{${t}}}`).join(', ')}`);

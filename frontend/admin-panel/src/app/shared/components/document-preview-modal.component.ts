@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, SimpleChanges, ViewChild, ElementRef, signal } from '@angular/core';
+import { Component, Input, AfterViewChecked, ViewChild, ElementRef, signal } from '@angular/core';
 import { renderAsync } from 'docx-preview';
 
 @Component({
@@ -41,20 +41,29 @@ import { renderAsync } from 'docx-preview';
     }
   `]
 })
-export class DocumentPreviewModalComponent implements OnChanges {
+export class DocumentPreviewModalComponent implements AfterViewChecked {
   @Input() open = false;
   @Input() title = '';
   @Input() blob: Blob | null = null;
   @Input() blobUrl: string | null = null;
 
-  @ViewChild('container', { static: true }) container!: ElementRef<HTMLDivElement>;
+  // The container only exists while `open` is true (it lives inside `@if (open)`),
+  // so the query must be dynamic (static: false). A static query is resolved once
+  // at init — when the div is not yet rendered — and never updated, which would
+  // leave the preview permanently blank.
+  @ViewChild('container', { static: false }) container!: ElementRef<HTMLDivElement>;
 
   rendering = signal(false);
   error = signal('');
 
   private renderedKey: string | Blob | null = null;
 
-  ngOnChanges(changes: SimpleChanges) {
+  // Runs after every change-detection cycle, i.e. after the `@if (open)` block has
+  // rendered the container div. ngOnChanges cannot be used here because it fires
+  // BEFORE the conditional view is created on the same cycle, so the container is
+  // still unavailable when `open` first becomes true. `render()` is idempotent via
+  // renderedKey, so repeated calls are cheap.
+  ngAfterViewChecked() {
     if (this.open && this.container?.nativeElement && (this.blob || this.blobUrl)) {
       this.render();
     }
@@ -74,6 +83,9 @@ export class DocumentPreviewModalComponent implements OnChanges {
       this.error.set('No document to preview.');
       return;
     }
+    // Claim the key synchronously so a re-entrant ngAfterViewChecked during the
+    // async render does not start a second render of the same document.
+    this.renderedKey = key;
     this.error.set('');
     this.rendering.set(true);
     container.innerHTML = '';
