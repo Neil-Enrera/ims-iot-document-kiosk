@@ -253,6 +253,20 @@ const generateDocument = async ({ requestId, userId }) => {
     return { success: false, message: 'This service has no placeholder mappings configured.' };
   }
 
+  // Refuse to produce an official document that would be blank. docxtemplater only
+  // replaces {{double_braced}} tags; a template without any (e.g. one using
+  // underscores) renders identically with zero resident data. Failing here with a
+  // clear message is far safer than silently writing an empty official document.
+  const templateTags = scanTemplatePlaceholders(service);
+  if (templateTags.length === 0) {
+    return {
+      success: false,
+      message: 'The uploaded template contains no {{placeholder}} tags (e.g. {{full_name}}, {{address}}). ' +
+        'Automatic fill-in only works when the DOCX uses placeholders typed inside double curly braces. ' +
+        'Update the template, then try generating again.'
+    };
+  }
+
   // Validate placeholders: tags found in the template vs. configured mappings.
   // Any tag without a mapping would render blank, so surface it as a warning.
   const warnings = validatePlaceholderMappings(service, mappings);
@@ -347,7 +361,7 @@ const validatePlaceholderMappings = (service, mappings) => {
     warnings.push(`Placeholders without a mapping (will render blank): ${unmapped.map(t => `{{${t}}}`).join(', ')}`);
   }
 
-  const appFields = new Set((service.form_fields || []).map(f => f.key));
+  const appFields = new Set((Array.isArray(service.form_fields) ? service.form_fields : []).map(f => f.key));
   const orphanAppMappings = mappings.filter(m => m.source === 'application' && !appFields.has(m.field));
   if (orphanAppMappings.length) {
     warnings.push(`Application mappings reference form fields not collected on the form: ${orphanAppMappings.map(m => m.field).join(', ')}`);
@@ -416,7 +430,10 @@ const loadServiceWithMappings = async (serviceId) => {
   if (!row) return null;
   return {
     ...row,
-    document_mappings: parseJson(row.document_mappings)
+    document_mappings: parseJson(row.document_mappings),
+    form_fields: parseJson(row.form_fields) || [],
+    requirements: parseJson(row.requirements) || [],
+    required_documents: parseJson(row.required_documents) || []
   };
 };
 
@@ -460,6 +477,13 @@ const parseJson = (value) => {
 const listDocuments = async (requestId) => {
   const documents = await documentRepository.findByRequest(requestId);
   return { success: true, message: 'Documents retrieved successfully.', data: documents };
+};
+
+// True when the request already has at least one generated document. Used by the
+// auto-generation hook so repeated status transitions never stack duplicate docs.
+const hasGeneratedDocument = async (requestId) => {
+  const documents = await documentRepository.findByRequest(requestId);
+  return documents.length > 0;
 };
 
 const getDocument = async (documentId) => {
@@ -520,6 +544,7 @@ module.exports = {
   listDocuments,
   getDocument,
   deleteDocument,
+  hasGeneratedDocument,
   scanTemplatePlaceholders,
   reviewDocument
 };

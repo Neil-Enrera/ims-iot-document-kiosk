@@ -40,6 +40,19 @@ const getResident = async (req, res) => {
   }
 };
 
+// Idempotent request creation guard. The kiosk sends a stable idempotency key for
+// a single form submission attempt (reused on retry, changed for a new request).
+// If a request with the same key already exists, return it instead of inserting a
+// duplicate — this prevents accidental double-submits (double-click, retries).
+const findByIdempotencyKey = async (key) => {
+  if (!key) return null;
+  const [rows] = await pool.query(
+    'SELECT request_id, request_number, request_date FROM requests WHERE idempotency_key = ? LIMIT 1',
+    [key]
+  );
+  return rows[0] || null;
+};
+
 // Public services list for kiosk (no auth required)
 const getServices = async (req, res) => {
   try {
@@ -85,6 +98,19 @@ const createRequest = async (req, res) => {
       return errorResponse(res, 400, 'Resident or guest information is required.');
     }
 
+    // Return the existing request if this exact submission was already recorded.
+    const idempotencyKey = req.body.idempotency_key || req.body.idempotencyKey || null;
+    const existing = await findByIdempotencyKey(idempotencyKey);
+    if (existing) {
+      return successResponse(res, 'Request already submitted.', {
+        request_id: existing.request_id,
+        request_number: existing.request_number,
+        request_date: existing.request_date,
+        status: 'Submitted',
+        duplicate: true
+      });
+    }
+
     const formData = req.body.form_data !== undefined ? req.body.form_data : req.body.formData;
 
     // Get service details for notification
@@ -121,6 +147,7 @@ const createRequest = async (req, res) => {
       service,
       photo: req.body.photo,
       formData,
+      idempotencyKey,
       req
     });
 
@@ -192,7 +219,7 @@ const verifyRfid = async (req, res) => {
 
 // Shared helper: inserts a request row, saves photo attachment, creates audit + notification + SSE
 // resident may be a real resident or a guest applicant (resident.resident_id === null, isGuest === true)
-const insertKioskRequest = async ({ resident, service, photo, formData, req }) => {
+const insertKioskRequest = async ({ resident, service, photo, formData, idempotencyKey = null, req }) => {
   // Generate request number from the highest existing suffix (avoids duplicates after deletions/out-of-order ids)
   const [maxResult] = await pool.query(
     "SELECT MAX(CAST(SUBSTRING_INDEX(request_number, '-', -1) AS UNSIGNED)) AS max_num FROM requests"
@@ -222,31 +249,42 @@ const insertKioskRequest = async ({ resident, service, photo, formData, req }) =
   }
 
   // Create request (resident_id may be NULL for guest sessions)
-  const [result] = await pool.query(
-    `INSERT INTO requests (resident_id, service_id, request_number, status_id, request_date, form_data, service_snapshot, created_at)
-     VALUES (?, ?, ?, ?, NOW(), ?, ?, NOW())`,
-    [
-      resident.resident_id,
-      service.service_id,
-      requestNumber,
-      statusId,
-      Object.keys(storedFormData).length ? JSON.stringify(storedFormData) : null,
-      JSON.stringify({
-        service_id: service.service_id,
-        service_name: service.service_name,
-        description: service.description ?? null,
-        requirements: parseJsonField(service.requirements),
-        form_fields: parseJsonField(service.form_fields),
-        required_documents: parseJsonField(service.required_documents),
-        processing_fee: service.processing_fee ?? null,
-        processing_time: service.processing_time ?? null,
-        requires_photo: service.requires_photo ?? false,
-        approval_workflow: service.approval_workflow ?? null
-      })
-    ]
-  );
-
-  const requestId = result.insertId;
+  let requestId;
+  try {
+    const [result] = await pool.query(
+      `INSERT INTO requests (resident_id, service_id, request_number, status_id, request_date, form_data, service_snapshot, idempotency_key, created_at)
+       VALUES (?, ?, ?, ?, NOW(), ?, ?, ?, NOW())`,
+      [
+        resident.resident_id,
+        service.service_id,
+        requestNumber,
+        statusId,
+        Object.keys(storedFormData).length ? JSON.stringify(storedFormData) : null,
+        JSON.stringify({
+          service_id: service.service_id,
+          service_name: service.service_name,
+          description: service.description ?? null,
+          requirements: parseJsonField(service.requirements),
+          form_fields: parseJsonField(service.form_fields),
+          required_documents: parseJsonField(service.required_documents),
+          processing_fee: service.processing_fee ?? null,
+          processing_time: service.processing_time ?? null,
+          requires_photo: service.requires_photo ?? false,
+          approval_workflow: service.approval_workflow ?? null
+        }),
+        idempotencyKey
+      ]
+    );
+    requestId = result.insertId;
+  } catch (error) {
+    // Race between two identical rapid submissions: the unique idempotency_key
+    // rejected the second insert. Return the already-created request instead.
+    if (error.code === 'ER_DUP_ENTRY' && idempotencyKey) {
+      const existing = await findByIdempotencyKey(idempotencyKey);
+      return { requestId: existing.request_id, requestNumber: existing.request_number, requestDate: existing.request_date, duplicate: true };
+    }
+    throw error;
+  }
 
   // Save captured photo to request_attachments if provided
   if (photo) {

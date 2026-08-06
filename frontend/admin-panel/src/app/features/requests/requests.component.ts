@@ -180,13 +180,23 @@ interface RequestDetail extends DocumentRequest {
 
           <div class="flex items-center justify-between mt-6 mb-2">
             <h4 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Generated Documents</h4>
-            <button
-              type="button"
-              [disabled]="generatingDoc()"
-              (click)="generateDocument()"
-              class="text-xs font-medium text-blue-600 hover:underline disabled:opacity-50">
-              {{ generatingDoc() ? 'Generating...' : 'Generate Document' }}
-            </button>
+            <div class="flex items-center gap-3">
+              <button
+                type="button"
+                [disabled]="previewBusy()"
+                (click)="previewRequestDocument()"
+                class="text-xs font-medium text-blue-600 hover:underline disabled:opacity-50"
+                title="Preview the fully populated document before approving or rejecting">
+                {{ previewBusy() ? 'Preparing...' : 'Preview Document' }}
+              </button>
+              <button
+                type="button"
+                [disabled]="generatingDoc()"
+                (click)="generateDocument()"
+                class="text-xs font-medium text-blue-600 hover:underline disabled:opacity-50">
+                {{ generatingDoc() ? 'Generating...' : 'Generate Document' }}
+              </button>
+            </div>
           </div>
           @if (documents().length > 0) {
             <div class="space-y-2">
@@ -303,6 +313,7 @@ export class RequestsComponent implements OnInit, OnDestroy {
   selectedRequest = signal<RequestDetail | null>(null);
   documents = signal<GeneratedDocument[]>([]);
   generatingDoc = signal(false);
+  previewBusy = signal(false);
   docError = signal('');
   docNotice = signal('');
 
@@ -474,7 +485,7 @@ export class RequestsComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.documents.set(res.data || []);
         if (this.documents().length === 0 && !this.canGenerateDocument()) {
-          this.docNotice.set(' (only approved/processing requests can generate documents)');
+          this.docNotice.set('No document generated yet. It becomes available once the request is Under Review.');
         }
       },
       error: () => {
@@ -577,6 +588,48 @@ export class RequestsComponent implements OnInit, OnDestroy {
     this.showPreview.set(false);
     this.previewBlob = null;
     this.previewTitle = '';
+  }
+
+  // Preview the populated official document BEFORE approving/rejecting.
+  // If no document exists yet, generate one on demand (idempotently) first.
+  previewRequestDocument() {
+    const request = this.selectedRequest();
+    if (!request) return;
+    if (this.previewBusy()) return;
+    this.previewBusy.set(true);
+    this.docError.set('');
+    const docs = this.documents();
+    if (docs.length > 0) {
+      this.previewBusy.set(false);
+      this.previewDocument(docs[docs.length - 1]);
+      return;
+    }
+    if (!this.canGenerateDocument()) {
+      this.previewBusy.set(false);
+      this.docError.set('A document can only be generated once the request is Under Review.');
+      return;
+    }
+    this.documentService.generate(request.request_id).subscribe({
+      next: () => {
+        this.documentService.list(request.request_id).subscribe({
+          next: (res) => {
+            this.documents.set(res.data || []);
+            this.previewBusy.set(false);
+            const latest = this.documents();
+            if (latest.length > 0) this.previewDocument(latest[latest.length - 1]);
+            else this.docError.set('No document was produced to preview.');
+          },
+          error: () => {
+            this.previewBusy.set(false);
+            this.docError.set('Could not load the generated document.');
+          }
+        });
+      },
+      error: (err) => {
+        this.previewBusy.set(false);
+        this.docError.set(err.error?.message || 'Failed to generate the document for preview.');
+      }
+    });
   }
 
   approvalBadge(status: string): { class: string; label: string } | null {

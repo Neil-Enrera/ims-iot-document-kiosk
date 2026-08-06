@@ -29,7 +29,9 @@ const createRequestValidation = [
   body('purpose').optional().trim(),
   body('remarks').optional().trim(),
   body('photo').optional().isString().withMessage('Invalid photo format.'),
-  body('formData').optional().isObject().withMessage('Invalid form data.')
+  body('formData').optional().isObject().withMessage('Invalid form data.'),
+  body('idempotency_key').optional().isString().withMessage('Invalid idempotency key.'),
+  body('idempotencyKey').optional().isString().withMessage('Invalid idempotency key.')
 ];
 
 const rfidVerifyValidation = [

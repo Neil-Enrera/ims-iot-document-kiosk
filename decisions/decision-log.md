@@ -358,3 +358,39 @@ Preview of both the official template and generated documents rendered blank (th
 
 ---
 
+
+
+---
+
+### DEC-015 -? Prevent duplicate requests and generate documents for preview before approval
+
+**Status:** Accepted
+**Date:** 2026-08-06
+**Decision Maker(s):** Project Owner
+
+**Decision:**
+A full end-to-end review of the document-request + template workflow addressed four issues:
+
+1. **Duplicate requests (client + server).** The kiosk was the only place requests were created and it had no re-entry guard and no server idempotency; any double-click or retry inserted a second row. A stable `idempotency_key` (UUID, generated once per submission attempt on the kiosk, reused across retries, cleared after success) is now sent with every `POST /kiosk/requests`. The server stores it in a new UNIQUE `requests.idempotency_key` column (migration `014`), returns the existing request instead of inserting when the key repeats, and treats the rare UNIQUE-violation race the same way. The kiosk `submitRequest()`/`submitBarangay()` also short-circuit with `if (submitting()) return;`.
+
+2. **Preview the populated document before approval (issue 3).** Documents used to auto-generate only on Document Processing (status 5) -? which IS the approve action -? so nothing existed to review first. Generation now fires idempotently as soon as a request reaches **Under Review (status 4)** (and re-fires as a fallback at status 5 only if none exists). `hasGeneratedDocument()` guards re-generation. The admin panel gains an explicit **Preview Document** action that generates on demand (when eligible) and opens the latest populated document before Approve/Reject.
+
+3. **Template not used / document blank (issues 1 + 4).** The root cause was not routing: it was that the uploaded templates (services 27/29/30/36) contain **zero `{{placeholder}}` tags** -? they use literal underscores (`____________________`, `____ day of ____`) -? and `docxtemplater` only replaces `{{double_braced}}` tags. Generation therefore always produced an identical blank file. `generateDocument` now refuses to produce a silent blank official document when the template has no `{{tags}}` and returns a clear remediation message. `loadServiceWithMappings` now also parses `form_fields`/`requirements` (previously JSON strings crashed validation with "(service.form_fields || []).map is not a function").
+
+**Reason:**
+Duplicate rows wasted staff time and inflated queue numbers; approving without seeing the finished document forced blind decisions; and blank "generated" documents looked like a broken template-pipeline when the real problem was placeholder syntax in the source DOCX files.
+
+**Alternatives Considered:**
+1. Client-only guard for duplicates -? rejected; retries/network issues bypass it. Server-side UNIQUE key is authoritative.
+2. Auto-generate only at status 4 and remove status-5 generation -? rejected; status 5 remains as a fallback so legacy/other flows still produce a document.
+3. A "Generate Draft" admin action instead of auto-gen at Under Review -? rejected; auto-gen keeps the flow consistent and the Preview button can also force it on demand.
+
+**Consequences:**
+- Migration `014` (`requests.idempotency_key` + UNIQUE index) applied to the dev database.
+- `kiosk.controller.js`: idempotency lookup + insert with key + UNIQUE-violation handling.
+- `request.service.js`: auto-generate at UNDER_REVIEW and DOCUMENT_PROCESSING, guarded by `hasGeneratedDocument`, failures logged but non-blocking.
+- `document.service.js`: no-tag guard, parsed JSON columns, `hasGeneratedDocument` export.
+- `kiosk.component.ts`: submission re-entry guards + `idempotency_key` (UUID).
+- `requests.component.ts`: Preview Document button + `previewRequestDocument()`.
+- Verified live against the running server: admin login, tagged template upload, placeholder scan, request submit, duplicate re-submit returns the same request, Under Review auto-generates, and the generated DOCX contains the resident name/purpose/request number (9/9 E2E checks). All 32 backend tests and both frontend `tsc --noEmit` builds pass.
+- **Still required by the business:** re-author services 27/29/30/36 templates with real `{{placeholders}}` and map them; blank/underscore templates now fail loudly instead of producing empty official documents.

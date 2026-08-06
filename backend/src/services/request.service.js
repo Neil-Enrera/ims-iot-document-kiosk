@@ -113,11 +113,18 @@ const changeStatus = async (requestId, statusId, userId, remarks) => {
   await requestRepository.updateStatus(requestId, statusId, userId, remarks, expiresAt);
   const updated = await requestRepository.findById(requestId);
 
-  // Automatically generate the official document when the request reaches
-  // Document Processing. Generation failures do not block the status change.
-  if (statusId === STATUS_IDS.DOCUMENT_PROCESSING) {
+  // Automatically generate the official document once the request is under
+  // review so staff can PREVIEW the fully populated document BEFORE deciding to
+  // approve (Under Review -> Document Processing) or reject. Generation also
+  // re-triggers at Document Processing as a fallback, but is idempotent: if a
+  // document already exists for the request, it is never duplicated. Generation
+  // failures do not block the status change.
+  if (statusId === STATUS_IDS.UNDER_REVIEW || statusId === STATUS_IDS.DOCUMENT_PROCESSING) {
     try {
-      await documentService.generateDocument({ requestId, userId });
+      const alreadyGenerated = await documentService.hasGeneratedDocument(requestId);
+      if (!alreadyGenerated) {
+        await documentService.generateDocument({ requestId, userId });
+      }
     } catch (error) {
       console.error(`Auto document generation failed for request ${requestId}:`, error.message);
     }

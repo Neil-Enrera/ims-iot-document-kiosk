@@ -1092,6 +1092,11 @@ export class KioskComponent implements OnInit, OnDestroy {
   formValues = signal<Record<string, unknown>>({});
   formErrors = signal<Record<string, string>>({});
 
+  // Stable idempotency key for ONE submission attempt. Reused across retries so a
+  // network error + retry never creates a duplicate request; cleared after success
+  // or when the flow resets, so a fresh submission gets a new key.
+  submissionKey = '';
+
   // Inline per-field capture state
   inlinePhotos = signal<Record<string, string>>({});
   activePhotoField = signal<string | null>(null);
@@ -1620,6 +1625,7 @@ export class KioskComponent implements OnInit, OnDestroy {
   }
 
   submitBarangay() {
+    if (this.submitting()) return; // re-entry guard: never double-submit
     if (!this.capturedPhoto()) {
       this.errorMessage.set('A photo is required for your Barangay ID.');
       this.barangayStep.set('photo');
@@ -1857,6 +1863,7 @@ export class KioskComponent implements OnInit, OnDestroy {
   }
 
   submitRequest() {
+    if (this.submitting()) return; // re-entry guard: never double-submit
     const service = this.selectedService();
     if (!service) {
       this.errorMessage.set('Missing service information. Please start over.');
@@ -1865,12 +1872,14 @@ export class KioskComponent implements OnInit, OnDestroy {
 
     this.submitting.set(true);
     this.errorMessage.set('');
+    if (!this.submissionKey) this.submissionKey = this.newIdempotencyKey();
 
     const resident = this.resident();
     const data: any = {
       service_id: service.service_id,
       photo: this.capturedPhoto() || undefined,
-      form_data: this.formValues()
+      form_data: this.formValues(),
+      idempotency_key: this.submissionKey
     };
 
     if (resident) {
@@ -1887,9 +1896,11 @@ export class KioskComponent implements OnInit, OnDestroy {
 
     this.kioskService.createRequest(data).subscribe({
       next: (result: any) => {
+        // Same key means only one request row exists (server is idempotent).
         this.requestNumber.set(result?.data?.request_number || 'N/A');
         this.currentStep.set('success');
         this.submitting.set(false);
+        this.submissionKey = ''; // done: next request is a fresh submission
       },
       error: (err) => {
         this.submitting.set(false);
@@ -1898,6 +1909,12 @@ export class KioskComponent implements OnInit, OnDestroy {
         console.error('Submit request error:', err);
       }
     });
+  }
+
+  private newIdempotencyKey(): string {
+    const c = (globalThis as any).crypto;
+    if (c && typeof c.randomUUID === 'function') return c.randomUUID();
+    return 'k-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
   }
 
   finish() {
@@ -1923,6 +1940,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.formErrors.set({});
     this.inlinePhotos.set({});
     this.activePhotoField.set(null);
+    this.submissionKey = '';
     this.resetIdleTimer();
   }
 
