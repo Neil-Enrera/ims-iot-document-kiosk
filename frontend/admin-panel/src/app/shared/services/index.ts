@@ -130,7 +130,11 @@ export class ServiceService {
   }
 
   scanTemplatePlaceholders(id: number) {
-    return this.api.get<string[]>(`/services/${id}/template/placeholders`);
+    return this.api.get<any>(`/services/${id}/template/placeholders`);
+  }
+
+  getPlaceholderLibrary() {
+    return this.api.get<any>('/services/placeholders/library');
   }
 
   delete(id: number) {

@@ -94,11 +94,28 @@ const scanPlaceholders = async (req, res) => {
     if (!service.success) return errorResponse(res, 404, service.message);
 
     const placeholders = await documentService.scanTemplatePlaceholders(service.data);
-    return successResponse(res, 'Template placeholders retrieved.', placeholders);
+    const classified = documentService.classifyPlaceholders(placeholders, service.data);
+    return successResponse(res, 'Template placeholders retrieved.', {
+      placeholders,
+      known: classified.known,
+      unknown: classified.unknown
+    });
   } catch (error) {
     console.error('Template placeholder scan error:', error);
     return errorResponse(res, 500, 'Internal server error.');
   }
 };
 
-module.exports = { generate, list, getById, download, preview, review, remove, scanPlaceholders };
+const listPlaceholderLibrary = async (req, res) => {
+  try {
+    return successResponse(res, 'Placeholder library retrieved.', {
+      categories: documentService.placeholderCategories(),
+      placeholders: documentService.placeholderLibrary()
+    });
+  } catch (error) {
+    console.error('Placeholder library error:', error);
+    return errorResponse(res, 500, 'Internal server error.');
+  }
+};
+
+module.exports = { generate, list, getById, download, preview, review, remove, scanPlaceholders, listPlaceholderLibrary };

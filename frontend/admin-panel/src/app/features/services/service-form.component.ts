@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnChanges } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { InputComponent } from '../../shared/components/input.component';
@@ -19,6 +19,16 @@ interface EditableMapping {
   placeholder: string;
   source: DocumentMappingSource;
   field: string;
+}
+
+interface LibraryPlaceholder {
+  key: string;
+  label: string;
+  category: string;
+  category_label: string;
+  source: string;
+  description: string;
+  future: boolean;
 }
 
 const FIELD_TYPES: { value: FormFieldType; label: string }[] = [
@@ -165,9 +175,18 @@ const APPLICATION_COMMON_FIELDS = [
             <p class="text-xs font-medium text-gray-700 mb-1">Detected placeholders in template:</p>
             <div class="flex flex-wrap gap-1">
               @for (tag of detectedPlaceholders; track tag) {
-                <span class="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded border border-blue-200">{{'{{'}}{{ tag }}{{'}}'}}</span>
+                @if (isKnownPlaceholder(tag)) {
+                  <span class="px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded border border-green-200" title="Auto-filled from the placeholder library">{{'{{'}}{{ tag }}{{'}}'}}</span>
+                } @else {
+                  <span class="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs rounded border border-amber-200" title="Not in the library — add a mapping or a form field for this">{{'{{'}}{{ tag }}{{'}}'}}</span>
+                }
               }
             </div>
+            @if (detectedUnknown.length > 0) {
+              <p class="text-xs text-amber-600 mt-1">
+                {{ detectedUnknown.length }} unknown placeholder(s) — green tags fill automatically; add mappings for the amber ones.
+              </p>
+            }
           </div>
         }
 
@@ -280,13 +299,37 @@ const APPLICATION_COMMON_FIELDS = [
             <button type="button" (click)="scanPlaceholders()" [disabled]="scanningPlaceholders" class="text-sm text-blue-600 hover:underline disabled:opacity-50">
               {{ scanningPlaceholders ? 'Scanning...' : 'Scan Template' }}
             </button>
+            <button type="button" (click)="showLibrary = !showLibrary" class="text-sm text-blue-600 hover:underline">
+              {{ showLibrary ? 'Hide Library' : 'Placeholder Library' }}
+            </button>
             <button type="button" (click)="addMapping()" class="text-sm text-blue-600 hover:underline">+ Add Mapping</button>
           </div>
         </div>
         <p class="text-xs text-gray-500 mb-2">
-          Map each <code>{{'{{placeholder}}'}}</code> in the DOCX template to a value source. The system replaces these
-          after the request is approved. Use "Scan Template" to auto-detect the placeholders in the uploaded DOCX.
+          {{'{{placeholders}}'}} in the DOCX template are filled from the master placeholder library automatically —
+          no mapping is needed for library tags (green). Only tags not in the library (amber) require a mapping or a
+          matching application form field. Mappings always override the library.
         </p>
+        @if (showLibrary) {
+          <div class="mb-2 bg-gray-50 border rounded p-2 max-h-64 overflow-auto">
+            <p class="text-xs font-medium text-gray-700 mb-2">Available placeholders (click to copy)</p>
+            @if (loadingLibrary) {
+              <p class="text-xs text-gray-500">Loading library...</p>
+            } @else {
+              @for (group of libraryByCategory(); track group.label) {
+                <p class="text-xs font-semibold text-gray-600 mt-2 first:mt-0">{{ group.label }}</p>
+                <div class="flex flex-wrap gap-1 mt-1">
+                  @for (ph of group.items; track ph.key) {
+                    <button type="button" (click)="copyPlaceholder(ph.key)" title="{{ ph.label }} — {{ ph.description }}"
+                      class="px-1.5 py-0.5 bg-white text-gray-700 text-xs rounded border border-gray-300 hover:border-blue-400 hover:text-blue-700">
+                      {{'{{'}}{{ ph.key }}{{'}}'}}
+                    </button>
+                  }
+                </div>
+              }
+            }
+          </div>
+        }
         @if (placeholderScanError) {
           <p class="text-xs text-amber-600">{{ placeholderScanError }}</p>
         }
@@ -294,7 +337,7 @@ const APPLICATION_COMMON_FIELDS = [
           <p class="text-xs text-red-500">{{ errors['documentMappings'] }}</p>
         }
         @if (form.documentMappings.length === 0) {
-          <p class="text-xs text-gray-500">No mappings defined. The document will not be generated until at least one placeholder is mapped.</p>
+          <p class="text-xs text-gray-500">No explicit mappings defined — library placeholders in the template still fill automatically.</p>
         }
         @for (mapping of form.documentMappings; track $index) {
           <div class="grid grid-cols-12 gap-2 items-center border rounded p-2 bg-gray-50">
@@ -341,7 +384,7 @@ const APPLICATION_COMMON_FIELDS = [
     />
   `
 })
-export class ServiceFormComponent implements OnChanges {
+export class ServiceFormComponent implements OnChanges, OnInit {
   @Input() service: Service | null = null;
   @Input() loading = false;
   @Output() onSave = new EventEmitter<any>();
@@ -381,10 +424,56 @@ export class ServiceFormComponent implements OnChanges {
   templatePreviewBlob: Blob | null = null;
   templatePreviewTitle = '';
   detectedPlaceholders: string[] = [];
+  detectedKnown: { tag: string; auto: boolean }[] = [];
+  detectedUnknown: { tag: string }[] = [];
+
+  // Master placeholder library
+  placeholderLibrary: LibraryPlaceholder[] = [];
+  loadingLibrary = false;
+  showLibrary = false;
 
   private readonly assetBase = environment.apiUrl.replace(/\/api\/v1$/, '');
 
   constructor(private serviceService: ServiceService, private api: ApiService, private http: HttpClient) {}
+
+  ngOnInit() {
+    this.loadPlaceholderLibrary();
+  }
+
+  loadPlaceholderLibrary() {
+    this.loadingLibrary = true;
+    this.serviceService.getPlaceholderLibrary().subscribe({
+      next: (res) => {
+        this.placeholderLibrary = (res.data?.placeholders || []) as LibraryPlaceholder[];
+        this.loadingLibrary = false;
+      },
+      error: () => {
+        this.loadingLibrary = false;
+      }
+    });
+  }
+
+  libraryByCategory(): { label: string; items: LibraryPlaceholder[] }[] {
+    const order = ['resident', 'address', 'document', 'barangay', 'system', 'barangay_id'];
+    const groups: { label: string; items: LibraryPlaceholder[] }[] = [];
+    for (const cat of order) {
+      const items = this.placeholderLibrary.filter((p) => p.category === cat);
+      if (items.length) groups.push({ label: items[0].category_label, items });
+    }
+    return groups;
+  }
+
+  isKnownPlaceholder(tag: string): boolean {
+    const norm = this.normalizePlaceholder(tag).toLowerCase().replace(/\s+/g, '_');
+    return this.placeholderLibrary.some((p) => p.key === norm);
+  }
+
+  copyPlaceholder(key: string) {
+    const text = `{{${key}}}`;
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).catch(() => {});
+    }
+  }
 
   ngOnChanges() {
     if (this.service) {
@@ -543,17 +632,25 @@ export class ServiceFormComponent implements OnChanges {
     this.scanningPlaceholders = true;
     this.placeholderScanError = '';
     this.detectedPlaceholders = [];
+    this.detectedKnown = [];
+    this.detectedUnknown = [];
     this.serviceService.scanTemplatePlaceholders(this.service.service_id).subscribe({
       next: (res) => {
-        const tags: string[] = (res.data || []).map(t => this.normalizePlaceholder(t)).filter(Boolean);
+        const tags: string[] = (res.data?.placeholders || []).map((t: string) => this.normalizePlaceholder(t)).filter(Boolean);
         this.detectedPlaceholders = tags;
+        this.detectedKnown = (res.data?.known || []).map((k: any) => ({ tag: this.normalizePlaceholder(k.tag), auto: !!k.auto }));
+        this.detectedUnknown = (res.data?.unknown || []).map((u: any) => ({ tag: this.normalizePlaceholder(u.tag) }));
         if (tags.length === 0) {
           this.placeholderScanError = 'No {{placeholder}} tags were found in this template. The DOCX must use placeholders like {{full_name}} or {{address}} (typed inside double curly braces) instead of underscores or blank lines for automatic fill-in to work.';
+          this.scanningPlaceholders = false;
+          return;
         }
+        // Auto-add a mapping ONLY for tags that are not in the master library —
+        // library placeholders fill automatically and would just be overridden.
         const existing = new Set(this.form.documentMappings.map(m => this.normalizePlaceholder(m.placeholder)));
-        tags.forEach(tag => {
-          if (!existing.has(tag)) {
-            this.form.documentMappings.push({ placeholder: tag, source: 'resident', field: 'full_name' });
+        this.detectedUnknown.forEach(u => {
+          if (!existing.has(u.tag)) {
+            this.form.documentMappings.push({ placeholder: u.tag, source: 'application', field: u.tag });
           }
         });
         this.scanningPlaceholders = false;

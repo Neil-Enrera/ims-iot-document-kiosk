@@ -394,3 +394,36 @@ Duplicate rows wasted staff time and inflated queue numbers; approving without s
 - `requests.component.ts`: Preview Document button + `previewRequestDocument()`.
 - Verified live against the running server: admin login, tagged template upload, placeholder scan, request submit, duplicate re-submit returns the same request, Under Review auto-generates, and the generated DOCX contains the resident name/purpose/request number (9/9 E2E checks). All 32 backend tests and both frontend `tsc --noEmit` builds pass.
 - **Still required by the business:** re-author services 27/29/30/36 templates with real `{{placeholders}}` and map them; blank/underscore templates now fail loudly instead of producing empty official documents.
+
+
+---
+
+### DEC-016 -? Master placeholder engine (generic, extensible library)
+
+**Status:** Accepted
+**Date:** 2026-08-06
+**Decision Maker(s):** Project Owner
+
+**Decision:**
+Replace the ad-hoc per-service placeholder mappings with a **master placeholder engine** (`backend/src/services/placeholder.engine.js`) so any uploaded document template works without per-document-type code. Key behaviors:
+
+1. **One library, all documents.** ~62 placeholders across six categories (Resident, Address, Document, Barangay, System, Barangay ID). Any `{{placeholder}}` in an uploaded DOCX is auto-filled from the resident record, the kiosk application form, the request, the barangay record, or the system clock.
+2. **Auto-fill without mappings.** Generation resolves tags by priority: explicit per-service mapping (admin override) -? master library (key or alias) -? application form fallback. Services no longer need a mapping entry for every tag.
+3. **Derived values.** `age` (computed from `birth_date`), plus `day`/`month`/`year`/`current_time`/`day_of_week` split out from the clock.
+4. **Validation + UI.** Template scan now classifies tags as known (library) vs unknown; unknown tags warn at generation and are surfaced in the admin Service form (green vs amber chips). A new `GET /services/placeholders/library` endpoint + collapsible library panel lets admins browse/copy placeholders.
+5. **Extensible.** New placeholders are added by appending a registry entry (`registerPlaceholder`); no core generation changes.
+
+**Reason:**
+Certificates (Indigency, Residency, Clearance, etc.) were blank because templates used underscores and, when tagged, required hand-built mappings per service. A data-driven registry makes every current and future barangay document fill-in automatically, without a developer.
+
+**Alternatives Considered:**
+1. Per-service hardcoded resolvers for each new template -? rejected; violates the "no code per document type" requirement.
+2. Keep mappings mandatory and expand the option lists -? rejected; admin friction, easy to misconfigure, and still manual per service.
+3. Image embedding (resident photo, logo) and QR/RFID generation now -? rejected; deferred (flagged `future`) so the library ships without half-baked binary embedding.
+
+**Consequences:**
+- New `placeholder.engine.js`; `document.service.js` delegates resolution + validation to it (old alias/lookup helpers removed).
+- Migration `015` adds nullable identity/address columns to `residents` (birth_place, nationality, religion, occupation, house_number, street, purok_zone, sitio, municipality, province, zip_code) and officials/address to `barangays` (captain_name, secretary_name, treasurer_name, address) so those placeholders have backing fields.
+- Admin Service form: library panel, known/unknown scan badges, auto-mapping only for unknown tags.
+- Verified: 44 backend tests (12 new engine tests), 14 frontend tests, ESLint clean, both `tsc --noEmit` builds clean, live E2E 8/8 (library endpoint, no-mapping service, scan classification, auto-gen at Under Review, populated DOCX, unknown tag blank).
+- **Still required by the business:** re-author real templates (e.g. the Indigency certificate) replacing underscores with library tags; populate resident birth dates/address parts and barangay officials so those fields fill in.

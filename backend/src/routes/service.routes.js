@@ -8,6 +8,9 @@ const validate = require('../middleware/validation.middleware');
 const { uploadTemplate } = require('../middleware/upload.middleware');
 const { createValidation, updateValidation, statusValidation, kioskVisibilityValidation, getAllValidation } = require('../validations/service.validation');
 
+// Master placeholder library (static reference data, no service id needed).
+router.get('/placeholders/library', authenticate, authorize('Administrator', 'Barangay Secretary'), documentController.listPlaceholderLibrary);
+
 router.get('/', authenticate, authorize('Administrator', 'Barangay Secretary', 'Staff'), ...getAllValidation, validate, serviceController.getAll);
 router.get('/:id', authenticate, authorize('Administrator', 'Barangay Secretary', 'Staff'), serviceController.getById);
 router.post('/', authenticate, authorize('Administrator'), ...createValidation, validate, serviceController.create);
