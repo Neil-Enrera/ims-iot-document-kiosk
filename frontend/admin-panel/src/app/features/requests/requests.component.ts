@@ -193,11 +193,17 @@ interface RequestDetail extends DocumentRequest {
                 type="button"
                 [disabled]="generatingDoc()"
                 (click)="generateDocument()"
-                class="text-xs font-medium text-blue-600 hover:underline disabled:opacity-50">
-                {{ generatingDoc() ? 'Generating...' : 'Generate Document' }}
+                class="text-xs font-medium text-blue-600 hover:underline disabled:opacity-50"
+                title="Re-generate the official document (replaces the previous one). Only needed after the template or request data changes.">
+                {{ generatingDoc() ? 'Generating...' : 'Regenerate Document' }}
               </button>
             </div>
           </div>
+          <p class="text-xs text-gray-500 mb-2">
+            A document is generated automatically when the request reaches <span class="font-medium">Under Review</span>,
+            so you can preview the populated document before approving or rejecting. "Preview Document" generates one if
+            none exists yet; "Regenerate Document" replaces the current version (e.g. after the template changes).
+          </p>
           @if (documents().length > 0) {
             <div class="space-y-2">
               @for (doc of documents(); track doc.document_id) {

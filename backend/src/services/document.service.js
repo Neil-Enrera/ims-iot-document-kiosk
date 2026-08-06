@@ -322,6 +322,21 @@ const listDocuments = async (requestId) => {
   return { success: true, message: 'Documents retrieved successfully.', data: documents };
 };
 
+// Delete every generated document for a request EXCEPT those from the latest
+// generation (identified by the shared file-name prefix, e.g. REQ-00025_123456).
+// Used by the manual "Generate Document" action so regenerating replaces the
+// previous version instead of stacking duplicate documents. If the newest
+// generation produced both DOCX and PDF, both are kept.
+const pruneOldGenerations = async (requestId, keepPrefix) => {
+  if (!keepPrefix) return 0;
+  const documents = await documentRepository.findByRequest(requestId);
+  const toDelete = documents.filter((d) => !String(d.file_name || '').startsWith(keepPrefix));
+  for (const doc of toDelete) {
+    await deleteDocument(doc.document_id);
+  }
+  return toDelete.length;
+};
+
 // True when the request already has at least one generated document. Used by the
 // auto-generation hook so repeated status transitions never stack duplicate docs.
 const hasGeneratedDocument = async (requestId) => {
@@ -390,6 +405,7 @@ module.exports = {
   hasGeneratedDocument,
   scanTemplatePlaceholders,
   reviewDocument,
+  pruneOldGenerations,
   placeholderLibrary: () => placeholderEngine.listAll(),
   placeholderCategories: () => placeholderEngine.categories(),
   classifyPlaceholders: (tags, service) => placeholderEngine.classifyTags(tags, service),

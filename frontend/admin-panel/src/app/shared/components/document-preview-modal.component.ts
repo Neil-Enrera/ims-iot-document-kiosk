@@ -1,4 +1,4 @@
-import { Component, Input, AfterViewChecked, ViewChild, ElementRef, signal } from '@angular/core';
+import { Component, Input, Output, EventEmitter, AfterViewChecked, ViewChild, ElementRef, signal, OnChanges, SimpleChanges } from '@angular/core';
 import { renderAsync } from 'docx-preview';
 
 @Component({
@@ -7,11 +7,11 @@ import { renderAsync } from 'docx-preview';
   imports: [],
   template: `
     @if (open) {
-      <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60" (click)="onClose()">
+      <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60" (click)="close()">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl mx-4 max-h-[90vh] flex flex-col" (click)="$event.stopPropagation()">
           <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
             <h3 class="text-lg font-semibold text-gray-800 truncate" [title]="title">{{ title }}</h3>
-            <button (click)="onClose()" class="text-gray-400 hover:text-gray-600">
+            <button (click)="close()" class="text-gray-400 hover:text-gray-600">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
               </svg>
@@ -41,11 +41,12 @@ import { renderAsync } from 'docx-preview';
     }
   `]
 })
-export class DocumentPreviewModalComponent implements AfterViewChecked {
+export class DocumentPreviewModalComponent implements AfterViewChecked, OnChanges {
   @Input() open = false;
   @Input() title = '';
   @Input() blob: Blob | null = null;
   @Input() blobUrl: string | null = null;
+  @Output() onClose = new EventEmitter<void>();
 
   // The container only exists while `open` is true (it lives inside `@if (open)`),
   // so the query must be dynamic (static: false). A static query is resolved once
@@ -58,20 +59,35 @@ export class DocumentPreviewModalComponent implements AfterViewChecked {
 
   private renderedKey: string | Blob | null = null;
 
+  // Reset the render state whenever the modal closes or a new document arrives.
+  // Closing destroys the container (the @if block) and clears renderedKey, so the
+  // next open re-renders from scratch. Without this, reopening after a close would
+  // skip render() (renderedKey still matches) and show an empty container.
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['open'] && !this.open) {
+      this.renderedKey = null;
+      this.error.set('');
+      this.rendering.set(false);
+    }
+    if (changes['blob'] || changes['blobUrl']) {
+      this.renderedKey = null;
+    }
+  }
+
   // Runs after every change-detection cycle, i.e. after the `@if (open)` block has
-  // rendered the container div. ngOnChanges cannot be used here because it fires
-  // BEFORE the conditional view is created on the same cycle, so the container is
-  // still unavailable when `open` first becomes true. `render()` is idempotent via
-  // renderedKey, so repeated calls are cheap.
+  // rendered the container div. ngOnChanges cannot be used for the actual render
+  // because it fires BEFORE the conditional view is created on the same cycle, so
+  // the container is still unavailable when `open` first becomes true. `render()`
+  // is idempotent via renderedKey, so repeated calls are cheap.
   ngAfterViewChecked() {
     if (this.open && this.container?.nativeElement && (this.blob || this.blobUrl)) {
       this.render();
     }
   }
 
-  onClose() {
-    this.open = false;
+  close() {
     this.renderedKey = null;
+    this.onClose.emit();
   }
 
   private async render() {

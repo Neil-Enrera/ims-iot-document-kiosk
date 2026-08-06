@@ -427,3 +427,37 @@ Certificates (Indigency, Residency, Clearance, etc.) were blank because template
 - Admin Service form: library panel, known/unknown scan badges, auto-mapping only for unknown tags.
 - Verified: 44 backend tests (12 new engine tests), 14 frontend tests, ESLint clean, both `tsc --noEmit` builds clean, live E2E 8/8 (library endpoint, no-mapping service, scan classification, auto-gen at Under Review, populated DOCX, unknown tag blank).
 - **Still required by the business:** re-author real templates (e.g. the Indigency certificate) replacing underscores with library tags; populate resident birth dates/address parts and barangay officials so those fields fill in.
+
+
+---
+
+### DEC-017 - Age, reopenable Preview, and document-generation workflow
+
+**Status:** Accepted
+**Date:** 2026-08-06
+**Decision Maker(s):** Project Owner
+
+**Decision:**
+Close three workflow gaps in the application-form / preview / generation path:
+
+1. **Age is always present and auto-computed.** `{{age}}` (and `{{birth_date}}`) resolve from `resident.birth_date` when available, else from the application form. Guest submissions store identity under `form_data._guest`; the engine now merges those fields into the application context, so a guest's `full_name`/`age`/`birth_date` fill in without special casing. `age` is exposed in the admin Service form's resident-field picker (auto-computed from birth date).
+
+2. **Preview reopens any number of times without a page refresh.** The `DocumentPreviewModalComponent` no longer mutates its `@Input open`; it emits `(onClose)` and `ngOnChanges`/`ngAfterViewChecked` reset and re-render the blob on every open, creating a fresh container each time. `request.component.ts` binds `(onClose)="closePreview()"` and `service-form` binds `(onClose)="showTemplatePreview = false"`.
+
+3. **Document generation is auto-at-Under-Review with replace, not stack.** The recommended workflow for a real barangay office: a document generates automatically the moment the request reaches **Under Review** (so the officer previews the fully populated document before approving/rejecting); Preview generates one if missing; the manual action is renamed **Regenerate Document** and now replaces the previous version (same `REQ-xxxxx_<ts>` prefix prunes older copies) so repeated clicks never stack duplicates.
+
+**Reason:**
+Aged documents previously required the date to be manually typed; the preview modal could only be opened once per page load; and repeated "Generate" clicks created duplicate official documents. Auto-computing age removes a class of input errors, an infinitely-reopenable preview matches how officers review a file back-and-forth, and replace-on-regenerate keeps the official document set canonical per request.
+
+**Alternatives Considered:**
+1. Age typed by resident at the kiosk - rejected; error-prone and duplicates data already in the resident record.
+2. Preview re-opens the existing browser tab - rejected: relies on fragile cached URL and breaks after generate.
+3. Manual "Generate" only (no auto) - rejected as the default; auto-at-Under-Review is the primary flow because approval should be made against the actual populated document. Manual "Regenerate" stays as the fallback for template edits.
+
+**Consequences:**
+- `placeholder.engine.js`: `_guest` merge into application context; `age`/`birth_date` fall back to application; `full_name` falls back to application for guests.
+- `document.service.js`: new `pruneOldGenerations()` export; `document.controller.js` `generate` calls it to keep only the newest generation.
+- `document-preview-modal.component.ts`: reopened any number of times; emits `onClose`; re-renders per open.
+- `requests.component.ts`: non-authority "Regenerate Document" button + workflow hint; `service-form.component.ts`: age picker entry.
+- Verified: 45 backend tests (new guest merge test), 14 admin tests, ESLint clean, both `tsc --noEmit` clean, live E2E (resident age 36, guest age 16 + name, birth_date long-form, regenerate keeps 1 document) 8/8.
+- **Still required by the business:** re-author real templates and populate resident birth dates / barangay officials so the auto-filled fields show meaningful values.

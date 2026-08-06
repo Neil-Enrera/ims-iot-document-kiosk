@@ -66,7 +66,7 @@ const PLACEHOLDERS = [
     key: 'full_name', category: 'resident', source: 'resident', label: 'Full name',
     aliases: ['fullname', 'name', 'resident_name', 'complete_name'],
     description: "Resident's complete name (first, middle, last, suffix).",
-    resolve: (ctx) => composeFullName(ctx.resident)
+    resolve: (ctx) => composeFullName(ctx.resident) || pick(ctx.application.full_name, ctx.application.fullname, ctx.application.name)
   },
   { key: 'first_name', category: 'resident', source: 'resident', label: 'First name', aliases: ['firstname'], description: "Resident's first name.", resolve: (c) => c.resident.first_name || '' },
   { key: 'middle_name', category: 'resident', source: 'resident', label: 'Middle name', aliases: ['middlename'], description: "Resident's middle name.", resolve: (c) => c.resident.middle_name || '' },
@@ -74,8 +74,8 @@ const PLACEHOLDERS = [
   { key: 'suffix', category: 'resident', source: 'resident', label: 'Suffix', aliases: ['name_suffix'], description: 'Name suffix (Jr., Sr., III).', resolve: (c) => c.resident.suffix || '' },
   { key: 'gender', category: 'resident', source: 'resident', label: 'Gender', aliases: ['sex'], description: "Resident's gender.", resolve: (c) => c.resident.gender || '' },
   { key: 'civil_status', category: 'resident', source: 'resident', label: 'Civil status', aliases: ['civilstatus', 'marital_status'], description: "Resident's civil status (Single, Married, etc.).", resolve: (c) => pick(c.resident.civil_status, c.application.civil_status) },
-  { key: 'birth_date', category: 'resident', source: 'resident', label: 'Birth date', aliases: ['birthdate', 'date_of_birth', 'dob'], description: "Resident's birth date.", resolve: (c) => formatDate(c.resident.birth_date) },
-  { key: 'age', category: 'resident', source: 'resident', label: 'Age', aliases: ['age_years'], description: "Resident's age computed from birth date.", resolve: (c) => pick(computeAge(c.resident.birth_date), c.application.age) },
+  { key: 'birth_date', category: 'resident', source: 'resident', label: 'Birth date', aliases: ['birthdate', 'date_of_birth', 'dob'], description: "Resident's birth date.", resolve: (c) => pick(formatDate(c.resident.birth_date), formatDate(c.application.birth_date)) },
+  { key: 'age', category: 'resident', source: 'resident', label: 'Age', aliases: ['age_years'], description: "Resident's age computed from birth date.", resolve: (c) => pick(computeAge(c.resident.birth_date), computeAge(c.application.birth_date), c.application.age) },
   { key: 'birth_place', category: 'resident', source: 'resident', label: 'Birth place', aliases: ['place_of_birth', 'birthplace'], description: "Resident's place of birth.", resolve: (c) => pick(c.resident.birth_place, c.application.birth_place) },
   { key: 'nationality', category: 'resident', source: 'resident', label: 'Nationality', aliases: ['citizenship'], description: "Resident's nationality.", resolve: (c) => pick(c.resident.nationality, c.application.nationality) || 'Filipino' },
   { key: 'religion', category: 'resident', source: 'resident', label: 'Religion', aliases: ['religious_affiliation'], description: "Resident's religion.", resolve: (c) => pick(c.resident.religion, c.application.religion) },
@@ -213,7 +213,13 @@ const isKnown = (norm) => !!find(norm);
 
 const buildContext = ({ request, resident, service, barangay, processedBy, now }) => {
   const date = now || new Date();
-  const application = (request && (typeof request.form_data === 'object' ? request.form_data : (typeof request.form_data === 'string' ? JSON.parse(request.form_data) : null))) || {};
+  let application = (request && (typeof request.form_data === 'object' ? request.form_data : (typeof request.form_data === 'string' ? JSON.parse(request.form_data) : null))) || {};
+  // Guest submissions store identity under form_data._guest; merge those fields
+  // into the application context so guest-derived placeholders (name, age, etc.)
+  // resolve through the same generic path as registered residents.
+  if (application && typeof application === 'object' && application._guest && typeof application._guest === 'object') {
+    application = { ...application._guest, ...application };
+  }
   return {
     resident: resident || {},
     application,

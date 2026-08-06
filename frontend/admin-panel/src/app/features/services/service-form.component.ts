@@ -62,6 +62,7 @@ const RESIDENT_FIELDS: { value: string; label: string }[] = [
   { value: 'last_name', label: 'Last Name' },
   { value: 'suffix', label: 'Suffix' },
   { value: 'birth_date', label: 'Birth Date' },
+  { value: 'age', label: 'Age (auto-computed from birth date)' },
   { value: 'gender', label: 'Gender' },
   { value: 'civil_status', label: 'Civil Status' },
   { value: 'address_line', label: 'Address' },

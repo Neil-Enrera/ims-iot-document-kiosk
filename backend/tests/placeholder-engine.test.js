@@ -109,6 +109,14 @@ describe('Placeholder resolution', () => {
     assert.strictEqual(engine.resolve('relative_name', c, []), 'John Doe');
   });
 
+  it('merges _guest identity and resolves guest name and age', () => {
+    const guestRequest = { ...request, form_data: { purpose: 'Doc', _guest: { full_name: 'Guest One', birth_date: '2010-01-01' } } };
+    const c = engine.buildContext({ request: guestRequest, resident: {}, service, barangay, processedBy: '', now: new Date('2026-08-06T10:30:00') });
+    assert.strictEqual(engine.resolve('full_name', c, []), 'Guest One');
+    assert.strictEqual(engine.resolve('age', c, []), '16');
+    assert.strictEqual(engine.resolve('birth_date', c, []), 'January 1, 2010');
+  });
+
   it('apply() fills every tag and reports unknown tags', () => {
     const { data, unknown } = engine.apply({
       templateTags: ['full_name', 'age', 'address', 'purpose', 'mystery_tag'],

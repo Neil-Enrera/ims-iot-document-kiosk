@@ -8,6 +8,14 @@ const generate = async (req, res) => {
       userId: req.user.userId
     });
     if (!result.success) return errorResponse(res, 400, result.message);
+    // Manual "Generate Document" is a regenerate: keep only the newest generation
+    // (docx + pdf from this run) and drop any older documents for the request so
+    // repeated clicks never stack duplicates.
+    const keepPrefix = result.data?.generated?.[0]?.fileName?.replace(/\.[^.]+$/, '');
+    if (keepPrefix) {
+      const removed = await documentService.pruneOldGenerations(req.params.id, keepPrefix);
+      if (removed > 0) result.data.replaced = removed;
+    }
     return createdResponse(res, result.message, result.data);
   } catch (error) {
     console.error('Document generation error:', error);
