@@ -10,13 +10,13 @@ const errorHandler = require('./middleware/error.middleware');
 const app = express();
 
 app.use(helmet());
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use(cors({ 
   origin: [
     process.env.FRONTEND_URL || 'http://localhost:4200',
     process.env.KIOSK_URL || 'http://localhost:4201'
   ]
 }));
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 

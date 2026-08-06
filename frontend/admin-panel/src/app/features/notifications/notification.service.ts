@@ -44,23 +44,40 @@ export class NotificationService {
     const token = this.auth.getToken();
     const url = `http://localhost:3000/api/v1/notifications/stream?token=${token}`;
 
-    this.eventSource = new EventSource(url);
+    try {
+      this.eventSource = new EventSource(url);
+    } catch (e) {
+      console.error('Failed to create EventSource:', e);
+      return;
+    }
 
     this.eventSource.addEventListener('connected', (event) => {
-      this.isConnected = true;
-      this.reconnectAttempts = 0; // Reset on successful connection
-      console.log('SSE connected:', JSON.parse(event.data));
+      try {
+        this.isConnected = true;
+        this.reconnectAttempts = 0;
+        console.log('SSE connected:', JSON.parse(event.data));
+      } catch (e) {
+        console.error('Error parsing connected event:', e);
+      }
     });
 
     this.eventSource.addEventListener('notification', (event) => {
-      const notification: Notification = JSON.parse(event.data);
-      this.notification$.next(notification);
-      this.sseEvent$.next({ type: 'notification', data: notification });
+      try {
+        const notification: Notification = JSON.parse(event.data);
+        this.notification$.next(notification);
+        this.sseEvent$.next({ type: 'notification', data: notification });
+      } catch (e) {
+        console.error('Error parsing notification event:', e);
+      }
     });
 
     this.eventSource.addEventListener('unread-count', (event) => {
-      const data = JSON.parse(event.data);
-      this.unreadCount.set(data.count);
+      try {
+        const data = JSON.parse(event.data);
+        this.unreadCount.set(data.count);
+      } catch (e) {
+        console.error('Error parsing unread-count event:', e);
+      }
     });
 
     this.eventSource.addEventListener('unread-count-changed', () => {
@@ -70,8 +87,12 @@ export class NotificationService {
     // Listen for request status changes
     ['request-created', 'request-status-changed', 'request-approved', 'request-rejected', 'request-cancelled', 'request-released', 'request-updated'].forEach(eventType => {
       this.eventSource?.addEventListener(eventType, (event) => {
-        const data = JSON.parse(event.data);
-        this.sseEvent$.next({ type: eventType, data });
+        try {
+          const data = JSON.parse(event.data);
+          this.sseEvent$.next({ type: eventType, data });
+        } catch (e) {
+          console.error(`Error parsing ${eventType} event:`, e);
+        }
       });
     });
 

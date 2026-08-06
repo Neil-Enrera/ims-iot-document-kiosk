@@ -3,11 +3,12 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { isPlatformBrowser } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService, Notification } from '../../features/notifications/notification.service';
+import { NotificationDropdownComponent } from '../../shared/components/notification-dropdown.component';
 
 @Component({
   selector: 'app-layout',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, NotificationDropdownComponent],
   template: `
     <div class="flex h-screen bg-gray-100">
       <!-- Sidebar -->
@@ -27,13 +28,9 @@ import { NotificationService, Notification } from '../../features/notifications/
              class="block px-3 py-2 rounded hover:bg-blue-700 transition">Barangay ID Apps</a>
           <a routerLink="/services" routerLinkActive="bg-blue-700"
              class="block px-3 py-2 rounded hover:bg-blue-700 transition">Services</a>
-          <a routerLink="/rfid" routerLinkActive="bg-blue-700"
+<a routerLink="/rfid" routerLinkActive="bg-blue-700"
              class="block px-3 py-2 rounded hover:bg-blue-700 transition">RFID Cards</a>
-          <a routerLink="/notifications" routerLinkActive="bg-blue-700"
-             class="block px-3 py-2 rounded hover:bg-blue-700 transition">Notifications</a>
-          <a routerLink="/files" routerLinkActive="bg-blue-700"
-             class="block px-3 py-2 rounded hover:bg-blue-700 transition">Files</a>
-          @if (auth.isAdmin()) {
+           @if (auth.isAdmin()) {
             <a routerLink="/users" routerLinkActive="bg-blue-700"
                class="block px-3 py-2 rounded hover:bg-blue-700 transition">Users</a>
             <a routerLink="/reports" routerLinkActive="bg-blue-700"
@@ -60,16 +57,7 @@ import { NotificationService, Notification } from '../../features/notifications/
           </button>
           <h2 class="text-gray-700 font-medium hidden sm:block">IMS Document Request Services</h2>
           <div class="flex items-center gap-4">
-            <a routerLink="/notifications" class="relative p-2 text-gray-600 hover:bg-gray-100 rounded">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-              </svg>
-              @if (notifService.unreadCount() > 0) {
-                <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
-                  {{ notifService.unreadCount() > 99 ? '99+' : notifService.unreadCount() }}
-                </span>
-              }
-            </a>
+            <app-notification-dropdown />
             <span class="text-sm text-gray-500 hidden sm:inline">{{ auth.currentUser()?.role_name }}</span>
           </div>
         </header>
@@ -102,13 +90,9 @@ import { NotificationService, Notification } from '../../features/notifications/
                class="block px-3 py-2 rounded hover:bg-blue-700 transition">Barangay ID Apps</a>
             <a routerLink="/services" routerLinkActive="bg-blue-700" (click)="toggleSidebar()"
                class="block px-3 py-2 rounded hover:bg-blue-700 transition">Services</a>
-            <a routerLink="/rfid" routerLinkActive="bg-blue-700" (click)="toggleSidebar()"
-               class="block px-3 py-2 rounded hover:bg-blue-700 transition">RFID Cards</a>
-            <a routerLink="/notifications" routerLinkActive="bg-blue-700" (click)="toggleSidebar()"
-               class="block px-3 py-2 rounded hover:bg-blue-700 transition">Notifications</a>
-            <a routerLink="/files" routerLinkActive="bg-blue-700" (click)="toggleSidebar()"
-               class="block px-3 py-2 rounded hover:bg-blue-700 transition">Files</a>
-            @if (auth.isAdmin()) {
+<a routerLink="/rfid" routerLinkActive="bg-blue-700" (click)="toggleSidebar()"
+             class="block px-3 py-2 rounded hover:bg-blue-700 transition">RFID Cards</a>
+           @if (auth.isAdmin()) {
               <a routerLink="/users" routerLinkActive="bg-blue-700" (click)="toggleSidebar()"
                  class="block px-3 py-2 rounded hover:bg-blue-700 transition">Users</a>
               <a routerLink="/reports" routerLinkActive="bg-blue-700" (click)="toggleSidebar()"
@@ -150,13 +134,21 @@ export class LayoutComponent implements OnInit, OnDestroy {
     // Initial fetch of unread count
     this.notifService.refreshUnreadCount();
 
-    // Connect to SSE for real-time notifications
-    this.notifService.connectSSE();
+    // Connect to SSE for real-time notifications with error boundary
+    try {
+      this.notifService.connectSSE();
+    } catch (e) {
+      console.error('Failed to connect SSE:', e);
+    }
 
     // Subscribe to incoming notifications (optional: show toast/snackbar)
-    this.notificationSub = this.notifService.onNotification().subscribe((notif) => {
-      console.log('New notification received:', notif);
-      // You could show a toast/snackbar here in the future
+    this.notificationSub = this.notifService.onNotification().subscribe({
+      next: (notif) => {
+        console.log('New notification received:', notif);
+      },
+      error: (e) => {
+        console.error('Notification subscription error:', e);
+      }
     });
   }
 
