@@ -401,9 +401,6 @@ export type BarangayStep =
                           } @else {
                             <span class="text-lg text-green-300 font-medium">FREE</span>
                           }
-                          @if (service.processing_time) {
-                            <div class="text-xs text-blue-200 mt-1">{{ service.processing_time }}</div>
-                          }
                         </div>
                       </div>
                     </button>
@@ -442,31 +439,10 @@ export type BarangayStep =
                         </ul>
                       </div>
                     }
-                    @if (selectedService()?.required_documents && selectedService()!.required_documents!.length > 0) {
-                      <div class="mb-6">
-                        <h4 class="font-bold text-lg mb-3 text-blue-100">Required Documents</h4>
-                        <ul class="space-y-2">
-                          @for (doc of selectedService()!.required_documents!; track doc) {
-                            <li class="flex items-start gap-3 bg-blue-900/30 p-3 rounded-lg">
-                              <svg class="w-5 h-5 text-yellow-300 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                              </svg>
-                              <span class="text-blue-100">{{ doc }}</span>
-                            </li>
-                          }
-                        </ul>
-                      </div>
-                    }
-                    @if ((!selectedService()?.requirements || selectedService()!.requirements!.length === 0) &&
-                        (!selectedService()?.required_documents || selectedService()!.required_documents!.length === 0)) {
+                    @if (!selectedService()?.requirements || selectedService()!.requirements!.length === 0) {
                       <p class="text-blue-200/80">No specific requirements listed for this service.</p>
                     }
                   </div>
-                  @if (selectedService()?.approval_workflow) {
-                    <div class="bg-yellow-500/15 border border-yellow-400 rounded-xl p-4">
-                      <p class="text-yellow-200 text-sm"><strong>Processing:</strong> {{ selectedService()?.approval_workflow }}</p>
-                    </div>
-                  }
                 </div>
                 <div class="flex gap-4 pt-4 border-t border-blue-700">
                   <app-button variant="secondary" size="lg" class="flex-1" (onClick)="goBack()">Back</app-button>
@@ -743,21 +719,6 @@ export type BarangayStep =
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                               </svg>
                               <span class="text-blue-100">{{ req }}</span>
-                            </li>
-                          }
-                        </ul>
-                      </div>
-                    }
-                    @if (barangayService()?.required_documents && barangayService()!.required_documents!.length > 0) {
-                      <div class="mb-6">
-                        <h4 class="font-bold text-lg mb-3 text-blue-100">Required Documents</h4>
-                        <ul class="space-y-2">
-                          @for (doc of barangayService()!.required_documents!; track doc) {
-                            <li class="flex items-start gap-3 bg-blue-900/30 p-3 rounded-lg">
-                              <svg class="w-5 h-5 text-yellow-300 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                              </svg>
-                              <span class="text-blue-100">{{ doc }}</span>
                             </li>
                           }
                         </ul>

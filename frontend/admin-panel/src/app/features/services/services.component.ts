@@ -33,19 +33,13 @@ import { ServiceFormComponent } from './service-form.component';
           [loading]="loading()"
           trackBy="service_id"
           emptyMessage="No services found"
-          [cellTemplates]="{ is_active: activeCell, show_in_kiosk: kioskCell }"
+          [cellTemplates]="{ is_active: activeCell }"
           [rowActionsTemplate]="rowActions"
           (onRowClick)="openEditForm($event)">
           <ng-template #activeCell let-value>
             <span
               [class]="value ? 'inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold text-green-700 bg-green-100' : 'inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold text-gray-600 bg-gray-200'">
               {{ value ? 'Active' : 'Inactive' }}
-            </span>
-          </ng-template>
-          <ng-template #kioskCell let-value>
-            <span
-              [class]="value ? 'inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold text-blue-700 bg-blue-100' : 'inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold text-gray-600 bg-gray-200'">
-              {{ value ? 'Shown' : 'Hidden' }}
             </span>
           </ng-template>
           <ng-template #rowActions let-service>
@@ -114,8 +108,7 @@ export class ServicesComponent implements OnInit {
     { key: 'description', label: 'Description' },
     { key: 'processing_fee', label: 'Fee', align: 'right', sortable: true },
     { key: 'requires_photo', label: 'Photo Required' },
-    { key: 'is_active', label: 'Status' },
-    { key: 'show_in_kiosk', label: 'In Kiosk' }
+    { key: 'is_active', label: 'Status' }
   ];
 
   constructor(private serviceService: ServiceService) {}

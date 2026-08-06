@@ -6,7 +6,7 @@ const authenticate = require('../middleware/auth.middleware');
 const authorize = require('../middleware/role.middleware');
 const validate = require('../middleware/validation.middleware');
 const { uploadTemplate } = require('../middleware/upload.middleware');
-const { createValidation, updateValidation, statusValidation, kioskVisibilityValidation, getAllValidation } = require('../validations/service.validation');
+const { createValidation, updateValidation, statusValidation, getAllValidation } = require('../validations/service.validation');
 
 // Master placeholder library (static reference data, no service id needed).
 router.get('/placeholders/library', authenticate, authorize('Administrator', 'Barangay Secretary'), documentController.listPlaceholderLibrary);
@@ -16,7 +16,6 @@ router.get('/:id', authenticate, authorize('Administrator', 'Barangay Secretary'
 router.post('/', authenticate, authorize('Administrator'), ...createValidation, validate, serviceController.create);
 router.put('/:id', authenticate, authorize('Administrator'), ...updateValidation, validate, serviceController.update);
 router.patch('/:id/status', authenticate, authorize('Administrator'), ...statusValidation, validate, serviceController.changeStatus);
-router.patch('/:id/kiosk-visibility', authenticate, authorize('Administrator'), ...kioskVisibilityValidation, validate, serviceController.changeKioskVisibility);
 router.post('/:id/template', authenticate, authorize('Administrator'), uploadTemplate.single('template'), serviceController.uploadTemplate);
 router.delete('/:id/template', authenticate, authorize('Administrator'), serviceController.removeTemplate);
 router.get('/:id/template/placeholders', authenticate, authorize('Administrator', 'Barangay Secretary'), documentController.scanPlaceholders);

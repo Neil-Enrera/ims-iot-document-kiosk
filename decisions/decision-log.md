@@ -461,3 +461,36 @@ Aged documents previously required the date to be manually typed; the preview mo
 - `requests.component.ts`: non-authority "Regenerate Document" button + workflow hint; `service-form.component.ts`: age picker entry.
 - Verified: 45 backend tests (new guest merge test), 14 admin tests, ESLint clean, both `tsc --noEmit` clean, live E2E (resident age 36, guest age 16 + name, birth_date long-form, regenerate keeps 1 document) 8/8.
 - **Still required by the business:** re-author real templates and populate resident birth dates / barangay officials so the auto-filled fields show meaningful values.
+
+
+---
+
+### DEC-018 - Simplify the Service form: drop redundant fields
+
+**Status:** Accepted
+**Date:** 2026-08-06
+**Decision Maker(s):** Project Owner
+
+**Decision:**
+Remove four fields from the Create/Edit Service form because they did not match the actual barangay workflow or duplicated other fields:
+
+1. **Processing Time** (`services.processing_time`) - dropped; not used anywhere in the request flow.
+2. **Approval Workflow** (`services.approval_workflow`) - dropped; the system already has a fixed review/approval workflow per request status.
+3. **Show in Kiosk** (`services.show_in_kiosk`) - dropped; every active service now appears on the kiosk. The kiosk query is `WHERE is_active = 1` and the `PATCH /services/:id/kiosk-visibility` endpoint was removed.
+4. **Required Documents** (`services.required_documents`) - dropped as redundant; the **What to Bring** list (`services.requirements`) is the single source of requirements shown to residents.
+
+**Reason:**
+The form had overlapping requirement concepts (Requirements vs Required Documents) and fields that were never surfaced in the workflow. Simplifying to the fields the office actually manages (name, description, fee, photo flag, active status, template, What to Bring, application form fields, placeholder mappings) reduces admin confusion and keeps one canonical list of requirements.
+
+**Alternatives Considered:**
+1. Keep Required Documents alongside What to Bring - rejected; two parallel requirement lists create ambiguity about which one residents must follow.
+2. Keep "Show in Kiosk" as a visibility toggle - rejected; the office wants every active service selectable at the kiosk, so the toggle added no value.
+3. Keep the columns in the DB but hide them from the form - rejected; dead columns/data invite confusion and drift (migration 016 drops them cleanly).
+
+**Consequences:**
+- Migration `016-drop-service-simple-fields.sql` drops `processing_time`, `approval_workflow`, `required_documents`, `show_in_kiosk` from `services` (destructive).
+- Removed `changeKioskVisibility` (service/controller/repository) and the `PATCH /services/:id/kiosk-visibility` route + validation.
+- Kiosk service list + request `service_snapshot` no longer include the removed fields.
+- `eslint.config.js` gained the missing `Buffer` Node global so `src/` lints with 0 errors.
+- Verified: backend tests 45/45, admin tests 14/14, ESLint clean, both `tsc --noEmit` clean, live E2E 12/12 (create/update without removed fields, kiosk list, kiosk-visibility 404, request submit + document generation, snapshot has no removed fields).
+- Existing requests keep their historical `service_snapshot` JSON; existing services keep all remaining fields.

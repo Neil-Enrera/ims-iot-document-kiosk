@@ -115,10 +115,6 @@ export class ServiceService {
     return this.api.patch(`/services/${id}/status`, { isActive });
   }
 
-  toggleKioskVisibility(id: number, showInKiosk: boolean) {
-    return this.api.patch(`/services/${id}/kiosk-visibility`, { showInKiosk });
-  }
-
   uploadTemplate(id: number, file: File) {
     const formData = new FormData();
     formData.append('template', file);

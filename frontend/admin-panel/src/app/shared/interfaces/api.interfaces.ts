@@ -107,18 +107,14 @@ export interface Service {
   description: string | null;
   requirements: string[] | null;
   form_fields: FormField[] | null;
-  required_documents: string[] | null;
   processing_fee: number;
-  processing_time: string | null;
   requires_photo: boolean;
-  approval_workflow: string | null;
   template_path: string | null;
   template_original_name: string | null;
   template_mime: string | null;
   template_size: number | null;
   document_mappings: DocumentMapping[] | null;
   is_active: boolean;
-  show_in_kiosk: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -157,11 +153,8 @@ export interface DocumentRequest {
     description: string | null;
     requirements: string[] | null;
     form_fields: FormField[] | null;
-    required_documents: string[] | null;
     processing_fee: number | null;
-    processing_time: string | null;
     requires_photo: boolean | null;
-    approval_workflow: string | null;
   } | null;
   request_date: string;
   reviewed_date: string | null;

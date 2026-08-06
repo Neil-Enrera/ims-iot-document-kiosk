@@ -99,12 +99,7 @@ const APPLICATION_COMMON_FIELDS = [
         <textarea [(ngModel)]="form.description" name="description" rows="2" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-300"></textarea>
       </div>
 
-      <div class="grid grid-cols-2 gap-3">
-        <app-input label="Processing Fee" type="number" [value]="form.processingFee" (valueChange)="form.processingFee = $event" placeholder="0.00" />
-        <app-input label="Processing Time" [value]="form.processingTime" (valueChange)="form.processingTime = $event" placeholder="e.g. 1-2 business days" />
-      </div>
-
-      <app-input label="Approval Workflow" [value]="form.approvalWorkflow" (valueChange)="form.approvalWorkflow = $event" placeholder="e.g. Review by Secretary, approve by Captain" />
+      <app-input label="Processing Fee" type="number" [value]="form.processingFee" (valueChange)="form.processingFee = $event" placeholder="0.00" />
 
       <div class="flex items-center gap-3">
         <label class="relative inline-flex items-center cursor-pointer">
@@ -120,14 +115,6 @@ const APPLICATION_COMMON_FIELDS = [
           <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
         </label>
         <span class="text-sm font-medium text-gray-700">Status (Active / Inactive)</span>
-      </div>
-
-      <div class="flex items-center gap-3">
-        <label class="relative inline-flex items-center cursor-pointer">
-          <input type="checkbox" [(ngModel)]="form.showInKiosk" name="showInKiosk" class="sr-only peer" />
-          <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-        </label>
-        <span class="text-sm font-medium text-gray-700">Show in Kiosk</span>
       </div>
 
       <!-- Official Document Template -->
@@ -198,18 +185,11 @@ const APPLICATION_COMMON_FIELDS = [
           class="block w-full text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
       </div>
 
-      <!-- Requirements -->
+      <!-- What to Bring -->
       <div class="border rounded-lg p-3">
-        <label class="block text-sm font-medium text-gray-700 mb-1">Requirements</label>
-        <p class="text-xs text-gray-500 mb-2">One requirement per line.</p>
+        <label class="block text-sm font-medium text-gray-700 mb-1">What to Bring</label>
+        <p class="text-xs text-gray-500 mb-2">One requirement per line. This list is shown to residents when they select the service at the kiosk.</p>
         <textarea [(ngModel)]="form.requirementsText" name="requirementsText" rows="3" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-300" placeholder="Valid Government ID&#10;Proof of Residency"></textarea>
-      </div>
-
-      <!-- Required Documents -->
-      <div class="border rounded-lg p-3">
-        <label class="block text-sm font-medium text-gray-700 mb-1">Required Documents</label>
-        <p class="text-xs text-gray-500 mb-2">One document per line.</p>
-        <textarea [(ngModel)]="form.requiredDocumentsText" name="requiredDocumentsText" rows="3" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-300" placeholder="Valid Government ID&#10;Proof of Residency"></textarea>
       </div>
 
       <!-- Dynamic Form Fields -->
@@ -403,13 +383,9 @@ export class ServiceFormComponent implements OnChanges, OnInit {
     serviceName: '',
     description: '',
     processingFee: '0',
-    processingTime: '',
-    approvalWorkflow: '',
     requiresPhoto: false,
     isActive: true,
-    showInKiosk: true,
     requirementsText: '',
-    requiredDocumentsText: '',
     formFields: [] as EditableFormField[],
     documentMappings: [] as EditableMapping[]
   };
@@ -483,13 +459,9 @@ export class ServiceFormComponent implements OnChanges, OnInit {
         serviceName: this.service.service_name || '',
         description: this.service.description || '',
         processingFee: this.service.processing_fee?.toString() || '0',
-        processingTime: this.service.processing_time || '',
-        approvalWorkflow: this.service.approval_workflow || '',
         requiresPhoto: this.service.requires_photo || false,
         isActive: !!this.service.is_active,
-        showInKiosk: this.service.show_in_kiosk !== false,
         requirementsText: (this.service.requirements || []).join('\n'),
-        requiredDocumentsText: (this.service.required_documents || []).join('\n'),
         formFields: (this.service.form_fields || []).map(f => ({
           ...f,
           optionsText: (f.options || []).join(', '),
@@ -720,13 +692,9 @@ export class ServiceFormComponent implements OnChanges, OnInit {
       serviceName: this.form.serviceName.trim(),
       description: this.form.description.trim() || undefined,
       processingFee: parseFloat(this.form.processingFee) || 0,
-      processingTime: this.form.processingTime.trim() || undefined,
-      approvalWorkflow: this.form.approvalWorkflow.trim() || undefined,
       requiresPhoto: this.form.requiresPhoto,
       isActive: this.form.isActive,
-      showInKiosk: this.form.showInKiosk,
       requirements: this.form.requirementsText.split('\n').map(s => s.trim()).filter(Boolean),
-      requiredDocuments: this.form.requiredDocumentsText.split('\n').map(s => s.trim()).filter(Boolean),
       formFields,
       documentMappings: this.form.documentMappings.map(m => ({
         placeholder: this.normalizePlaceholder(m.placeholder),

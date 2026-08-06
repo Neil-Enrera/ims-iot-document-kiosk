@@ -55,11 +55,8 @@ export interface Service {
   description: string | null;
   requirements: string[] | null;
   form_fields: FormField[] | null;
-  required_documents: string[] | null;
   processing_fee: number;
-  processing_time: string | null;
   requires_photo: boolean;
-  approval_workflow: string | null;
   is_active: boolean;
 }
 

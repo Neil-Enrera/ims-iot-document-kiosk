@@ -57,15 +57,14 @@ const findByIdempotencyKey = async (key) => {
 const getServices = async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT service_id, service_name, description, requirements, form_fields, required_documents,
-              processing_fee, processing_time, requires_photo, approval_workflow, is_active
-       FROM services WHERE is_active = 1 AND show_in_kiosk = 1 ORDER BY service_name`
+      `SELECT service_id, service_name, description, requirements, form_fields,
+              processing_fee, requires_photo, is_active
+       FROM services WHERE is_active = 1 ORDER BY service_name`
     );
     const services = rows.map(s => ({
       ...s,
       requirements: parseJsonField(s.requirements),
-      form_fields: parseJsonField(s.form_fields),
-      required_documents: parseJsonField(s.required_documents)
+      form_fields: parseJsonField(s.form_fields)
     }));
     return successResponse(res, 'Services retrieved.', services);
   } catch (error) {
@@ -266,11 +265,8 @@ const insertKioskRequest = async ({ resident, service, photo, formData, idempote
           description: service.description ?? null,
           requirements: parseJsonField(service.requirements),
           form_fields: parseJsonField(service.form_fields),
-          required_documents: parseJsonField(service.required_documents),
           processing_fee: service.processing_fee ?? null,
-          processing_time: service.processing_time ?? null,
-          requires_photo: service.requires_photo ?? false,
-          approval_workflow: service.approval_workflow ?? null
+          requires_photo: service.requires_photo ?? false
         }),
         idempotencyKey
       ]

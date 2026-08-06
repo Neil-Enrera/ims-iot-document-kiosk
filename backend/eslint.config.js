@@ -14,6 +14,7 @@ module.exports = [
         __dirname: 'readonly',
         __filename: 'readonly',
         exports: 'writable',
+        Buffer: 'readonly',
         setTimeout: 'readonly',
         clearTimeout: 'readonly',
         setInterval: 'readonly',

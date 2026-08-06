@@ -62,6 +62,34 @@ Use one of the following categories:
 
 ---
 
+# Version 2.4.0
+
+**Status:** Active Development
+
+**Date:** 2026-08-06
+
+## Removed
+
+- **Service form simplification** — removed four fields from the Create/Edit Service form (they were unnecessary or redundant with the actual barangay workflow):
+  - **Processing Time** (`services.processing_time`)
+  - **Approval Workflow** (`services.approval_workflow`)
+  - **Show in Kiosk** (`services.show_in_kiosk`) — every active service now appears on the kiosk; the kiosk query no longer filters on it.
+  - **Required Documents** (`services.required_documents`) — redundant with the **What to Bring** list (`services.requirements`), which remains the single source of requirements shown to residents.
+
+**Modules Affected:** Backend, Database, Admin Panel, Kiosk
+
+**Database Changes:** Yes — migration 016 drops `processing_time`, `approval_workflow`, `required_documents`, and `show_in_kiosk` from `services`.
+
+**API Changes:** Yes — removed `PATCH /services/:id/kiosk-visibility` and its service/controller/repository/validation chain; `POST /services` and `PUT /services/:id` no longer accept `processingTime`, `approvalWorkflow`, `showInKiosk`, or `requiredDocuments`. `GET /services` `sortBy` no longer accepts `show_in_kiosk`. Kiosk service list + request `service_snapshot` no longer include the removed fields.
+
+**Architecture Changes:** No
+
+**Breaking Changes:** Yes (minor) — existing data in the four dropped columns is gone (migration 016 is destructive). Existing requests keep their historical `service_snapshot` JSON untouched.
+
+**Testing Performed:** Backend tests (45/45), ESLint clean on changed files, both `tsc --noEmit` builds clean, admin tests (14/14), live E2E: create/edit service without removed fields, kiosk service list, and full document request → generation flow.
+
+---
+
 # Version 2.3.0
 
 **Status:** Active Development

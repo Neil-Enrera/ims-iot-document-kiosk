@@ -26,7 +26,7 @@ const findAll = async ({ search, isActive, page, limit, sortBy, sortOrder }) => 
     countQuery += whereClause;
   }
 
-  const validSortColumns = ['service_id', 'service_name', 'processing_fee', 'is_active', 'show_in_kiosk', 'created_at'];
+  const validSortColumns = ['service_id', 'service_name', 'processing_fee', 'is_active', 'created_at'];
   const column = validSortColumns.includes(sortBy) ? sortBy : 'service_id';
   const order = sortOrder === 'DESC' ? 'DESC' : 'ASC';
   query += ` ORDER BY ${column} ${order}`;
@@ -47,7 +47,6 @@ const parseServiceRows = (rows) => {
     ...row,
     requirements: parseJson(row.requirements),
     form_fields: parseJson(row.form_fields),
-    required_documents: parseJson(row.required_documents),
     document_mappings: parseJson(row.document_mappings)
   }));
 };
@@ -71,41 +70,33 @@ const findByName = async (serviceName) => {
   return rows[0] || null;
 };
 
-const create = async ({ serviceName, description, processingFee, requiresPhoto, requirements, formFields, requiredDocuments, processingTime, approvalWorkflow, documentMappings, showInKiosk }) => {
+const create = async ({ serviceName, description, processingFee, requiresPhoto, requirements, formFields, documentMappings }) => {
   const [result] = await pool.query(
-    `INSERT INTO services (service_name, description, processing_fee, requires_photo, requirements, form_fields, required_documents, processing_time, approval_workflow, document_mappings, show_in_kiosk)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO services (service_name, description, processing_fee, requires_photo, requirements, form_fields, document_mappings)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
     [
       serviceName, description, processingFee, requiresPhoto || false,
       JSON.stringify(requirements ?? null),
       JSON.stringify(formFields ?? null),
-      JSON.stringify(requiredDocuments ?? null),
-      processingTime || null,
-      approvalWorkflow || null,
-      JSON.stringify(documentMappings ?? null),
-      showInKiosk !== false
+      JSON.stringify(documentMappings ?? null)
     ]
   );
   return result.insertId;
 };
 
-const update = async (serviceId, { serviceName, description, processingFee, requiresPhoto, requirements, formFields, requiredDocuments, processingTime, approvalWorkflow, isActive, documentMappings, showInKiosk }) => {
+const update = async (serviceId, { serviceName, description, processingFee, requiresPhoto, requirements, formFields, isActive, documentMappings }) => {
   const [result] = await pool.query(
     `UPDATE services
      SET service_name = ?, description = ?, processing_fee = ?, requires_photo = ?,
-         requirements = ?, form_fields = ?, required_documents = ?, processing_time = ?, approval_workflow = ?,
-         is_active = ?, document_mappings = ?, show_in_kiosk = ?
+         requirements = ?, form_fields = ?,
+         is_active = ?, document_mappings = ?
      WHERE service_id = ?`,
     [
       serviceName, description, processingFee, requiresPhoto || false,
       JSON.stringify(requirements ?? null),
       JSON.stringify(formFields ?? null),
-      JSON.stringify(requiredDocuments ?? null),
-      processingTime || null,
-      approvalWorkflow || null,
       isActive !== false,
       JSON.stringify(documentMappings ?? null),
-      showInKiosk !== false,
       serviceId
     ]
   );
@@ -144,14 +135,9 @@ const updateStatus = async (serviceId, isActive) => {
   return result.affectedRows > 0;
 };
 
-const updateKioskVisibility = async (serviceId, showInKiosk) => {
-  const [result] = await pool.query('UPDATE services SET show_in_kiosk = ? WHERE service_id = ?', [showInKiosk, serviceId]);
-  return result.affectedRows > 0;
-};
-
 const remove = async (serviceId) => {
   const [result] = await pool.query('DELETE FROM services WHERE service_id = ?', [serviceId]);
   return result.affectedRows > 0;
 };
 
-module.exports = { findAll, findById, findByName, create, update, updateStatus, updateKioskVisibility, remove, saveTemplate, clearTemplate, findTemplate };
+module.exports = { findAll, findById, findByName, create, update, updateStatus, remove, saveTemplate, clearTemplate, findTemplate };

@@ -275,8 +275,7 @@ const loadServiceWithMappings = async (serviceId) => {
     ...row,
     document_mappings: parseJson(row.document_mappings),
     form_fields: parseJson(row.form_fields) || [],
-    requirements: parseJson(row.requirements) || [],
-    required_documents: parseJson(row.required_documents) || []
+    requirements: parseJson(row.requirements) || []
   };
 };
 

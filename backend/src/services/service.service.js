@@ -58,18 +58,6 @@ const changeStatus = async (serviceId, isActive) => {
   return { success: true, message: 'Service status updated successfully.', data: updated };
 };
 
-const changeKioskVisibility = async (serviceId, showInKiosk) => {
-  const service = await serviceRepository.findById(serviceId);
-  if (!service) {
-    return { success: false, message: 'Service not found.' };
-  }
-
-  await serviceRepository.updateKioskVisibility(serviceId, showInKiosk);
-  const updated = await serviceRepository.findById(serviceId);
-
-  return { success: true, message: 'Service kiosk visibility updated successfully.', data: updated };
-};
-
 const deleteService = async (serviceId) => {
   const service = await serviceRepository.findById(serviceId);
   if (!service) {
@@ -135,4 +123,4 @@ const removeTemplate = async (serviceId) => {
   return { success: true, message: 'Template removed successfully.', data: updated };
 };
 
-module.exports = { getAllServices, getServiceById, createService, updateService, changeStatus, changeKioskVisibility, deleteService, uploadTemplate, removeTemplate };
+module.exports = { getAllServices, getServiceById, createService, updateService, changeStatus, deleteService, uploadTemplate, removeTemplate };
