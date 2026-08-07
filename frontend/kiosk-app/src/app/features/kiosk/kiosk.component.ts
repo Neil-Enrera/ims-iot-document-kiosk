@@ -4,8 +4,10 @@ import { FormsModule } from '@angular/forms';
 import { KioskService, Resident, Service, GuestInfo, FormField } from './kiosk.service';
 import { IdentificationService } from './identification.service';
 import { RfidScanService } from './rfid-scan.service';
+import { KioskStateService, KioskState } from './kiosk-state.service';
 import { ButtonComponent } from './button.component';
 import { SignaturePadComponent } from './signature-pad.component';
+import { TranslationService, KioskLanguage } from '../../i18n/translation.service';
 
 export type KioskMode = 'home' | 'rfid' | 'guest' | 'documents' | 'barangay';
 
@@ -42,53 +44,164 @@ export type BarangayStep =
       <!-- MAIN KIOSK AREA -->
       <div class="flex-1 relative">
 
-        <!-- ============ HOME: Landing ============ -->
+        <!-- ============ HOME: Landing (Production-ready) ============ -->
         @if (mode() === 'home') {
-          <div class="absolute inset-0 flex flex-col items-center justify-center p-8">
-            <div class="text-center max-w-3xl w-full">
-              <div class="mb-6">
-                <svg class="w-24 h-24 mx-auto text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
+          <div class="absolute inset-0 overflow-hidden bg-[#F8FAFC] text-[#0F172A] select-none flex flex-col [font-family:'Inter',sans-serif]">
+
+            <!-- Background image (uploaded) -->
+            <div class="absolute inset-0 bg-cover bg-center pointer-events-none" style="background-image: url('Background.png')" aria-hidden="true"></div>
+            <!-- Subtle radial glow centered behind the headline keeps text legible without washing the orange -->
+            <div class="absolute inset-0 pointer-events-none" aria-hidden="true"
+                 style="background: radial-gradient(ellipse 72% 58% at 50% 42%, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0.35) 55%, rgba(255,255,255,0.05) 100%);"></div>
+
+            <!-- Curved orange header accent (top-left) -->
+            <div class="absolute top-0 left-0 w-64 h-40 pointer-events-none" aria-hidden="true">
+              <svg viewBox="0 0 256 160" class="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M0 0 H256 V80 C256 124 220 160 176 160 H0 Z" fill="#F97316" opacity="0.12"/>
+              </svg>
+            </div>
+
+            <div class="relative flex-1 overflow-y-auto">
+              <div class="min-h-full flex flex-col items-center justify-center px-4 sm:px-8 py-6">
+
+              <!-- Header -->
+              <div class="text-center mb-10 lg:mb-16">
+                <div class="mx-auto mb-6 lg:mb-8 flex items-center justify-center">
+                  <div class="w-24 h-24 lg:w-[120px] lg:h-[120px] rounded-full bg-white border-2 border-[#F97316]/40 flex items-center justify-center shadow-sm overflow-hidden shrink-0">
+                    <img src="Barangay Logo.png" alt="Barangay San Manuel logo" class="w-full h-full object-cover">
+                  </div>
+                </div>
+                <p class="text-[11px] sm:text-[13px] font-semibold tracking-[0.35em] text-[#F97316] mb-2.5">{{ t('landing.welcome') }}</p>
+                <h1 class="text-[clamp(1.875rem,5.5vw,3.25rem)] font-bold tracking-tight text-[#0F172A] leading-[1.1]">{{ t('landing.barangayName') }}</h1>
+                <p class="text-[clamp(1rem,2vw,1.25rem)] font-medium text-[#64748B] mt-2 lg:mt-3 mb-6 lg:mb-10">{{ t('landing.subtitle') }}</p>
+                <p class="text-[clamp(1rem,2.2vw,1.375rem)] text-[#64748B] max-w-xl mx-auto font-normal px-2">{{ t('landing.prompt') }}</p>
               </div>
-              <h1 class="text-4xl font-bold mb-2">Barangay San Manuel</h1>
-              <p class="text-xl text-blue-200 mb-10">Document Request Kiosk</p>
 
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <!-- Scan Barangay ID -->
-                <button class="w-full bg-blue-600 hover:bg-blue-500 rounded-3xl p-8 flex flex-col items-center gap-4 text-center transition-all border-2 border-blue-400 shadow-xl hover:scale-[1.02]"
-                        (click)="startRfid()">
-                  <div class="w-20 h-20 bg-blue-900 rounded-2xl flex items-center justify-center">
-                    <svg class="w-12 h-12 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              <!-- Primary Action Cards -->
+              <div class="flex flex-wrap justify-center items-stretch gap-6 lg:gap-10 w-full max-w-6xl">
+
+                <!-- Card 1: Scan Barangay ID (RFID) -->
+                <button
+                  (click)="startRfid()"
+                  class="group flex items-center gap-5 lg:gap-8 rounded-[18px] border border-[#F97316]/60 bg-white p-6 lg:p-8 shadow-sm hover:shadow-md hover:border-[#F97316] transition-all duration-200 text-left flex-1 min-w-[min(100%,320px)] max-w-[560px]">
+                  <div class="shrink-0 w-16 h-16 lg:w-[72px] lg:h-[72px] rounded-xl bg-[#FFF7ED] flex items-center justify-center">
+                    <svg class="w-10 h-10 lg:w-11 lg:h-11 text-[#F97316] transition-transform group-hover:scale-105" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                      <!-- RFID card with wireless signal -->
+                      <rect x="3" y="6" width="18" height="12" rx="2"/>
+                      <path d="M7 9.5h7M7 12h7" stroke-linecap="round"/>
+                      <path d="M18 9v0.01 M18 12.5v0.01 M18 16v0.01" stroke-linecap="round" stroke-width="2.5"/>
+                      <path d="M18.5 15l1.2-1.2M18.5 9L17.3 10.2" stroke-linecap="round"/>
                     </svg>
                   </div>
-                  <div>
-                    <p class="text-2xl font-bold">Scan Barangay ID</p>
-                    <p class="text-blue-200 text-sm mt-1">Tap your RFID card on the scanner</p>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-[clamp(1.25rem,2.4vw,1.625rem)] font-bold text-[#0F172A] pb-2 lg:pb-3">{{ t('landing.scanId.title') }}</p>
+                    <p class="text-[clamp(0.95rem,1.6vw,1.125rem)] text-[#64748B] leading-snug font-normal">{{ t('landing.scanId.desc') }}</p>
                   </div>
-                  <svg class="w-8 h-8 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                  </svg>
-                </button>
-
-                <!-- Continue Without Barangay ID -->
-                <button class="w-full bg-blue-800/60 hover:bg-blue-700/60 rounded-3xl p-8 flex flex-col items-center gap-4 text-center transition-all border-2 border-blue-600 shadow-xl hover:scale-[1.02]"
-                        (click)="continueWithout()">
-                  <div class="w-20 h-20 bg-blue-900 rounded-2xl flex items-center justify-center">
-                    <svg class="w-12 h-12 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
+                  <div class="shrink-0 w-12 h-12 lg:w-14 lg:h-14 rounded-full bg-[#F97316] flex items-center justify-center shadow-sm group-hover:shadow transition-all ml-1">
+                    <svg class="w-6 h-6 lg:w-7 lg:h-7 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
                     </svg>
                   </div>
-                  <div>
-                    <p class="text-2xl font-bold">Continue Without Barangay ID</p>
-                    <p class="text-blue-200 text-sm mt-1">Request documents or apply for a Barangay ID</p>
-                  </div>
-                  <svg class="w-8 h-8 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                  </svg>
                 </button>
+
+                <!-- Card 2: Continue Without Barangay ID -->
+                <button
+                  (click)="continueWithout()"
+                  class="group flex items-center gap-5 lg:gap-8 rounded-[18px] border border-[#F97316]/60 bg-white p-6 lg:p-8 text-left hover:shadow-md hover:border-[#F97316] transition-all duration-200 shadow-sm flex-1 min-w-[min(100%,320px)] max-w-[560px]">
+                  <div class="shrink-0 w-16 h-16 lg:w-[72px] lg:h-[72px] rounded-xl bg-[#FFF7ED] flex items-center justify-center">
+                    <svg class="w-10 h-10 lg:w-11 lg:h-11 text-[#F97316] transition-transform group-hover:scale-105" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                      <!-- Person + document/certificate -->
+                      <circle cx="9" cy="8" r="3.5"/>
+                      <path d="M4 20c0-3.3 2.2-5 5-5s5 1.7 5 5"/>
+                      <rect x="13" y="6" width="9" height="12" rx="1.5"/>
+                      <path d="M15 10h5M15 13h5M15 16h4"/>
+                    </svg>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-[clamp(1.25rem,2.4vw,1.625rem)] font-bold text-[#0F172A] pb-2 lg:pb-3 leading-snug">{{ t('landing.continue.title') }}</p>
+                    <p class="text-[clamp(0.95rem,1.6vw,1.125rem)] text-[#64748B] leading-snug font-normal">{{ t('landing.continue.desc') }}</p>
+                  </div>
+                  <div class="shrink-0 w-12 h-12 lg:w-14 lg:h-14 rounded-full bg-[#F97316] flex items-center justify-center shadow-sm ml-1 group-hover:shadow transition-shadow">
+                    <svg class="w-6 h-6 lg:w-7 lg:h-7 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                    </svg>
+                  </div>
+                </button>
+              </div>
+              </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="relative border-t border-[#E5E7EB] bg-white/90 backdrop-blur-sm">
+              <div class="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-6 lg:py-7 grid grid-cols-2 md:grid-cols-4 gap-x-6 lg:gap-x-8 gap-y-6 items-center">
+
+                <!-- Section 1: Language -->
+                <div class="flex flex-col items-center gap-3 text-center min-w-0">
+                  <div class="flex items-center gap-2 text-[#0F172A]">
+                    <svg class="w-5 h-5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="9"/><path d="M3.6 9h16.8M3.6 15h16.8M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/>
+                    </svg>
+                    <span class="text-sm font-semibold">{{ t('landing.footer.language') }}</span>
+                  </div>
+                  <div class="inline-flex rounded-lg overflow-hidden border border-[#E5E7EB] bg-white shadow-sm min-w-0">
+                    <button
+                      (click)="setLanguage('en')"
+                      class="px-4 sm:px-6 py-2 text-[13px] sm:text-sm font-semibold transition-colors min-h-[40px]"
+                      [class.bg-[#F97316]]="language() === 'en'"
+                      [class.text-white]="language() === 'en'"
+                      [class.bg-white]="language() !== 'en'"
+                      [class.text-[#0F172A]]="language() !== 'en'">
+                      English
+                    </button>
+                    <button
+                      (click)="setLanguage('fil')"
+                      class="px-4 sm:px-6 py-2 text-[13px] sm:text-sm border-l border-[#E5E7EB] font-semibold transition-colors min-h-[40px]"
+                      [class.bg-[#F97316]]="language() === 'fil'"
+                      [class.text-white]="language() === 'fil'"
+                      [class.bg-white]="language() !== 'fil'"
+                      [class.text-[#0F172A]]="language() !== 'fil'">
+                      Filipino
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Section 2: Need Assistance -->
+                <div class="flex flex-col items-center gap-1.5 text-center min-w-0">
+                  <svg class="w-6 h-6 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="9"/>
+                    <path d="M9.5 9a2.5 2.5 0 114.6 1.3c-.8 1-1.9 1.7-1.9 3.2" stroke-linecap="round"/>
+                    <path d="M12 17h.01" stroke-linecap="round"/>
+                  </svg>
+                  <div>
+                    <p class="text-[14px] lg:text-[15px] font-semibold text-[#0F172A]">{{ t('landing.footer.assistance') }}</p>
+                    <p class="text-[12px] lg:text-[13px] text-[#64748B]">{{ t('landing.footer.assistanceDesc') }}</p>
+                  </div>
+                </div>
+
+                <!-- Section 3: Office Hours -->
+                <div class="flex flex-col items-center gap-1.5 text-center min-w-0">
+                  <svg class="w-6 h-6 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="9"/>
+                    <path d="M12 7v5l3 2" stroke-linecap="round"/>
+                  </svg>
+                  <div>
+                    <p class="text-[14px] lg:text-[15px] font-semibold text-[#0F172A]">{{ t('landing.footer.hours') }}</p>
+                    <p class="text-[12px] lg:text-[13px] text-[#64748B]">{{ t('landing.footer.monFri') }}</p>
+                    <p class="text-[12px] lg:text-[13px] text-[#64748B]">{{ t('landing.footer.hoursRange') }}</p>
+                  </div>
+                </div>
+
+                <!-- Section 4: Date & Time -->
+                <div class="flex flex-col items-center gap-1.5 text-center min-w-0">
+                  <svg class="w-6 h-6 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <rect x="3" y="5" width="18" height="16" rx="2"/>
+                    <path d="M8 3v4M16 3v4M3 10h18"/>
+                  </svg>
+                  <div class="min-w-0">
+                    <p class="text-[12px] lg:text-[14px] font-medium text-[#64748B] leading-snug">{{ formatFooterDate() }}</p>
+                    <p class="text-lg lg:text-xl font-bold text-[#F97316] leading-tight">{{ formatFooterTime() }}</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -99,42 +212,139 @@ export type BarangayStep =
 
           <!-- RFID STEP: scan -->
           @if (rfidStep() === 'scan') {
-            <div class="absolute inset-0 flex flex-col items-center justify-center p-8">
-              <div class="max-w-lg w-full text-center">
-                <div class="flex items-center justify-between mb-8">
-                  <button class="text-blue-300 hover:text-white text-lg" (click)="goBack()">Back</button>
-                  <span></span>
-                </div>
+            <div class="absolute inset-0 bg-[#F8FAFC] text-[#0F172A] select-none overflow-hidden [font-family:'Inter',sans-serif]">
 
-                <h2 class="text-3xl font-bold mb-4">Scan Barangay ID</h2>
-                <p class="text-blue-200 mb-8">Please tap your RFID-enabled Barangay ID card on the scanner.</p>
+              <!-- Subtle orange curved accent (upper-left) -->
+              <div class="absolute top-0 left-0 w-[420px] h-[300px] pointer-events-none" aria-hidden="true">
+                <svg viewBox="0 0 420 300" class="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M0 0 H420 V120 C420 205 360 300 280 300 H0 Z" fill="#F97316" opacity="0.08"/>
+                </svg>
+              </div>
 
-                <div class="relative w-64 h-64 mx-auto mb-8">
-                  <div class="absolute inset-0 rounded-full bg-blue-500/20 animate-ping"></div>
-                  <div class="absolute inset-6 rounded-full bg-blue-600/40 animate-pulse"></div>
-                  <div class="absolute inset-12 bg-blue-800 rounded-full border-4 border-blue-400 flex items-center justify-center">
-                    <svg class="w-24 h-24 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"/>
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z"/>
+              <!-- Faint Barangay Hall line art (right, ~5% opacity) -->
+              <div class="absolute right-0 bottom-0 w-[520px] h-[460px] pointer-events-none opacity-[0.05]" aria-hidden="true">
+                <svg viewBox="0 0 520 460" class="w-full h-full" fill="none" stroke="#0F172A" stroke-width="2" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M30 450 H490"/>
+                  <path d="M180 450 v-40 h160 v40"/>
+                  <rect x="150" y="310" width="220" height="140"/>
+                  <path d="M120 310 L260 220 L400 310 Z"/>
+                  <path d="M180 310 v140 M230 310 v140 M290 310 v140 M340 310 v140"/>
+                  <rect x="238" y="370" width="44" height="80"/>
+                  <rect x="160" y="335" width="42" height="42"/>
+                  <rect x="318" y="335" width="42" height="42"/>
+                  <path d="M260 220 v-28 M246 192 l14 14 14-14"/>
+                </svg>
+              </div>
+
+              <!-- Subtle tree line art (left) -->
+              <div class="absolute left-0 bottom-0 w-[360px] h-[420px] pointer-events-none opacity-[0.06]" aria-hidden="true">
+                <svg viewBox="0 0 360 420" class="w-full h-full" fill="none" stroke="#0F172A" stroke-width="2" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M160 410 C158 330 178 260 210 200"/>
+                  <path d="M210 200 C150 165 85 170 55 195"/>
+                  <path d="M210 200 C175 135 160 80 175 45"/>
+                  <path d="M210 200 C255 145 300 125 345 140"/>
+                  <path d="M210 200 C265 180 310 205 335 240"/>
+                  <circle cx="210" cy="212" r="11"/>
+                  <path d="M205 226 c-8 6 -8 14 0 18 M215 226 c8 6 8 14 0 18"/>
+                </svg>
+              </div>
+
+              <div class="relative h-full flex flex-col overflow-y-auto">
+                <div class="min-h-full flex flex-col items-center justify-center px-8 py-8">
+
+                  <!-- Header: back (pinned top-left) + logo & title (center) -->
+                  <button (click)="goBack()"
+                          class="fixed top-6 left-6 z-40 w-20 h-20 rounded-full border-2 border-[#F97316] bg-white flex items-center justify-center hover:bg-[#FFF7ED] active:scale-[0.97] transition-all focus:outline-none focus:ring-4 focus:ring-[#F97316]/30 shadow-sm"
+                          [attr.aria-label]="t('common.back')">
+                    <svg class="w-9 h-9 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
                     </svg>
-                  </div>
-                </div>
+                  </button>
 
-                @if (!rfidConnected()) {
-                  <div class="bg-yellow-500/15 border border-yellow-400 rounded-xl px-4 py-3 mb-6 text-left">
-                    <p class="text-yellow-200 text-sm font-medium">RFID Scanner Not Detected</p>
-                    <p class="text-yellow-200/80 text-xs mt-1">
-                      The scanner hardware is not connected. Use "Find My Record" to continue manually.
+                  <!-- Centered logo + title -->
+                  <div class="text-center mb-8 mt-4">
+                    <div class="mx-auto mb-6 w-[88px] h-[88px] rounded-full bg-white border-2 border-[#F97316]/40 overflow-hidden flex items-center justify-center shadow-sm">
+                      <img src="Barangay Logo.png" alt="Barangay San Manuel logo" class="w-full h-full object-cover">
+                    </div>
+                    <h1 class="text-4xl font-bold tracking-tight text-[#0F172A] leading-tight">{{ t('rfid.title') }}</h1>
+                    <p class="text-xl font-medium text-[#64748B] mt-3 max-w-xl mx-auto">{{ t('rfid.subtitle') }}</p>
+                  </div>
+
+                  <!-- Scanning area -->
+                  <div class="flex flex-col items-center mb-10">
+                    <div class="relative w-[340px] h-[340px] flex items-center justify-center">
+                      @if (!rfidDetected()) {
+                        <!-- Expanding radar pulse rings (from center, fading outward) -->
+                        <div class="rfid-pulse-ring absolute rounded-full border-2 border-[#F97316]/50" style="animation-delay:0s"></div>
+                        <div class="rfid-pulse-ring absolute rounded-full border-2 border-[#F97316]/40" style="animation-delay:0.8s; inset:10px"></div>
+                        <div class="rfid-pulse-ring absolute rounded-full border-2 border-[#F97316]/30" style="animation-delay:1.6s; inset:20px"></div>
+                        <div class="rfid-pulse-ring absolute rounded-full border-2 border-[#F97316]/20" style="animation-delay:2.4s; inset:30px"></div>
+                      }
+                      <!-- Center RFID card icon / detected success -->
+                      <div class="relative z-10 w-[200px] h-[200px] rounded-full bg-white border-2 border-[#F97316]/30 shadow-sm flex items-center justify-center"
+                           [class.border-[#10B981]]="rfidDetected()">
+                        @if (!rfidDetected()) {
+                          <svg class="w-32 h-32 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                            <rect x="3" y="6" width="18" height="12" rx="2"/>
+                            <path d="M7 9.5h7M7 12.5h7" stroke-linecap="round"/>
+                            <path d="M18 9.2v.01M18 12.4v.01M18 15.6v.01" stroke-linecap="round" stroke-width="2.6"/>
+                            <path d="M18.6 16.2l1.6-1.6M18.6 7.8L20.2 9.4" stroke-linecap="round"/>
+                          </svg>
+                        } @else {
+                          <svg class="w-32 h-32 text-[#10B981] rfid-success-pop" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" stroke-width="1.8"/>
+                            <path d="M15.5 9.5l-4.5 5-2.5-2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                          </svg>
+                        }
+                      </div>
+                    </div>
+                    <p class="mt-6 text-lg font-medium text-[#64748B]">
+                      @if (rfidDetected()) {
+                        <span class="text-[#10B981] font-semibold">{{ t('rfid.found') }}</span>
+                      } @else {
+                        {{ t('rfid.waiting') }}
+                      }
                     </p>
                   </div>
-                }
 
-                <app-button variant="secondary" size="lg" class="w-full" (onClick)="rfidStep.set('search')">
-                  Find My Record
-                </app-button>
-                <div class="mt-4">
-                  <button class="text-blue-300 hover:text-white text-lg" (click)="continueWithout()">
-                    Continue Without Barangay ID
+                  <!-- Scanner status card -->
+                  @if (!rfidConnected()) {
+                    <div class="w-full max-w-xl bg-white border border-[#E5E7EB] rounded-2xl px-6 py-5 flex items-start gap-4 mb-8 shadow-sm">
+                      <div class="w-11 h-11 rounded-full bg-[#FFF5EE] flex items-center justify-center shrink-0">
+                        <svg class="w-6 h-6 text-[#F59E0B]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+                        </svg>
+                      </div>
+                      <div class="text-left">
+                        <p class="text-[15px] font-bold text-[#0F172A]">{{ t('rfid.notDetected') }}</p>
+                        <p class="text-sm text-[#64748B] mt-0.5 leading-snug">{{ t('rfid.notDetectedDesc') }}</p>
+                      </div>
+                    </div>
+                  } @else {
+                    <div class="w-full max-w-xl bg-white border border-[#E5E7EB] rounded-2xl px-6 py-5 flex items-center gap-4 mb-8 shadow-sm">
+                      <div class="w-11 h-11 rounded-full bg-[#ECFDF5] flex items-center justify-center shrink-0">
+                        <svg class="w-6 h-6 text-[#10B981]" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                          <circle cx="12" cy="12" r="9"/>
+                          <path d="M8.5 12.5l2.2 2.2 4.8-4.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                      </div>
+                      <div class="text-left">
+                        <p class="text-[15px] font-bold text-[#0F172A]">{{ t('rfid.ready') }}</p>
+                        <p class="text-sm text-[#64748B] mt-0.5 leading-snug">{{ t('rfid.readyDesc') }}</p>
+                      </div>
+                    </div>
+                  }
+
+                  <!-- Primary action -->
+                  <button (click)="rfidStep.set('search')"
+                          class="w-full max-w-xl min-h-[80px] px-8 py-5 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.995] text-white text-xl font-semibold flex items-center justify-center transition-all focus:outline-none focus:ring-4 focus:ring-[#F97316]/30 shadow-sm">
+                    {{ t('rfid.findRecord') }}
+                  </button>
+
+                  <!-- Secondary action -->
+                  <button (click)="continueWithout()"
+                          class="mt-6 min-h-[72px] px-8 text-[#F97316] hover:text-[#EA580C] text-lg font-semibold hover:underline underline-offset-4 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[#F97316]/40">
+                    {{ t('rfid.continueWithout') }}
                   </button>
                 </div>
               </div>
@@ -150,16 +360,16 @@ export type BarangayStep =
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
                   </svg>
                 </div>
-                <h2 class="text-3xl font-bold mb-4">Barangay ID Not Found</h2>
+                <h2 class="text-3xl font-bold mb-4">{{ t('rfid.error.title') }}</h2>
                 <p class="text-xl text-blue-200 mb-8">
                   {{ rfidError() }}
                   <br/>
-                  Please try again or continue without a Barangay ID.
+                  {{ t('rfid.error.desc') }}
                 </p>
                 <div class="flex flex-col gap-4">
-                  <app-button variant="primary" size="lg" class="w-full" (onClick)="retryRfid()">Scan Again</app-button>
+                  <app-button variant="primary" size="lg" class="w-full" (onClick)="retryRfid()">{{ t('common.scanAgain') }}</app-button>
                   <app-button variant="secondary" size="lg" class="w-full" (onClick)="continueWithout()">
-                    Continue Without Barangay ID
+                    {{ t('rfid.continueWithout') }}
                   </app-button>
                 </div>
               </div>
@@ -172,20 +382,20 @@ export type BarangayStep =
               <div class="max-w-lg w-full">
                 <div class="flex items-center justify-between mb-6">
                   <div>
-                    <h2 class="text-2xl font-bold">Find My Record</h2>
-                    <p class="text-blue-300 text-sm mt-1">Search for your existing account</p>
+                    <h2 class="text-2xl font-bold">{{ t('rfid.search.title') }}</h2>
+                    <p class="text-blue-300 text-sm mt-1">{{ t('rfid.search.subtitle') }}</p>
                   </div>
-                  <button class="text-blue-300 hover:text-white text-lg" (click)="rfidStep.set('scan')">Back</button>
+                  <button class="text-blue-300 hover:text-white text-lg" (click)="rfidStep.set('scan')">{{ t('common.back') }}</button>
                 </div>
 
                 <div class="bg-blue-800/50 rounded-2xl p-6 backdrop-blur">
-                  <p class="text-blue-300 text-sm mb-4">Type your name or resident code to begin</p>
+                  <p class="text-blue-300 text-sm mb-4">{{ t('rfid.search.hint') }}</p>
                   <div class="relative">
                     <input
                       type="text"
                       [(ngModel)]="searchQuery"
                       (ngModelChange)="onSearchChange($event)"
-                      placeholder="Search by name or code..."
+                      [placeholder]="t('rfid.search.placeholder')"
                       class="w-full bg-white text-gray-800 rounded-xl px-5 py-4 text-lg placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-400"
                       autofocus
                     />
@@ -222,13 +432,13 @@ export type BarangayStep =
                   }
 
                   @if (searchQuery && searchQuery.length >= 2 && !searching() && searchResults().length === 0) {
-                    <p class="mt-4 text-blue-300 text-sm">No residents found. Try a different search.</p>
+                    <p class="mt-4 text-blue-300 text-sm">{{ t('rfid.search.noResults') }}</p>
                   }
 
                   @if (searching()) {
                     <div class="mt-4 flex items-center justify-center gap-2 text-blue-300">
                       <div class="animate-spin w-5 h-5 border-2 border-blue-300 border-t-transparent rounded-full"></div>
-                      <span class="text-sm">Searching...</span>
+                      <span class="text-sm">{{ t('rfid.search.searching') }}</span>
                     </div>
                   }
                 </div>
@@ -245,41 +455,176 @@ export type BarangayStep =
 
         <!-- ============ GUEST: Continue Without Barangay ID options ============ -->
         @if (mode() === 'guest') {
-          <div class="absolute inset-0 flex flex-col items-center justify-center p-8">
-            <div class="max-w-3xl w-full">
-              <div class="flex items-center justify-between mb-8">
-                <h2 class="text-3xl font-bold">Continue Without Barangay ID</h2>
-                <button class="text-blue-300 hover:text-white text-lg" (click)="goBack()">Back</button>
+          <div class="absolute inset-0 bg-[#F8FAFC] text-[#0F172A] select-none overflow-hidden [font-family:'Inter',sans-serif] flex flex-col">
+
+            <!-- Background: orange curved accent (upper-left) -->
+            <div class="absolute top-0 left-0 w-[420px] h-[300px] pointer-events-none" aria-hidden="true">
+              <svg viewBox="0 0 420 300" class="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M0 0 H420 V120 C420 205 360 300 280 300 H0 Z" fill="#F97316" opacity="0.08"/>
+              </svg>
+            </div>
+
+            <!-- Faint Barangay Hall line art (right, ~5% opacity) -->
+            <div class="absolute right-0 bottom-0 w-[520px] h-[460px] pointer-events-none opacity-[0.05]" aria-hidden="true">
+              <svg viewBox="0 0 520 460" class="w-full h-full" fill="none" stroke="#0F172A" stroke-width="2" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
+                <path d="M30 450 H490"/>
+                <path d="M180 450 v-40 h160 v40"/>
+                <rect x="150" y="310" width="220" height="140"/>
+                <path d="M120 310 L260 220 L400 310 Z"/>
+                <path d="M180 310 v140 M230 310 v140 M290 310 v140 M340 310 v140"/>
+                <rect x="238" y="370" width="44" height="80"/>
+                <rect x="160" y="335" width="42" height="42"/>
+                <rect x="318" y="335" width="42" height="42"/>
+                <path d="M260 220 v-28 M246 192 l14 14 14-14"/>
+              </svg>
+            </div>
+
+            <!-- Subtle tree line art (left) -->
+            <div class="absolute left-0 bottom-0 w-[360px] h-[420px] pointer-events-none opacity-[0.06]" aria-hidden="true">
+              <svg viewBox="0 0 360 420" class="w-full h-full" fill="none" stroke="#0F172A" stroke-width="2" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
+                <path d="M160 410 C158 330 178 260 210 200"/>
+                <path d="M210 200 C150 165 85 170 55 195"/>
+                <path d="M210 200 C175 135 160 80 175 45"/>
+                <path d="M210 200 C255 145 300 125 345 140"/>
+                <path d="M210 200 C265 180 310 205 335 240"/>
+                <circle cx="210" cy="212" r="11"/>
+                <path d="M205 226 c-8 6 -8 14 0 18 M215 226 c8 6 8 14 0 18"/>
+              </svg>
+            </div>
+
+            <!-- Main content -->
+            <div class="relative flex-1 overflow-y-auto">
+              <div class="min-h-full flex flex-col items-center justify-center px-8 py-8">
+
+                <!-- Header: back (left) + centered logo, title & subtitle -->
+                <div class="w-full max-w-4xl flex items-start justify-between mb-8">
+                  <button (click)="goBack()"
+                          class="w-20 h-20 rounded-full border-2 border-[#F97316] bg-white flex items-center justify-center hover:bg-[#FFF7ED] active:scale-[0.97] transition-all focus:outline-none focus:ring-4 focus:ring-[#F97316]/30"
+                          [attr.aria-label]="t('common.back')">
+                    <svg class="w-9 h-9 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                  </button>
+                  <span></span>
+                </div>
+
+                <!-- Centered logo + title -->
+                <div class="text-center mb-10">
+                  <div class="mx-auto mb-6 w-[88px] h-[88px] rounded-full bg-white border-2 border-[#F97316]/40 overflow-hidden flex items-center justify-center shadow-sm">
+                    <img src="Barangay Logo.png" alt="Barangay San Manuel logo" class="w-full h-full object-cover">
+                  </div>
+                  <h1 class="text-4xl font-bold tracking-tight text-[#0F172A] leading-tight">{{ t('guest.title') }}</h1>
+                  <p class="text-xl font-medium text-[#64748B] mt-3">{{ t('guest.subtitle') }}</p>
+                </div>
+
+                <!-- Two horizontal cards -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full max-w-4xl mb-6">
+
+                  <!-- Card 1: Request Documents -->
+                  <button class="group flex items-center gap-6 rounded-[18px] border border-[#F97316]/50 bg-white p-8 shadow-sm hover:shadow-md hover:border-[#F97316] transition-all duration-200 text-left"
+                          (click)="startGuestRequest()">
+                    <div class="shrink-0 w-20 h-20 rounded-xl bg-[#FFF7ED] flex items-center justify-center">
+                      <svg class="w-12 h-12 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+                      </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-2xl font-bold text-[#0F172A] leading-snug">{{ t('guest.requestDocs.title') }}</p>
+                      <p class="text-base text-[#64748B] mt-1.5 leading-snug">{{ t('guest.requestDocs.desc') }}</p>
+                    </div>
+                    <div class="shrink-0 w-16 h-16 rounded-full bg-[#F97316] flex items-center justify-center group-hover:bg-[#EA580C] transition-colors">
+                      <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                      </svg>
+                    </div>
+                  </button>
+
+                  <!-- Card 2: Apply for Barangay ID -->
+                  <button class="group flex items-center gap-6 rounded-[18px] border border-[#F97316]/50 bg-white p-8 shadow-[6px_6px_16px_-8px_rgba(15,23,42,0.12)] hover:shadow-md hover:border-[#F97316] transition-all duration-200 text-left"
+                          (click)="startBarangay()">
+                    <div class="shrink-0 w-20 h-20 rounded-xl bg-[#FFF7ED] flex items-center justify-center">
+                      <svg class="w-12 h-12 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5zm6-10.125a1.875 1.875 0 11-3.75 0 1.875 1.875 0 013.75 0zm1.294 6.336a6.721 6.721 0 01-3.17.789 6.721 6.721 0 01-3.168-.789 3.376 3.376 0 016.338 0z"/>
+                      </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-2xl font-bold text-[#0F172A] leading-snug">{{ t('guest.applyId.title') }}</p>
+                      <p class="text-base text-[#64748B] mt-1.5 leading-snug">{{ t('guest.applyId.desc') }}</p>
+                    </div>
+                    <div class="shrink-0 w-16 h-16 rounded-full bg-[#F97316] flex items-center justify-center group-hover:bg-[#EA580C] transition-colors">
+                      <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                      </svg>
+                    </div>
+                  </button>
+                </div>
+
+                <!-- Information card -->
+                <div class="flex items-start gap-3 w-full max-w-4xl bg-white border border-[#E5E7EB] rounded-2xl px-6 py-5 shadow-sm">
+                  <div class="w-11 h-11 rounded-full bg-[#F8FAFC] border border-[#E5E7EB] flex items-center justify-center shrink-0">
+                    <svg class="w-6 h-6 text-[#64748B]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="9"/>
+                      <path d="M12 16v-4M12 8h.01" stroke-linecap="round"/>
+                    </svg>
+                  </div>
+                  <p class="text-base text-[#64748B] leading-snug pt-1.5">{{ t('guest.info') }}</p>
+                </div>
               </div>
+            </div>
 
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <!-- Request Documents -->
-                <button class="w-full bg-blue-600 hover:bg-blue-500 rounded-3xl p-8 flex flex-col items-center gap-4 text-center transition-all border-2 border-blue-400 shadow-xl hover:scale-[1.02]"
-                        (click)="startGuestRequest()">
-                  <div class="w-20 h-20 bg-blue-900 rounded-2xl flex items-center justify-center">
-                    <svg class="w-12 h-12 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <p class="text-2xl font-bold">Request Documents</p>
-                    <p class="text-blue-200 text-sm mt-1">Request barangay documents in a temporary session</p>
-                  </div>
-                </button>
+            <!-- Footer: four sections, outline icons only -->
+            <div class="relative border-t border-[#E5E7EB] bg-white/90 backdrop-blur-sm">
+              <div class="max-w-5xl mx-auto px-8 py-6 grid grid-cols-2 lg:grid-cols-4 gap-6 items-center">
 
-                <!-- Apply for Barangay ID -->
-                <button class="w-full bg-blue-800/60 hover:bg-blue-700/60 rounded-3xl p-8 flex flex-col items-center gap-4 text-center transition-all border-2 border-blue-600 shadow-xl hover:scale-[1.02]"
-                        (click)="startBarangay()">
-                  <div class="w-20 h-20 bg-blue-900 rounded-2xl flex items-center justify-center">
-                    <svg class="w-12 h-12 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5zm6-10.125a1.875 1.875 0 11-3.75 0 1.875 1.875 0 013.75 0zm1.294 6.336a6.721 6.721 0 01-3.17.789 6.721 6.721 0 01-3.168-.789 3.376 3.376 0 016.338 0z"/>
-                    </svg>
-                  </div>
+                <!-- Need Assistance -->
+                <div class="flex flex-col items-center gap-2 text-center min-w-0">
+                  <svg class="w-7 h-7 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="9"/>
+                    <path d="M9.5 9a2.5 2.5 0 114.6 1.3c-.8 1-1.9 1.7-1.9 3.2" stroke-linecap="round"/>
+                    <path d="M12 17h.01" stroke-linecap="round"/>
+                  </svg>
                   <div>
-                    <p class="text-2xl font-bold">Apply for Barangay ID</p>
-                    <p class="text-blue-200 text-sm mt-1">Submit an application for a new Barangay ID</p>
+                    <p class="text-[15px] font-semibold text-[#0F172A]">{{ t('landing.footer.assistance') }}</p>
+                    <p class="text-[13px] text-[#64748B]">{{ t('landing.footer.assistanceDesc') }}</p>
                   </div>
-                </button>
+                </div>
+
+                <!-- Office Hours -->
+                <div class="flex flex-col items-center gap-1.5 text-center min-w-0">
+                  <svg class="w-7 h-7 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="9"/>
+                    <path d="M12 7v5l3 2" stroke-linecap="round"/>
+                  </svg>
+                  <div>
+                    <p class="text-[15px] font-semibold text-[#0F172A]">{{ t('landing.footer.hours') }}</p>
+                    <p class="text-[13px] text-[#64748B]">{{ t('landing.footer.monFri') }}</p>
+                    <p class="text-[13px] text-[#64748B]">{{ t('landing.footer.hoursRange') }}</p>
+                  </div>
+                </div>
+
+                <!-- Current Date -->
+                <div class="flex flex-col items-center gap-1.5 text-center min-w-0">
+                  <svg class="w-7 h-7 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <rect x="3" y="5" width="18" height="16" rx="2"/>
+                    <path d="M8 3v4M16 3v4M3 10h18"/>
+                  </svg>
+                  <div class="min-w-0">
+                    <p class="text-[15px] font-semibold text-[#0F172A]">{{ t('landing.footer.date') }}</p>
+                    <p class="text-[13px] text-[#64748B] leading-snug">{{ formatFooterDate() }}</p>
+                  </div>
+                </div>
+
+                <!-- Current Time -->
+                <div class="flex flex-col items-center gap-1.5 text-center min-w-0">
+                  <svg class="w-7 h-7 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="9"/>
+                    <path d="M12 7v5l3 2" stroke-linecap="round"/>
+                  </svg>
+                  <div class="min-w-0">
+                    <p class="text-[15px] font-semibold text-[#0F172A]">{{ t('landing.footer.time') }}</p>
+                    <p class="text-lg font-bold text-[#F97316] leading-tight">{{ formatFooterTime() }}</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -293,7 +638,7 @@ export type BarangayStep =
             <div class="absolute inset-0 flex flex-col items-center justify-center p-8">
               <div class="max-w-lg w-full">
                 <div class="bg-blue-800/50 rounded-2xl p-8 backdrop-blur text-center">
-                  <h2 class="text-3xl font-bold mb-6">Welcome!</h2>
+                  <h2 class="text-3xl font-bold mb-6">{{ t('doc.welcome') }}</h2>
                   <div class="bg-white rounded-xl p-6 text-gray-800 mb-6">
                     @if (resident()!.photo) {
                       <img [src]="resident()!.photo" class="w-32 h-32 rounded-full mx-auto mb-4 object-cover" />
@@ -312,8 +657,8 @@ export type BarangayStep =
                     }
                   </div>
                   <div class="flex gap-4">
-                    <app-button variant="secondary" size="lg" class="flex-1" (onClick)="goBack()">Back</app-button>
-                    <app-button variant="primary" size="lg" class="flex-1" (onClick)="proceedToServices()">Continue</app-button>
+                    <app-button variant="secondary" size="lg" class="flex-1" (onClick)="goBack()">{{ t('common.back') }}</app-button>
+                    <app-button variant="primary" size="lg" class="flex-1" (onClick)="proceedToServices()">{{ t('common.continue') }}</app-button>
                   </div>
                 </div>
               </div>
@@ -326,40 +671,40 @@ export type BarangayStep =
               <div class="max-w-lg w-full my-8">
                 <div class="flex items-center justify-between mb-6">
                   <div>
-                    <h2 class="text-2xl font-bold">Enter Your Information</h2>
-                    <p class="text-blue-300 text-sm mt-1">Your details are used only for this request</p>
+                    <h2 class="text-2xl font-bold">{{ t('doc.guestInfo.title') }}</h2>
+                    <p class="text-blue-300 text-sm mt-1">{{ t('doc.guestInfo.desc') }}</p>
                   </div>
-                  <button class="text-blue-300 hover:text-white text-lg" (click)="goBack()">Back</button>
+                  <button class="text-blue-300 hover:text-white text-lg" (click)="goBack()">{{ t('common.back') }}</button>
                 </div>
 
                 <div class="bg-blue-800/50 rounded-2xl p-6 backdrop-blur space-y-4">
                   <div>
-                    <label class="block text-blue-300 text-sm mb-1">Full Name *</label>
+                    <label class="block text-blue-300 text-sm mb-1">{{ t('doc.guestInfo.fullName') }}</label>
                     <input type="text" [(ngModel)]="guestForm.fullName"
-                           placeholder="Enter your full name"
+                           [placeholder]="t('doc.guestInfo.fullNamePh')"
                            class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-400" />
                   </div>
                   <div>
-                    <label class="block text-blue-300 text-sm mb-1">Date of Birth *</label>
+                    <label class="block text-blue-300 text-sm mb-1">{{ t('doc.guestInfo.birthDate') }}</label>
                     <input type="date" [(ngModel)]="guestForm.birthDate"
                            class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-4 focus:ring-blue-400" />
                   </div>
                   <div>
-                    <label class="block text-blue-300 text-sm mb-1">Address *</label>
+                    <label class="block text-blue-300 text-sm mb-1">{{ t('doc.guestInfo.address') }}</label>
                     <input type="text" [(ngModel)]="guestForm.address"
-                           placeholder="Complete address"
+                           [placeholder]="t('doc.guestInfo.addressPh')"
                            class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-400" />
                   </div>
                   <div>
-                    <label class="block text-blue-300 text-sm mb-1">Contact Number *</label>
+                    <label class="block text-blue-300 text-sm mb-1">{{ t('doc.guestInfo.contact') }}</label>
                     <input type="tel" [(ngModel)]="guestForm.contactNumber"
-                           placeholder="09XX XXX XXXX"
+                           [placeholder]="t('doc.guestInfo.contactPh')"
                            class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-400" />
                   </div>
                   <div>
-                    <label class="block text-blue-300 text-sm mb-1">Email (optional)</label>
+                    <label class="block text-blue-300 text-sm mb-1">{{ t('doc.guestInfo.email') }}</label>
                     <input type="email" [(ngModel)]="guestForm.email"
-                           placeholder="you@example.com"
+                           [placeholder]="t('doc.guestInfo.emailPh')"
                            class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-400" />
                   </div>
                 </div>
@@ -371,8 +716,8 @@ export type BarangayStep =
                 }
 
                 <div class="flex gap-4 mt-6">
-                  <app-button variant="secondary" size="lg" class="flex-1" (onClick)="goBack()">Back</app-button>
-                  <app-button variant="primary" size="lg" class="flex-1" (onClick)="validateGuestForm()">Continue</app-button>
+                  <app-button variant="secondary" size="lg" class="flex-1" (onClick)="goBack()">{{ t('common.back') }}</app-button>
+                  <app-button variant="primary" size="lg" class="flex-1" (onClick)="validateGuestForm()">{{ t('common.continue') }}</app-button>
                 </div>
               </div>
             </div>
@@ -383,8 +728,8 @@ export type BarangayStep =
             <div class="absolute inset-0 flex flex-col p-8">
               <div class="max-w-3xl mx-auto w-full flex-1 flex flex-col">
                 <div class="flex items-center justify-between mb-8">
-                  <h2 class="text-3xl font-bold">Select a Service</h2>
-                  <button class="text-blue-300 hover:text-white text-lg" (click)="cancel()">Cancel</button>
+                  <h2 class="text-3xl font-bold">{{ t('doc.services.title') }}</h2>
+                  <button class="text-blue-300 hover:text-white text-lg" (click)="cancel()">{{ t('common.cancel') }}</button>
                 </div>
                 <div class="grid gap-4 flex-1 overflow-y-auto">
                   @for (service of services(); track service.service_id) {
@@ -399,7 +744,7 @@ export type BarangayStep =
                           @if (service.processing_fee > 0) {
                             <span class="text-2xl font-bold">₱{{ service.processing_fee }}</span>
                           } @else {
-                            <span class="text-lg text-green-300 font-medium">FREE</span>
+                            <span class="text-lg text-green-300 font-medium">{{ t('doc.services.free') }}</span>
                           }
                         </div>
                       </div>
@@ -415,8 +760,8 @@ export type BarangayStep =
             <div class="absolute inset-0 flex flex-col p-8">
               <div class="max-w-3xl mx-auto w-full flex-1 flex flex-col">
                 <div class="flex items-center justify-between mb-8">
-                  <h2 class="text-3xl font-bold">Requirements</h2>
-                  <button class="text-blue-300 hover:text-white text-lg" (click)="goBack()">Back</button>
+                  <h2 class="text-3xl font-bold">{{ t('doc.requirements.title') }}</h2>
+                  <button class="text-blue-300 hover:text-white text-lg" (click)="goBack()">{{ t('common.back') }}</button>
                 </div>
                 <div class="flex-1 overflow-y-auto space-y-6">
                   <div class="bg-blue-800/50 rounded-xl p-6 backdrop-blur">
@@ -426,7 +771,7 @@ export type BarangayStep =
                     }
                     @if (selectedService()?.requirements && selectedService()!.requirements!.length > 0) {
                       <div class="mb-6">
-                        <h4 class="font-bold text-lg mb-3 text-blue-100">What to Bring</h4>
+                        <h4 class="font-bold text-lg mb-3 text-blue-100">{{ t('doc.requirements.whatToBring') }}</h4>
                         <ul class="space-y-2">
                           @for (req of selectedService()!.requirements!; track req) {
                             <li class="flex items-start gap-3 bg-blue-900/30 p-3 rounded-lg">
@@ -440,13 +785,13 @@ export type BarangayStep =
                       </div>
                     }
                     @if (!selectedService()?.requirements || selectedService()!.requirements!.length === 0) {
-                      <p class="text-blue-200/80">No specific requirements listed for this service.</p>
+                      <p class="text-blue-200/80">{{ t('doc.requirements.none') }}</p>
                     }
                   </div>
                 </div>
                 <div class="flex gap-4 pt-4 border-t border-blue-700">
-                  <app-button variant="secondary" size="lg" class="flex-1" (onClick)="goBack()">Back</app-button>
-                  <app-button variant="primary" size="lg" class="flex-1" (onClick)="proceedToForm()">Continue</app-button>
+                  <app-button variant="secondary" size="lg" class="flex-1" (onClick)="goBack()">{{ t('common.back') }}</app-button>
+                  <app-button variant="primary" size="lg" class="flex-1" (onClick)="proceedToForm()">{{ t('common.continue') }}</app-button>
                 </div>
               </div>
             </div>
@@ -457,11 +802,11 @@ export type BarangayStep =
             <div class="absolute inset-0 flex flex-col p-8 overflow-y-auto">
               <div class="max-w-2xl mx-auto w-full flex-1">
                 <div class="flex items-center justify-between mb-8">
-                  <h2 class="text-3xl font-bold">Application Form</h2>
-                  <button class="text-blue-300 hover:text-white text-lg" (click)="goBack()">Back</button>
+                  <h2 class="text-3xl font-bold">{{ t('doc.form.title') }}</h2>
+                  <button class="text-blue-300 hover:text-white text-lg" (click)="goBack()">{{ t('common.back') }}</button>
                 </div>
                 <div class="bg-blue-800/50 rounded-2xl p-6 backdrop-blur space-y-4">
-                  <p class="text-blue-200">Fill in the required information for {{ selectedService()?.service_name }}.</p>
+                  <p class="text-blue-200">{{ t('doc.form.fillPrompt', { service: selectedService()?.service_name ?? '' }) }}</p>
 
                   @if (selectedService()?.form_fields && selectedService()!.form_fields!.length > 0) {
                     @for (field of selectedService()!.form_fields!; track field.key) {
@@ -478,7 +823,7 @@ export type BarangayStep =
                               (ngModelChange)="updateFormValue(field.key, $event)"
                               class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-4 focus:ring-blue-400"
                               [class.border-red-500]="formErrors()[field.key]">
-                              <option value="">Select...</option>
+                              <option value="">{{ t('doc.form.select') }}</option>
                               @for (opt of field.options || []; track opt) {
                                 <option [value]="opt">{{ opt }}</option>
                               }
@@ -527,7 +872,7 @@ export type BarangayStep =
                               <div class="bg-white rounded-lg p-3">
                                 <img [src]="formValues()[field.key]" alt="Signature" class="h-24 bg-white rounded" />
                                 <div class="mt-2">
-                                  <button type="button" class="text-blue-300 hover:text-white text-sm" (click)="clearFieldValue(field.key)">Clear</button>
+                                  <button type="button" class="text-blue-300 hover:text-white text-sm" (click)="clearFieldValue(field.key)">{{ t('common.clear') }}</button>
                                 </div>
                               </div>
                             }
@@ -539,16 +884,16 @@ export type BarangayStep =
                                   <video #inlineVideoEl autoplay playsinline class="w-full aspect-video object-cover"></video>
                                 </div>
                                 <div class="flex gap-3 justify-center">
-                                  <app-button variant="primary" size="lg" (onClick)="captureInlinePhoto(field.key)">Take Photo</app-button>
-                                  <app-button variant="secondary" size="lg" (onClick)="cancelInlinePhoto(field.key)">Cancel</app-button>
+                                  <app-button variant="primary" size="lg" (onClick)="captureInlinePhoto(field.key)">{{ t('doc.form.takePhoto') }}</app-button>
+                                  <app-button variant="secondary" size="lg" (onClick)="cancelInlinePhoto(field.key)">{{ t('common.cancel') }}</app-button>
                                 </div>
                               } @else if (formValues()[field.key]) {
-                                <img [src]="formValues()[field.key]" alt="Captured photo" class="w-40 h-40 rounded-2xl object-cover border-4 border-white mb-2" />
+                                <img [src]="formValues()[field.key]" [alt]="t('err.captured')" class="w-40 h-40 rounded-2xl object-cover border-4 border-white mb-2" />
                                 <div class="flex gap-3">
-                                  <app-button variant="secondary" size="lg" (onClick)="retakeInlinePhoto(field.key)">Retake</app-button>
+                                  <app-button variant="secondary" size="lg" (onClick)="retakeInlinePhoto(field.key)">{{ t('common.retake') }}</app-button>
                                 </div>
                               } @else {
-                                <app-button variant="primary" size="lg" (onClick)="startInlineCamera(field.key)">Open Camera</app-button>
+                                <app-button variant="primary" size="lg" (onClick)="startInlineCamera(field.key)">{{ t('doc.form.openCamera') }}</app-button>
                               }
                             </div>
                           }
@@ -556,7 +901,7 @@ export type BarangayStep =
                             <input type="file" [accept]="field.accept || '*'" (change)="onFileSelected(field, $event)"
                                    class="w-full text-blue-100 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white" />
                             @if (formValues()[field.key]) {
-                              <p class="text-xs text-green-300 mt-1">File attached</p>
+                              <p class="text-xs text-green-300 mt-1">{{ t('doc.form.fileAttached') }}</p>
                             }
                           }
                           @default {
@@ -580,12 +925,12 @@ export type BarangayStep =
                       </div>
                     }
                   } @else {
-                    <p class="text-blue-200/80">This service does not require additional form fields.</p>
+                    <p class="text-blue-200/80">{{ t('doc.form.noFields') }}</p>
                   }
                 </div>
                 <div class="flex gap-4 mt-6">
-                  <app-button variant="secondary" size="lg" class="flex-1" (onClick)="goBack()">Back</app-button>
-                  <app-button variant="primary" size="lg" class="flex-1" (onClick)="validateForm()">Continue</app-button>
+                  <app-button variant="secondary" size="lg" class="flex-1" (onClick)="goBack()">{{ t('common.back') }}</app-button>
+                  <app-button variant="primary" size="lg" class="flex-1" (onClick)="validateForm()">{{ t('common.continue') }}</app-button>
                 </div>
               </div>
             </div>
@@ -595,21 +940,21 @@ export type BarangayStep =
           @if (currentStep() === 'photo') {
             <div class="absolute inset-0 flex flex-col items-center justify-center p-8">
               <div class="max-w-lg w-full">
-                <h2 class="text-3xl font-bold mb-6 text-center">Capture Your Photo</h2>
+                <h2 class="text-3xl font-bold mb-6 text-center">{{ t('doc.photo.title') }}</h2>
                 @if (!capturedPhoto()) {
                   <div class="bg-black rounded-2xl overflow-hidden mb-6">
                     <video #videoEl autoplay playsinline class="w-full aspect-video object-cover"></video>
                   </div>
                   <div class="flex gap-4 justify-center">
-                    <app-button variant="primary" size="lg" (onClick)="capturePhoto()">Take Photo</app-button>
-                    <app-button variant="secondary" size="lg" (onClick)="skipPhoto()">Skip</app-button>
+                    <app-button variant="primary" size="lg" (onClick)="capturePhoto()">{{ t('doc.form.takePhoto') }}</app-button>
+                    <app-button variant="secondary" size="lg" (onClick)="skipPhoto()">{{ t('common.skip') }}</app-button>
                   </div>
                 } @else {
                   <div class="text-center">
                     <img [src]="capturedPhoto()" class="w-64 h-64 rounded-2xl mx-auto mb-6 object-cover border-4 border-white" />
                     <div class="flex gap-4 justify-center">
-                      <app-button variant="primary" size="lg" (onClick)="confirmPhoto()">Use This Photo</app-button>
-                      <app-button variant="secondary" size="lg" (onClick)="retakePhoto()">Retake</app-button>
+                      <app-button variant="primary" size="lg" (onClick)="confirmPhoto()">{{ t('doc.photo.useThis') }}</app-button>
+                      <app-button variant="secondary" size="lg" (onClick)="retakePhoto()">{{ t('common.retake') }}</app-button>
                     </div>
                   </div>
                 }
@@ -621,7 +966,7 @@ export type BarangayStep =
           @if (currentStep() === 'review') {
             <div class="absolute inset-0 flex flex-col items-center justify-center p-8">
               <div class="max-w-lg w-full">
-                <h2 class="text-3xl font-bold mb-6 text-center">Review Your Request</h2>
+                <h2 class="text-3xl font-bold mb-6 text-center">{{ t('doc.review.title') }}</h2>
                 <div class="bg-blue-800/50 rounded-2xl p-6 backdrop-blur space-y-4">
                   <div class="flex items-center gap-4">
                     @if (displayPhoto()) {
@@ -641,20 +986,20 @@ export type BarangayStep =
                   </div>
                   <hr class="border-blue-700" />
                   <div>
-                    <p class="text-blue-300 text-sm">Service</p>
+                    <p class="text-blue-300 text-sm">{{ t('doc.review.service') }}</p>
                     <p class="font-bold text-lg">{{ selectedService()!.service_name }}</p>
                   </div>
                   <div>
-                    <p class="text-blue-300 text-sm">Fee</p>
+                    <p class="text-blue-300 text-sm">{{ t('doc.review.fee') }}</p>
                     @if (selectedService()!.processing_fee > 0) {
                       <p class="font-bold text-lg">₱{{ selectedService()!.processing_fee }}</p>
                     } @else {
-                      <p class="font-bold text-lg text-green-300">FREE</p>
+                      <p class="font-bold text-lg text-green-300">{{ t('doc.services.free') }}</p>
                     }
                   </div>
                   @if (selectedService()?.form_fields && selectedService()!.form_fields!.length > 0) {
                     <div>
-                      <p class="text-blue-300 text-sm mb-2">Application Details</p>
+                      <p class="text-blue-300 text-sm mb-2">{{ t('doc.review.details') }}</p>
                       <div class="space-y-2">
                         @for (field of selectedService()!.form_fields!; track field.key) {
                           <div class="flex justify-between items-start gap-4 text-sm">
@@ -667,8 +1012,8 @@ export type BarangayStep =
                   }
                 </div>
                 <div class="flex gap-4 mt-6">
-                  <app-button variant="secondary" size="lg" class="flex-1" (onClick)="goBack()">Back</app-button>
-                  <app-button variant="primary" size="lg" class="flex-1" (onClick)="submitRequest()" [loading]="submitting()">Submit Request</app-button>
+                  <app-button variant="secondary" size="lg" class="flex-1" (onClick)="goBack()">{{ t('common.back') }}</app-button>
+                  <app-button variant="primary" size="lg" class="flex-1" (onClick)="submitRequest()" [loading]="submitting()">{{ t('doc.review.submit') }}</app-button>
                 </div>
               </div>
             </div>
@@ -683,12 +1028,12 @@ export type BarangayStep =
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
                   </svg>
                 </div>
-                <h2 class="text-3xl font-bold mb-4">Request Submitted!</h2>
-                <p class="text-xl text-blue-200 mb-2">Your request number is:</p>
+                <h2 class="text-3xl font-bold mb-4">{{ t('doc.success.title') }}</h2>
+                <p class="text-xl text-blue-200 mb-2">{{ t('doc.success.requestNumber') }}</p>
                 <p class="text-4xl font-bold text-yellow-300 mb-6">{{ requestNumber() }}</p>
-                <p class="text-blue-200 mb-3">Please proceed to the Barangay Staff and submit the required documents.</p>
-                <p class="text-blue-200 mb-8">After submitting your requirements, monitor your Request Number on the Status Display Board for updates.</p>
-                <app-button variant="primary" size="lg" (onClick)="finish()">Done</app-button>
+                <p class="text-blue-200 mb-3">{{ t('doc.success.instructions') }}</p>
+                <p class="text-blue-200 mb-8">{{ t('doc.success.monitor') }}</p>
+                <app-button variant="primary" size="lg" (onClick)="finish()">{{ t('common.done') }}</app-button>
               </div>
             </div>
           }
@@ -702,16 +1047,16 @@ export type BarangayStep =
             <div class="absolute inset-0 flex flex-col p-8">
               <div class="max-w-3xl mx-auto w-full flex-1 flex flex-col">
                 <div class="flex items-center justify-between mb-8">
-                  <h2 class="text-3xl font-bold">Barangay ID Requirements</h2>
-                  <button class="text-blue-300 hover:text-white text-lg" (click)="goBack()">Back</button>
+                  <h2 class="text-3xl font-bold">{{ t('bar.requirements.title') }}</h2>
+                  <button class="text-blue-300 hover:text-white text-lg" (click)="goBack()">{{ t('common.back') }}</button>
                 </div>
                 <div class="flex-1 overflow-y-auto space-y-6">
                   <div class="bg-blue-800/50 rounded-xl p-6 backdrop-blur">
-                    <h3 class="text-xl font-bold mb-4">Before You Apply</h3>
-                    <p class="text-blue-200 mb-6">Please prepare the following. A photo and signature will be captured at the kiosk.</p>
+                    <h3 class="text-xl font-bold mb-4">{{ t('bar.requirements.before') }}</h3>
+                    <p class="text-blue-200 mb-6">{{ t('bar.requirements.desc') }}</p>
                     @if (barangayService()?.requirements && barangayService()!.requirements!.length > 0) {
                       <div class="mb-6">
-                        <h4 class="font-bold text-lg mb-3 text-blue-100">What to Bring</h4>
+                        <h4 class="font-bold text-lg mb-3 text-blue-100">{{ t('doc.requirements.whatToBring') }}</h4>
                         <ul class="space-y-2">
                           @for (req of barangayService()!.requirements!; track req) {
                             <li class="flex items-start gap-3 bg-blue-900/30 p-3 rounded-lg">
@@ -726,15 +1071,14 @@ export type BarangayStep =
                     }
                     <div class="bg-blue-900/30 p-4 rounded-lg">
                       <p class="text-blue-100 text-sm">
-                        <strong>Note:</strong> Your application will be reviewed by barangay staff. Once approved, your
-                        resident record is created and your Barangay ID is issued.
+                        <strong>{{ t('bar.requirements.note') }}</strong> {{ t('bar.requirements.noteDesc') }}
                       </p>
                     </div>
                   </div>
                 </div>
                 <div class="flex gap-4 pt-4 border-t border-blue-700">
-                  <app-button variant="secondary" size="lg" class="flex-1" (onClick)="goBack()">Back</app-button>
-                  <app-button variant="primary" size="lg" class="flex-1" (onClick)="proceedToBarangayForm()">Continue</app-button>
+                  <app-button variant="secondary" size="lg" class="flex-1" (onClick)="goBack()">{{ t('common.back') }}</app-button>
+                  <app-button variant="primary" size="lg" class="flex-1" (onClick)="proceedToBarangayForm()">{{ t('common.continue') }}</app-button>
                 </div>
               </div>
             </div>
@@ -746,34 +1090,34 @@ export type BarangayStep =
               <div class="max-w-lg w-full my-8">
                 <div class="flex items-center justify-between mb-6">
                   <div>
-                    <h2 class="text-2xl font-bold">Barangay ID Application</h2>
-                    <p class="text-blue-300 text-sm mt-1">Fill in your personal information</p>
+                    <h2 class="text-2xl font-bold">{{ t('bar.form.title') }}</h2>
+                    <p class="text-blue-300 text-sm mt-1">{{ t('bar.form.desc') }}</p>
                   </div>
-                  <button class="text-blue-300 hover:text-white text-lg" (click)="goBack()">Back</button>
+                  <button class="text-blue-300 hover:text-white text-lg" (click)="goBack()">{{ t('common.back') }}</button>
                 </div>
 
                 <div class="bg-blue-800/50 rounded-2xl p-6 backdrop-blur space-y-4">
                   <div class="grid grid-cols-2 gap-4">
                     <div class="col-span-2 sm:col-span-1">
-                      <label class="block text-blue-300 text-sm mb-1">First Name *</label>
+                      <label class="block text-blue-300 text-sm mb-1">{{ t('bar.form.firstName') }}</label>
                       <input type="text" [(ngModel)]="barangayForm.firstName"
                              class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-400" />
                     </div>
                     <div class="col-span-2 sm:col-span-1">
-                      <label class="block text-blue-300 text-sm mb-1">Middle Name</label>
+                      <label class="block text-blue-300 text-sm mb-1">{{ t('bar.form.middleName') }}</label>
                       <input type="text" [(ngModel)]="barangayForm.middleName"
                              class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-400" />
                     </div>
                     <div class="col-span-2 sm:col-span-1">
-                      <label class="block text-blue-300 text-sm mb-1">Last Name *</label>
+                      <label class="block text-blue-300 text-sm mb-1">{{ t('bar.form.lastName') }}</label>
                       <input type="text" [(ngModel)]="barangayForm.lastName"
                              class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-400" />
                     </div>
                     <div class="col-span-2 sm:col-span-1">
-                      <label class="block text-blue-300 text-sm mb-1">Suffix</label>
+                      <label class="block text-blue-300 text-sm mb-1">{{ t('bar.form.suffix') }}</label>
                       <select [(ngModel)]="barangayForm.suffix"
                               class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-4 focus:ring-blue-400">
-                        <option value="">None</option>
+                        <option value="">{{ t('bar.form.suffixNone') }}</option>
                         <option value="Jr.">Jr.</option>
                         <option value="Sr.">Sr.</option>
                         <option value="II">II</option>
@@ -782,42 +1126,42 @@ export type BarangayStep =
                       </select>
                     </div>
                     <div class="col-span-2 sm:col-span-1">
-                      <label class="block text-blue-300 text-sm mb-1">Birth Date *</label>
+                      <label class="block text-blue-300 text-sm mb-1">{{ t('bar.form.birthDate') }}</label>
                       <input type="date" [(ngModel)]="barangayForm.birthDate"
                              class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-4 focus:ring-blue-400" />
                     </div>
                     <div class="col-span-2 sm:col-span-1">
-                      <label class="block text-blue-300 text-sm mb-1">Sex *</label>
+                      <label class="block text-blue-300 text-sm mb-1">{{ t('bar.form.sex') }}</label>
                       <select [(ngModel)]="barangayForm.gender"
                               class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-4 focus:ring-blue-400">
-                        <option value="">Select...</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <option value="Other">Other</option>
+                        <option value="">{{ t('bar.form.select') }}</option>
+                        <option value="Male">{{ t('bar.form.sexMale') }}</option>
+                        <option value="Female">{{ t('bar.form.sexFem') }}</option>
+                        <option value="Other">{{ t('bar.form.sexOther') }}</option>
                       </select>
                     </div>
                     <div class="col-span-2 sm:col-span-1">
-                      <label class="block text-blue-300 text-sm mb-1">Civil Status *</label>
+                      <label class="block text-blue-300 text-sm mb-1">{{ t('bar.form.civilStatus') }}</label>
                       <select [(ngModel)]="barangayForm.civilStatus"
                               class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-4 focus:ring-blue-400">
-                        <option value="">Select...</option>
-                        <option value="Single">Single</option>
-                        <option value="Married">Married</option>
-                        <option value="Widowed">Widowed</option>
-                        <option value="Separated">Separated</option>
-                        <option value="Divorced">Divorced</option>
+                        <option value="">{{ t('bar.form.select') }}</option>
+                        <option value="Single">{{ t('bar.form.civilSingle') }}</option>
+                        <option value="Married">{{ t('bar.form.civilMarried') }}</option>
+                        <option value="Widowed">{{ t('bar.form.civilWidowed') }}</option>
+                        <option value="Separated">{{ t('bar.form.civilSeparated') }}</option>
+                        <option value="Divorced">{{ t('bar.form.civilDivorced') }}</option>
                       </select>
                     </div>
                     <div class="col-span-2 sm:col-span-1">
-                      <label class="block text-blue-300 text-sm mb-1">Occupation</label>
+                      <label class="block text-blue-300 text-sm mb-1">{{ t('bar.form.occupation') }}</label>
                       <input type="text" [(ngModel)]="barangayForm.occupation"
                              class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-400" />
                     </div>
                     <div class="col-span-2 sm:col-span-1">
-                      <label class="block text-blue-300 text-sm mb-1">Blood Type</label>
+                      <label class="block text-blue-300 text-sm mb-1">{{ t('bar.form.bloodType') }}</label>
                       <select [(ngModel)]="barangayForm.bloodType"
                               class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-4 focus:ring-blue-400">
-                        <option value="">Unknown</option>
+                        <option value="">{{ t('bar.form.bloodUnknown') }}</option>
                         <option value="A+">A+</option>
                         <option value="A-">A-</option>
                         <option value="B+">B+</option>
@@ -829,27 +1173,27 @@ export type BarangayStep =
                       </select>
                     </div>
                     <div class="col-span-2 sm:col-span-1">
-                      <label class="block text-blue-300 text-sm mb-1">Contact Number *</label>
+                      <label class="block text-blue-300 text-sm mb-1">{{ t('bar.form.contact') }}</label>
                       <input type="tel" [(ngModel)]="barangayForm.contactNumber"
                              class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-400" />
                     </div>
                     <div class="col-span-2">
-                      <label class="block text-blue-300 text-sm mb-1">Address *</label>
+                      <label class="block text-blue-300 text-sm mb-1">{{ t('bar.form.address') }}</label>
                       <input type="text" [(ngModel)]="barangayForm.addressLine"
                              class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-400" />
                     </div>
                     <div class="col-span-2">
-                      <label class="block text-blue-300 text-sm mb-1">Email (optional)</label>
+                      <label class="block text-blue-300 text-sm mb-1">{{ t('bar.form.email') }}</label>
                       <input type="email" [(ngModel)]="barangayForm.email"
                              class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-400" />
                     </div>
                     <div class="col-span-2">
-                      <label class="block text-blue-300 text-sm mb-1">Emergency Contact Person *</label>
+                      <label class="block text-blue-300 text-sm mb-1">{{ t('bar.form.emergencyName') }}</label>
                       <input type="text" [(ngModel)]="barangayForm.emergencyContactName"
                              class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-400" />
                     </div>
                     <div class="col-span-2">
-                      <label class="block text-blue-300 text-sm mb-1">Emergency Contact Number *</label>
+                      <label class="block text-blue-300 text-sm mb-1">{{ t('bar.form.emergencyNumber') }}</label>
                       <input type="tel" [(ngModel)]="barangayForm.emergencyContactNumber"
                              class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-400" />
                     </div>
@@ -863,8 +1207,8 @@ export type BarangayStep =
                 }
 
                 <div class="flex gap-4 mt-6">
-                  <app-button variant="secondary" size="lg" class="flex-1" (onClick)="goBack()">Back</app-button>
-                  <app-button variant="primary" size="lg" class="flex-1" (onClick)="validateBarangayForm()">Continue</app-button>
+                  <app-button variant="secondary" size="lg" class="flex-1" (onClick)="goBack()">{{ t('common.back') }}</app-button>
+                  <app-button variant="primary" size="lg" class="flex-1" (onClick)="validateBarangayForm()">{{ t('common.continue') }}</app-button>
                 </div>
               </div>
             </div>
@@ -874,21 +1218,21 @@ export type BarangayStep =
           @if (barangayStep() === 'photo') {
             <div class="absolute inset-0 flex flex-col items-center justify-center p-8">
               <div class="max-w-lg w-full">
-                <h2 class="text-3xl font-bold mb-6 text-center">Capture Your ID Photo</h2>
-                <p class="text-blue-200 text-center mb-6">A clear photo is required for your Barangay ID.</p>
+                <h2 class="text-3xl font-bold mb-6 text-center">{{ t('bar.photo.title') }}</h2>
+                <p class="text-blue-200 text-center mb-6">{{ t('bar.photo.desc') }}</p>
                 @if (!capturedPhoto()) {
                   <div class="bg-black rounded-2xl overflow-hidden mb-6">
                     <video #videoEl autoplay playsinline class="w-full aspect-video object-cover"></video>
                   </div>
                   <div class="flex gap-4 justify-center">
-                    <app-button variant="primary" size="lg" (onClick)="capturePhoto()">Take Photo</app-button>
+                    <app-button variant="primary" size="lg" (onClick)="capturePhoto()">{{ t('bar.photo.take') }}</app-button>
                   </div>
                 } @else {
                   <div class="text-center">
                     <img [src]="capturedPhoto()" class="w-64 h-64 rounded-2xl mx-auto mb-6 object-cover border-4 border-white" />
                     <div class="flex gap-4 justify-center">
-                      <app-button variant="primary" size="lg" (onClick)="confirmBarangayPhoto()">Use This Photo</app-button>
-                      <app-button variant="secondary" size="lg" (onClick)="retakePhoto()">Retake</app-button>
+                      <app-button variant="primary" size="lg" (onClick)="confirmBarangayPhoto()">{{ t('bar.photo.use') }}</app-button>
+                      <app-button variant="secondary" size="lg" (onClick)="retakePhoto()">{{ t('bar.photo.retake') }}</app-button>
                     </div>
                   </div>
                 }
@@ -905,8 +1249,8 @@ export type BarangayStep =
           @if (barangayStep() === 'signature') {
             <div class="absolute inset-0 flex flex-col items-center justify-center p-8">
               <div class="max-w-lg w-full">
-                <h2 class="text-3xl font-bold mb-6 text-center">Capture Your Signature</h2>
-                <p class="text-blue-200 text-center mb-6">Sign using your finger or a stylus.</p>
+                <h2 class="text-3xl font-bold mb-6 text-center">{{ t('bar.signature.title') }}</h2>
+                <p class="text-blue-200 text-center mb-6">{{ t('bar.signature.desc') }}</p>
                 <app-signature-pad (signature)="onSignatureCaptured($event)" />
                 @if (errorMessage()) {
                   <div class="mt-6 bg-red-500/20 border border-red-400 rounded-xl p-4">
@@ -921,7 +1265,7 @@ export type BarangayStep =
           @if (barangayStep() === 'review') {
             <div class="absolute inset-0 flex flex-col items-center justify-center p-8 overflow-y-auto">
               <div class="max-w-lg w-full my-8">
-                <h2 class="text-3xl font-bold mb-6 text-center">Review Your Application</h2>
+                <h2 class="text-3xl font-bold mb-6 text-center">{{ t('bar.review.title') }}</h2>
                 <div class="bg-blue-800/50 rounded-2xl p-6 backdrop-blur space-y-4">
                   <div class="flex items-center gap-4">
                     @if (capturedPhoto()) {
@@ -939,52 +1283,52 @@ export type BarangayStep =
                   <hr class="border-blue-700" />
                   <div class="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <p class="text-blue-300 text-sm">Full Name</p>
+                      <p class="text-blue-300 text-sm">{{ t('bar.review.fullName') }}</p>
                       <p class="font-medium">{{ barangayForm.firstName }} {{ barangayForm.middleName }} {{ barangayForm.lastName }} {{ barangayForm.suffix }}</p>
                     </div>
                     <div>
-                      <p class="text-blue-300 text-sm">Birth Date</p>
+                      <p class="text-blue-300 text-sm">{{ t('bar.review.birthDate') }}</p>
                       <p class="font-medium">{{ barangayForm.birthDate || '—' }}</p>
                     </div>
                     <div>
-                      <p class="text-blue-300 text-sm">Sex</p>
+                      <p class="text-blue-300 text-sm">{{ t('bar.review.sex') }}</p>
                       <p class="font-medium">{{ barangayForm.gender || '—' }}</p>
                     </div>
                     <div>
-                      <p class="text-blue-300 text-sm">Civil Status</p>
+                      <p class="text-blue-300 text-sm">{{ t('bar.review.civilStatus') }}</p>
                       <p class="font-medium">{{ barangayForm.civilStatus || '—' }}</p>
                     </div>
                     <div>
-                      <p class="text-blue-300 text-sm">Blood Type</p>
-                      <p class="font-medium">{{ barangayForm.bloodType || 'Unknown' }}</p>
+                      <p class="text-blue-300 text-sm">{{ t('bar.review.bloodType') }}</p>
+                      <p class="font-medium">{{ barangayForm.bloodType || t('bar.form.bloodUnknown') }}</p>
                     </div>
                     <div>
-                      <p class="text-blue-300 text-sm">Occupation</p>
+                      <p class="text-blue-300 text-sm">{{ t('bar.review.occupation') }}</p>
                       <p class="font-medium">{{ barangayForm.occupation || '—' }}</p>
                     </div>
                     <div>
-                      <p class="text-blue-300 text-sm">Contact Number</p>
+                      <p class="text-blue-300 text-sm">{{ t('bar.review.contact') }}</p>
                       <p class="font-medium">{{ barangayForm.contactNumber || '—' }}</p>
                     </div>
                     <div>
-                      <p class="text-blue-300 text-sm">Email</p>
+                      <p class="text-blue-300 text-sm">{{ t('bar.review.email') }}</p>
                       <p class="font-medium break-all">{{ barangayForm.email || '—' }}</p>
                     </div>
                     <div class="col-span-2">
-                      <p class="text-blue-300 text-sm">Emergency Contact</p>
+                      <p class="text-blue-300 text-sm">{{ t('bar.review.emergency') }}</p>
                       <p class="font-medium">{{ barangayForm.emergencyContactName || '—' }} — {{ barangayForm.emergencyContactNumber || '—' }}</p>
                     </div>
                     @if (capturedSignature()) {
                       <div class="col-span-2">
-                        <p class="text-blue-300 text-sm mb-1">Signature</p>
+                        <p class="text-blue-300 text-sm mb-1">{{ t('bar.review.signature') }}</p>
                         <img [src]="capturedSignature()" class="h-16 bg-white rounded-lg" />
                       </div>
                     }
                   </div>
                 </div>
                 <div class="flex gap-4 mt-6">
-                  <app-button variant="secondary" size="lg" class="flex-1" (onClick)="goBack()">Back</app-button>
-                  <app-button variant="primary" size="lg" class="flex-1" (onClick)="submitBarangay()" [loading]="submitting()">Submit Application</app-button>
+                  <app-button variant="secondary" size="lg" class="flex-1" (onClick)="goBack()">{{ t('common.back') }}</app-button>
+                  <app-button variant="primary" size="lg" class="flex-1" (onClick)="submitBarangay()" [loading]="submitting()">{{ t('bar.review.submit') }}</app-button>
                 </div>
                 @if (errorMessage()) {
                   <div class="mt-6 bg-red-500/20 border border-red-400 rounded-xl p-4">
@@ -1004,12 +1348,12 @@ export type BarangayStep =
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
                   </svg>
                 </div>
-                <h2 class="text-3xl font-bold mb-4">Application Submitted!</h2>
-                <p class="text-xl text-blue-200 mb-2">Your Barangay ID application has been submitted successfully.</p>
-                <p class="text-xl text-blue-200 mb-2">Application Number:</p>
+                <h2 class="text-3xl font-bold mb-4">{{ t('bar.success.title') }}</h2>
+                <p class="text-xl text-blue-200 mb-2">{{ t('bar.success.desc') }}</p>
+                <p class="text-xl text-blue-200 mb-2">{{ t('bar.success.number') }}</p>
                 <p class="text-4xl font-bold text-yellow-300 mb-6">{{ requestNumber() }}</p>
-                <p class="text-blue-200 mb-8">Your application will be reviewed by the barangay staff before approval.</p>
-                <app-button variant="primary" size="lg" (onClick)="finish()">Done</app-button>
+                <p class="text-blue-200 mb-8">{{ t('bar.success.review') }}</p>
+                <app-button variant="primary" size="lg" (onClick)="finish()">{{ t('common.done') }}</app-button>
               </div>
             </div>
           }
@@ -1028,6 +1372,7 @@ export class KioskComponent implements OnInit, OnDestroy {
   rfidStep = signal<RfidStep>('scan');
   rfidError = signal('');
   rfidConnected = signal(false);
+  rfidDetected = signal(false);
 
   // Documents flow steps
   currentStep = signal<DocStep>('welcome');
@@ -1048,6 +1393,37 @@ export class KioskComponent implements OnInit, OnDestroy {
   searchResults = signal<any[]>([]);
   searching = signal(false);
   searchQuery = '';
+
+  // Language and date/time for welcome screen
+  language = signal<KioskLanguage>('en');
+  currentDateTime = signal<Date>(new Date());
+
+  t(key: string, params?: Record<string, string | number>): string {
+    return this.translations.translate(key, params);
+  }
+
+  setLanguage(lang: KioskLanguage) {
+    this.language.set(lang);
+    this.translations.setLanguage(lang);
+    this.saveState();
+  }
+
+  formatFooterDate(): string {
+    return this.currentDateTime().toLocaleDateString(this.language() === 'fil' ? 'fil-PH' : 'en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  }
+
+  formatFooterTime(): string {
+    return this.currentDateTime().toLocaleTimeString(this.language() === 'fil' ? 'fil-PH' : 'en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  }
 
   // Dynamic form state
   formValues = signal<Record<string, unknown>>({});
@@ -1093,15 +1469,21 @@ export class KioskComponent implements OnInit, OnDestroy {
   private searchDebounce: any;
   private rfidScanSub: any = null;
   private rfidConnectionSub: any = null;
+  private stateSaveDebounce: any = null;
 
   constructor(
     private kioskService: KioskService,
     public identificationService: IdentificationService,
     private rfidScanService: RfidScanService,
+    private kioskStateService: KioskStateService,
+    private translations: TranslationService,
     private cdr: ChangeDetectorRef
   ) {}
 
+  private dateTimeTimer: any;
+
   ngOnInit() {
+    this.restoreState();
     this.resetIdleTimer();
     this.rfidScanSub = this.rfidScanService.scans().subscribe(event => this.handleRfidScan(event.uid));
     this.rfidConnectionSub = this.rfidScanService.connection().subscribe(connected => {
@@ -1109,6 +1491,74 @@ export class KioskComponent implements OnInit, OnDestroy {
     });
     // Preload the Barangay ID service requirements for the application flow
     this.loadBarangayService();
+    // Start date/time clock for welcome screen
+    this.dateTimeTimer = setInterval(() => this.currentDateTime.set(new Date()), 1000);
+  }
+
+  private restoreState(): void {
+    const savedState = this.kioskStateService.load();
+    if (!savedState) return;
+
+    this.mode.set(savedState.mode);
+    this.rfidStep.set(savedState.rfidStep);
+    this.currentStep.set(savedState.currentStep);
+    this.barangayStep.set(savedState.barangayStep);
+    this.resident.set(savedState.resident);
+    this.selectedService.set(savedState.selectedService);
+    this.barangayService.set(savedState.barangayService);
+    this.capturedPhoto.set(savedState.capturedPhoto);
+    this.capturedSignature.set(savedState.capturedSignature);
+    this.requestNumber.set(savedState.requestNumber);
+    this.formValues.set(savedState.formValues);
+    this.inlinePhotos.set(savedState.inlinePhotos);
+    this.activePhotoField.set(savedState.activePhotoField);
+    this.guestForm = savedState.guestForm;
+    this.barangayForm = savedState.barangayForm;
+    this.submissionKey = savedState.submissionKey;
+
+    // Restore language preference and sync the TranslationService
+    if (savedState.language) {
+      this.language.set(savedState.language);
+      this.translations.setLanguage(savedState.language);
+    }
+
+    // Reconnect RFID if we were in RFID mode
+    if (savedState.mode === 'rfid' && savedState.rfidStep === 'scan') {
+      this.rfidScanService.connect();
+    }
+
+    // Restart camera if we were in a photo step
+    if ((savedState.mode === 'documents' && savedState.currentStep === 'photo') ||
+        (savedState.mode === 'barangay' && savedState.barangayStep === 'photo')) {
+      setTimeout(() => this.startCamera(), 100);
+    }
+  }
+
+  private saveState(): void {
+    if (this.stateSaveDebounce) clearTimeout(this.stateSaveDebounce);
+    this.stateSaveDebounce = setTimeout(() => {
+      const state: KioskState = {
+        mode: this.mode(),
+        rfidStep: this.rfidStep(),
+        currentStep: this.currentStep(),
+        barangayStep: this.barangayStep(),
+        resident: this.resident(),
+        selectedService: this.selectedService(),
+        barangayService: this.barangayService(),
+        capturedPhoto: this.capturedPhoto(),
+        capturedSignature: this.capturedSignature(),
+        requestNumber: this.requestNumber(),
+        formValues: this.formValues(),
+        inlinePhotos: this.inlinePhotos(),
+        activePhotoField: this.activePhotoField(),
+        guestForm: this.guestForm,
+        barangayForm: this.barangayForm,
+        submissionKey: this.submissionKey,
+        language: this.language(),
+        timestamp: Date.now()
+      };
+      this.kioskStateService.save(state);
+    }, 100);
   }
 
   ngOnDestroy() {
@@ -1118,6 +1568,8 @@ export class KioskComponent implements OnInit, OnDestroy {
     if (this.rfidConnectionSub) this.rfidConnectionSub.unsubscribe();
     clearTimeout(this.idleTimer);
     clearTimeout(this.searchDebounce);
+    clearTimeout(this.stateSaveDebounce);
+    clearInterval(this.dateTimeTimer);
   }
 
   loadServices() {
@@ -1149,6 +1601,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.rfidStep.set('scan');
     this.rfidScanService.connect();
     this.resetIdleTimer();
+    this.saveState();
   }
 
   retryRfid() {
@@ -1156,6 +1609,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.rfidStep.set('scan');
     this.rfidScanService.connect();
     this.resetIdleTimer();
+    this.saveState();
   }
 
   continueWithout() {
@@ -1164,6 +1618,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.rfidScanService.disconnect();
     this.mode.set('guest');
     this.resetIdleTimer();
+    this.saveState();
   }
 
   startGuestRequest() {
@@ -1174,6 +1629,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.mode.set('documents');
     this.currentStep.set('guest-info');
     this.resetIdleTimer();
+    this.saveState();
   }
 
   startBarangay() {
@@ -1186,6 +1642,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.mode.set('barangay');
     this.barangayStep.set('requirements');
     this.resetIdleTimer();
+    this.saveState();
   }
 
   private resetBarangayForm() {
@@ -1213,6 +1670,7 @@ export class KioskComponent implements OnInit, OnDestroy {
 
   private handleRfidScan(uid: string) {
     if (this.mode() !== 'rfid' || this.rfidStep() !== 'scan') return;
+    this.rfidDetected.set(true);
     this.rfidScanService.disconnect();
     this.kioskService.verifyRfid(uid).subscribe({
       next: (result: any) => {
@@ -1224,16 +1682,21 @@ export class KioskComponent implements OnInit, OnDestroy {
           this.currentStep.set('welcome');
           this.resetIdleTimer();
           this.cdr.detectChanges();
+          this.saveState();
         } else {
-          this.rfidError.set('Your card was not recognized.');
+          this.rfidDetected.set(false);
+          this.rfidError.set(this.t('err.rfid.notRecognized'));
           this.rfidStep.set('error');
           this.resetIdleTimer();
+          this.saveState();
         }
       },
       error: () => {
-        this.rfidError.set('We could not read your card.');
+        this.rfidDetected.set(false);
+        this.rfidError.set(this.t('err.rfid.readFailed'));
         this.rfidStep.set('error');
         this.resetIdleTimer();
+        this.saveState();
       }
     });
   }
@@ -1273,9 +1736,10 @@ export class KioskComponent implements OnInit, OnDestroy {
         this.mode.set('documents');
         this.currentStep.set('welcome');
         this.resetIdleTimer();
+        this.saveState();
       },
       error: () => {
-        this.errorMessage.set('Failed to load resident info.');
+        this.errorMessage.set(this.t('err.loadResident'));
       }
     });
   }
@@ -1293,6 +1757,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.loadServices();
     this.currentStep.set('services');
     this.resetIdleTimer();
+    this.saveState();
   }
 
   selectService(service: Service) {
@@ -1303,6 +1768,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.activePhotoField.set(null);
     this.currentStep.set('requirements');
     this.resetIdleTimer();
+    this.saveState();
   }
 
   proceedToForm() {
@@ -1337,6 +1803,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     }
     this.currentStep.set('form');
     this.resetIdleTimer();
+    this.saveState();
   }
 
   private formatDate(value: string | null): string {
@@ -1461,12 +1928,13 @@ export class KioskComponent implements OnInit, OnDestroy {
       this.currentStep.set('review');
       this.resetIdleTimer();
     }
+    this.saveState();
   }
 
   private validateField(field: FormField, value: unknown): string | null {
     const empty = this.isEmptyValue(value);
     if (empty) {
-      if (field.required) return `${field.label} is required.`;
+      if (field.required) return this.t('err.required', { field: field.label });
       return null;
     }
 
@@ -1476,19 +1944,19 @@ export class KioskComponent implements OnInit, OnDestroy {
     if (typeof value === 'string' && !value.startsWith('data:')) {
       const str = value.trim();
       if (v.minLength && str.length < v.minLength) {
-        return `${field.label} must be at least ${v.minLength} characters.`;
+        return this.t('err.minLength', { field: field.label, min: v.minLength });
       }
       if (v.maxLength && str.length > v.maxLength) {
-        return `${field.label} must be at most ${v.maxLength} characters.`;
+        return this.t('err.maxLength', { field: field.label, max: v.maxLength });
       }
       if (v.pattern && !new RegExp(v.pattern).test(str)) {
-        return v.patternMessage || `${field.label} has an invalid format.`;
+        return v.patternMessage || this.t('err.invalidFormat', { field: field.label });
       }
     }
 
     if (field.type === 'number' && typeof value === 'number') {
-      if (v.min !== undefined && value < v.min) return `${field.label} must be at least ${v.min}.`;
-      if (v.max !== undefined && value > v.max) return `${field.label} must be at most ${v.max}.`;
+      if (v.min !== undefined && value < v.min) return this.t('err.minValue', { field: field.label, min: v.min });
+      if (v.max !== undefined && value > v.max) return this.t('err.maxValue', { field: field.label, max: v.max });
     }
 
     return null;
@@ -1499,25 +1967,26 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.formError.set('');
     const g = this.guestForm;
     if (!g.fullName.trim()) {
-      this.formError.set('Full name is required.');
+      this.formError.set(this.t('err.guest.fullName'));
       return;
     }
     if (!g.birthDate) {
-      this.formError.set('Date of birth is required.');
+      this.formError.set(this.t('err.guest.birthDate'));
       return;
     }
     if (!g.address.trim()) {
-      this.formError.set('Address is required.');
+      this.formError.set(this.t('err.guest.address'));
       return;
     }
     if (!g.contactNumber.trim()) {
-      this.formError.set('Contact number is required.');
+      this.formError.set(this.t('err.guest.contact'));
       return;
     }
     this.errorMessage.set('');
     this.loadServices();
     this.currentStep.set('services');
     this.resetIdleTimer();
+    this.saveState();
   }
 
   // ============================================================
@@ -1527,73 +1996,77 @@ export class KioskComponent implements OnInit, OnDestroy {
   proceedToBarangayForm() {
     this.barangayStep.set('form');
     this.resetIdleTimer();
+    this.saveState();
   }
 
   validateBarangayForm() {
     this.formError.set('');
     const f = this.barangayForm;
     if (!f.firstName.trim()) {
-      this.formError.set('First name is required.');
+      this.formError.set(this.t('err.bar.firstName'));
       return;
     }
     if (!f.lastName.trim()) {
-      this.formError.set('Last name is required.');
+      this.formError.set(this.t('err.bar.lastName'));
       return;
     }
     if (!f.birthDate) {
-      this.formError.set('Birth date is required.');
+      this.formError.set(this.t('err.bar.birthDate'));
       return;
     }
     if (!f.gender) {
-      this.formError.set('Sex is required.');
+      this.formError.set(this.t('err.bar.sex'));
       return;
     }
     if (!f.civilStatus) {
-      this.formError.set('Civil status is required.');
+      this.formError.set(this.t('err.bar.civilStatus'));
       return;
     }
     if (!f.addressLine.trim()) {
-      this.formError.set('Address is required.');
+      this.formError.set(this.t('err.bar.address'));
       return;
     }
     if (!f.contactNumber.trim()) {
-      this.formError.set('Contact number is required.');
+      this.formError.set(this.t('err.bar.contact'));
       return;
     }
     if (!f.emergencyContactName.trim()) {
-      this.formError.set('Emergency contact name is required.');
+      this.formError.set(this.t('err.bar.emergencyName'));
       return;
     }
     if (!f.emergencyContactNumber.trim()) {
-      this.formError.set('Emergency contact number is required.');
+      this.formError.set(this.t('err.bar.emergencyNumber'));
       return;
     }
     this.errorMessage.set('');
     this.barangayStep.set('photo');
     this.resetIdleTimer();
     setTimeout(() => this.startCamera(), 100);
+    this.saveState();
   }
 
   confirmBarangayPhoto() {
     this.barangayStep.set('signature');
     this.resetIdleTimer();
+    this.saveState();
   }
 
   onSignatureCaptured(dataUrl: string) {
     this.capturedSignature.set(dataUrl);
     this.barangayStep.set('review');
     this.resetIdleTimer();
+    this.saveState();
   }
 
   submitBarangay() {
     if (this.submitting()) return; // re-entry guard: never double-submit
     if (!this.capturedPhoto()) {
-      this.errorMessage.set('A photo is required for your Barangay ID.');
+      this.errorMessage.set(this.t('err.photoRequired'));
       this.barangayStep.set('photo');
       return;
     }
     if (!this.capturedSignature()) {
-      this.errorMessage.set('A signature is required for your Barangay ID.');
+      this.errorMessage.set(this.t('err.signatureRequired'));
       this.barangayStep.set('signature');
       return;
     }
@@ -1641,12 +2114,14 @@ export class KioskComponent implements OnInit, OnDestroy {
         this.requestNumber.set(result?.data?.application_number || 'N/A');
         this.barangayStep.set('success');
         this.submitting.set(false);
+        this.saveState();
       },
       error: (err) => {
         this.submitting.set(false);
         const msg = err?.error?.message || 'Failed to submit application. Please try again.';
         this.errorMessage.set(msg);
         console.error('Barangay ID submit error:', err);
+        this.saveState();
       }
     });
   }
@@ -1666,7 +2141,7 @@ export class KioskComponent implements OnInit, OnDestroy {
       })
       .catch((err) => {
         console.error('Camera error:', err);
-        this.errorMessage.set('Camera access denied or not available. You can skip the photo step.');
+        this.errorMessage.set(this.t('err.cameraDenied'));
       });
   }
 
@@ -1689,6 +2164,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     if (!this.videoEl?.nativeElement) return;
     this.capturedPhoto.set(this.drawFrame(this.videoEl.nativeElement));
     this.stopCamera();
+    this.saveState();
   }
 
   skipPhoto() {
@@ -1696,16 +2172,19 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.capturedPhoto.set(null);
     this.currentStep.set('review');
     this.resetIdleTimer();
+    this.saveState();
   }
 
   confirmPhoto() {
     this.currentStep.set('review');
     this.resetIdleTimer();
+    this.saveState();
   }
 
   retakePhoto() {
     this.capturedPhoto.set(null);
     setTimeout(() => this.startCamera(), 100);
+    this.saveState();
   }
 
   // ============================================================
@@ -1718,7 +2197,7 @@ export class KioskComponent implements OnInit, OnDestroy {
 
   displayName(): string {
     if (this.resident()) return `${this.resident()!.first_name} ${this.resident()!.last_name}`;
-    return this.guestForm.fullName || 'Guest';
+    return this.guestForm.fullName || this.t('placeholder.guest');
   }
 
   displayAddress(): string {
@@ -1744,20 +2223,24 @@ export class KioskComponent implements OnInit, OnDestroy {
     if (this.mode() === 'rfid') {
       if (this.rfidStep() === 'search') {
         this.rfidStep.set('scan');
+        this.saveState();
         return;
       }
       if (this.rfidStep() === 'error') {
         this.rfidStep.set('scan');
+        this.saveState();
         return;
       }
       // From scan back to Home
       this.rfidScanService.disconnect();
       this.mode.set('home');
+      this.saveState();
       return;
     }
 
     if (this.mode() === 'guest') {
       this.mode.set('home');
+      this.saveState();
       return;
     }
 
@@ -1768,10 +2251,12 @@ export class KioskComponent implements OnInit, OnDestroy {
         this.mode.set('rfid');
         this.rfidStep.set('scan');
         this.rfidScanService.connect();
+        this.saveState();
         return;
       }
       if (step === 'guest-info') {
         this.mode.set('guest');
+        this.saveState();
         return;
       }
       if (step === 'review') {
@@ -1781,15 +2266,18 @@ export class KioskComponent implements OnInit, OnDestroy {
         } else {
           this.currentStep.set('form');
         }
+        this.saveState();
         return;
       }
       if (step === 'form') {
         this.stopCamera();
         this.currentStep.set('requirements');
+        this.saveState();
         return;
       }
       if (step === 'requirements') {
         this.currentStep.set('services');
+        this.saveState();
         return;
       }
       const steps: DocStep[] = ['welcome', 'guest-info', 'services', 'requirements', 'form', 'photo', 'review', 'success'];
@@ -1797,6 +2285,7 @@ export class KioskComponent implements OnInit, OnDestroy {
       if (idx > 0) {
         if (step === 'photo') this.stopCamera();
         this.currentStep.set(steps[idx - 1]);
+        this.saveState();
       }
       return;
     }
@@ -1805,21 +2294,27 @@ export class KioskComponent implements OnInit, OnDestroy {
       const step = this.barangayStep();
       if (step === 'requirements') {
         this.mode.set('guest');
+        this.saveState();
         return;
       }
       if (step === 'review') {
         this.barangayStep.set('signature');
+        this.saveState();
         return;
       }
       if (step === 'signature') {
         this.barangayStep.set('photo');
         this.capturedPhoto.set(null);
         setTimeout(() => this.startCamera(), 100);
+        this.saveState();
         return;
       }
       const bSteps: BarangayStep[] = ['requirements', 'form', 'photo', 'signature', 'review', 'success'];
       const idx = bSteps.indexOf(step);
-      if (idx > 0) this.barangayStep.set(bSteps[idx - 1]);
+      if (idx > 0) {
+        this.barangayStep.set(bSteps[idx - 1]);
+        this.saveState();
+      }
     }
   }
 
@@ -1827,7 +2322,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     if (this.submitting()) return; // re-entry guard: never double-submit
     const service = this.selectedService();
     if (!service) {
-      this.errorMessage.set('Missing service information. Please start over.');
+      this.errorMessage.set(this.t('err.missingService'));
       return;
     }
 
@@ -1862,12 +2357,14 @@ export class KioskComponent implements OnInit, OnDestroy {
         this.currentStep.set('success');
         this.submitting.set(false);
         this.submissionKey = ''; // done: next request is a fresh submission
+        this.saveState();
       },
       error: (err) => {
         this.submitting.set(false);
         const msg = err?.error?.message || 'Failed to submit request. Please try again.';
         this.errorMessage.set(msg);
         console.error('Submit request error:', err);
+        this.saveState();
       }
     });
   }
@@ -1902,6 +2399,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.inlinePhotos.set({});
     this.activePhotoField.set(null);
     this.submissionKey = '';
+    this.kioskStateService.clear();
     this.resetIdleTimer();
   }
 

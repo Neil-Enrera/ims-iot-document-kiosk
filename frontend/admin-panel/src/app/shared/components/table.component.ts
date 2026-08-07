@@ -58,7 +58,13 @@ export interface TableColumn {
             </tr>
           } @else {
             @for (row of data; track row[trackBy]; let i = $index) {
-              <tr class="hover:bg-gray-50" (click)="onRowClick.emit(row)">
+              <tr 
+                class="hover:bg-gray-50 cursor-pointer transition-colors"
+                [class.bg-gray-50]="selectedRow && selectedRow[trackBy] === row[trackBy]"
+                [class.border-l-4]="selectedRow && selectedRow[trackBy] === row[trackBy]"
+                [class.border-blue-500]="selectedRow && selectedRow[trackBy] === row[trackBy]"
+                [class.shadow-sm]="selectedRow && selectedRow[trackBy] === row[trackBy]"
+                (click)="onRowClick.emit(row)">
                 @for (col of columns; track col.key) {
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
                       [class.text-center]="col.align === 'center'"
@@ -102,6 +108,7 @@ export class TableComponent {
   @Input() sortDirection: 'ASC' | 'DESC' = 'ASC';
   @Input() rowActionsTemplate: TemplateRef<any> | null = null;
   @Input() cellTemplates: Record<string, TemplateRef<any>> = {};
+  @Input() selectedRow: any = null;
 
   @Output() onSort = new EventEmitter<string>();
   @Output() onRowClick = new EventEmitter<any>();

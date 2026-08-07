@@ -1,4 +1,5 @@
 import { Component, Input, Output, EventEmitter, ElementRef, ViewChild, AfterViewInit, OnDestroy, signal } from '@angular/core';
+import { TranslationService } from '../../i18n/translation.service';
 
 @Component({
   selector: 'app-signature-pad',
@@ -15,12 +16,12 @@ import { Component, Input, Output, EventEmitter, ElementRef, ViewChild, AfterVie
                 class="w-full h-56 touch-none cursor-crosshair"></canvas>
         @if (isEmpty()) {
           <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <p class="text-gray-400 text-lg">Sign here</p>
+            <p class="text-gray-400 text-lg">{{ t('sig.here') }}</p>
           </div>
         }
       </div>
       @if (showError && isEmpty()) {
-        <p class="text-red-300 text-sm">A signature is required.</p>
+        <p class="text-red-300 text-sm">{{ t('sig.required') }}</p>
       }
       <div class="flex gap-4 justify-center">
         <button
@@ -29,12 +30,12 @@ import { Component, Input, Output, EventEmitter, ElementRef, ViewChild, AfterVie
           <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
           </svg>
-          Clear
+          {{ t('sig.clear') }}
         </button>
         <button
           class="inline-flex items-center justify-center font-medium rounded-lg transition bg-blue-600 text-white hover:bg-blue-700 px-6 py-3 text-base"
           (click)="confirm()">
-          Use Signature
+          {{ t('sig.use') }}
         </button>
       </div>
     </div>
@@ -49,6 +50,12 @@ export class SignaturePadComponent implements AfterViewInit, OnDestroy {
 
   /** Show inline validation error when confirmed empty. */
   @Input() showError = false;
+
+  constructor(private translations: TranslationService) {}
+
+  t(key: string, params?: Record<string, string | number>): string {
+    return this.translations.translate(key, params);
+  }
 
   private ctx: CanvasRenderingContext2D | null = null;
   private drawing = false;

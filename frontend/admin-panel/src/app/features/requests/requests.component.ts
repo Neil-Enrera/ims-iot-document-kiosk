@@ -53,13 +53,15 @@ interface RequestDetail extends DocumentRequest {
           trackBy="request_id"
           emptyMessage="No requests found"
           [cellTemplates]="{ status_name: statusCell, expires_at: expiryCell }"
-          [rowActionsTemplate]="rowActions"
-          (onSort)="onSort($event)">
+          [selectedRow]="selectedRow()"
+          (onSort)="onSort($event)"
+          (onRowClick)="onRowClick($event)">
 
           <ng-template #statusCell let-status let-row="row">
             <select
               [value]="row.status_id"
               [disabled]="row.status_id === 7 || row.status_id === 8 || row.status_id === 9"
+              (click)="$event.stopPropagation()"
               (change)="onStatusChange($any($event.target).value, row); $event.stopPropagation()"
               class="w-full px-2 py-1.5 border rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-300 bg-white">
               @for (opt of statusOptions; track opt.value) {
@@ -79,13 +81,6 @@ interface RequestDetail extends DocumentRequest {
             } @else {
               <span class="text-gray-400">-</span>
             }
-          </ng-template>
-
-          <ng-template #rowActions let-request>
-            <button
-              type="button"
-              (click)="viewDetails(request); $event.stopPropagation()"
-              class="text-blue-600 hover:underline text-sm">View</button>
           </ng-template>
         </app-table>
 
@@ -108,7 +103,7 @@ interface RequestDetail extends DocumentRequest {
       </app-modal>
 
       <!-- Request Details Modal -->
-      <app-modal [open]="showDetails()" [title]="selectedRequest()?.request_number || 'Request Details'" (onClose)="showDetails.set(false)">
+      <app-modal [open]="showDetails()" [title]="selectedRequest()?.request_number || 'Request Details'" (onClose)="closeDetails()">
         @if (selectedRequest(); as request) {
           <dl class="space-y-3 text-sm">
             <div class="grid grid-cols-3 gap-2">
@@ -317,6 +312,7 @@ export class RequestsComponent implements OnInit, OnDestroy {
   saving = signal(false);
   showDetails = signal(false);
   selectedRequest = signal<RequestDetail | null>(null);
+  selectedRow = signal<DocumentRequest | null>(null);
   documents = signal<GeneratedDocument[]>([]);
   generatingDoc = signal(false);
   previewBusy = signal(false);
@@ -469,6 +465,7 @@ export class RequestsComponent implements OnInit, OnDestroy {
   }
 
   viewDetails(request: DocumentRequest) {
+    this.selectedRow.set(request);
     this.requestService.getById(request.request_id).subscribe({
       next: (res) => {
         this.selectedRequest.set(res.data as RequestDetail);
@@ -481,6 +478,19 @@ export class RequestsComponent implements OnInit, OnDestroy {
         this.loadDocuments(request.request_id);
       }
     });
+  }
+
+  onRowClick(request: DocumentRequest) {
+    this.viewDetails(request);
+  }
+
+  closeDetails() {
+    this.showDetails.set(false);
+    this.selectedRequest.set(null);
+    this.selectedRow.set(null);
+    this.documents.set([]);
+    this.docError.set('');
+    this.docNotice.set('');
   }
 
   loadDocuments(requestId: number) {

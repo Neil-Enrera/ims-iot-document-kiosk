@@ -1,34 +1,28 @@
 import { Component, Input, Output, EventEmitter, AfterViewChecked, ViewChild, ElementRef, signal, OnChanges, SimpleChanges } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { renderAsync } from 'docx-preview';
+import { ModalOverlayComponent } from './modal-overlay.component';
 
 @Component({
   selector: 'app-document-preview-modal',
   standalone: true,
-  imports: [],
+  imports: [CommonModule, ModalOverlayComponent],
   template: `
-    @if (open) {
-      <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60" (click)="close()">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl mx-4 max-h-[90vh] flex flex-col" (click)="$event.stopPropagation()">
-          <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-            <h3 class="text-lg font-semibold text-gray-800 truncate" [title]="title">{{ title }}</h3>
-            <button (click)="close()" class="text-gray-400 hover:text-gray-600">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-              </svg>
-            </button>
-          </div>
-          <div class="p-4 overflow-y-auto bg-gray-100">
-            @if (rendering()) {
-              <div class="text-center py-12 text-sm text-gray-500">Rendering document...</div>
-            }
-            @if (error()) {
-              <div class="text-center py-12 text-sm text-red-600">{{ error() }}</div>
-            }
-            <div #container class="docx-preview-container"></div>
-          </div>
-        </div>
+    <app-modal-overlay 
+      [open]="open" 
+      [title]="title" 
+      [closeOnBackdropClick]="true"
+      (onClose)="close()">
+      <div class="p-4 overflow-y-auto bg-gray-100" style="max-height: 70vh;">
+        @if (rendering()) {
+          <div class="text-center py-12 text-sm text-gray-500">Rendering document...</div>
+        }
+        @if (error()) {
+          <div class="text-center py-12 text-sm text-red-600">{{ error() }}</div>
+        }
+        <div #container class="docx-preview-container"></div>
       </div>
-    }
+    </app-modal-overlay>
   `,
   styles: [`
     .docx-preview-container {
