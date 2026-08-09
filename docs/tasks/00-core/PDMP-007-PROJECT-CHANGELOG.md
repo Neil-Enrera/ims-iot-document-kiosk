@@ -62,6 +62,28 @@ Use one of the following categories:
 
 ---
 
+# Version 2.5.0
+
+**Status:** Active Development
+
+**Date:** 2026-08-09
+
+## Changed
+
+- **Kiosk screen redesign (phase 2 — document flow)** — replaced the dark blue kiosk theme with a light theme (`#F8FAFC` background, slate text, orange `#F97316` accent) and staggered layout pieces across the document request flow:
+  - **Landing / welcome** — light background with orange curved accent, subtle Barangay Hall line art, redesigned CTA cards, and a three-column footer (Need Assistance / Office Hours / Current Time).
+  - **Guest Info form** — full-width card layout with icon-prefixed inputs (gold circle / calendar / pin / phone / mail), inline check marks, per-field inline error messages (instead of a single banner), and `guest submitted`-driven validation (`guestInvalid()`), plus a 4-step progress indicator (Your Info → Select Document → Review → Submit) shared across the flow.
+  - **RFID pulse** — rings now expand from the container's center (`transform-origin: center`) so they stay centered at any size, with reduced-motion opacity softened.
+- **i18n key refinements** — guest labels no longer hard-code the `*` required marker (rendered separately in the template), added `birthDatePh` placeholders, and split the footer into labeled sub-keys (`landing.footer.assistance/hours/time/...`) plus a `progress.*` group.
+
+**Modules Affected:** Kiosk (Frontend)
+
+**Database Changes:** No (i18n strings and templates only)
+
+**Testing:** `ng build kiosk-app` passes (bundle budget warning unchanged/pre-existing). All i18n keys referenced by the new template confirmed present in `en.ts`/`fil.ts`.
+
+---
+
 # Version 2.4.0
 
 **Status:** Active Development

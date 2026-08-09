@@ -494,3 +494,30 @@ The form had overlapping requirement concepts (Requirements vs Required Document
 - `eslint.config.js` gained the missing `Buffer` Node global so `src/` lints with 0 errors.
 - Verified: backend tests 45/45, admin tests 14/14, ESLint clean, both `tsc --noEmit` clean, live E2E 12/12 (create/update without removed fields, kiosk list, kiosk-visibility 404, request submit + document generation, snapshot has no removed fields).
 - Existing requests keep their historical `service_snapshot` JSON; existing services keep all remaining fields.
+
+---
+
+### DEC-019 — Redesign kiosk screens with a light theme
+
+**Status:** Accepted
+**Date:** 2026-08-09
+**Decision Maker(s):** Project Owner
+
+**Decision:**
+The kiosk document-request flow was redesigned from the dark blue theme to a light, high-contrast kiosk theme: off-white (`#F8FAFC`) canvas, slate text (`#0F172A`), and a single orange accent (`#F97316`) for interactive elements. The redesign spans the landing/welcome screen, the guest-info (temporary session) form, and shared chrome (back button, language toggle, 4-step progress indicator, and a three-column footer showing Need Assistance / Office Hours / Current Time). The guest form moved to a card layout with icon-prefixed inputs, per-field inline error messages, and inline success check marks driven by a new `guestSubmitted` signal + `guestInvalid()` helper (replacing the single banner error).
+
+**Reason:**
+The previous dark style looked dated and relied on heavy blue gradients; the light theme widens field visibility and centers on a brighter, more approachable "first screen" for residents, with larger touch targets (64px min-height) for the self-service kiosk. Inline per-field errors show residents exactly which field to fix, restarting a blank-vs-failed form.
+
+**Alternatives Considered:**
+1. Keep the dark theme and only tweak spacing — rejected; branding guidance moved to a light canvas.
+2. Full form re-validation on every keystroke — rejected; errors only appear after the resident attempts to Continue (`guestSubmitted`), avoiding premature red borders.
+3. Flat gray inputs — rejected; light-orange icon wells + focus ring match the CTA accent.
+
+**Consequences:**
+- kiosk.component.ts now owns the entire screen layout (landing through submit) with Tailwind utility classes; the old dark backgrounds are gone.
+- Validation moved from a single `formError` banner to `guestSubmitted` + `guestInvalid('field')`; `formError` is still cleared before navigation.
+- i18n: `progress.*` and `landing.footer.*` key groups added/refined; guest labels render the `*` marker in the template, not the string.
+- Verified: `ng build kiosk-app` clean (budget warning pre-existing); all keys used by the new template exist in `en.ts`/`fil.ts`.
+
+---

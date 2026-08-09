@@ -2,17 +2,21 @@
 
 /* RFID radar pulse — expanding rings that fade out from the center */
 @keyframes rfid-pulse {
-  0%   { transform: scale(0.18); opacity: 0.0; }
-  15%  { opacity: 0.75; }
+  0%   { transform: scale(0.15); opacity: 0; }
+  12%  { opacity: 0.75; }
   100% { transform: scale(1); opacity: 0; }
 }
 .rfid-pulse-ring {
+  /* All rings share the container's box and grow from its center, so they stay centered at any size */
+  transform-origin: center;
+  will-change: transform, opacity;
+  pointer-events: none;
   animation: rfid-pulse 3.2s ease-out infinite;
 }
 @media (prefers-reduced-motion: reduce) {
   .rfid-pulse-ring {
     animation: none;
-    opacity: 0.2;
+    opacity: 0.15;
   }
 }
 

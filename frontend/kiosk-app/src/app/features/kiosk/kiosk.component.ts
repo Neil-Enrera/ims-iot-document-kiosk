@@ -212,93 +212,72 @@ export type BarangayStep =
 
           <!-- RFID STEP: scan -->
           @if (rfidStep() === 'scan') {
-            <div class="absolute inset-0 bg-[#F8FAFC] text-[#0F172A] select-none overflow-hidden [font-family:'Inter',sans-serif]">
+            <div class="absolute inset-0 bg-[#F8FAFC] text-[#0F172A] select-none overflow-hidden [font-family:'Inter',sans-serif] flex flex-col">
 
-              <!-- Subtle orange curved accent (upper-left) -->
-              <div class="absolute top-0 left-0 w-[420px] h-[300px] pointer-events-none" aria-hidden="true">
-                <svg viewBox="0 0 420 300" class="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M0 0 H420 V120 C420 205 360 300 280 300 H0 Z" fill="#F97316" opacity="0.08"/>
+              <!-- Background image (same as the kiosk landing page) -->
+              <div class="absolute inset-0 bg-cover bg-center pointer-events-none" style="background-image: url('Background.png')" aria-hidden="true"></div>
+              <!-- Subtle radial glow keeps the content legible without washing the orange -->
+              <div class="absolute inset-0 pointer-events-none" aria-hidden="true"
+                   style="background: radial-gradient(ellipse 72% 58% at 50% 42%, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0.35) 55%, rgba(255,255,255,0.05) 100%);"></div>
+              <!-- Curved orange header accent (top-left, same as landing) -->
+              <div class="absolute top-0 left-0 w-64 h-40 pointer-events-none" aria-hidden="true">
+                <svg viewBox="0 0 256 160" class="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M0 0 H256 V40 C256 128 220 160 176 160 H0 Z" fill="#F97316" opacity="0.12"/>
                 </svg>
               </div>
 
-              <!-- Faint Barangay Hall line art (right, ~5% opacity) -->
-              <div class="absolute right-0 bottom-0 w-[520px] h-[460px] pointer-events-none opacity-[0.05]" aria-hidden="true">
-                <svg viewBox="0 0 520 460" class="w-full h-full" fill="none" stroke="#0F172A" stroke-width="2" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M30 450 H490"/>
-                  <path d="M180 450 v-40 h160 v40"/>
-                  <rect x="150" y="310" width="220" height="140"/>
-                  <path d="M120 310 L260 220 L400 310 Z"/>
-                  <path d="M180 310 v140 M230 310 v140 M290 310 v140 M340 310 v140"/>
-                  <rect x="238" y="370" width="44" height="80"/>
-                  <rect x="160" y="335" width="42" height="42"/>
-                  <rect x="318" y="335" width="42" height="42"/>
-                  <path d="M260 220 v-28 M246 192 l14 14 14-14"/>
-                </svg>
-              </div>
+              <div class="relative flex-1 overflow-y-auto">
+                <div class="min-h-full flex flex-col items-center justify-center px-4 sm:px-8 py-6 sm:py-10">
 
-              <!-- Subtle tree line art (left) -->
-              <div class="absolute left-0 bottom-0 w-[360px] h-[420px] pointer-events-none opacity-[0.06]" aria-hidden="true">
-                <svg viewBox="0 0 360 420" class="w-full h-full" fill="none" stroke="#0F172A" stroke-width="2" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M160 410 C158 330 178 260 210 200"/>
-                  <path d="M210 200 C150 165 85 170 55 195"/>
-                  <path d="M210 200 C175 135 160 80 175 45"/>
-                  <path d="M210 200 C255 145 300 125 345 140"/>
-                  <path d="M210 200 C265 180 310 205 335 240"/>
-                  <circle cx="210" cy="212" r="11"/>
-                  <path d="M205 226 c-8 6 -8 14 0 18 M215 226 c8 6 8 14 0 18"/>
-                </svg>
-              </div>
-
-              <div class="relative h-full flex flex-col overflow-y-auto">
-                <div class="min-h-full flex flex-col items-center justify-center px-8 py-8">
-
-                  <!-- Header: back (pinned top-left) + logo & title (center) -->
+                  <!-- Back button (pinned top-left, reduced but touch-friendly) -->
                   <button (click)="goBack()"
-                          class="fixed top-6 left-6 z-40 w-20 h-20 rounded-full border-2 border-[#F97316] bg-white flex items-center justify-center hover:bg-[#FFF7ED] active:scale-[0.97] transition-all focus:outline-none focus:ring-4 focus:ring-[#F97316]/30 shadow-sm"
+                          class="fixed top-4 left-4 z-40 w-[52px] h-[52px] rounded-full border-2 border-[#F97316]/60 bg-white flex items-center justify-center shadow-sm hover:bg-[#FFF7ED] active:scale-[0.97] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30"
                           [attr.aria-label]="t('common.back')">
-                    <svg class="w-9 h-9 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <svg class="w-7 h-7 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
                     </svg>
                   </button>
 
                   <!-- Centered logo + title -->
-                  <div class="text-center mb-8 mt-4">
-                    <div class="mx-auto mb-6 w-[88px] h-[88px] rounded-full bg-white border-2 border-[#F97316]/40 overflow-hidden flex items-center justify-center shadow-sm">
+                  <div class="text-center mb-8 sm:mb-10 mt-10 sm:mt-6">
+                    <div class="mx-auto mb-5 sm:mb-6 w-[clamp(84px,11vw,116px)] h-[clamp(84px,11vw,116px)] rounded-full bg-white border-2 border-[#F97316]/40 overflow-hidden flex items-center justify-center shadow-sm">
                       <img src="Barangay Logo.png" alt="Barangay San Manuel logo" class="w-full h-full object-cover">
                     </div>
-                    <h1 class="text-4xl font-bold tracking-tight text-[#0F172A] leading-tight">{{ t('rfid.title') }}</h1>
-                    <p class="text-xl font-medium text-[#64748B] mt-3 max-w-xl mx-auto">{{ t('rfid.subtitle') }}</p>
+                    <h1 class="text-[clamp(1.75rem,4vw,2.5rem)] font-bold tracking-tight text-[#0F172A] leading-tight">{{ t('rfid.title') }}</h1>
+                    <p class="text-[clamp(1rem,1.9vw,1.25rem)] font-medium text-[#64748B] mt-2.5 sm:mt-3 max-w-xl mx-auto px-2">{{ t('rfid.subtitle') }}</p>
                   </div>
 
                   <!-- Scanning area -->
-                  <div class="flex flex-col items-center mb-10">
-                    <div class="relative w-[340px] h-[340px] flex items-center justify-center">
+                  <div class="flex flex-col items-center mb-8 sm:mb-10 w-full">
+                    <div class="relative w-[clamp(210px,40vmin,340px)] h-[clamp(210px,40vmin,340px)] flex items-center justify-center">
                       @if (!rfidDetected()) {
-                        <!-- Expanding radar pulse rings (from center, fading outward) -->
-                        <div class="rfid-pulse-ring absolute rounded-full border-2 border-[#F97316]/50" style="animation-delay:0s"></div>
-                        <div class="rfid-pulse-ring absolute rounded-full border-2 border-[#F97316]/40" style="animation-delay:0.8s; inset:10px"></div>
-                        <div class="rfid-pulse-ring absolute rounded-full border-2 border-[#F97316]/30" style="animation-delay:1.6s; inset:20px"></div>
-                        <div class="rfid-pulse-ring absolute rounded-full border-2 border-[#F97316]/20" style="animation-delay:2.4s; inset:30px"></div>
+                        <!-- RFID radar pulse: 4 identical rings expanding from the center.
+                          Negative animation-delays start each ring already mid-cycle, so
+                          the radar is visibly moving the instant the screen renders. -->
+                        <div class="rfid-pulse-ring absolute inset-0 rounded-full border-2 border-[#F97316]/50" style="animation-delay:-2.4s"></div>
+                        <div class="rfid-pulse-ring absolute inset-0 rounded-full border-2 border-[#F97316]/40" style="animation-delay:-1.6s"></div>
+                        <div class="rfid-pulse-ring absolute inset-0 rounded-full border-2 border-[#F97316]/30" style="animation-delay:-0.8s"></div>
+                        <div class="rfid-pulse-ring absolute inset-0 rounded-full border-2 border-[#F97316]/20" style="animation-delay:0s"></div>
                       }
                       <!-- Center RFID card icon / detected success -->
-                      <div class="relative z-10 w-[200px] h-[200px] rounded-full bg-white border-2 border-[#F97316]/30 shadow-sm flex items-center justify-center"
+                      <div class="relative z-10 w-[clamp(140px,24vmin,200px)] h-[clamp(140px,24vmin,200px)] rounded-full bg-white border-2 border-[#F97316]/30 shadow-sm flex items-center justify-center"
                            [class.border-[#10B981]]="rfidDetected()">
                         @if (!rfidDetected()) {
-                          <svg class="w-32 h-32 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                          <svg class="w-[clamp(72px,12.5vmin,128px)] h-[clamp(72px,12.5vmin,128px)] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                             <rect x="3" y="6" width="18" height="12" rx="2"/>
                             <path d="M7 9.5h7M7 12.5h7" stroke-linecap="round"/>
                             <path d="M18 9.2v.01M18 12.4v.01M18 15.6v.01" stroke-linecap="round" stroke-width="2.6"/>
                             <path d="M18.6 16.2l1.6-1.6M18.6 7.8L20.2 9.4" stroke-linecap="round"/>
                           </svg>
                         } @else {
-                          <svg class="w-32 h-32 text-[#10B981] rfid-success-pop" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+                          <svg class="w-[clamp(72px,12.5vmin,128px)] h-[clamp(72px,12.5vmin,128px)] text-[#10B981] rfid-success-pop" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
                             <circle cx="12" cy="12" r="10" stroke-width="1.8"/>
                             <path d="M15.5 9.5l-4.5 5-2.5-2.5" stroke-linecap="round" stroke-linejoin="round"/>
                           </svg>
                         }
                       </div>
                     </div>
-                    <p class="mt-6 text-lg font-medium text-[#64748B]">
+                    <p class="mt-5 sm:mt-6 text-base sm:text-lg font-medium text-[#64748B]">
                       @if (rfidDetected()) {
                         <span class="text-[#10B981] font-semibold">{{ t('rfid.found') }}</span>
                       } @else {
@@ -309,7 +288,7 @@ export type BarangayStep =
 
                   <!-- Scanner status card -->
                   @if (!rfidConnected()) {
-                    <div class="w-full max-w-xl bg-white border border-[#E5E7EB] rounded-2xl px-6 py-5 flex items-start gap-4 mb-8 shadow-sm">
+                    <div class="w-full max-w-xl bg-white/95 border border-[#E5E7EB] rounded-2xl px-5 sm:px-6 py-4 sm:py-5 flex items-start gap-4 mb-6 sm:mb-8 shadow-sm backdrop-blur-sm">
                       <div class="w-11 h-11 rounded-full bg-[#FFF5EE] flex items-center justify-center shrink-0">
                         <svg class="w-6 h-6 text-[#F59E0B]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
@@ -321,7 +300,7 @@ export type BarangayStep =
                       </div>
                     </div>
                   } @else {
-                    <div class="w-full max-w-xl bg-white border border-[#E5E7EB] rounded-2xl px-6 py-5 flex items-center gap-4 mb-8 shadow-sm">
+                    <div class="w-full max-w-xl bg-white/95 border border-[#E5E7EB] rounded-2xl px-5 sm:px-6 py-4 sm:py-5 flex items-center gap-4 mb-6 sm:mb-8 shadow-sm backdrop-blur-sm">
                       <div class="w-11 h-11 rounded-full bg-[#ECFDF5] flex items-center justify-center shrink-0">
                         <svg class="w-6 h-6 text-[#10B981]" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                           <circle cx="12" cy="12" r="9"/>
@@ -337,13 +316,13 @@ export type BarangayStep =
 
                   <!-- Primary action -->
                   <button (click)="rfidStep.set('search')"
-                          class="w-full max-w-xl min-h-[80px] px-8 py-5 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.995] text-white text-xl font-semibold flex items-center justify-center transition-all focus:outline-none focus:ring-4 focus:ring-[#F97316]/30 shadow-sm">
+                          class="w-full max-w-xl min-h-[64px] sm:min-h-[80px] px-8 py-4 sm:py-5 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.995] text-white text-lg sm:text-xl font-semibold flex items-center justify-center transition-all focus:outline-none focus:ring-4 focus:ring-[#F97316]/30 shadow-sm">
                     {{ t('rfid.findRecord') }}
                   </button>
 
                   <!-- Secondary action -->
                   <button (click)="continueWithout()"
-                          class="mt-6 min-h-[72px] px-8 text-[#F97316] hover:text-[#EA580C] text-lg font-semibold hover:underline underline-offset-4 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[#F97316]/40">
+                          class="mt-5 sm:mt-6 min-h-[56px] px-8 text-[#F97316] hover:text-[#EA580C] text-base sm:text-lg font-semibold hover:underline underline-offset-4 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[#F97316]/40">
                     {{ t('rfid.continueWithout') }}
                   </button>
                 </div>
@@ -457,102 +436,76 @@ export type BarangayStep =
         @if (mode() === 'guest') {
           <div class="absolute inset-0 bg-[#F8FAFC] text-[#0F172A] select-none overflow-hidden [font-family:'Inter',sans-serif] flex flex-col">
 
-            <!-- Background: orange curved accent (upper-left) -->
-            <div class="absolute top-0 left-0 w-[420px] h-[300px] pointer-events-none" aria-hidden="true">
-              <svg viewBox="0 0 420 300" class="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M0 0 H420 V120 C420 205 360 300 280 300 H0 Z" fill="#F97316" opacity="0.08"/>
+            <!-- Background image (same as the kiosk landing page) -->
+            <div class="absolute inset-0 bg-cover bg-center pointer-events-none" style="background-image: url('Background.png')" aria-hidden="true"></div>
+            <!-- Subtle radial glow keeps the text legible without washing the orange -->
+            <div class="absolute inset-0 pointer-events-none" aria-hidden="true"
+                 style="background: radial-gradient(ellipse 72% 58% at 50% 42%, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0.35) 55%, rgba(255,255,255,0.05) 100%);"></div>
+            <!-- Curved orange header accent (top-left, same as landing) -->
+            <div class="absolute top-0 left-0 w-64 h-40 pointer-events-none" aria-hidden="true">
+              <svg viewBox="0 0 256 160" class="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M0 0 H256 V40 C256 128 220 160 176 160 H0 Z" fill="#F97316" opacity="0.12"/>
               </svg>
             </div>
 
-            <!-- Faint Barangay Hall line art (right, ~5% opacity) -->
-            <div class="absolute right-0 bottom-0 w-[520px] h-[460px] pointer-events-none opacity-[0.05]" aria-hidden="true">
-              <svg viewBox="0 0 520 460" class="w-full h-full" fill="none" stroke="#0F172A" stroke-width="2" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
-                <path d="M30 450 H490"/>
-                <path d="M180 450 v-40 h160 v40"/>
-                <rect x="150" y="310" width="220" height="140"/>
-                <path d="M120 310 L260 220 L400 310 Z"/>
-                <path d="M180 310 v140 M230 310 v140 M290 310 v140 M340 310 v140"/>
-                <rect x="238" y="370" width="44" height="80"/>
-                <rect x="160" y="335" width="42" height="42"/>
-                <rect x="318" y="335" width="42" height="42"/>
-                <path d="M260 220 v-28 M246 192 l14 14 14-14"/>
+            <!-- Back button (pinned top-left, consistent with the Scan screen) -->
+            <button (click)="goBack()"
+                    class="fixed top-4 left-4 z-40 w-[52px] h-[52px] rounded-full border-2 border-[#F97316]/60 bg-white flex items-center justify-center shadow-sm hover:bg-[#FFF7ED] active:scale-[0.97] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30"
+                    [attr.aria-label]="t('common.back')">
+              <svg class="w-7 h-7 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
               </svg>
-            </div>
-
-            <!-- Subtle tree line art (left) -->
-            <div class="absolute left-0 bottom-0 w-[360px] h-[420px] pointer-events-none opacity-[0.06]" aria-hidden="true">
-              <svg viewBox="0 0 360 420" class="w-full h-full" fill="none" stroke="#0F172A" stroke-width="2" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
-                <path d="M160 410 C158 330 178 260 210 200"/>
-                <path d="M210 200 C150 165 85 170 55 195"/>
-                <path d="M210 200 C175 135 160 80 175 45"/>
-                <path d="M210 200 C255 145 300 125 345 140"/>
-                <path d="M210 200 C265 180 310 205 335 240"/>
-                <circle cx="210" cy="212" r="11"/>
-                <path d="M205 226 c-8 6 -8 14 0 18 M215 226 c8 6 8 14 0 18"/>
-              </svg>
-            </div>
+            </button>
 
             <!-- Main content -->
             <div class="relative flex-1 overflow-y-auto">
-              <div class="min-h-full flex flex-col items-center justify-center px-8 py-8">
-
-                <!-- Header: back (left) + centered logo, title & subtitle -->
-                <div class="w-full max-w-4xl flex items-start justify-between mb-8">
-                  <button (click)="goBack()"
-                          class="w-20 h-20 rounded-full border-2 border-[#F97316] bg-white flex items-center justify-center hover:bg-[#FFF7ED] active:scale-[0.97] transition-all focus:outline-none focus:ring-4 focus:ring-[#F97316]/30"
-                          [attr.aria-label]="t('common.back')">
-                    <svg class="w-9 h-9 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-                    </svg>
-                  </button>
-                  <span></span>
-                </div>
+              <div class="min-h-full flex flex-col items-center justify-center px-4 sm:px-8 py-6 sm:py-10">
 
                 <!-- Centered logo + title -->
-                <div class="text-center mb-10">
-                  <div class="mx-auto mb-6 w-[88px] h-[88px] rounded-full bg-white border-2 border-[#F97316]/40 overflow-hidden flex items-center justify-center shadow-sm">
+                <div class="text-center mb-6 sm:mb-10 mt-10 sm:mt-6">
+                  <div class="mx-auto mb-5 sm:mb-6 w-[clamp(84px,11vw,116px)] h-[clamp(84px,11vw,116px)] rounded-full bg-white border-2 border-[#F97316]/40 overflow-hidden flex items-center justify-center shadow-sm">
                     <img src="Barangay Logo.png" alt="Barangay San Manuel logo" class="w-full h-full object-cover">
                   </div>
-                  <h1 class="text-4xl font-bold tracking-tight text-[#0F172A] leading-tight">{{ t('guest.title') }}</h1>
-                  <p class="text-xl font-medium text-[#64748B] mt-3">{{ t('guest.subtitle') }}</p>
+                  <h1 class="text-[clamp(1.75rem,4vw,2.5rem)] font-bold tracking-tight text-[#0F172A] leading-tight">{{ t('guest.title') }}</h1>
+                  <p class="text-[clamp(1rem,1.9vw,1.25rem)] font-medium text-[#64748B] mt-2.5 sm:mt-3 px-2">{{ t('guest.subtitle') }}</p>
                 </div>
 
                 <!-- Two horizontal cards -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full max-w-4xl mb-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 w-full max-w-4xl mb-5 sm:mb-6">
 
                   <!-- Card 1: Request Documents -->
-                  <button class="group flex items-center gap-6 rounded-[18px] border border-[#F97316]/50 bg-white p-8 shadow-sm hover:shadow-md hover:border-[#F97316] transition-all duration-200 text-left"
+                  <button class="group flex items-center gap-4 sm:gap-6 rounded-[18px] border border-[#F97316]/50 bg-white p-5 sm:p-8 shadow-sm hover:shadow-md hover:border-[#F97316] transition-all duration-200 text-left"
                           (click)="startGuestRequest()">
-                    <div class="shrink-0 w-20 h-20 rounded-xl bg-[#FFF7ED] flex items-center justify-center">
-                      <svg class="w-12 h-12 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
+                    <div class="shrink-0 w-14 h-14 sm:w-20 sm:h-20 rounded-xl bg-[#FFF7ED] flex items-center justify-center">
+                      <svg class="w-8 h-8 sm:w-12 sm:h-12 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
                       </svg>
                     </div>
                     <div class="flex-1 min-w-0">
-                      <p class="text-2xl font-bold text-[#0F172A] leading-snug">{{ t('guest.requestDocs.title') }}</p>
-                      <p class="text-base text-[#64748B] mt-1.5 leading-snug">{{ t('guest.requestDocs.desc') }}</p>
+                      <p class="text-xl sm:text-2xl font-bold text-[#0F172A] leading-snug">{{ t('guest.requestDocs.title') }}</p>
+                      <p class="text-sm sm:text-base text-[#64748B] mt-1.5 leading-snug">{{ t('guest.requestDocs.desc') }}</p>
                     </div>
-                    <div class="shrink-0 w-16 h-16 rounded-full bg-[#F97316] flex items-center justify-center group-hover:bg-[#EA580C] transition-colors">
-                      <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <div class="shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[#F97316] flex items-center justify-center group-hover:bg-[#EA580C] transition-colors">
+                      <svg class="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
                       </svg>
                     </div>
                   </button>
 
                   <!-- Card 2: Apply for Barangay ID -->
-                  <button class="group flex items-center gap-6 rounded-[18px] border border-[#F97316]/50 bg-white p-8 shadow-[6px_6px_16px_-8px_rgba(15,23,42,0.12)] hover:shadow-md hover:border-[#F97316] transition-all duration-200 text-left"
+                  <button class="group flex items-center gap-4 sm:gap-6 rounded-[18px] border border-[#F97316]/50 bg-white p-5 sm:p-8 shadow-[6px_6px_16px_-8px_rgba(15,23,42,0.12)] hover:shadow-md hover:border-[#F97316] transition-all duration-200 text-left"
                           (click)="startBarangay()">
-                    <div class="shrink-0 w-20 h-20 rounded-xl bg-[#FFF7ED] flex items-center justify-center">
-                      <svg class="w-12 h-12 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
+                    <div class="shrink-0 w-14 h-14 sm:w-20 sm:h-20 rounded-xl bg-[#FFF7ED] flex items-center justify-center">
+                      <svg class="w-8 h-8 sm:w-12 sm:h-12 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5zm6-10.125a1.875 1.875 0 11-3.75 0 1.875 1.875 0 013.75 0zm1.294 6.336a6.721 6.721 0 01-3.17.789 6.721 6.721 0 01-3.168-.789 3.376 3.376 0 016.338 0z"/>
                       </svg>
                     </div>
                     <div class="flex-1 min-w-0">
-                      <p class="text-2xl font-bold text-[#0F172A] leading-snug">{{ t('guest.applyId.title') }}</p>
-                      <p class="text-base text-[#64748B] mt-1.5 leading-snug">{{ t('guest.applyId.desc') }}</p>
+                      <p class="text-xl sm:text-2xl font-bold text-[#0F172A] leading-snug">{{ t('guest.applyId.title') }}</p>
+                      <p class="text-sm sm:text-base text-[#64748B] mt-1.5 leading-snug">{{ t('guest.applyId.desc') }}</p>
                     </div>
-                    <div class="shrink-0 w-16 h-16 rounded-full bg-[#F97316] flex items-center justify-center group-hover:bg-[#EA580C] transition-colors">
-                      <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <div class="shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[#F97316] flex items-center justify-center group-hover:bg-[#EA580C] transition-colors">
+                      <svg class="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
                       </svg>
                     </div>
@@ -560,21 +513,21 @@ export type BarangayStep =
                 </div>
 
                 <!-- Information card -->
-                <div class="flex items-start gap-3 w-full max-w-4xl bg-white border border-[#E5E7EB] rounded-2xl px-6 py-5 shadow-sm">
+                <div class="flex items-start gap-3 w-full max-w-4xl bg-white/95 border border-[#E5E7EB] rounded-2xl px-4 sm:px-6 py-4 sm:py-5 shadow-sm">
                   <div class="w-11 h-11 rounded-full bg-[#F8FAFC] border border-[#E5E7EB] flex items-center justify-center shrink-0">
                     <svg class="w-6 h-6 text-[#64748B]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                       <circle cx="12" cy="12" r="9"/>
                       <path d="M12 16v-4M12 8h.01" stroke-linecap="round"/>
                     </svg>
                   </div>
-                  <p class="text-base text-[#64748B] leading-snug pt-1.5">{{ t('guest.info') }}</p>
+                  <p class="text-sm sm:text-base text-[#64748B] leading-snug pt-1.5">{{ t('guest.info') }}</p>
                 </div>
               </div>
             </div>
 
             <!-- Footer: four sections, outline icons only -->
-            <div class="relative border-t border-[#E5E7EB] bg-white/90 backdrop-blur-sm">
-              <div class="max-w-5xl mx-auto px-8 py-6 grid grid-cols-2 lg:grid-cols-4 gap-6 items-center">
+            <div class="relative border-t border-[#E5E7EB] bg-white/95 backdrop-blur-sm">
+              <div class="max-w-5xl mx-auto px-4 sm:px-8 py-4 sm:py-6 grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4 sm:gap-y-6 items-center">
 
                 <!-- Need Assistance -->
                 <div class="flex flex-col items-center gap-2 text-center min-w-0">
@@ -667,57 +620,324 @@ export type BarangayStep =
 
           <!-- DOC STEP 0b: Guest basic info (temporary session only) -->
           @if (currentStep() === 'guest-info') {
-            <div class="absolute inset-0 flex flex-col items-center justify-center p-8 overflow-y-auto">
-              <div class="max-w-lg w-full my-8">
-                <div class="flex items-center justify-between mb-6">
-                  <div>
-                    <h2 class="text-2xl font-bold">{{ t('doc.guestInfo.title') }}</h2>
-                    <p class="text-blue-300 text-sm mt-1">{{ t('doc.guestInfo.desc') }}</p>
-                  </div>
-                  <button class="text-blue-300 hover:text-white text-lg" (click)="goBack()">{{ t('common.back') }}</button>
+            <div class="absolute inset-0 bg-[#F8FAFC] text-[#0F172A] select-none overflow-hidden [font-family:'Inter',sans-serif] flex flex-col">
+
+              <!-- Background: orange curved accent (upper-left) -->
+              <div class="absolute top-0 left-0 w-64 h-40 pointer-events-none" aria-hidden="true">
+                <svg viewBox="0 0 256 160" class="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M0 0 H256 V40 C256 128 220 160 176 160 H0 Z" fill="#F97316" opacity="0.12"/>
+                </svg>
+              </div>
+
+              <!-- Very subtle Barangay Hall line art (right, ~4% opacity) -->
+              <div class="absolute right-0 bottom-0 w-[520px] h-[460px] pointer-events-none opacity-[0.04]" aria-hidden="true">
+                <svg viewBox="0 0 520 460" class="w-full h-full" fill="none" stroke="#0F172A" stroke-width="2" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M30 450 H490"/>
+                  <path d="M180 450 v-40 h160 v40"/>
+                  <rect x="150" y="310" width="220" height="140"/>
+                  <path d="M120 310 L260 220 L400 310 Z"/>
+                  <path d="M180 310 v140 M230 310 v140 M290 310 v140 M340 310 v140"/>
+                  <rect x="238" y="370" width="44" height="80"/>
+                  <rect x="160" y="335" width="42" height="42"/>
+                  <rect x="318" y="335" width="42" height="42"/>
+                  <path d="M260 220 v-28 M246 192 l14 14 14-14"/>
+                </svg>
+              </div>
+
+              <!-- Very subtle tree illustration (left) -->
+              <div class="absolute left-0 bottom-0 w-[360px] h-[420px] pointer-events-none opacity-[0.04]" aria-hidden="true">
+                <svg viewBox="0 0 360 420" class="w-full h-full" fill="none" stroke="#0F172A" stroke-width="2" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M160 410 C158 330 178 260 210 200"/>
+                  <path d="M210 200 C150 165 85 170 55 195"/>
+                  <path d="M210 200 C175 135 160 80 175 45"/>
+                  <path d="M210 200 C255 145 300 125 345 140"/>
+                  <path d="M210 200 C265 180 310 205 335 240"/>
+                  <circle cx="210" cy="212" r="11"/>
+                  <path d="M205 226 c-8 6 -8 14 0 18 M215 226 c8 6 8 14 0 18"/>
+                </svg>
+              </div>
+
+              <!-- Top navigation: back (left), logo (center), language (right) -->
+              <div class="relative z-10 flex items-center justify-center px-6 pt-4 pb-2">
+                <button (click)="goBack()"
+                        class="absolute left-6 sm:left-10 top-4 flex items-center gap-2 min-h-[64px] pl-4 pr-5 rounded-2xl border-2 border-[#F97316]/50 bg-white text-[#0F172A] font-semibold text-lg shadow-sm hover:bg-[#FFF7ED] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30"
+                        [attr.aria-label]="t('common.back')">
+                  <svg class="w-7 h-7 shrink-0 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                  </svg>
+                  <span>{{ t('common.back') }}</span>
+                </button>
+
+                <div class="w-[72px] h-[72px] sm:w-20 sm:h-20 rounded-full bg-white border-2 border-[#F97316]/30 shadow-sm overflow-hidden flex items-center justify-center">
+                  <img src="Barangay Logo.png" alt="Barangay San Manuel logo" class="w-full h-full object-cover">
                 </div>
 
-                <div class="bg-blue-800/50 rounded-2xl p-6 backdrop-blur space-y-4">
-                  <div>
-                    <label class="block text-blue-300 text-sm mb-1">{{ t('doc.guestInfo.fullName') }}</label>
-                    <input type="text" [(ngModel)]="guestForm.fullName"
-                           [placeholder]="t('doc.guestInfo.fullNamePh')"
-                           class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-400" />
-                  </div>
-                  <div>
-                    <label class="block text-blue-300 text-sm mb-1">{{ t('doc.guestInfo.birthDate') }}</label>
-                    <input type="date" [(ngModel)]="guestForm.birthDate"
-                           class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-4 focus:ring-blue-400" />
-                  </div>
-                  <div>
-                    <label class="block text-blue-300 text-sm mb-1">{{ t('doc.guestInfo.address') }}</label>
-                    <input type="text" [(ngModel)]="guestForm.address"
-                           [placeholder]="t('doc.guestInfo.addressPh')"
-                           class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-400" />
-                  </div>
-                  <div>
-                    <label class="block text-blue-300 text-sm mb-1">{{ t('doc.guestInfo.contact') }}</label>
-                    <input type="tel" [(ngModel)]="guestForm.contactNumber"
-                           [placeholder]="t('doc.guestInfo.contactPh')"
-                           class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-400" />
-                  </div>
-                  <div>
-                    <label class="block text-blue-300 text-sm mb-1">{{ t('doc.guestInfo.email') }}</label>
-                    <input type="email" [(ngModel)]="guestForm.email"
-                           [placeholder]="t('doc.guestInfo.emailPh')"
-                           class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-400" />
+                <div class="absolute right-6 sm:right-10 top-4 inline-flex rounded-xl overflow-hidden border-2 border-[#E5E7EB] bg-white shadow-sm">
+                  <button (click)="setLanguage('en')"
+                          class="min-w-[88px] min-h-[64px] px-4 flex items-center justify-center text-base font-semibold transition-colors focus:outline-none"
+                          [class.bg-[#F97316]]="language() === 'en'"
+                          [class.text-white]="language() === 'en'"
+                          [class.bg-white]="language() !== 'en'"
+                          [class.text-[#0F172A]]="language() !== 'en'">
+                    English
+                  </button>
+                  <button (click)="setLanguage('fil')"
+                          class="min-w-[88px] min-h-[64px] px-4 border-l border-[#E5E7EB] flex items-center justify-center text-[15px] font-semibold transition-colors focus:outline-none"
+                          [class.bg-[#F97316]]="language() === 'fil'"
+                          [class.text-white]="language() === 'fil'"
+                          [class.bg-white]="language() !== 'fil'"
+                          [class.text-[#0F172A]]="language() !== 'fil'">
+                    Filipino
+                  </button>
+                </div>
+              </div>
+
+              <!-- Progress indicator -->
+              <div class="relative z-10 flex items-center justify-center px-4 py-1">
+                <ol class="flex items-center gap-2 sm:gap-3" aria-label="Kiosk progress">
+                  <li class="flex items-center gap-2 sm:gap-3">
+                    <span class="w-11 h-11 rounded-full flex items-center justify-center text-lg font-bold text-white bg-[#F97316] border-2 border-[#F97316] shadow-sm" aria-hidden="true">1</span>
+                    <span class="hidden lg:block text-[16px] font-bold text-[#0F172A] whitespace-nowrap">{{ t('progress.yourInfo') }}</span>
+                  </li>
+                  <li class="flex items-center gap-2 sm:gap-3" aria-hidden="true">
+                    <span class="w-8 sm:w-12 h-[3px] rounded-full bg-[#E5E7EB]"></span>
+                    <span class="w-11 h-11 rounded-full flex items-center justify-center text-lg font-bold text-[#94A3B8] bg-white border-2 border-[#CBD5E1]">2</span>
+                    <span class="hidden lg:block text-[16px] font-medium text-[#64748B] whitespace-nowrap">{{ t('progress.selectDoc') }}</span>
+                  </li>
+                  <li class="flex items-center gap-2 sm:gap-3" aria-hidden="true">
+                    <span class="w-8 sm:w-12 h-[3px] rounded-full bg-[#E5E7EB]"></span>
+                    <span class="w-11 h-11 rounded-full flex items-center justify-center text-lg font-bold text-[#94A3B8] bg-white border-2 border-[#CBD5E1]">3</span>
+                    <span class="hidden lg:block text-[16px] font-medium text-[#64748B] whitespace-nowrap">{{ t('progress.review') }}</span>
+                  </li>
+                  <li class="flex items-center gap-2 sm:gap-3" aria-hidden="true">
+                    <span class="w-8 sm:w-12 h-[3px] rounded-full bg-[#E5E7EB]"></span>
+                    <span class="w-11 h-11 rounded-full flex items-center justify-center text-lg font-bold text-[#94A3B8] bg-white border-2 border-[#CBD5E1]">4</span>
+                    <span class="hidden lg:block text-[16px] font-medium text-[#64748B] whitespace-nowrap">{{ t('progress.submit') }}</span>
+                  </li>
+                </ol>
+              </div>
+
+              <!-- Main content -->
+              <div class="relative flex-1 overflow-y-auto">
+                <div class="min-h-full flex items-center justify-center px-4 sm:px-8 py-5">
+
+                  <div class="w-full max-w-[800px]">
+
+                    <!-- Page header -->
+                    <div class="text-center mb-6 sm:mb-8">
+                      <h1 class="text-[clamp(2.25rem,3.2vw,3.25rem)] font-bold tracking-tight text-[#0F172A] leading-tight">{{ t('doc.guestInfo.title') }}</h1>
+                      <p class="text-[clamp(1.125rem,1.3vw,1.375rem)] font-medium text-[#64748B] mt-2">{{ t('doc.guestInfo.desc') }}</p>
+                    </div>
+
+                    <!-- Form card -->
+                    <div class="bg-white border border-[#E5E7EB] rounded-[20px] shadow-[0_2px_14px_rgba(15,23,42,0.07)] px-6 sm:px-10 py-7 sm:py-9">
+                      <div class="space-y-6">
+
+                        <!-- Full Name -->
+                        <div>
+                          <label for="guest-fullName" class="block text-[17px] font-semibold text-[#0F172A] mb-2">
+                            {{ t('doc.guestInfo.fullName') }} <span class="text-[#F97316]">*</span>
+                          </label>
+                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
+                               [class.border-[#DC2626]]="guestInvalid('fullName')">
+                            <div class="shrink-0 w-16 min-h-[64px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                <circle cx="12" cy="8" r="4"/>
+                                <path d="M4 20c0-3.6 3.6-5 8-5s8 1.4 8 5" stroke-linecap="round"/>
+                              </svg>
+                            </div>
+                            <input id="guest-fullName" type="text" name="fullName" [(ngModel)]="guestForm.fullName"
+                                   [placeholder]="t('doc.guestInfo.fullNamePh')" autocomplete="name"
+                                   class="flex-1 min-w-0 px-4 py-4 text-lg text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
+                            @if (guestForm.fullName) {
+                              <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                </svg>
+                              </div>
+                            }
+                          </div>
+                          @if (guestInvalid('fullName')) {
+                            <p class="mt-2 flex items-center gap-1.5 text-base font-medium text-[#B91C1C]">
+                              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
+                              </svg>
+                              {{ t('err.guest.fullName') }}
+                            </p>
+                          }
+                        </div>
+
+                        <!-- Date of Birth -->
+                        <div>
+                          <label for="guest-birthDate" class="block text-[17px] font-semibold text-[#0F172A] mb-2">
+                            {{ t('doc.guestInfo.birthDate') }} <span class="text-[#F97316]">*</span>
+                          </label>
+                          <div class="flex items-center rounded-xl border-2 bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
+                               [class.border-[#DC2626]]="guestInvalid('birthDate')">
+                            <div class="shrink-0 w-16 min-h-[64px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                <rect x="3" y="5" width="18" height="16" rx="2"/>
+                                <path d="M8 3v4M16 3v4M3 10h18" stroke-linecap="round"/>
+                              </svg>
+                            </div>
+                            <input id="guest-birthDate" type="date" name="birthDate" [(ngModel)]="guestForm.birthDate"
+                                   [placeholder]="t('doc.guestInfo.birthDatePh')"
+                                   class="flex-1 min-w-0 px-4 py-4 text-lg font-medium text-[#0F172A] bg-transparent outline-none border-none" />
+                            @if (guestForm.birthDate) {
+                              <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                </svg>
+                              </div>
+                            }
+                          </div>
+                          @if (guestInvalid('birthDate')) {
+                            <p class="flex items-center gap-1.5 text-base font-medium text-[#B91C1C]">
+                              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
+                              </svg>
+                              {{ t('err.guest.birthDate') }}
+                            </p>
+                          }
+                        </div>
+
+                        <!-- Address -->
+                        <div>
+                          <label for="guest-address" class="block text-[17px] font-semibold text-[#0F172A] mb-2">
+                            {{ t('doc.guestInfo.address') }} <span class="text-[#F97316]">*</span>
+                          </label>
+                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
+                               [class.border-[#DC2626]]="guestInvalid('address')">
+                            <div class="shrink-0 w-16 min-h-[64px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                <path d="M12 21s7-5.5 7-11a7 7 0 10-14 0c0 5.5 7 11 7 11z" stroke-linejoin="round"/>
+                                <circle cx="12" cy="10" r="2.5"/>
+                              </svg>
+                            </div>
+                            <input id="guest-address" type="text" name="address" [(ngModel)]="guestForm.address"
+                                   [placeholder]="t('doc.guestInfo.addressPh')" autocomplete="street-address"
+                                   class="flex-1 min-w-0 px-4 py-4 text-lg font-medium text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
+                            @if (guestForm.address) {
+                              <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                </svg>
+                              </div>
+                            }
+                          </div>
+                          @if (guestInvalid('address')) {
+                            <p class="flex items-center gap-1.5 text-base font-medium text-[#B91C1C]">
+                              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
+                              </svg>
+                              {{ t('err.guest.address') }}
+                            </p>
+                          }
+                        </div>
+
+                        <!-- Contact Number -->
+                        <div>
+                          <label for="guest-contactNumber" class="block text-[17px] font-semibold text-[#0F172A] mb-2">
+                            {{ t('doc.guestInfo.contact') }} <span class="text-[#F97316]">*</span>
+                          </label>
+                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
+                               [class.border-[#DC2626]]="guestInvalid('contactNumber')">
+                            <div class="shrink-0 w-16 min-h-[64px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                <path d="M6.5 5h3l1.6 4-2 1.2a11 11 0 005.7 5.7l1.2-2 4 1.6v3a1.5 1.5 0 01-1.6 1.5A15.5 15.5 0 015 6.6 1.5 1.5 0 016.5 5z" stroke-linejoin="round"/>
+                              </svg>
+                            </div>
+                            <input id="guest-contactNumber" type="tel" name="contactNumber" [(ngModel)]="guestForm.contactNumber"
+                                   [placeholder]="t('doc.guestInfo.contactPh')" autocomplete="tel" inputmode="tel"
+                                   class="flex-1 min-w-0 px-4 py-4 text-lg font-medium text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
+                            @if (guestForm.contactNumber) {
+                              <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                </svg>
+                              </div>
+                            }
+                          </div>
+                          @if (guestInvalid('contactNumber')) {
+                            <p class="flex items-center gap-1.5 text-base font-medium text-[#B91C1C]">
+                              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
+                              </svg>
+                              {{ t('err.guest.contact') }}
+                            </p>
+                          }
+                        </div>
+
+                        <!-- Email (optional) -->
+                        <div>
+                          <label for="guest-email" class="block text-[17px] font-semibold text-[#0F172A] mb-2">
+                            {{ t('doc.guestInfo.email') }}
+                          </label>
+                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden">
+                            <div class="shrink-0 w-16 min-h-[64px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                <rect x="3" y="5" width="18" height="14" rx="2"/>
+                                <path d="M3.5 7l8.5 6 8.5-6" stroke-linejoin="round"/>
+                              </svg>
+                            </div>
+                            <input id="guest-email" type="email" name="email" [(ngModel)]="guestForm.email"
+                                   [placeholder]="t('doc.guestInfo.emailPh')" autocomplete="email" inputmode="email"
+                                   class="flex-1 min-w-0 px-4 py-4 text-lg font-medium text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
+                            @if (guestForm.email) {
+                              <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                </svg>
+                              </div>
+                            }
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Form actions -->
+                      <div class="flex items-center justify-between gap-4 mt-8">
+                        <button (click)="goBack()"
+                                class="flex items-center justify-center gap-2 min-h-[64px] px-8 sm:px-10 rounded-2xl border-2 border-[#F97316] bg-white text-[#0F172A] text-lg font-semibold shadow-sm hover:bg-[#FFF7ED] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30">
+                          <svg class="w-6 h-6 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                          </svg>
+                          {{ t('common.back') }}
+                        </button>
+                        <button (click)="validateGuestForm()"
+                                class="flex items-center justify-center gap-2.5 min-h-[64px] min-w-[200px] sm:min-w-[224px] px-8 rounded-2xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white text-xl font-bold shadow-[0_4px_14px_rgba(249,115,22,0.35)] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40">
+                          {{ t('common.continue') }}
+                          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
+              </div>
 
-                @if (formError()) {
-                  <div class="mt-4 bg-red-500/20 border border-red-400 rounded-xl p-4">
-                    <p class="text-red-200">{{ formError() }}</p>
+              <!-- Compact utility footer -->
+              <div class="relative z-10 border-t border-[#E5E7EB] bg-white/95 backdrop-blur-sm">
+                <div class="max-w-5xl mx-auto px-6 flex items-stretch justify-center divide-x divide-[#E5E7EB]">
+
+                  <!-- Need Assistance -->
+                  <div class="flex flex-col items-center justify-center gap-1 px-8 sm:px-12 py-4 text-center">
+                    <span class="text-[11px] uppercase tracking-wider font-semibold text-[#64748B]">{{ t('landing.footer.assistance') }}</span>
+                    <span class="text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.assistanceDesc') }}</span>
                   </div>
-                }
 
-                <div class="flex gap-4 mt-6">
-                  <app-button variant="secondary" size="lg" class="flex-1" (onClick)="goBack()">{{ t('common.back') }}</app-button>
-                  <app-button variant="primary" size="lg" class="flex-1" (onClick)="validateGuestForm()">{{ t('common.continue') }}</app-button>
+                  <!-- Office Hours -->
+                  <div class="flex flex-col items-center justify-center gap-1 px-8 sm:px-12 py-4 text-center">
+                    <span class="text-[11px] uppercase tracking-wider font-semibold text-[#64748B]">{{ t('landing.footer.hours') }}</span>
+                    <span class="text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.monFri') }}</span>
+                    <span class="text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.hoursRange') }}</span>
+                  </div>
+
+                  <!-- Current Time -->
+                  <div class="flex flex-col items-center justify-center gap-1 px-8 sm:px-12 py-4 text-center">
+                    <span class="text-[11px] uppercase tracking-wider font-semibold text-[#64748B]">{{ t('landing.footer.time') }}</span>
+                    <span class="text-[16px] font-bold text-[#F97316]">{{ formatFooterTime() }}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1389,6 +1609,7 @@ export class KioskComponent implements OnInit, OnDestroy {
   requestNumber = signal('');
   errorMessage = signal('');
   formError = signal('');
+  guestSubmitted = signal(false);
   submitting = signal(false);
   searchResults = signal<any[]>([]);
   searching = signal(false);
@@ -1964,22 +2185,19 @@ export class KioskComponent implements OnInit, OnDestroy {
 
   // Guest temporary session form validation
   validateGuestForm() {
+    this.guestSubmitted.set(true);
     this.formError.set('');
     const g = this.guestForm;
     if (!g.fullName.trim()) {
-      this.formError.set(this.t('err.guest.fullName'));
       return;
     }
     if (!g.birthDate) {
-      this.formError.set(this.t('err.guest.birthDate'));
       return;
     }
     if (!g.address.trim()) {
-      this.formError.set(this.t('err.guest.address'));
       return;
     }
     if (!g.contactNumber.trim()) {
-      this.formError.set(this.t('err.guest.contact'));
       return;
     }
     this.errorMessage.set('');
@@ -1987,6 +2205,23 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.currentStep.set('services');
     this.resetIdleTimer();
     this.saveState();
+  }
+
+  guestInvalid(key: string): boolean {
+    if (!this.guestSubmitted()) return false;
+    const g = this.guestForm;
+    switch (key) {
+      case 'fullName':
+        return !g.fullName.trim();
+      case 'birthDate':
+        return !g.birthDate;
+      case 'address':
+        return !g.address.trim();
+      case 'contactNumber':
+        return !g.contactNumber.trim();
+      default:
+        return false;
+    }
   }
 
   // ============================================================
