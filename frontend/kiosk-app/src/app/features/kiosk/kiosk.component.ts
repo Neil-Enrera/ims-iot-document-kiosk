@@ -622,125 +622,88 @@ export type BarangayStep =
           @if (currentStep() === 'guest-info') {
             <div class="absolute inset-0 bg-[#F8FAFC] text-[#0F172A] select-none overflow-hidden [font-family:'Inter',sans-serif] flex flex-col">
 
-              <!-- Background: orange curved accent (upper-left) -->
+              <!-- Background image (same as the kiosk landing page) -->
+              <div class="absolute inset-0 bg-cover bg-center pointer-events-none" style="background-image: url('Background.png')" aria-hidden="true"></div>
+              <!-- Subtle radial glow keeps the form legible without washing the orange -->
+              <div class="absolute inset-0 pointer-events-none" aria-hidden="true"
+                   style="background: radial-gradient(ellipse 72% 58% at 50% 42%, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0.35) 55%, rgba(255,255,255,0.05) 100%);"></div>
+              <!-- Curved orange header accent (top-left, same as landing) -->
               <div class="absolute top-0 left-0 w-64 h-40 pointer-events-none" aria-hidden="true">
                 <svg viewBox="0 0 256 160" class="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M0 0 H256 V40 C256 128 220 160 176 160 H0 Z" fill="#F97316" opacity="0.12"/>
+                  <path d="M0 0 H256 V80 C256 124 220 160 176 160 H0 Z" fill="#F97316" opacity="0.12"/>
                 </svg>
               </div>
 
-              <!-- Very subtle Barangay Hall line art (right, ~4% opacity) -->
-              <div class="absolute right-0 bottom-0 w-[520px] h-[460px] pointer-events-none opacity-[0.04]" aria-hidden="true">
-                <svg viewBox="0 0 520 460" class="w-full h-full" fill="none" stroke="#0F172A" stroke-width="2" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M30 450 H490"/>
-                  <path d="M180 450 v-40 h160 v40"/>
-                  <rect x="150" y="310" width="220" height="140"/>
-                  <path d="M120 310 L260 220 L400 310 Z"/>
-                  <path d="M180 310 v140 M230 310 v140 M290 310 v140 M340 310 v140"/>
-                  <rect x="238" y="370" width="44" height="80"/>
-                  <rect x="160" y="335" width="42" height="42"/>
-                  <rect x="318" y="335" width="42" height="42"/>
-                  <path d="M260 220 v-28 M246 192 l14 14 14-14"/>
-                </svg>
-              </div>
-
-              <!-- Very subtle tree illustration (left) -->
-              <div class="absolute left-0 bottom-0 w-[360px] h-[420px] pointer-events-none opacity-[0.04]" aria-hidden="true">
-                <svg viewBox="0 0 360 420" class="w-full h-full" fill="none" stroke="#0F172A" stroke-width="2" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M160 410 C158 330 178 260 210 200"/>
-                  <path d="M210 200 C150 165 85 170 55 195"/>
-                  <path d="M210 200 C175 135 160 80 175 45"/>
-                  <path d="M210 200 C255 145 300 125 345 140"/>
-                  <path d="M210 200 C265 180 310 205 335 240"/>
-                  <circle cx="210" cy="212" r="11"/>
-                  <path d="M205 226 c-8 6 -8 14 0 18 M215 226 c8 6 8 14 0 18"/>
-                </svg>
-              </div>
-
-              <!-- Top navigation: back (left), logo (center), language (right) -->
-              <div class="relative z-10 flex items-center justify-center px-6 pt-4 pb-2">
-                <button (click)="goBack()"
-                        class="absolute left-6 sm:left-10 top-4 flex items-center gap-2 min-h-[64px] pl-4 pr-5 rounded-2xl border-2 border-[#F97316]/50 bg-white text-[#0F172A] font-semibold text-lg shadow-sm hover:bg-[#FFF7ED] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30"
-                        [attr.aria-label]="t('common.back')">
-                  <svg class="w-7 h-7 shrink-0 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-                  </svg>
-                  <span>{{ t('common.back') }}</span>
-                </button>
-
-                <div class="w-[72px] h-[72px] sm:w-20 sm:h-20 rounded-full bg-white border-2 border-[#F97316]/30 shadow-sm overflow-hidden flex items-center justify-center">
-                  <img src="Barangay Logo.png" alt="Barangay San Manuel logo" class="w-full h-full object-cover">
+              <!-- Top navigation: back (left) + logo (center) -->
+              <div class="relative z-10 flex items-center justify-center px-6 pt-[18px] pb-2">
+                <div class="absolute left-4 sm:left-6 top-[26px] z-40 flex items-center gap-2.5 sm:gap-3">
+                  <button (click)="goBack()"
+                          class="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px] rounded-full border-2 border-[#F97316]/60 bg-white flex items-center justify-center shadow-sm hover:bg-[#FFF7ED] active:scale-[0.97] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30"
+                          [attr.aria-label]="t('common.back')">
+                    <svg class="w-6 h-6 sm:w-7 sm:h-7 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                  </button>
+                  <button (click)="goBack()"
+                          class="flex items-center min-h-[44px] rounded-xl px-1 text-[#0F172A] font-semibold text-[15px] sm:text-base hover:text-[#F97316] transition-colors focus:outline-none focus:ring-2 focus:ring-[#F97316]/40">
+                    {{ t('common.back') }}
+                  </button>
                 </div>
 
-                <div class="absolute right-6 sm:right-10 top-4 inline-flex rounded-xl overflow-hidden border-2 border-[#E5E7EB] bg-white shadow-sm">
-                  <button (click)="setLanguage('en')"
-                          class="min-w-[88px] min-h-[64px] px-4 flex items-center justify-center text-base font-semibold transition-colors focus:outline-none"
-                          [class.bg-[#F97316]]="language() === 'en'"
-                          [class.text-white]="language() === 'en'"
-                          [class.bg-white]="language() !== 'en'"
-                          [class.text-[#0F172A]]="language() !== 'en'">
-                    English
-                  </button>
-                  <button (click)="setLanguage('fil')"
-                          class="min-w-[88px] min-h-[64px] px-4 border-l border-[#E5E7EB] flex items-center justify-center text-[15px] font-semibold transition-colors focus:outline-none"
-                          [class.bg-[#F97316]]="language() === 'fil'"
-                          [class.text-white]="language() === 'fil'"
-                          [class.bg-white]="language() !== 'fil'"
-                          [class.text-[#0F172A]]="language() !== 'fil'">
-                    Filipino
-                  </button>
+                <div class="w-16 h-16 sm:w-[68px] sm:h-[68px] rounded-full bg-white border-2 border-[#F97316]/30 shadow-sm overflow-hidden flex items-center justify-center">
+                  <img src="Barangay Logo.png" alt="Barangay San Manuel logo" class="w-full h-full object-cover">
                 </div>
               </div>
 
               <!-- Progress indicator -->
-              <div class="relative z-10 flex items-center justify-center px-4 py-1">
-                <ol class="flex items-center gap-2 sm:gap-3" aria-label="Kiosk progress">
-                  <li class="flex items-center gap-2 sm:gap-3">
-                    <span class="w-11 h-11 rounded-full flex items-center justify-center text-lg font-bold text-white bg-[#F97316] border-2 border-[#F97316] shadow-sm" aria-hidden="true">1</span>
-                    <span class="hidden lg:block text-[16px] font-bold text-[#0F172A] whitespace-nowrap">{{ t('progress.yourInfo') }}</span>
+              <div class="relative z-10 flex items-center justify-center px-4 pb-1">
+                <ol class="flex items-center gap-1.5 sm:gap-2.5" aria-label="Kiosk progress">
+                  <li class="flex items-center gap-1.5 sm:gap-2.5">
+                    <span class="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-base sm:text-lg font-bold text-white bg-[#F97316] border-2 border-[#F97316] shadow-sm" aria-hidden="true">1</span>
+                    <span class="hidden lg:block text-[14px] font-bold text-[#0F172A] whitespace-nowrap">{{ t('progress.yourInfo') }}</span>
                   </li>
-                  <li class="flex items-center gap-2 sm:gap-3" aria-hidden="true">
-                    <span class="w-8 sm:w-12 h-[3px] rounded-full bg-[#E5E7EB]"></span>
-                    <span class="w-11 h-11 rounded-full flex items-center justify-center text-lg font-bold text-[#94A3B8] bg-white border-2 border-[#CBD5E1]">2</span>
-                    <span class="hidden lg:block text-[16px] font-medium text-[#64748B] whitespace-nowrap">{{ t('progress.selectDoc') }}</span>
+                  <li class="flex items-center gap-1.5 sm:gap-2.5" aria-hidden="true">
+                    <span class="w-6 sm:w-10 h-[3px] rounded-full bg-[#E5E7EB]"></span>
+                    <span class="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-base sm:text-lg font-bold text-[#94A3B8] bg-white border-2 border-[#CBD5E1]">2</span>
+                    <span class="hidden lg:block text-[14px] font-medium text-[#64748B] whitespace-nowrap">{{ t('progress.selectDoc') }}</span>
                   </li>
-                  <li class="flex items-center gap-2 sm:gap-3" aria-hidden="true">
-                    <span class="w-8 sm:w-12 h-[3px] rounded-full bg-[#E5E7EB]"></span>
-                    <span class="w-11 h-11 rounded-full flex items-center justify-center text-lg font-bold text-[#94A3B8] bg-white border-2 border-[#CBD5E1]">3</span>
-                    <span class="hidden lg:block text-[16px] font-medium text-[#64748B] whitespace-nowrap">{{ t('progress.review') }}</span>
+                  <li class="flex items-center gap-1.5 sm:gap-2.5" aria-hidden="true">
+                    <span class="w-6 sm:w-10 h-[3px] rounded-full bg-[#E5E7EB]"></span>
+                    <span class="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-base sm:text-lg font-bold text-[#94A3B8] bg-white border-2 border-[#CBD5E1]">3</span>
+                    <span class="hidden lg:block text-[14px] font-medium text-[#64748B] whitespace-nowrap">{{ t('progress.review') }}</span>
                   </li>
-                  <li class="flex items-center gap-2 sm:gap-3" aria-hidden="true">
-                    <span class="w-8 sm:w-12 h-[3px] rounded-full bg-[#E5E7EB]"></span>
-                    <span class="w-11 h-11 rounded-full flex items-center justify-center text-lg font-bold text-[#94A3B8] bg-white border-2 border-[#CBD5E1]">4</span>
-                    <span class="hidden lg:block text-[16px] font-medium text-[#64748B] whitespace-nowrap">{{ t('progress.submit') }}</span>
+                  <li class="flex items-center gap-1.5 sm:gap-2.5" aria-hidden="true">
+                    <span class="w-6 sm:w-10 h-[3px] rounded-full bg-[#E5E7EB]"></span>
+                    <span class="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-base sm:text-lg font-bold text-[#94A3B8] bg-white border-2 border-[#CBD5E1]">4</span>
+                    <span class="hidden lg:block text-[14px] font-medium text-[#64748B] whitespace-nowrap">{{ t('progress.submit') }}</span>
                   </li>
                 </ol>
               </div>
 
               <!-- Main content -->
               <div class="relative flex-1 overflow-y-auto">
-                <div class="min-h-full flex items-center justify-center px-4 sm:px-8 py-5">
+                <div class="min-h-full flex items-center justify-center px-4 sm:px-8 py-4 sm:py-6">
 
-                  <div class="w-full max-w-[800px]">
+                  <div class="w-full max-w-[740px]">
 
                     <!-- Page header -->
-                    <div class="text-center mb-6 sm:mb-8">
-                      <h1 class="text-[clamp(2.25rem,3.2vw,3.25rem)] font-bold tracking-tight text-[#0F172A] leading-tight">{{ t('doc.guestInfo.title') }}</h1>
-                      <p class="text-[clamp(1.125rem,1.3vw,1.375rem)] font-medium text-[#64748B] mt-2">{{ t('doc.guestInfo.desc') }}</p>
+                    <div class="text-center mb-4 sm:mb-6">
+                      <h1 class="text-[clamp(1.625rem,2.8vw,2.375rem)] font-bold tracking-tight text-[#0F172A] leading-tight">{{ t('doc.guestInfo.title') }}</h1>
+                      <p class="text-[clamp(1rem,1.3vw,1.2rem)] font-medium text-[#64748B] mt-1 sm:mt-2">{{ t('doc.guestInfo.desc') }}</p>
                     </div>
 
                     <!-- Form card -->
-                    <div class="bg-white border border-[#E5E7EB] rounded-[20px] shadow-[0_2px_14px_rgba(15,23,42,0.07)] px-6 sm:px-10 py-7 sm:py-9">
-                      <div class="space-y-6">
+                    <div class="bg-white border border-[#E5E7EB] rounded-[20px] shadow-[0_2px_14px_rgba(15,23,42,0.07)] px-5 sm:px-8 py-5 sm:py-7">
+                      <div class="space-y-4 sm:space-y-5">
 
                         <!-- Full Name -->
                         <div>
-                          <label for="guest-fullName" class="block text-[17px] font-semibold text-[#0F172A] mb-2">
+                          <label for="guest-fullName" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
                             {{ t('doc.guestInfo.fullName') }} <span class="text-[#F97316]">*</span>
                           </label>
                           <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
                                [class.border-[#DC2626]]="guestInvalid('fullName')">
-                            <div class="shrink-0 w-16 min-h-[64px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                            <div class="shrink-0 w-12 sm:w-14 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
                               <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                                 <circle cx="12" cy="8" r="4"/>
                                 <path d="M4 20c0-3.6 3.6-5 8-5s8 1.4 8 5" stroke-linecap="round"/>
@@ -748,7 +711,7 @@ export type BarangayStep =
                             </div>
                             <input id="guest-fullName" type="text" name="fullName" [(ngModel)]="guestForm.fullName"
                                    [placeholder]="t('doc.guestInfo.fullNamePh')" autocomplete="name"
-                                   class="flex-1 min-w-0 px-4 py-4 text-lg text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
+                                   class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
                             @if (guestForm.fullName) {
                               <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
@@ -769,12 +732,12 @@ export type BarangayStep =
 
                         <!-- Date of Birth -->
                         <div>
-                          <label for="guest-birthDate" class="block text-[17px] font-semibold text-[#0F172A] mb-2">
+                          <label for="guest-birthDate" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
                             {{ t('doc.guestInfo.birthDate') }} <span class="text-[#F97316]">*</span>
                           </label>
                           <div class="flex items-center rounded-xl border-2 bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
                                [class.border-[#DC2626]]="guestInvalid('birthDate')">
-                            <div class="shrink-0 w-16 min-h-[64px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                            <div class="shrink-0 w-12 sm:w-14 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
                               <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                                 <rect x="3" y="5" width="18" height="16" rx="2"/>
                                 <path d="M8 3v4M16 3v4M3 10h18" stroke-linecap="round"/>
@@ -782,7 +745,7 @@ export type BarangayStep =
                             </div>
                             <input id="guest-birthDate" type="date" name="birthDate" [(ngModel)]="guestForm.birthDate"
                                    [placeholder]="t('doc.guestInfo.birthDatePh')"
-                                   class="flex-1 min-w-0 px-4 py-4 text-lg font-medium text-[#0F172A] bg-transparent outline-none border-none" />
+                                   class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] font-medium text-[#0F172A] bg-transparent outline-none border-none" />
                             @if (guestForm.birthDate) {
                               <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
@@ -803,12 +766,12 @@ export type BarangayStep =
 
                         <!-- Address -->
                         <div>
-                          <label for="guest-address" class="block text-[17px] font-semibold text-[#0F172A] mb-2">
+                          <label for="guest-address" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
                             {{ t('doc.guestInfo.address') }} <span class="text-[#F97316]">*</span>
                           </label>
                           <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
                                [class.border-[#DC2626]]="guestInvalid('address')">
-                            <div class="shrink-0 w-16 min-h-[64px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                            <div class="shrink-0 w-12 sm:w-14 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
                               <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                                 <path d="M12 21s7-5.5 7-11a7 7 0 10-14 0c0 5.5 7 11 7 11z" stroke-linejoin="round"/>
                                 <circle cx="12" cy="10" r="2.5"/>
@@ -816,7 +779,7 @@ export type BarangayStep =
                             </div>
                             <input id="guest-address" type="text" name="address" [(ngModel)]="guestForm.address"
                                    [placeholder]="t('doc.guestInfo.addressPh')" autocomplete="street-address"
-                                   class="flex-1 min-w-0 px-4 py-4 text-lg font-medium text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
+                                   class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] font-medium text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
                             @if (guestForm.address) {
                               <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
@@ -837,19 +800,19 @@ export type BarangayStep =
 
                         <!-- Contact Number -->
                         <div>
-                          <label for="guest-contactNumber" class="block text-[17px] font-semibold text-[#0F172A] mb-2">
+                          <label for="guest-contactNumber" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
                             {{ t('doc.guestInfo.contact') }} <span class="text-[#F97316]">*</span>
                           </label>
                           <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
                                [class.border-[#DC2626]]="guestInvalid('contactNumber')">
-                            <div class="shrink-0 w-16 min-h-[64px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                            <div class="shrink-0 w-12 sm:w-14 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
                               <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                                 <path d="M6.5 5h3l1.6 4-2 1.2a11 11 0 005.7 5.7l1.2-2 4 1.6v3a1.5 1.5 0 01-1.6 1.5A15.5 15.5 0 015 6.6 1.5 1.5 0 016.5 5z" stroke-linejoin="round"/>
                               </svg>
                             </div>
                             <input id="guest-contactNumber" type="tel" name="contactNumber" [(ngModel)]="guestForm.contactNumber"
                                    [placeholder]="t('doc.guestInfo.contactPh')" autocomplete="tel" inputmode="tel"
-                                   class="flex-1 min-w-0 px-4 py-4 text-lg font-medium text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
+                                   class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] font-medium text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
                             @if (guestForm.contactNumber) {
                               <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
@@ -870,11 +833,11 @@ export type BarangayStep =
 
                         <!-- Email (optional) -->
                         <div>
-                          <label for="guest-email" class="block text-[17px] font-semibold text-[#0F172A] mb-2">
+                          <label for="guest-email" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
                             {{ t('doc.guestInfo.email') }}
                           </label>
                           <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden">
-                            <div class="shrink-0 w-16 min-h-[64px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                            <div class="shrink-0 w-12 sm:w-14 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
                               <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                                 <rect x="3" y="5" width="18" height="14" rx="2"/>
                                 <path d="M3.5 7l8.5 6 8.5-6" stroke-linejoin="round"/>
@@ -882,7 +845,7 @@ export type BarangayStep =
                             </div>
                             <input id="guest-email" type="email" name="email" [(ngModel)]="guestForm.email"
                                    [placeholder]="t('doc.guestInfo.emailPh')" autocomplete="email" inputmode="email"
-                                   class="flex-1 min-w-0 px-4 py-4 text-lg font-medium text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
+                                   class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] font-medium text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
                             @if (guestForm.email) {
                               <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
@@ -895,18 +858,18 @@ export type BarangayStep =
                       </div>
 
                       <!-- Form actions -->
-                      <div class="flex items-center justify-between gap-4 mt-8">
+                      <div class="flex items-center justify-between gap-4 mt-5 sm:mt-7">
                         <button (click)="goBack()"
-                                class="flex items-center justify-center gap-2 min-h-[64px] px-8 sm:px-10 rounded-2xl border-2 border-[#F97316] bg-white text-[#0F172A] text-lg font-semibold shadow-sm hover:bg-[#FFF7ED] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30">
-                          <svg class="w-6 h-6 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+                                class="flex items-center justify-center gap-2 min-h-[56px] px-6 sm:px-8 rounded-xl border-2 border-[#F97316] bg-white text-[#0F172A] text-base sm:text-lg font-semibold shadow-sm hover:bg-[#FFF7ED] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30">
+                          <svg class="w-5 h-5 sm:w-6 sm:h-6 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
                           </svg>
                           {{ t('common.back') }}
                         </button>
                         <button (click)="validateGuestForm()"
-                                class="flex items-center justify-center gap-2.5 min-h-[64px] min-w-[200px] sm:min-w-[224px] px-8 rounded-2xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white text-xl font-bold shadow-[0_4px_14px_rgba(249,115,22,0.35)] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40">
+                                class="flex items-center justify-center gap-2.5 min-h-[56px] min-w-[180px] sm:min-w-[200px] px-6 sm:px-8 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white text-lg font-bold shadow-[0_4px_14px_rgba(249,115,22,0.35)] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40">
                           {{ t('common.continue') }}
-                          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+                          <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
                           </svg>
                         </button>
@@ -916,27 +879,76 @@ export type BarangayStep =
                 </div>
               </div>
 
-              <!-- Compact utility footer -->
-              <div class="relative z-10 border-t border-[#E5E7EB] bg-white/95 backdrop-blur-sm">
-                <div class="max-w-5xl mx-auto px-6 flex items-stretch justify-center divide-x divide-[#E5E7EB]">
+              <!-- Footer: same as the kiosk landing page (includes the language selector) -->
+              <div class="relative z-10 border-t border-[#E5E7EB] bg-white/90 backdrop-blur-sm">
+                <div class="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-3 lg:py-4 grid grid-cols-2 md:grid-cols-4 gap-x-6 lg:gap-x-8 gap-y-4 lg:gap-y-5 items-center">
 
-                  <!-- Need Assistance -->
-                  <div class="flex flex-col items-center justify-center gap-1 px-8 sm:px-12 py-4 text-center">
-                    <span class="text-[11px] uppercase tracking-wider font-semibold text-[#64748B]">{{ t('landing.footer.assistance') }}</span>
-                    <span class="text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.assistanceDesc') }}</span>
+                  <!-- Section 1: Language (same as landing) -->
+                  <div class="flex flex-col items-center gap-2 text-center min-w-0">
+                    <div class="flex items-center gap-2 text-[#0F172A]">
+                      <svg class="w-5 h-5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="9"/><path d="M3.6 9h16.8M3.6 15h16.8M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/>
+                      </svg>
+                      <span class="text-sm font-semibold">{{ t('landing.footer.language') }}</span>
+                    </div>
+                    <div class="inline-flex rounded-lg overflow-hidden border border-[#E5E7EB] bg-white shadow-sm min-w-0">
+                      <button
+                        (click)="setLanguage('en')"
+                        class="px-4 sm:px-6 py-2 text-[13px] sm:text-sm font-semibold transition-colors min-h-[40px]"
+                        [class.bg-[#F97316]]="language() === 'en'"
+                        [class.text-white]="language() === 'en'"
+                        [class.bg-white]="language() !== 'en'"
+                        [class.text-[#0F172A]]="language() !== 'en'">
+                        English
+                      </button>
+                      <button
+                        (click)="setLanguage('fil')"
+                        class="px-4 sm:px-6 py-2 text-[13px] sm:text-sm border-l border-[#E5E7EB] font-semibold transition-colors min-h-[40px]"
+                        [class.bg-[#F97316]]="language() === 'fil'"
+                        [class.text-white]="language() === 'fil'"
+                        [class.bg-white]="language() !== 'fil'"
+                        [class.text-[#0F172A]]="language() !== 'fil'">
+                        Filipino
+                      </button>
+                    </div>
                   </div>
 
-                  <!-- Office Hours -->
-                  <div class="flex flex-col items-center justify-center gap-1 px-8 sm:px-12 py-4 text-center">
-                    <span class="text-[11px] uppercase tracking-wider font-semibold text-[#64748B]">{{ t('landing.footer.hours') }}</span>
-                    <span class="text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.monFri') }}</span>
-                    <span class="text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.hoursRange') }}</span>
+                  <!-- Section 2: Need Assistance -->
+                  <div class="flex flex-col items-center gap-1.5 text-center min-w-0">
+                    <svg class="w-6 h-6 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="9"/>
+                      <path d="M9.5 9a2.5 2.5 0 114.6 1.3c-.8 1-1.9 1.7-1.9 3.2" stroke-linecap="round"/>
+                      <path d="M12 17h.01" stroke-linecap="round"/>
+                    </svg>
+                    <div>
+                      <p class="text-[14px] lg:text-[15px] font-semibold text-[#0F172A]">{{ t('landing.footer.assistance') }}</p>
+                      <p class="text-[12px] lg:text-[13px] text-[#64748B]">{{ t('landing.footer.assistanceDesc') }}</p>
+                    </div>
                   </div>
 
-                  <!-- Current Time -->
-                  <div class="flex flex-col items-center justify-center gap-1 px-8 sm:px-12 py-4 text-center">
-                    <span class="text-[11px] uppercase tracking-wider font-semibold text-[#64748B]">{{ t('landing.footer.time') }}</span>
-                    <span class="text-[16px] font-bold text-[#F97316]">{{ formatFooterTime() }}</span>
+                  <!-- Section 3: Office Hours -->
+                  <div class="flex flex-col items-center gap-1.5 text-center min-w-0">
+                    <svg class="w-6 h-6 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="9"/>
+                      <path d="M12 7v5l3 2" stroke-linecap="round"/>
+                    </svg>
+                    <div>
+                      <p class="text-[14px] lg:text-[15px] font-semibold text-[#0F172A]">{{ t('landing.footer.hours') }}</p>
+                      <p class="text-[12px] lg:text-[13px] text-[#64748B]">{{ t('landing.footer.monFri') }}</p>
+                      <p class="text-[12px] lg:text-[13px] text-[#64748B]">{{ t('landing.footer.hoursRange') }}</p>
+                    </div>
+                  </div>
+
+                  <!-- Section 4: Date & Time -->
+                  <div class="flex flex-col items-center gap-1.5 text-center min-w-0">
+                    <svg class="w-6 h-6 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                      <rect x="3" y="5" width="18" height="16" rx="2"/>
+                      <path d="M8 3v4M16 3v4M3 10h18"/>
+                    </svg>
+                    <div class="min-w-0">
+                      <p class="text-[12px] lg:text-[14px] font-medium text-[#64748B] leading-snug">{{ formatFooterDate() }}</p>
+                      <p class="text-lg lg:text-xl font-bold text-[#F97316] leading-tight">{{ formatFooterTime() }}</p>
+                    </div>
                   </div>
                 </div>
               </div>
