@@ -521,3 +521,26 @@ The previous dark style looked dated and relied on heavy blue gradients; the lig
 - Verified: `ng build kiosk-app` clean (budget warning pre-existing); all keys used by the new template exist in `en.ts`/`fil.ts`.
 
 ---
+
+### DEC-020 - Render ID card photos without docxtemplater-image-module
+
+**Status:** Accepted
+**Date:** 2026-08-09
+**Decision Maker(s):** Project Owner
+
+**Decision:**
+The `docxtemplater-image-module` (free v3.1.0) dependency was removed. Barangay ID card photos are now embedded by a small self-contained helper in `id-card.service.js` (`embedPhoto`): the `{{resident_photo}}` tag is normalized and rendered by docxtemplater as a sentinel text token, then the post-render step swaps the token's run for a real `<w:drawing>` element, adding the media part, the `document.xml.rels` relationship, and the `[Content_Types].xml` entry directly on the PizZip object.
+
+**Reason:**
+The free image module is abandoned upstream and is incompatible with `docxtemplater@3.69.3` (newer `scopeManager.getValue` requires a `part` meta argument), crashing with `Cannot read properties of undefined (reading 'part')`. The maintained version is paid. Embedding via PizZip keeps the whole card pipeline on the same free docxtemplater core already used for request documents.
+
+**Alternatives Considered:**
+1. Pin docxtemplater back to ~3.14 - rejected; regresses every other free-docxtemplater feature and forces older transitive behavior for no benefit.
+2. Use the free `docxtemplater-image-module-free` fork - rejected; it targets docxtemplater 3.x but still breaks around 3.32+ (same `part` crash) and is no longer maintained.
+3. Buy the paid image module - rejected; project constraints favor free, reproducible dependencies.
+
+**Consequences:**
+- `backend/package.json` drops `docxtemplater-image-module`; render uses plain `Docxtemplater` + `embedPhoto`.
+- Photo dimensions are read from PNG/JPEG headers and capped at ~480px on the long side to keep official cards compact; images keep their natural aspect.
+- Both `{{%resident_photo}}` and `{{resident_photo}}` template spellings resolve; legacy `%` markers are normalized before render.
+- Verified: live E2E (insert application -> approve -> resident created, ID number `BRGY-YYYY-NNNNNN`, expiry, DOCX generated with embedded photo, name/id/expiry present), backend tests 54/54, ESLint 0 errors.

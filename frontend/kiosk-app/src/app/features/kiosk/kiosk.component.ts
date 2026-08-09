@@ -229,17 +229,20 @@ export type BarangayStep =
               <div class="relative flex-1 overflow-y-auto">
                 <div class="min-h-full flex flex-col items-center justify-center px-4 sm:px-8 py-6 sm:py-10">
 
-                  <!-- Back button (pinned top-left, compact pill: arrow + label) -->
-                  <button (click)="goBack()"
-                          class="fixed top-4 left-4 z-40 flex items-center gap-2 sm:gap-2.5 min-h-[46px] pl-1.5 sm:pl-2 pr-4 sm:pr-5 rounded-full border-2 border-[#F97316]/50 bg-white text-[#0F172A] font-semibold text-[15px] sm:text-base shadow-sm hover:bg-[#FFF7ED] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30"
-                          [attr.aria-label]="t('common.back')">
-                    <span class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#FFF7ED] flex items-center justify-center shrink-0" aria-hidden="true">
-                      <svg class="w-5 h-5 sm:w-6 sm:h-6 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                  <!-- Back button (pinned top-left: circular icon + "Back" text outside) -->
+                  <div class="fixed top-4 left-4 z-40 flex items-center gap-2.5 sm:gap-3">
+                    <button (click)="goBack()"
+                            class="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px] rounded-full border-2 border-[#F97316]/60 bg-white flex items-center justify-center shadow-sm hover:bg-[#FFF7ED] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30"
+                            [attr.aria-label]="t('common.back')">
+                      <svg class="w-6 h-6 sm:w-7 sm:h-7 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
                       </svg>
-                    </span>
-                    <span>{{ t('common.back') }}</span>
-                  </button>
+                    </button>
+                    <button (click)="goBack()"
+                            class="flex items-center min-h-[44px] rounded-xl px-1 text-[#0F172A] font-semibold text-[15px] sm:text-base hover:text-[#F97316] transition-colors focus:outline-none focus:ring-2 focus:ring-[#F97316]/40">
+                      {{ t('common.back') }}
+                    </button>
+                  </div>
 
                   <!-- Centered logo + title -->
                   <div class="text-center mb-8 sm:mb-10 mt-10 sm:mt-6">
@@ -451,17 +454,20 @@ export type BarangayStep =
               </svg>
             </div>
 
-            <!-- Back button (pinned top-left, compact pill: arrow + label) -->
-            <button (click)="goBack()"
-                    class="fixed top-4 left-4 z-40 flex items-center gap-2 sm:gap-2.5 min-h-[46px] pl-1.5 sm:pl-2 pr-4 sm:pr-5 rounded-full border-2 border-[#F97316]/50 bg-white text-[#0F172A] font-semibold text-[15px] sm:text-base shadow-sm hover:bg-[#FFF7ED] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30"
-                    [attr.aria-label]="t('common.back')">
-              <span class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#FFF7ED] flex items-center justify-center shrink-0" aria-hidden="true">
-                <svg class="w-5 h-5 sm:w-6 sm:h-6 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <!-- Back button (pinned top-left: circular icon + "Back" text outside) -->
+            <div class="fixed top-4 left-4 z-40 flex items-center gap-2.5 sm:gap-3">
+              <button (click)="goBack()"
+                      class="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px] rounded-full border-2 border-[#F97316]/60 bg-white flex items-center justify-center shadow-sm hover:bg-[#FFF7ED] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30"
+                      [attr.aria-label]="t('common.back')">
+                <svg class="w-6 h-6 sm:w-7 sm:h-7 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
                 </svg>
-              </span>
-              <span>{{ t('common.back') }}</span>
-            </button>
+              </button>
+              <button (click)="goBack()"
+                      class="flex items-center min-h-[44px] rounded-xl px-1 text-[#0F172A] font-semibold text-[15px] sm:text-base hover:text-[#F97316] transition-colors focus:outline-none focus:ring-2 focus:ring-[#F97316]/40">
+                {{ t('common.back') }}
+              </button>
+            </div>
 
             <!-- Main content -->
             <div class="relative flex-1 overflow-y-auto">
@@ -480,38 +486,38 @@ export type BarangayStep =
                 <div class="flex flex-wrap justify-center items-stretch gap-5 sm:gap-8 lg:gap-10 w-full max-w-6xl mb-5 sm:mb-6">
 
                   <!-- Card 1: Request Documents -->
-                  <button class="group flex items-center gap-4 sm:gap-6 rounded-[18px] border border-[#F97316]/50 bg-white p-5 sm:p-8 shadow-sm hover:shadow-md hover:border-[#F97316] transition-all duration-200 text-left flex-1 min-w-[min(100%,320px)] max-w-[560px]"
+                  <button class="group flex items-center gap-5 lg:gap-8 rounded-[18px] border border-[#F97316]/50 bg-white p-6 lg:p-8 shadow-sm hover:shadow-md hover:border-[#F97316] transition-all duration-200 text-left flex-1 min-w-[min(100%,320px)] max-w-[560px]"
                           (click)="startGuestRequest()">
-                    <div class="shrink-0 w-14 h-14 sm:w-20 sm:h-20 rounded-xl bg-[#FFF7ED] flex items-center justify-center">
-                      <svg class="w-8 h-8 sm:w-12 sm:h-12 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
+                    <div class="shrink-0 w-16 h-16 lg:w-[72px] lg:h-[72px] rounded-xl bg-[#FFF7ED] flex items-center justify-center">
+                      <svg class="w-10 h-10 lg:w-11 lg:h-11 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
                       </svg>
                     </div>
                     <div class="flex-1 min-w-0">
-                      <p class="text-xl sm:text-2xl font-bold text-[#0F172A] leading-snug">{{ t('guest.requestDocs.title') }}</p>
-                      <p class="text-sm sm:text-base text-[#64748B] mt-1.5 leading-snug">{{ t('guest.requestDocs.desc') }}</p>
+                      <p class="text-[clamp(1.25rem,2.4vw,1.625rem)] font-bold text-[#0F172A] pb-2 lg:pb-3 leading-snug">{{ t('guest.requestDocs.title') }}</p>
+                      <p class="text-[clamp(0.95rem,1.6vw,1.125rem)] text-[#64748B] leading-snug font-normal">{{ t('guest.requestDocs.desc') }}</p>
                     </div>
-                    <div class="shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[#F97316] flex items-center justify-center group-hover:bg-[#EA580C] transition-colors">
-                      <svg class="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <div class="shrink-0 w-12 h-12 lg:w-14 lg:h-14 rounded-full bg-[#F97316] flex items-center justify-center shadow-sm group-hover:shadow transition-all ml-1">
+                      <svg class="w-6 h-6 lg:w-7 lg:h-7 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
                       </svg>
                     </div>
                   </button>
 
                   <!-- Card 2: Apply for Barangay ID -->
-                  <button class="group flex items-center gap-4 sm:gap-6 rounded-[18px] border border-[#F97316]/50 bg-white p-5 sm:p-8 shadow-[6px_6px_16px_-8px_rgba(15,23,42,0.12)] hover:shadow-md hover:border-[#F97316] transition-all duration-200 text-left flex-1 min-w-[min(100%,320px)] max-w-[560px]"
+                  <button class="group flex items-center gap-5 lg:gap-8 rounded-[18px] border border-[#F97316]/50 bg-white p-6 lg:p-8 shadow-sm hover:shadow-md hover:border-[#F97316] transition-all duration-200 text-left flex-1 min-w-[min(100%,320px)] max-w-[560px]"
                           (click)="startBarangay()">
-                    <div class="shrink-0 w-14 h-14 sm:w-20 sm:h-20 rounded-xl bg-[#FFF7ED] flex items-center justify-center">
-                      <svg class="w-8 h-8 sm:w-12 sm:h-12 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
+                    <div class="shrink-0 w-16 h-16 lg:w-[72px] lg:h-[72px] rounded-xl bg-[#FFF7ED] flex items-center justify-center">
+                      <svg class="w-10 h-10 lg:w-11 lg:h-11 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5zm6-10.125a1.875 1.875 0 11-3.75 0 1.875 1.875 0 013.75 0zm1.294 6.336a6.721 6.721 0 01-3.17.789 6.721 6.721 0 01-3.168-.789 3.376 3.376 0 016.338 0z"/>
                       </svg>
                     </div>
                     <div class="flex-1 min-w-0">
-                      <p class="text-xl sm:text-2xl font-bold text-[#0F172A] leading-snug">{{ t('guest.applyId.title') }}</p>
-                      <p class="text-sm sm:text-base text-[#64748B] mt-1.5 leading-snug">{{ t('guest.applyId.desc') }}</p>
+                      <p class="text-[clamp(1.25rem,2.4vw,1.625rem)] font-bold text-[#0F172A] pb-2 lg:pb-3 leading-snug">{{ t('guest.applyId.title') }}</p>
+                      <p class="text-[clamp(0.95rem,1.6vw,1.125rem)] text-[#64748B] leading-snug font-normal">{{ t('guest.applyId.desc') }}</p>
                     </div>
-                    <div class="shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[#F97316] flex items-center justify-center group-hover:bg-[#EA580C] transition-colors">
-                      <svg class="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <div class="shrink-0 w-12 h-12 lg:w-14 lg:h-14 rounded-full bg-[#F97316] flex items-center justify-center shadow-sm group-hover:shadow transition-all ml-1">
+                      <svg class="w-6 h-6 lg:w-7 lg:h-7 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
                       </svg>
                     </div>
@@ -642,20 +648,21 @@ export type BarangayStep =
 
               <!-- Top navigation: back (left) + logo (center) -->
               <div class="relative z-10 flex items-center justify-center px-6 pt-[18px] pb-2">
-                <div class="absolute left-4 sm:left-6 top-[26px] z-40">
+                <div class="absolute left-4 sm:left-6 top-[26px] z-40 flex items-center gap-2.5 sm:gap-3">
                   <button (click)="goBack()"
-                          class="flex items-center gap-2 sm:gap-2.5 min-h-[46px] pl-1.5 sm:pl-2 pr-4 sm:pr-5 rounded-full border-2 border-[#F97316]/50 bg-white text-[#0F172A] font-semibold text-[15px] sm:text-base shadow-sm hover:bg-[#FFF7ED] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30"
+                          class="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px] rounded-full border-2 border-[#F97316]/60 bg-white flex items-center justify-center shadow-sm hover:bg-[#FFF7ED] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30"
                           [attr.aria-label]="t('common.back')">
-                    <span class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#FFF7ED] flex items-center justify-center shrink-0" aria-hidden="true">
-                      <svg class="w-5 h-5 sm:w-6 sm:h-6 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-                      </svg>
-                    </span>
-                    <span>{{ t('common.back') }}</span>
+                    <svg class="w-6 h-6 sm:w-7 sm:h-7 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                  </button>
+                  <button (click)="goBack()"
+                          class="flex items-center min-h-[44px] rounded-xl px-1 text-[#0F172A] font-semibold text-[15px] sm:text-base hover:text-[#F97316] transition-colors focus:outline-none focus:ring-2 focus:ring-[#F97316]/40">
+                    {{ t('common.back') }}
                   </button>
                 </div>
 
-                <div class="w-16 h-16 sm:w-[68px] sm:h-[68px] rounded-full bg-white border-2 border-[#F97316]/30 shadow-sm overflow-hidden flex items-center justify-center">
+                <div class="w-[76px] h-[76px] sm:w-[88px] sm:h-[88px] rounded-full bg-white border-2 border-[#F97316]/30 shadow-sm overflow-hidden flex items-center justify-center">
                   <img src="Barangay Logo.png" alt="Barangay San Manuel logo" class="w-full h-full object-cover">
                 </div>
               </div>
@@ -687,19 +694,19 @@ export type BarangayStep =
 
               <!-- Main content -->
               <div class="relative flex-1 overflow-y-auto">
-                <div class="min-h-full flex items-center justify-center px-4 sm:px-8 py-4 sm:py-6">
+                <div class="min-h-full flex items-center justify-center px-5 sm:px-10 py-5 sm:py-8">
 
-                  <div class="w-full max-w-[740px]">
+                  <div class="w-full max-w-[660px]">
 
                     <!-- Page header -->
-                    <div class="text-center mb-4 sm:mb-6">
-                      <h1 class="text-[clamp(1.625rem,2.8vw,2.375rem)] font-bold tracking-tight text-[#0F172A] leading-tight">{{ t('doc.guestInfo.title') }}</h1>
-                      <p class="text-[clamp(1rem,1.3vw,1.2rem)] font-medium text-[#64748B] mt-1 sm:mt-2">{{ t('doc.guestInfo.desc') }}</p>
+                    <div class="text-center mb-5 sm:mb-7">
+                      <h1 class="text-[clamp(1.375rem,2.2vw,2rem)] font-bold tracking-tight text-[#0F172A] leading-tight">{{ t('doc.guestInfo.title') }}</h1>
+                      <p class="text-[clamp(0.925rem,1.1vw,1.075rem)] font-medium text-[#64748B] mt-1.5 sm:mt-2">{{ t('doc.guestInfo.desc') }}</p>
                     </div>
 
                     <!-- Form card -->
-                    <div class="bg-white border border-[#E5E7EB] rounded-[20px] shadow-[0_2px_14px_rgba(15,23,42,0.07)] px-5 sm:px-8 py-5 sm:py-7">
-                      <div class="space-y-4 sm:space-y-5">
+                    <div class="bg-white border border-[#E5E7EB] rounded-[20px] shadow-[0_2px_14px_rgba(15,23,42,0.07)] px-5 sm:px-7 py-5 sm:py-6">
+                      <div class="space-y-3.5 sm:space-y-4">
 
                         <!-- Full Name -->
                         <div>
@@ -863,16 +870,9 @@ export type BarangayStep =
                       </div>
 
                       <!-- Form actions -->
-                      <div class="flex items-center justify-between gap-4 mt-5 sm:mt-7">
-                        <button (click)="goBack()"
-                                class="flex items-center justify-center gap-2 min-h-[56px] px-6 sm:px-8 rounded-xl border-2 border-[#F97316] bg-white text-[#0F172A] text-base sm:text-lg font-semibold shadow-sm hover:bg-[#FFF7ED] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30">
-                          <svg class="w-5 h-5 sm:w-6 sm:h-6 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-                          </svg>
-                          {{ t('common.back') }}
-                        </button>
+                      <div class="flex items-center justify-center mt-5 sm:mt-6">
                         <button (click)="validateGuestForm()"
-                                class="flex items-center justify-center gap-2.5 min-h-[56px] min-w-[180px] sm:min-w-[200px] px-6 sm:px-8 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white text-lg font-bold shadow-[0_4px_14px_rgba(249,115,22,0.35)] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40">
+                                class="flex items-center justify-center gap-2.5 min-h-[56px] min-w-[200px] sm:min-w-[220px] px-6 sm:px-8 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white text-lg font-bold shadow-[0_4px_14px_rgba(249,115,22,0.35)] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40">
                           {{ t('common.continue') }}
                           <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
@@ -1281,41 +1281,225 @@ export type BarangayStep =
 
           <!-- BAR STEP 0: Requirements -->
           @if (barangayStep() === 'requirements') {
-            <div class="absolute inset-0 flex flex-col p-8">
-              <div class="max-w-3xl mx-auto w-full flex-1 flex flex-col">
-                <div class="flex items-center justify-between mb-8">
-                  <h2 class="text-3xl font-bold">{{ t('bar.requirements.title') }}</h2>
-                  <button class="text-blue-300 hover:text-white text-lg" (click)="goBack()">{{ t('common.back') }}</button>
+            <div class="absolute inset-0 bg-[#F8FAFC] text-[#0F172A] select-none overflow-hidden [font-family:'Inter',sans-serif] flex flex-col">
+
+              <!-- Background image (same as the kiosk landing page) -->
+              <div class="absolute inset-0 bg-cover bg-center pointer-events-none" style="background-image: url('Background.png')" aria-hidden="true"></div>
+              <!-- Subtle radial glow keeps the form legible without washing the orange -->
+              <div class="absolute inset-0 pointer-events-none" aria-hidden="true"
+                   style="background: radial-gradient(ellipse 72% 58% at 50% 42%, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0.35) 55%, rgba(255,255,255,0.05) 100%);"></div>
+              <!-- Curved orange header accent (top-left, same as landing) -->
+              <div class="absolute top-0 left-0 w-64 h-40 pointer-events-none" aria-hidden="true">
+                <svg viewBox="0 0 256 160" class="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M0 0 H256 V80 C256 124 220 160 176 160 H0 Z" fill="#F97316" opacity="0.12"/>
+                </svg>
+              </div>
+
+              <!-- Top navigation: back (left) + logo (center) -->
+              <div class="relative z-10 flex items-center justify-center px-6 pt-[18px] pb-2">
+                <div class="absolute left-4 sm:left-6 top-[26px] z-40 flex items-center gap-2.5 sm:gap-3">
+                  <button (click)="goBack()"
+                          class="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px] rounded-full border-2 border-[#F97316]/60 bg-white flex items-center justify-center shadow-sm hover:bg-[#FFF7ED] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30"
+                          [attr.aria-label]="t('common.back')">
+                    <svg class="w-6 h-6 sm:w-7 sm:h-7 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                  </button>
+                  <button (click)="goBack()"
+                          class="flex items-center min-h-[44px] rounded-xl px-1 text-[#0F172A] font-semibold text-[15px] sm:text-base hover:text-[#F97316] transition-colors focus:outline-none focus:ring-2 focus:ring-[#F97316]/40">
+                    {{ t('common.back') }}
+                  </button>
                 </div>
-                <div class="flex-1 overflow-y-auto space-y-6">
-                  <div class="bg-blue-800/50 rounded-xl p-6 backdrop-blur">
-                    <h3 class="text-xl font-bold mb-4">{{ t('bar.requirements.before') }}</h3>
-                    <p class="text-blue-200 mb-6">{{ t('bar.requirements.desc') }}</p>
-                    @if (barangayService()?.requirements && barangayService()!.requirements!.length > 0) {
-                      <div class="mb-6">
-                        <h4 class="font-bold text-lg mb-3 text-blue-100">{{ t('doc.requirements.whatToBring') }}</h4>
-                        <ul class="space-y-2">
-                          @for (req of barangayService()!.requirements!; track req) {
-                            <li class="flex items-start gap-3 bg-blue-900/30 p-3 rounded-lg">
-                              <svg class="w-5 h-5 text-green-300 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                              </svg>
-                              <span class="text-blue-100">{{ req }}</span>
-                            </li>
-                          }
-                        </ul>
+
+                <div class="w-[76px] h-[76px] sm:w-[88px] sm:h-[88px] rounded-full bg-white border-2 border-[#F97316]/30 shadow-sm overflow-hidden flex items-center justify-center">
+                  <img src="Barangay Logo.png" alt="Barangay San Manuel logo" class="w-full h-full object-cover">
+                </div>
+              </div>
+
+              <!-- Progress indicator -->
+              <div class="relative z-10 flex items-center justify-center px-4 pb-1">
+                <ol class="flex items-center gap-1.5 sm:gap-2.5" aria-label="Kiosk progress">
+                  <li class="flex items-center gap-1.5 sm:gap-2.5">
+                    <span class="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-base sm:text-lg font-bold text-white bg-[#F97316] border-2 border-[#F97316] shadow-sm" aria-hidden="true">1</span>
+                    <span class="hidden lg:block text-[14px] font-bold text-[#0F172A] whitespace-nowrap">{{ t('progress.yourInfo') }}</span>
+                  </li>
+                  <li class="flex items-center gap-1.5 sm:gap-2.5" aria-hidden="true">
+                    <span class="w-6 sm:w-10 h-[3px] rounded-full bg-[#E5E7EB]"></span>
+                    <span class="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-base sm:text-lg font-bold text-[#94A3B8] bg-white border-2 border-[#CBD5E1]">2</span>
+                    <span class="hidden lg:block text-[14px] font-medium text-[#64748B] whitespace-nowrap">{{ t('progress.selectDoc') }}</span>
+                  </li>
+                  <li class="flex items-center gap-1.5 sm:gap-2.5" aria-hidden="true">
+                    <span class="w-6 sm:w-10 h-[3px] rounded-full bg-[#E5E7EB]"></span>
+                    <span class="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-base sm:text-lg font-bold text-[#94A3B8] bg-white border-2 border-[#CBD5E1]">3</span>
+                    <span class="hidden lg:block text-[14px] font-medium text-[#64748B] whitespace-nowrap">{{ t('progress.review') }}</span>
+                  </li>
+                  <li class="flex items-center gap-1.5 sm:gap-2.5" aria-hidden="true">
+                    <span class="w-6 sm:w-10 h-[3px] rounded-full bg-[#E5E7EB]"></span>
+                    <span class="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-base sm:text-lg font-bold text-[#94A3B8] bg-white border-2 border-[#CBD5E1]">4</span>
+                    <span class="hidden lg:block text-[14px] font-medium text-[#64748B] whitespace-nowrap">{{ t('progress.submit') }}</span>
+                  </li>
+                </ol>
+              </div>
+
+              <!-- Main content -->
+              <div class="relative flex-1 overflow-y-auto">
+                <div class="min-h-full flex items-center justify-center px-5 sm:px-10 py-5 sm:py-8">
+
+                  <div class="w-full max-w-[780px]">
+
+                    <!-- Page header -->
+                    <div class="text-center mb-5 sm:mb-7">
+                      <h1 class="text-[clamp(1.875rem,3vw,2.625rem)] font-bold tracking-tight text-[#0F172A] leading-tight">{{ t('bar.requirements.title') }}</h1>
+                      <p class="text-[clamp(1rem,1.4vw,1.2rem)] font-medium text-[#64748B] mt-2 sm:mt-3 max-w-2xl mx-auto">{{ t('bar.requirements.desc') }}</p>
+                    </div>
+
+                    <!-- Requirements card -->
+                    <div class="bg-white border border-[#E5E7EB] rounded-[20px] shadow-[0_2px_14px_rgba(15,23,42,0.07)] px-6 sm:px-8 py-6 sm:py-8">
+
+                      <!-- Requirement 1 -->
+                      <div class="flex items-start gap-4 sm:gap-5">
+                        <div class="shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
+                          <svg class="w-6 h-6 sm:w-7 sm:h-7 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>
+                          </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                          <h3 class="text-[clamp(1.125rem,1.6vw,1.375rem)] font-bold text-[#0F172A] leading-tight">{{ t('bar.requirements.req1.title') }}</h3>
+                          <p class="text-[clamp(0.925rem,1.2vw,1.0625rem)] text-[#64748B] mt-1 leading-snug">{{ t('bar.requirements.req1.desc') }}</p>
+                        </div>
                       </div>
-                    }
-                    <div class="bg-blue-900/30 p-4 rounded-lg">
-                      <p class="text-blue-100 text-sm">
-                        <strong>{{ t('bar.requirements.note') }}</strong> {{ t('bar.requirements.noteDesc') }}
-                      </p>
+
+                      <!-- Divider -->
+                      <div class="h-px bg-[#E5E7EB] my-5 sm:my-6"></div>
+
+                      <!-- Requirement 2 -->
+                      <div class="flex items-start gap-4 sm:gap-5">
+                        <div class="shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
+                          <svg class="w-6 h-6 sm:w-7 sm:h-7 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955a1.126 1.126 0 0 1 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H18.375c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/>
+                          </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                          <h3 class="text-[clamp(1.125rem,1.6vw,1.375rem)] font-bold text-[#0F172A] leading-tight">{{ t('bar.requirements.req2.title') }}</h3>
+                          <p class="text-[clamp(0.925rem,1.2vw,1.0625rem)] text-[#64748B] mt-1 leading-snug">{{ t('bar.requirements.req2.desc') }}</p>
+                        </div>
+                      </div>
+
+                      <!-- Divider -->
+                      <div class="h-px bg-[#E5E7EB] my-5 sm:my-6"></div>
+
+                      <!-- Requirement 3 -->
+                      <div class="flex items-start gap-4 sm:gap-5">
+                        <div class="shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
+                          <svg class="w-6 h-6 sm:w-7 sm:h-7 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                            <rect x="3" y="5" width="18" height="14" rx="2" stroke-linejoin="round"/>
+                            <path d="m3.5 7 8.5 6 8.5-6" stroke-linejoin="round"/>
+                          </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                          <h3 class="text-[clamp(1.125rem,1.6vw,1.375rem)] font-bold text-[#0F172A] leading-tight">{{ t('bar.requirements.req3.title') }}</h3>
+                          <p class="text-[clamp(0.925rem,1.2vw,1.0625rem)] text-[#64748B] mt-1 leading-snug">{{ t('bar.requirements.req3.desc') }}</p>
+                        </div>
+                      </div>
+
+                      <!-- Important notice -->
+                      <div class="flex items-start gap-3 rounded-xl bg-[#FFF7ED] border border-[#F97316]/20 px-4 sm:px-5 py-4 mt-6 sm:mt-7">
+                        <svg class="w-6 h-6 sm:w-7 sm:h-7 text-[#F97316] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+                          <circle cx="12" cy="12" r="9"/>
+                          <path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
+                        </svg>
+                        <div class="flex-1 min-w-0">
+                          <p class="text-[15px] sm:text-[16px] font-bold text-[#0F172A]">{{ t('bar.requirements.note') }}</p>
+                          <p class="text-[14px] sm:text-[15px] text-[#64748B] mt-1 leading-snug">{{ t('bar.requirements.noteDesc') }}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Continue button (single primary action, centered) -->
+                    <div class="flex items-center justify-center mt-6 sm:mt-8">
+                      <button (click)="proceedToBarangayForm()"
+                              class="flex items-center justify-center gap-2.5 min-h-[64px] min-w-[240px] sm:min-w-[260px] px-8 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white text-lg sm:text-xl font-bold shadow-[0_4px_14px_rgba(249,115,22,0.35)] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40">
+                        {{ t('common.continue') }}
+                        <svg class="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                        </svg>
+                      </button>
                     </div>
                   </div>
                 </div>
-                <div class="flex gap-4 pt-4 border-t border-blue-700">
-                  <app-button variant="secondary" size="lg" class="flex-1" (onClick)="goBack()">{{ t('common.back') }}</app-button>
-                  <app-button variant="primary" size="lg" class="flex-1" (onClick)="proceedToBarangayForm()">{{ t('common.continue') }}</app-button>
+              </div>
+
+              <!-- Footer: same as the kiosk landing page (includes the language selector) -->
+              <div class="relative z-10 border-t border-[#E5E7EB] bg-white/90 backdrop-blur-sm">
+                <div class="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-1.5 lg:py-2 grid grid-cols-2 md:grid-cols-4 gap-x-6 lg:gap-x-8 gap-y-2 lg:gap-y-3 items-center">
+
+                  <!-- Section 1: Language (same as landing) -->
+                  <div class="flex flex-col items-center gap-1.5 text-center min-w-0">
+                    <div class="flex items-center gap-1.5 text-[#0F172A]">
+                      <svg class="w-[18px] h-[18px] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="9"/><path d="M3.6 9h16.8M3.6 15h16.8M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/>
+                      </svg>
+                      <span class="text-[13px] font-semibold">{{ t('landing.footer.language') }}</span>
+                    </div>
+                    <div class="inline-flex rounded-lg overflow-hidden border border-[#E5E7EB] bg-white shadow-sm min-w-0">
+                      <button
+                        (click)="setLanguage('en')"
+                        class="px-3 sm:px-5 py-1.5 text-[13px] font-semibold transition-colors min-h-[34px]"
+                        [class.bg-[#F97316]]="language() === 'en'"
+                        [class.text-white]="language() === 'en'"
+                        [class.bg-white]="language() !== 'en'"
+                        [class.text-[#0F172A]]="language() !== 'en'">
+                        English
+                      </button>
+                      <button
+                        (click)="setLanguage('fil')"
+                        class="px-3 sm:px-5 py-1.5 text-[13px] border-l border-[#E5E7EB] font-semibold transition-colors min-h-[34px]"
+                        [class.bg-[#F97316]]="language() === 'fil'"
+                        [class.text-white]="language() === 'fil'"
+                        [class.bg-white]="language() !== 'fil'"
+                        [class.text-[#0F172A]]="language() !== 'fil'">
+                        Filipino
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Section 2: Need Assistance -->
+                  <div class="flex flex-col items-center gap-1 text-center min-w-0">
+                    <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="9"/>
+                      <path d="M9.5 9a2.5 2.5 0 114.6 1.3c-.8 1-1.9 1.7-1.9 3.2" stroke-linecap="round"/>
+                      <path d="M12 17h.01" stroke-linecap="round"/>
+                    </svg>
+                    <div>
+                      <p class="text-[13px] lg:text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.assistance') }}</p>
+                      <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.assistanceDesc') }}</p>
+                    </div>
+                  </div>
+
+                  <!-- Section 3: Office Hours -->
+                  <div class="flex flex-col items-center gap-1 text-center min-w-0">
+                    <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="9"/>
+                      <path d="M12 7v5l3 2" stroke-linecap="round"/>
+                    </svg>
+                    <div>
+                      <p class="text-[13px] lg:text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.hours') }}</p>
+                      <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.monFri') }}</p>
+                      <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.hoursRange') }}</p>
+                    </div>
+                  </div>
+
+                  <!-- Section 4: Date & Time -->
+                  <div class="flex flex-col items-center gap-1 text-center min-w-0">
+                    <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                      <rect x="3" y="5" width="18" height="16" rx="2"/>
+                      <path d="M8 3v4M16 3v4M3 10h18"/>
+                    </svg>
+                    <div class="min-w-0">
+                      <p class="text-[11px] lg:text-[12px] font-medium text-[#64748B] leading-snug">{{ formatFooterDate() }}</p>
+                      <p class="text-base lg:text-lg font-bold text-[#F97316] leading-tight">{{ formatFooterTime() }}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

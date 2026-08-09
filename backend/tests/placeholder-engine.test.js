@@ -104,9 +104,22 @@ describe('Placeholder resolution', () => {
     assert.strictEqual(engine.resolve('purpose', ctx, mappings), 'Financial assistance');
   });
 
-  it('falls back to application form fields for unknown tags', () => {
+  it('resolves application form fallback and unknown tags', () => {
     const c = engine.buildContext({ request: { ...request, form_data: { relative_name: 'John Doe' } }, resident, service, barangay, processedBy: '' });
     assert.strictEqual(engine.resolve('relative_name', c, []), 'John Doe');
+  });
+
+  it('resolves Barangay ID fields from an issued application context', () => {
+    const appCtx = engine.buildContext({
+      request: { form_data: { id_number: 'BRGY-2026-000042', id_expiration: '2029-08-06' } },
+      resident,
+      service,
+      barangay,
+      processedBy: '', now: new Date('2026-08-06T10:30:00')
+    });
+    assert.strictEqual(engine.resolve('id_number', appCtx, []), 'BRGY-2026-000042');
+    assert.strictEqual(engine.resolve('id_issued', appCtx, []), 'August 6, 2026');
+    assert.strictEqual(engine.resolve('id_expiration', appCtx, []), 'August 6, 2029');
   });
 
   it('merges _guest identity and resolves guest name and age', () => {

@@ -3,6 +3,7 @@ const residentService = require('../services/resident.service');
 const residentRepository = require('../repositories/resident.repository');
 const notificationService = require('../services/notification.service');
 const sseManager = require('../services/notification-sse');
+const idCardService = require('../services/id-card.service');
 const pool = require('../config/database');
 const fs = require('fs');
 const path = require('path');
@@ -118,15 +119,50 @@ const approveApplication = async (applicationId, userId, remarks) => {
   }
 
   await applicationRepository.updateStatus(applicationId, 'APPROVED', userId, remarks, residentId);
+
+  // Assign the official ID number + issue/expiry dates, then generate the
+  // official ID card (DOCX) and attach it to the application row.
+  const issuedAt = new Date();
+  const validityYears = await getValidityYears();
+  const idNumber = await generateIdNumber();
+  const expirationDate = computeExpirationDate(issuedAt, validityYears);
+  await applicationRepository.recordIdIssuance(applicationId, {
+    idNumber,
+    issuedAt,
+    expirationDate: expirationDate.toISOString().slice(0, 10)
+  });
+
   const updated = await applicationRepository.findById(applicationId);
 
   const resident = await residentRepository.findById(residentId);
+
+  // Generate the ID card DOCX from the barangay's id_template. Failures are
+  // logged but never block the approval itself.
+  try {
+    const barangay = await findBarangay();
+    const processedBy = await findUserName(userId);
+    const card = await idCardService.generateIdCard({
+      application: updated,
+      resident,
+      barangay,
+      processedBy
+    });
+    if (card.success) {
+      await applicationRepository.updateIdCard(applicationId, card.data);
+    } else {
+      console.error(`ID card generation skipped for application #${applicationId}:`, card.message);
+    }
+  } catch (cardError) {
+    console.error(`Failed to generate ID card for application #${applicationId}:`, cardError);
+  }
+
+  const finalApplication = await applicationRepository.findById(applicationId);
 
   try {
     const auditRepository = require('../repositories/audit.repository');
     await auditRepository.log({
       userId,
-      action: `Approved Barangay ID application #${applicationId} -> resident ${residentCode}`,
+      action: `Approved Barangay ID application #${applicationId} -> resident ${residentCode} (ID ${idNumber})`,
       module: 'BarangayID',
       ipAddress: null
     });
@@ -138,10 +174,46 @@ const approveApplication = async (applicationId, userId, remarks) => {
     applicationId,
     applicationNumber: application.application_number,
     residentId,
-    residentCode
+    residentCode,
+    idNumber
   });
 
-  return { success: true, message: 'Application approved and resident created.', data: { application: updated, resident } };
+  return { success: true, message: 'Application approved and resident created.', data: { application: finalApplication, resident } };
+};
+
+const returnApplication = async (applicationId, userId, remarks) => {
+  const application = await applicationRepository.findById(applicationId);
+  if (!application) {
+    return { success: false, message: 'Application not found.' };
+  }
+  if (application.status !== 'PENDING') {
+    return { success: false, message: 'Only pending applications can be returned for correction.' };
+  }
+
+  // Returning keeps the application editable: no resident record is created
+  // and no ID number is consumed. The application stays visible to staff for
+  // later approval or rejection after being corrected by the applicant.
+  await applicationRepository.updateStatus(applicationId, 'RETURNED', userId, remarks);
+  const updated = await applicationRepository.findById(applicationId);
+
+  try {
+    const auditRepository = require('../repositories/audit.repository');
+    await auditRepository.log({
+      userId,
+      action: `Returned Barangay ID application #${applicationId} for correction`,
+      module: 'BarangayID',
+      ipAddress: null
+    });
+  } catch (auditError) {
+    console.error('Failed to create return audit log:', auditError);
+  }
+
+  sseManager.broadcastEvent('application-returned', {
+    applicationId,
+    applicationNumber: application.application_number
+  });
+
+  return { success: true, message: 'Application returned for correction.', data: updated };
 };
 
 const rejectApplication = async (applicationId, userId, remarks) => {
@@ -192,9 +264,75 @@ const saveImage = (base64DataUrl, subdir, prefix) => {
   }
 };
 
+// Official ID number: BRGY-YYYY-NNNNNN (zero-padded, sequential per year).
+// Numbers are only ever assigned at approval, so rejected/returned/reviewed
+// applications never consume a sequence slot.
+const generateIdNumber = async () => {
+  const year = new Date().getFullYear();
+  const last = await applicationRepository.findMaxIdNumber();
+  let next = 1;
+  if (last) {
+    const match = last.match(/BRGY-\d{4}-(\d{6})/);
+    if (match && String(last).startsWith(`BRGY-${year}-`)) {
+      next = parseInt(match[1], 10) + 1;
+    }
+  }
+  return `BRGY-${year}-${String(next).padStart(6, '0')}`;
+};
+
+// Expiry = issue date + id_validity_years (configurable, default 3).
+const getValidityYears = async () => {
+  try {
+    const [rows] = await pool.query(
+      "SELECT setting_value FROM system_settings WHERE setting_key = 'id_validity_years' LIMIT 1"
+    );
+    const years = parseInt(rows[0]?.setting_value, 10);
+    return years > 0 ? years : 3;
+  } catch {
+    return 3;
+  }
+};
+
+// Compute expiry from the issue date, then record ID number + issue/expiry on
+// the application row before the card is generated so the card renders the
+// fresh id_number.
+const computeExpirationDate = (issuedAt, years) => {
+  const d = new Date(issuedAt);
+  d.setFullYear(d.getFullYear() + years);
+  return d;
+};
+
 const getPendingCount = async () => {
   const [rows] = await pool.query("SELECT COUNT(*) AS total FROM barangay_id_applications WHERE status = 'PENDING'");
   return rows[0]?.total || 0;
 };
 
-module.exports = { getAllApplications, getApplicationById, createApplication, approveApplication, rejectApplication, getPendingCount };
+const findBarangay = async (barangayId) => {
+  const [rows] = await pool.query(
+    'SELECT * FROM barangays WHERE barangay_id = ? LIMIT 1',
+    [barangayId || 1]
+  );
+  if (rows[0]) return rows[0];
+  const [fallback] = await pool.query('SELECT * FROM barangays ORDER BY barangay_id ASC LIMIT 1');
+  return fallback[0] || null;
+};
+
+const findUserName = async (userId) => {
+  if (!userId) return '';
+  const [rows] = await pool.query(
+    'SELECT first_name, last_name FROM users WHERE user_id = ? LIMIT 1',
+    [userId]
+  );
+  if (!rows[0]) return '';
+  return [rows[0].first_name, rows[0].last_name].filter(Boolean).join(' ').trim();
+};
+
+module.exports = {
+  getAllApplications,
+  getApplicationById,
+  createApplication,
+  approveApplication,
+  rejectApplication,
+  returnApplication,
+  getPendingCount
+};

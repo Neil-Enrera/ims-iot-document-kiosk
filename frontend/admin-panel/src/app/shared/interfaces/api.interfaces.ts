@@ -209,6 +209,13 @@ export interface BarangayIdApplication {
   reviewed_by: number | null;
   reviewed_at: string | null;
   resident_id: number | null;
+  id_number: string | null;
+  id_issued_at: string | null;
+  id_expiration_date: string | null;
+  id_card_path: string | null;
+  id_card_mime: string | null;
+  id_card_size: number | null;
+  id_card_generated_at: string | null;
   created_at: string;
   updated_at: string;
   reviewed_by_name: string | null;

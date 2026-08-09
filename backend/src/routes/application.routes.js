@@ -10,5 +10,6 @@ router.get('/', authenticate, authorize('Administrator', 'Barangay Secretary'), 
 router.get('/:id', authenticate, authorize('Administrator', 'Barangay Secretary'), applicationController.getById);
 router.post('/:id/approve', authenticate, authorize('Administrator', 'Barangay Secretary', 'Barangay Captain'), ...reviewValidation, validate, applicationController.approve);
 router.post('/:id/reject', authenticate, authorize('Administrator', 'Barangay Secretary', 'Barangay Captain'), ...reviewValidation, validate, applicationController.reject);
+router.post('/:id/return', authenticate, authorize('Administrator', 'Barangay Secretary', 'Barangay Captain'), ...reviewValidation, validate, applicationController.returnForCorrection);
 
 module.exports = router;

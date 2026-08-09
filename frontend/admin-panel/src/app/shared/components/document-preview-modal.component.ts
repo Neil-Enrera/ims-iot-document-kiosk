@@ -8,30 +8,68 @@ import { ModalOverlayComponent } from './modal-overlay.component';
   standalone: true,
   imports: [CommonModule, ModalOverlayComponent],
   template: `
-    <app-modal-overlay 
-      [open]="open" 
-      [title]="title" 
+    <app-modal-overlay
+      [open]="open"
+      [title]="title"
       [closeOnBackdropClick]="true"
+      containerClass="max-w-[min(96vw,1240px)]"
       (onClose)="close()">
-      <div class="p-4 overflow-y-auto bg-gray-100" style="max-height: 70vh;">
-        @if (rendering()) {
-          <div class="text-center py-12 text-sm text-gray-500">Rendering document...</div>
-        }
-        @if (error()) {
-          <div class="text-center py-12 text-sm text-red-600">{{ error() }}</div>
-        }
-        <div #container class="docx-preview-container"></div>
+
+      <div class="h-full flex flex-col min-h-0">
+        <!-- Zoom toolbar -->
+        <div class="flex items-center justify-between gap-2 shrink-0 mb-3">
+          <p class="text-xs text-gray-500">Scroll to review all pages. Use the controls to adjust the size.</p>
+          <div class="flex items-center gap-2" role="toolbar" aria-label="Document zoom controls">
+            <button
+              type="button"
+              (click)="zoomOut()"
+              title="Zoom out"
+              aria-label="Zoom out"
+              class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-300 text-gray-700 text-lg font-semibold bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-40 disabled:cursor-not-allowed"
+              [disabled]="zoom() <= MIN_ZOOM">
+              −
+            </button>
+            <span class="w-14 text-center text-sm font-semibold text-gray-700 tabular-nums">{{ zoomPercent() }}</span>
+            <button
+              type="button"
+              (click)="zoomIn()"
+              title="Zoom in"
+              aria-label="Zoom in"
+              class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-300 text-gray-700 text-lg font-semibold bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-40 disabled:cursor-not-allowed"
+              [disabled]="zoom() >= MAX_ZOOM">
+              +
+            </button>
+            <button
+              type="button"
+              (click)="resetZoom()"
+              title="Fit document to the preview area"
+              aria-label="Fit document to width"
+              class="h-9 px-3 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              Fit Width
+            </button>
+          </div>
+        </div>
+
+        <!-- Scrollable preview area -->
+        <div #scrollArea class="flex-1 min-h-0 overflow-auto rounded-xl bg-gray-100 border border-gray-200 p-3 sm:p-4">
+          <div #previewBox class="w-fit min-w-full mx-auto flex flex-col items-center" [style.zoom]="zoom()">
+            @if (rendering()) {
+              <div class="h-48 w-full flex items-center justify-center text-sm text-gray-500">Rendering document...</div>
+            }
+            @if (error()) {
+              <div class="h-40 w-full flex items-center justify-center text-sm text-red-600 px-4 text-center">{{ error() }}</div>
+            }
+            <div #container class="docx-preview-container w-full"></div>
+          </div>
+        </div>
       </div>
     </app-modal-overlay>
   `,
   styles: [`
     .docx-preview-container {
       background: white;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+      box-shadow: 0 1px 8px rgba(15, 23, 42, 0.18);
       min-height: 200px;
-      padding: 16px;
-      overflow: auto;
-      max-height: 70vh;
     }
   `]
 })
@@ -42,37 +80,45 @@ export class DocumentPreviewModalComponent implements AfterViewChecked, OnChange
   @Input() blobUrl: string | null = null;
   @Output() onClose = new EventEmitter<void>();
 
-  // The container only exists while `open` is true (it lives inside `@if (open)`),
-  // so the query must be dynamic (static: false). A static query is resolved once
-  // at init — when the div is not yet rendered — and never updated, which would
-  // leave the preview permanently blank.
+  readonly MIN_ZOOM = 0.5;
+  readonly MAX_ZOOM = 3;
+
+  // The container only exists while `open` is true, so the query must be dynamic
+  // (static: false). A static query is resolved once at init — when the div is not
+  // yet rendered — and never updated, which would leave the preview blank.
   @ViewChild('container', { static: false }) container!: ElementRef<HTMLDivElement>;
+  @ViewChild('previewBox', { static: false }) previewBox!: ElementRef<HTMLDivElement>;
+  @ViewChild('scrollArea', { static: false }) scrollArea!: ElementRef<HTMLDivElement>;
 
   rendering = signal(false);
   error = signal('');
+  zoom = signal(1);
+
+  private fitRatio = 1;
+  private userAdjusted = false;
 
   private renderedKey: string | Blob | null = null;
 
   // Reset the render state whenever the modal closes or a new document arrives.
   // Closing destroys the container (the @if block) and clears renderedKey, so the
-  // next open re-renders from scratch. Without this, reopening after a close would
-  // skip render() (renderedKey still matches) and show an empty container.
+  // next open re-renders from scratch.
   ngOnChanges(changes: SimpleChanges) {
     if (changes['open'] && !this.open) {
       this.renderedKey = null;
       this.error.set('');
       this.rendering.set(false);
+      this.resetZoomState();
     }
     if (changes['blob'] || changes['blobUrl']) {
       this.renderedKey = null;
+      this.resetZoomState();
     }
   }
 
-  // Runs after every change-detection cycle, i.e. after the `@if (open)` block has
+  // Runs after every change-detection cycle, i.e. after the conditional block has
   // rendered the container div. ngOnChanges cannot be used for the actual render
   // because it fires BEFORE the conditional view is created on the same cycle, so
-  // the container is still unavailable when `open` first becomes true. `render()`
-  // is idempotent via renderedKey, so repeated calls are cheap.
+  // the container is still unavailable on that cycle. render() is idempotent.
   ngAfterViewChecked() {
     if (this.open && this.container?.nativeElement && (this.blob || this.blobUrl)) {
       this.render();
@@ -81,7 +127,33 @@ export class DocumentPreviewModalComponent implements AfterViewChecked, OnChange
 
   close() {
     this.renderedKey = null;
+    this.resetZoomState();
     this.onClose.emit();
+  }
+
+  zoomPercent(): string {
+    return Math.round(this.zoom() * 100) + '%';
+  }
+
+  zoomIn() {
+    this.userAdjusted = true;
+    this.zoom.set(Math.min(this.MAX_ZOOM, this.zoom() * 1.25));
+  }
+
+  zoomOut() {
+    this.userAdjusted = true;
+    this.zoom.set(Math.max(this.MIN_ZOOM, this.zoom() / 1.25));
+  }
+
+  resetZoom() {
+    this.userAdjusted = false;
+    this.fitToWidth();
+  }
+
+  private resetZoomState() {
+    this.zoom.set(1);
+    this.fitRatio = 1;
+    this.userAdjusted = false;
   }
 
   private async render() {
@@ -99,26 +171,83 @@ export class DocumentPreviewModalComponent implements AfterViewChecked, OnChange
     this.error.set('');
     this.rendering.set(true);
     container.innerHTML = '';
+    this.previewBox.nativeElement.style.zoom = '1';
 
     try {
       const blob = await this.loadBlob();
-      if (blob.type === 'application/pdf' || blob.type === 'image/png' || blob.type === 'image/jpeg') {
+      if (blob.type === 'application/pdf') {
         const url = URL.createObjectURL(blob);
         const iframe = document.createElement('iframe');
         iframe.style.width = '100%';
-        iframe.style.height = '600px';
+        iframe.style.height = '80vh';
+        iframe.style.minHeight = '480px';
         iframe.style.border = '0';
+        iframe.style.background = 'white';
         iframe.src = url;
         container.appendChild(iframe);
+      } else if (blob.type === 'image/png' || blob.type === 'image/jpeg') {
+        const url = URL.createObjectURL(blob);
+        const img = document.createElement('img');
+        img.src = url;
+        img.style.maxWidth = '100%';
+        img.style.height = 'auto';
+        img.style.display = 'block';
+        container.appendChild(img);
       } else {
         await renderAsync(blob, container);
       }
       this.rendering.set(false);
+      this.applyInitialZoom();
     } catch (e: any) {
       this.renderedKey = null;
       this.rendering.set(false);
       this.error.set(e?.message || 'Could not render the document preview.');
     }
+  }
+
+  // Size the rendered document so its width fits the available preview area while
+  // keeping readability. Repeated previews reset to the same fit.
+  private applyInitialZoom() {
+    const container = this.container?.nativeElement;
+    const area = this.scrollArea?.nativeElement;
+    if (!container || !area) return;
+
+    const iframe = container.querySelector('iframe');
+    if (iframe) {
+      // PDF/images fill the preview width natively.
+      this.fitRatio = 1;
+      this.zoom.set(1);
+      return;
+    }
+
+    const page = container.querySelector('.docx') as HTMLElement | null;
+    const measured = page?.offsetWidth ?? container.scrollWidth ?? 0;
+    const available = area.clientWidth - 32;
+    if (measured <= 0 || available <= 0) {
+      this.fitRatio = 1;
+      this.zoom.set(1);
+      return;
+    }
+    this.fitRatio = Math.min(this.MAX_ZOOM, Math.max(this.MIN_ZOOM, available / measured));
+    if (!this.userAdjusted) {
+      this.zoom.set(this.fitRatio);
+    }
+  }
+
+  private fitToWidth() {
+    const container = this.container?.nativeElement;
+    const area = this.scrollArea?.nativeElement;
+    if (!container || !area) return;
+    const iframe = container.querySelector('iframe');
+    if (iframe) {
+      this.zoom.set(1);
+      return;
+    }
+    const page = container.querySelector('.docx') as HTMLElement | null;
+    const measured = page?.offsetWidth ?? (container.firstElementChild as HTMLElement | null)?.offsetWidth ?? container.scrollWidth ?? 0;
+    const available = area.clientWidth - 24;
+    const ratio = measured > 0 && available > 0 ? available / measured : 1;
+    this.zoom.set(Math.min(this.MAX_ZOOM, Math.max(this.MIN_ZOOM, ratio)));
   }
 
   private loadBlob(): Promise<Blob> {

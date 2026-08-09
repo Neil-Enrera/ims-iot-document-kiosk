@@ -1,4 +1,5 @@
 import { Component, OnInit, OnDestroy, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { NotificationService } from '../notifications/notification.service';
 import { BarangayIdApplication } from '../../shared/interfaces/api.interfaces';
 import { ApplicationService } from '../../shared/services';
@@ -17,7 +18,7 @@ type ApplicationRow = BarangayIdApplication & { full_name: string };
 @Component({
   selector: 'app-applications',
   standalone: true,
-  imports: [TableComponent, CardComponent, InputComponent, SelectComponent, PaginationComponent, ButtonComponent, ModalComponent, ConfirmDialogComponent],
+  imports: [TableComponent, CardComponent, InputComponent, SelectComponent, PaginationComponent, ButtonComponent, ModalComponent, ConfirmDialogComponent, DatePipe],
   template: `
     <div>
       <div class="flex justify-between items-center mb-6">
@@ -117,9 +118,26 @@ type ApplicationRow = BarangayIdApplication & { full_name: string };
                   class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Notes for this application..."></textarea>
                 <div class="flex justify-end gap-3 mt-4">
+                  <app-button variant="secondary" (onClick)="requestAction('return')">Return for Correction</app-button>
                   <app-button variant="danger" (onClick)="requestAction('reject')">Reject</app-button>
                   <app-button variant="success" (onClick)="requestAction('approve')">Approve</app-button>
                 </div>
+              </div>
+            }
+
+            @if (app.status === 'APPROVED' && app.id_number) {
+              <div class="md:col-span-2 border-t border-gray-200 pt-4 grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+                <div><p class="text-xs uppercase tracking-wide text-gray-500">Barangay ID No.</p><p class="text-gray-800 font-semibold">{{ app.id_number }}</p></div>
+                <div><p class="text-xs uppercase tracking-wide text-gray-500">Issued</p><p class="text-gray-800">{{ app.id_issued_at ? (app.id_issued_at | date: 'mediumDate') : '-' }}</p></div>
+                <div><p class="text-xs uppercase tracking-wide text-gray-500">Expires</p><p class="text-gray-800">{{ app.id_expiration_date ? (app.id_expiration_date | date: 'mediumDate') : '-' }}</p></div>
+                @if (app.id_card_path) {
+                  <div class="sm:col-span-3 flex items-center justify-between">
+                    <p class="text-xs uppercase tracking-wide text-gray-500">Issued ID Card</p>
+                    <a [href]="idCardUrl(app)" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                      {{ app.id_card_mime?.includes('pdf') ? 'Download PDF ID Card' : 'Download DOCX ID Card' }}
+                    </a>
+                  </div>
+                }
               </div>
             }
           </div>
@@ -129,10 +147,10 @@ type ApplicationRow = BarangayIdApplication & { full_name: string };
       <!-- Action Confirmation -->
       <app-confirm-dialog
         [open]="showActionConfirm()"
-        [title]="pendingAction() === 'approve' ? 'Approve Application' : 'Reject Application'"
+        [title]="actionTitle()"
         [message]="actionMessage()"
-        [confirmText]="pendingAction() === 'approve' ? 'Approve' : 'Reject'"
-        [variant]="pendingAction() === 'approve' ? 'primary' : 'danger'"
+        [confirmText]="actionConfirmText()"
+        [variant]="pendingAction() === 'approve' ? 'primary' : (pendingAction() === 'reject' ? 'danger' : 'secondary')"
         (onCancel)="showActionConfirm.set(false)"
         (onConfirm)="confirmAction()"
       />
@@ -156,11 +174,12 @@ export class ApplicationsComponent implements OnInit, OnDestroy {
   saving = signal(false);
 
   showActionConfirm = signal(false);
-  pendingAction = signal<'approve' | 'reject' | null>(null);
+  pendingAction = signal<'approve' | 'reject' | 'return' | null>(null);
 
   statusOptions = [
     { value: '', label: 'All statuses' },
     { value: 'PENDING', label: 'Pending' },
+    { value: 'RETURNED', label: 'Returned' },
     { value: 'APPROVED', label: 'Approved' },
     { value: 'REJECTED', label: 'Rejected' }
   ];
@@ -273,20 +292,45 @@ export class ApplicationsComponent implements OnInit, OnDestroy {
       case 'PENDING': return 'bg-yellow-100 text-yellow-800';
       case 'APPROVED': return 'bg-green-100 text-green-800';
       case 'REJECTED': return 'bg-red-100 text-red-800';
+      case 'RETURNED': return 'bg-blue-100 text-blue-800';
       default: return 'bg-gray-100 text-gray-800';
     }
+  }
+
+  actionTitle(): string {
+    const action = this.pendingAction();
+    if (action === 'approve') return 'Approve Application';
+    if (action === 'reject') return 'Reject Application';
+    if (action === 'return') return 'Return for Correction';
+    return '';
   }
 
   actionMessage(): string {
     const app = this.selected();
     const action = this.pendingAction();
     if (!app || !action) return '';
-    return action === 'approve'
-      ? `Approve application ${app.application_number} for ${app.full_name}? A permanent resident record will be created and the captured photo copied to it.`
-      : `Reject application ${app.application_number} for ${app.full_name}?`;
+    if (action === 'approve') {
+      return `Approve application ${app.application_number} for ${app.full_name}? A permanent resident record will be created, an official Barangay ID number assigned, and the ID card generated.`;
+    }
+    if (action === 'return') {
+      return `Return application ${app.application_number} for ${app.full_name} back for correction? No resident record or ID number will be created; the application can be reviewed again later.`;
+    }
+    return `Reject application ${app.application_number} for ${app.full_name}?`;
   }
 
-  requestAction(action: 'approve' | 'reject') {
+  actionConfirmText(): string {
+    const action = this.pendingAction();
+    if (action === 'approve') return 'Approve';
+    if (action === 'reject') return 'Reject';
+    if (action === 'return') return 'Return';
+    return '';
+  }
+
+  idCardUrl(app: ApplicationRow): string {
+    return app.id_card_path ? `${this.assetBase}/uploads/${app.id_card_path}` : '';
+  }
+
+  requestAction(action: 'approve' | 'reject' | 'return') {
     this.pendingAction.set(action);
     this.showActionConfirm.set(true);
   }
@@ -297,10 +341,12 @@ export class ApplicationsComponent implements OnInit, OnDestroy {
     if (!app || !action) return;
     this.saving.set(true);
     const remarks = this.remarks().trim() || undefined;
-    const obs = action === 'approve'
-      ? this.applicationService.approve(app.application_id, remarks)
-      : this.applicationService.reject(app.application_id, remarks);
-    obs.subscribe({
+    const calls: Record<'approve' | 'reject' | 'return', () => any> = {
+      approve: () => this.applicationService.approve(app.application_id, remarks),
+      reject: () => this.applicationService.reject(app.application_id, remarks),
+      return: () => this.applicationService.returnForCorrection(app.application_id, remarks)
+    };
+    calls[action]().subscribe({
       next: () => {
         this.saving.set(false);
         this.showActionConfirm.set(false);

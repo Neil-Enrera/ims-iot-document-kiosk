@@ -5,7 +5,7 @@ const getAllValidation = [
   query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be 1-100.'),
   query('sortBy').optional().isIn(['application_id', 'application_number', 'first_name', 'last_name', 'status', 'created_at']).withMessage('Invalid sort column.'),
   query('sortOrder').optional().isIn(['ASC', 'DESC']).withMessage('Sort order must be ASC or DESC.'),
-  query('status').optional().isIn(['PENDING', 'APPROVED', 'REJECTED']).withMessage('Invalid status.')
+  query('status').optional().isIn(['PENDING', 'APPROVED', 'REJECTED', 'RETURNED']).withMessage('Invalid status.')
 ];
 
 const reviewValidation = [

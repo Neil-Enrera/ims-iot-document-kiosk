@@ -93,6 +93,35 @@ const updateStatus = async (applicationId, status, reviewedBy, remarks, resident
   return result.affectedRows > 0;
 };
 
+// Record the official ID number and its issue/expiry dates at approval.
+const recordIdIssuance = async (applicationId, { idNumber, issuedAt, expirationDate }) => {
+  const [result] = await pool.query(
+    `UPDATE barangay_id_applications
+     SET id_number = ?, id_issued_at = ?, id_expiration_date = ?
+     WHERE application_id = ?`,
+    [idNumber || null, issuedAt || null, expirationDate || null, applicationId]
+  );
+  return result.affectedRows > 0;
+};
+
+// Persist the generated ID card file link on the application row.
+const updateIdCard = async (applicationId, { filePath, mime, size }) => {
+  const [result] = await pool.query(
+    `UPDATE barangay_id_applications
+     SET id_card_path = ?, id_card_mime = ?, id_card_size = ?, id_card_generated_at = NOW()
+     WHERE application_id = ?`,
+    [filePath || null, mime || null, size || null, applicationId]
+  );
+  return result.affectedRows > 0;
+};
+
+const findMaxIdNumber = async () => {
+  const [rows] = await pool.query(
+    "SELECT id_number FROM barangay_id_applications WHERE id_number IS NOT NULL ORDER BY id_number DESC LIMIT 1"
+  );
+  return rows[0]?.id_number || null;
+};
+
 const generateApplicationNumber = async () => {
   const [rows] = await pool.query(
     "SELECT application_number FROM barangay_id_applications ORDER BY application_id DESC LIMIT 1"
@@ -121,4 +150,4 @@ const parseJsonField = (value) => {
   return value;
 };
 
-module.exports = { findAll, findById, findByNumber, create, updateStatus, generateApplicationNumber };
+module.exports = { findAll, findById, findByNumber, create, updateStatus, recordIdIssuance, updateIdCard, findMaxIdNumber, generateApplicationNumber };

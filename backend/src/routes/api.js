@@ -14,6 +14,7 @@ const notificationRoutes = require('./notification.routes');
 const settingRoutes = require('./setting.routes');
 const kioskRoutes = require('./kiosk.routes');
 const applicationRoutes = require('./application.routes');
+const barangayRoutes = require('./barangay.routes');
 
 router.use(healthRoutes);
 router.use('/auth', authRoutes);
@@ -29,5 +30,6 @@ router.use(notificationRoutes);
 router.use(settingRoutes);
 router.use(kioskRoutes);
 router.use('/applications', applicationRoutes);
+router.use('/barangays', barangayRoutes);
 
 module.exports = router;

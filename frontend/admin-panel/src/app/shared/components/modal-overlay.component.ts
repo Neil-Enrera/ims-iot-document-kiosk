@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, signal, effect, inject } from '@angular/core';
+import { Component, Input, Output, EventEmitter, signal, effect, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -25,7 +25,7 @@ import { CommonModule } from '@angular/common';
         
         <!-- Modal container -->
         <div 
-          class="relative bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden"
+          [class]="'relative bg-white rounded-xl shadow-2xl w-full max-h-[90vh] flex flex-col overflow-hidden ' + containerClass"
           [class.animate-scale-in]="!isClosing()"
           [class.animate-scale-out]="isClosing()"
           (click)="$event.stopPropagation()">
@@ -74,9 +74,10 @@ import { CommonModule } from '@angular/common';
   `]
 })
 export class ModalOverlayComponent {
-  @Input() open = false;
+  open = input(false);
   @Input() title = '';
   @Input() closeOnBackdropClick = true;
+  @Input() containerClass = 'max-w-lg';
   @Output() onClose = new EventEmitter<void>();
   
   isVisible = signal(false);
@@ -86,7 +87,7 @@ export class ModalOverlayComponent {
   
   constructor() {
     effect(() => {
-      if (this.open) {
+      if (this.open()) {
         this.isClosing.set(false);
         this.isVisible.set(true);
       } else if (this.isVisible() && !this.isClosing()) {
