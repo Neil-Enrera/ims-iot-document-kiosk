@@ -114,17 +114,21 @@ interface BarangayProfile {
                       <p class="text-sm text-yellow-800">No template uploaded yet. Upload a <code>.docx</code> to enable Barangay ID generation.</p>
                     </div>
                   }
-
-                  <div class="mt-4 flex items-center gap-3">
-                    <label class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg cursor-pointer hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                      <span>Upload Template</span>
-                      <input type="file" accept=".docx" class="hidden" (change)="onTemplateSelected($event)" [disabled]="uploading()" />
-                    </label>
-                    @if (uploading()) {
-                      <span class="text-sm text-gray-500">Uploading...</span>
-                    }
+                } @else if (profileLoadError()) {
+                  <div class="flex items-center justify-between gap-4 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+                    <p class="text-sm text-red-800">Could not load the current template information. You can still upload — it will replace the barangay's ID card template.</p>
                   </div>
                 }
+
+                <div class="mt-4 flex items-center gap-3">
+                  <label class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg cursor-pointer hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <span>Upload Template</span>
+                    <input type="file" accept=".docx" class="hidden" (change)="onTemplateSelected($event)" [disabled]="uploading()" />
+                  </label>
+                  @if (uploading()) {
+                    <span class="text-sm text-gray-500">Uploading...</span>
+                  }
+                </div>
               </div>
             }
           </app-card>
@@ -146,6 +150,7 @@ export class SettingsComponent implements OnInit {
   barangay = signal<BarangayProfile | null>(null);
   templateLoading = signal(false);
   uploading = signal(false);
+  profileLoadError = signal(false);
   templateNotice = signal('');
   templateNoticeType = signal<'success' | 'error'>('success');
 
@@ -175,6 +180,7 @@ export class SettingsComponent implements OnInit {
 
   loadBarangayProfile() {
     this.templateLoading.set(true);
+    this.profileLoadError.set(false);
     this.barangayService.get().subscribe({
       next: (result: any) => {
         this.barangay.set(result?.data || null);
@@ -182,6 +188,7 @@ export class SettingsComponent implements OnInit {
       },
       error: () => {
         this.barangay.set(null);
+        this.profileLoadError.set(true);
         this.templateLoading.set(false);
       }
     });
