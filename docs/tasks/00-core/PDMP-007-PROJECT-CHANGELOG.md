@@ -62,6 +62,34 @@ Use one of the following categories:
 
 ---
 
+# Version 2.6.0
+
+**Status:** Active Development
+
+**Date:** 2026-08-10
+
+## Added
+
+- **Barangay ID card template management** in Settings → Barangay Profile (Admin Panel): upload a `.docx` ID card template, download the current one, or remove it. Wires the existing `POST/DELETE /barangays/:id/id-template` API into a user-facing control and shows the current template name, size, and a download link.
+- **Issued Barangay ID card preview** in the Applications panel: APPROVED applications with an ID card now show a **Preview** button that renders the generated DOCX inline via the shared `DocumentPreviewModalComponent` (`docx-preview`), next to the existing download link.
+- **Kiosk live ID card preview**: the Barangay ID review step adds a **Preview My ID Card** button. A public `POST /kiosk/barangay-id/preview` endpoint renders the barangay's ID card template with the kiosk's in-progress form data + captured photo/signature (no application row is created) and returns the DOCX buffer; the kiosk displays it in a new `BarangayPreviewModalComponent` (docx-preview) before the applicant submits.
+- `id-card.service` refactored to expose `renderCardBuffer` (renders the template to a DOCX buffer without writing to disk) plus `applicationFromKioskPayload` (maps the kiosk's camelCase form payload to the application row shape). The persisted `generateIdCard` now delegates to the same render pipeline, so preview and production cards are identical.
+- Admin `BarangayService` added to the shared services (`get/uploadIdTemplate/removeIdTemplate`).
+
+**Modules Affected:** Admin Panel, Kiosk, Backend
+
+**Database Changes:** No
+
+**API Changes:** Yes — new public `POST /api/v1/kiosk/barangay-id/preview` (same validation as the create endpoint) returning the rendered ID card DOCX inline.
+
+**Architecture Changes:** No
+
+**Breaking Changes:** No
+
+**Testing Performed:** Backend tests (52/52, incl. 2 new payload-mapping tests), backend lint 0 errors, `tsc --noEmit` clean on both frontend apps, `ng build` passes for kiosk-app and admin-panel, live endpoint check returning a valid DOCX with the photo embedded.
+
+---
+
 # Version 2.5.0
 
 **Status:** Active Development

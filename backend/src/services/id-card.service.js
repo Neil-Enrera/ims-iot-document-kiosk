@@ -227,8 +227,38 @@ const buildContext = async ({ application, resident, barangay, processedBy }) =>
   });
 };
 
-// Render the barangay's ID card DOCX for an approved application.
-const generateIdCard = async ({ application, resident, barangay, processedBy }) => {
+// Resolve an application object built from the kiosk's camelCase form payload
+// (used by the live preview, before the application row exists).
+const applicationFromKioskPayload = (payload) => {
+  const formData = payload.formData || {};
+  return {
+    application_number: 'PREVIEW',
+    first_name: payload.firstName,
+    middle_name: payload.middleName,
+    last_name: payload.lastName,
+    suffix: payload.suffix,
+    birth_date: payload.birthDate,
+    gender: payload.gender,
+    civil_status: payload.civilStatus,
+    occupation: payload.occupation,
+    blood_type: payload.bloodType,
+    address_line: payload.addressLine,
+    contact_number: payload.contactNumber,
+    email: payload.email,
+    emergency_contact_name: payload.emergencyContactName,
+    emergency_contact_number: payload.emergencyContactNumber,
+    photo: payload.photo,
+    signature: payload.signature,
+    id_number: null,
+    id_expiration_date: null,
+    form_data: Object.keys(formData).length ? { ...formData } : JSON.stringify(formData)
+  };
+};
+
+// Render the barangay's ID card template and return the DOCX buffer. No file is
+// written to disk, so both the persisted card generation and the kiosk's live
+// preview can share the exact same rendering pipeline.
+const renderCardBuffer = async ({ application, resident, barangay, processedBy }) => {
   const templatePath = getCardTemplatePath(barangay);
   if (!templatePath) {
     return { success: false, message: 'No official ID card template is configured for this barangay. Upload one in Settings.' };
@@ -292,10 +322,23 @@ const generateIdCard = async ({ application, resident, barangay, processedBy }) 
     return { success: false, message: `Failed to render the ID card template: ${error.message}` };
   }
 
+  return {
+    success: true,
+    message: 'Barangay ID card rendered successfully.',
+    buffer: renderedBuffer,
+    applied
+  };
+};
+
+// Render and persist the completed card for an approved application.
+const generateIdCard = async ({ application, resident, barangay, processedBy }) => {
+  const rendered = await renderCardBuffer({ application, resident, barangay, processedBy });
+  if (!rendered.success) return rendered;
+
   ensureDir();
   const fileName = `APP-${application.application_number}_${Date.now()}.docx`;
   const filePath = `id-cards/${fileName}`;
-  fs.writeFileSync(path.join(ID_CARDS_DIR, fileName), renderedBuffer);
+  fs.writeFileSync(path.join(ID_CARDS_DIR, fileName), rendered.buffer);
 
   return {
     success: true,
@@ -303,14 +346,16 @@ const generateIdCard = async ({ application, resident, barangay, processedBy }) 
     data: {
       filePath,
       mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      size: renderedBuffer.length,
-      unknown: applied.unknown || []
+      size: rendered.buffer.length,
+      unknown: rendered.applied.unknown || []
     }
   };
 };
 
 module.exports = {
   generateIdCard,
+  renderCardBuffer,
+  applicationFromKioskPayload,
   scanTemplateTags,
   getImageSize
 };

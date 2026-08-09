@@ -10,6 +10,7 @@ router.get('/kiosk/residents/:id', controller.getResident);
 router.get('/kiosk/services', controller.getServices);
 router.post('/kiosk/requests', ...createRequestValidation, validate, controller.createRequest);
 router.post('/kiosk/barangay-id', ...barangayIdApplicationValidation, validate, controller.createBarangayIdApplication);
+router.post('/kiosk/barangay-id/preview', ...barangayIdApplicationValidation, validate, controller.previewBarangayId);
 router.post('/kiosk/rfid/verify', ...rfidVerifyValidation, validate, controller.verifyRfid);
 router.get('/kiosk/status-display', controller.getStatusDisplay);
 router.get('/kiosk/hardware/status', controller.getHardwareStatus);

@@ -544,3 +544,28 @@ The free image module is abandoned upstream and is incompatible with `docxtempla
 - Photo dimensions are read from PNG/JPEG headers and capped at ~480px on the long side to keep official cards compact; images keep their natural aspect.
 - Both `{{%resident_photo}}` and `{{resident_photo}}` template spellings resolve; legacy `%` markers are normalized before render.
 - Verified: live E2E (insert application -> approve -> resident created, ID number `BRGY-YYYY-NNNNNN`, expiry, DOCX generated with embedded photo, name/id/expiry present), backend tests 54/54, ESLint 0 errors.
+
+---
+
+### DEC-021 - Reuse the card render pipeline for a no-persist kiosk live preview
+
+**Status:** Accepted
+**Date:** 2026-08-10
+**Decision Maker(s):** Project Owner
+
+**Decision:**
+`id-card.service.js` was split so the DOCX rendering step returns a buffer without writing to disk: `renderCardBuffer({ application, resident, barangay, processedBy })`. The persisted `generateIdCard` now delegates to it, and a new public kiosk endpoint (`POST /kiosk/barangay-id/preview`) calls the same function with an application object built from the kiosk's in-progress form payload (`applicationFromKioskPayload`) — no application row or resident is created — then streams the DOCX back for inline preview via `docx-preview`.
+
+**Reason:**
+Residents wanted to see their official ID card before submitting. Rendering `createBarangayIdApplication` would have persisted a real application on every preview tap. One shared render function guarantees the preview looks exactly like the final approved card (same placeholders, photo embedding, and template), and DRYs away a copy of ~60 lines.
+
+**Alternatives Considered:**
+1. Client-side DOCX templating on the kiosk - rejected; the authoritative template/placeholder engine lives server-side, and duplicating it risks mismatch between preview and the real card.
+2. Reuse `generateIdCard` then delete the file - rejected; writing and unlink-ing a partial card per preview is wasteful and leaves cleanup edge cases.
+3. Preview as static image server-side - rejected; needs a headless Office renderer (extra heavy dependency) for formatting fidelity.
+
+**Consequences:**
+- `renderCardBuffer` returns `{ success, buffer, applied, message }`, handles missing/invalid templates, scans tags, embeds the photo, and normalizes legacy `%` markers — unchanged behavior for the persisted path.
+- Preview has no `id_number`/expiry yet (correct: the ID number is assigned at approval), so those placeholders render blank on the preview card.
+- `applicationFromKioskPayload` maps the kiosk's camelCase body (same `barangayIdApplicationValidation`) onto the application row columns used by `buildContext`.
+- Verified: live `POST /kiosk/barangay-id/preview` returns a valid DOCX with the photo drawing + media part; backend tests 52/52 (2 new mapper tests), lint 0 errors, both frontend `tsc --noEmit` + `ng build` clean.

@@ -275,3 +275,22 @@ export class AuditService {
     return this.api.getList<AuditLog>('/audit-logs', params);
   }
 }
+
+@Injectable({ providedIn: 'root' })
+export class BarangayService {
+  constructor(private api: ApiService) {}
+
+  get(id = 1) {
+    return this.api.get<any>(`/barangays/${id}`);
+  }
+
+  uploadIdTemplate(id: number, file: File) {
+    const formData = new FormData();
+    formData.append('template', file);
+    return this.api.post<any>(`/barangays/${id}/id-template`, formData);
+  }
+
+  removeIdTemplate(id: number) {
+    return this.api.delete<any>(`/barangays/${id}/id-template`);
+  }
+}

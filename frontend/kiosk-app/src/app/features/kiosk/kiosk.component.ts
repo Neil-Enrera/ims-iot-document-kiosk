@@ -7,6 +7,7 @@ import { RfidScanService } from './rfid-scan.service';
 import { KioskStateService, KioskState } from './kiosk-state.service';
 import { ButtonComponent } from './button.component';
 import { SignaturePadComponent } from './signature-pad.component';
+import { BarangayPreviewModalComponent } from './barangay-preview-modal.component';
 import { TranslationService, KioskLanguage } from '../../i18n/translation.service';
 
 export type KioskMode = 'home' | 'rfid' | 'guest' | 'documents' | 'barangay';
@@ -37,7 +38,7 @@ export type BarangayStep =
 @Component({
   selector: 'app-kiosk',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonComponent, SignaturePadComponent],
+  imports: [CommonModule, FormsModule, ButtonComponent, SignaturePadComponent, BarangayPreviewModalComponent],
   template: `
     <div class="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 text-white select-none flex">
 
@@ -1751,6 +1752,11 @@ export type BarangayStep =
                   <app-button variant="secondary" size="lg" class="flex-1" (onClick)="goBack()">{{ t('common.back') }}</app-button>
                   <app-button variant="primary" size="lg" class="flex-1" (onClick)="submitBarangay()" [loading]="submitting()">{{ t('bar.review.submit') }}</app-button>
                 </div>
+                <div class="mt-4">
+                  <app-button variant="success" size="lg" class="w-full" (onClick)="previewBarangayId()" [loading]="previewing()">
+                    {{ t('bar.review.preview') }}
+                  </app-button>
+                </div>
                 @if (errorMessage()) {
                   <div class="mt-6 bg-red-500/20 border border-red-400 rounded-xl p-4">
                     <p class="text-red-200">{{ errorMessage() }}</p>
@@ -1779,6 +1785,8 @@ export type BarangayStep =
             </div>
           }
         }
+
+        <app-barangay-preview-modal [open]="showPreview()" [title]="t('bar.preview.title')" [blob]="previewBlob()" (onClose)="closePreview()" />
       </div>
     </div>
   `
@@ -1812,6 +1820,9 @@ export class KioskComponent implements OnInit, OnDestroy {
   formError = signal('');
   guestSubmitted = signal(false);
   submitting = signal(false);
+  previewing = signal(false);
+  showPreview = signal(false);
+  previewBlob = signal<Blob | null>(null);
   searchResults = signal<any[]>([]);
   searching = signal(false);
   searchQuery = '';
@@ -2560,6 +2571,61 @@ export class KioskComponent implements OnInit, OnDestroy {
         this.saveState();
       }
     });
+  }
+
+  // Live preview: render the barangay's official ID card template with the kiosk's
+  // in-progress form data (no application is created) and show it in the modal.
+  previewBarangayId() {
+    if (this.previewing()) return;
+    this.previewing.set(true);
+    this.previewBlob.set(null);
+
+    this.kioskService.previewBarangayId({
+      firstName: this.barangayForm.firstName.trim(),
+      middleName: this.barangayForm.middleName.trim() || undefined,
+      lastName: this.barangayForm.lastName.trim(),
+      suffix: this.barangayForm.suffix || undefined,
+      birthDate: this.barangayForm.birthDate || undefined,
+      gender: this.barangayForm.gender || undefined,
+      civilStatus: this.barangayForm.civilStatus || undefined,
+      occupation: this.barangayForm.occupation.trim() || undefined,
+      bloodType: this.barangayForm.bloodType || undefined,
+      addressLine: this.barangayForm.addressLine.trim(),
+      contactNumber: this.barangayForm.contactNumber.trim() || undefined,
+      email: this.barangayForm.email.trim() || undefined,
+      emergencyContactName: this.barangayForm.emergencyContactName.trim(),
+      emergencyContactNumber: this.barangayForm.emergencyContactNumber.trim(),
+      photo: this.capturedPhoto() || undefined,
+      signature: this.capturedSignature() || undefined
+    }).subscribe({
+      next: (blob) => {
+        this.previewing.set(false);
+        this.previewBlob.set(blob);
+        this.showPreview.set(true);
+      },
+      error: (err: any) => {
+        this.previewing.set(false);
+        const fallback = this.t('bar.preview.error');
+        if (err?.error instanceof Blob) {
+          err.error.text().then((text: string) => {
+            let msg = fallback;
+            try {
+              const parsed = JSON.parse(text);
+              msg = parsed?.message || fallback;
+            } catch { /* ignore non-JSON error bodies */ }
+            this.errorMessage.set(msg);
+          });
+        } else {
+          this.errorMessage.set(err?.error?.message || fallback);
+        }
+        console.error('Barangay ID preview error:', err);
+      }
+    });
+  }
+
+  closePreview() {
+    this.showPreview.set(false);
+    this.previewBlob.set(null);
   }
 
   // ============================================================

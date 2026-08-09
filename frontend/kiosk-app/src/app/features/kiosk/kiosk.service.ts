@@ -189,6 +189,28 @@ export class KioskService {
     return this.http.post<ApiResponse<BarangayIdApplication>>(`${this.apiUrl}/kiosk/barangay-id`, data);
   }
 
+  previewBarangayId(data: {
+    firstName: string;
+    middleName?: string;
+    lastName: string;
+    suffix?: string;
+    birthDate?: string;
+    gender?: string;
+    civilStatus?: string;
+    occupation?: string;
+    bloodType?: string;
+    addressLine: string;
+    contactNumber?: string;
+    email?: string;
+    emergencyContactName?: string;
+    emergencyContactNumber?: string;
+    photo?: string;
+    signature?: string;
+    formData?: Record<string, unknown>;
+  }): Observable<Blob> {
+    return this.http.post(`${this.apiUrl}/kiosk/barangay-id/preview`, data, { responseType: 'blob' });
+  }
+
   verifyRfid(rfidUid: string): Observable<ApiResponse<RfidVerifyResult>> {
     return this.http.post<ApiResponse<RfidVerifyResult>>(`${this.apiUrl}/kiosk/rfid/verify`, { rfidUid });
   }

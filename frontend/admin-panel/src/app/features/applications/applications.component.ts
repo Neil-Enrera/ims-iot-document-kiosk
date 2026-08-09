@@ -11,6 +11,7 @@ import { PaginationComponent } from '../../shared/components/pagination.componen
 import { ButtonComponent } from '../../shared/components/button.component';
 import { ModalComponent } from '../../shared/components/modal.component';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.component';
+import { DocumentPreviewModalComponent } from '../../shared/components/document-preview-modal.component';
 import { environment } from '../../../environments/environment';
 
 type ApplicationRow = BarangayIdApplication & { full_name: string };
@@ -18,7 +19,7 @@ type ApplicationRow = BarangayIdApplication & { full_name: string };
 @Component({
   selector: 'app-applications',
   standalone: true,
-  imports: [TableComponent, CardComponent, InputComponent, SelectComponent, PaginationComponent, ButtonComponent, ModalComponent, ConfirmDialogComponent, DatePipe],
+  imports: [TableComponent, CardComponent, InputComponent, SelectComponent, PaginationComponent, ButtonComponent, ModalComponent, ConfirmDialogComponent, DocumentPreviewModalComponent, DatePipe],
   template: `
     <div>
       <div class="flex justify-between items-center mb-6">
@@ -133,9 +134,12 @@ type ApplicationRow = BarangayIdApplication & { full_name: string };
                 @if (app.id_card_path) {
                   <div class="sm:col-span-3 flex items-center justify-between">
                     <p class="text-xs uppercase tracking-wide text-gray-500">Issued ID Card</p>
-                    <a [href]="idCardUrl(app)" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                      {{ app.id_card_mime?.includes('pdf') ? 'Download PDF ID Card' : 'Download DOCX ID Card' }}
-                    </a>
+                    <div class="flex items-center gap-3">
+                      <button type="button" (click)="previewIdCard(app)" class="text-blue-600 hover:text-blue-800 text-sm font-medium">Preview</button>
+                      <a [href]="idCardUrl(app)" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                        {{ app.id_card_mime?.includes('pdf') ? 'Download PDF ID Card' : 'Download DOCX ID Card' }}
+                      </a>
+                    </div>
                   </div>
                 }
               </div>
@@ -150,9 +154,17 @@ type ApplicationRow = BarangayIdApplication & { full_name: string };
         [title]="actionTitle()"
         [message]="actionMessage()"
         [confirmText]="actionConfirmText()"
-        [variant]="pendingAction() === 'approve' ? 'primary' : (pendingAction() === 'reject' ? 'danger' : 'secondary')"
+        [variant]="pendingAction() === 'approve' ? 'primary' : 'danger'"
         (onCancel)="showActionConfirm.set(false)"
         (onConfirm)="confirmAction()"
+      />
+
+      <!-- Issued ID Card Preview -->
+      <app-document-preview-modal
+        [open]="showCardPreview()"
+        [title]="cardPreviewTitle()"
+        [blobUrl]="cardPreviewUrl()"
+        (onClose)="showCardPreview.set(false)"
       />
     </div>
   `
@@ -175,6 +187,10 @@ export class ApplicationsComponent implements OnInit, OnDestroy {
 
   showActionConfirm = signal(false);
   pendingAction = signal<'approve' | 'reject' | 'return' | null>(null);
+
+  showCardPreview = signal(false);
+  cardPreviewTitle = signal('Barangay ID Card');
+  cardPreviewUrl = signal<string | null>(null);
 
   statusOptions = [
     { value: '', label: 'All statuses' },
@@ -330,6 +346,12 @@ export class ApplicationsComponent implements OnInit, OnDestroy {
     return app.id_card_path ? `${this.assetBase}/uploads/${app.id_card_path}` : '';
   }
 
+  previewIdCard(app: ApplicationRow) {
+    this.cardPreviewTitle.set(`${app.full_name} — Barangay ID (${app.id_number})`);
+    this.cardPreviewUrl.set(this.idCardUrl(app));
+    this.showCardPreview.set(true);
+  }
+
   requestAction(action: 'approve' | 'reject' | 'return') {
     this.pendingAction.set(action);
     this.showActionConfirm.set(true);
@@ -353,7 +375,7 @@ export class ApplicationsComponent implements OnInit, OnDestroy {
         this.closeDetail();
         this.loadApplications();
       },
-      error: (err) => {
+      error: (err: any) => {
         this.saving.set(false);
         this.showActionConfirm.set(false);
         alert(err.error?.message || 'Action failed.');

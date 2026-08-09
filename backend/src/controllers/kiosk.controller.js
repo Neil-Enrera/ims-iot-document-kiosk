@@ -5,6 +5,8 @@ const rfidService = require('../services/rfid.service');
 const auditRepository = require('../repositories/audit.repository');
 const notificationService = require('../services/notification.service');
 const sseManager = require('../services/notification-sse');
+const idCardService = require('../services/id-card.service');
+const { findBarangay } = require('../services/barangay.service');
 const { successResponse, errorResponse, createdResponse } = require('../utils/apiResponse');
 const pool = require('../config/database');
 const fs = require('fs');
@@ -190,6 +192,36 @@ const createBarangayIdApplication = async (req, res) => {
     });
   } catch (error) {
     console.error('Kiosk createBarangayIdApplication error:', error);
+    return errorResponse(res, 500, 'Internal server error.');
+  }
+};
+
+// Public live preview: renders the barangay's ID card template with the kiosk's
+// in-progress form data (no application row is created) so the applicant can
+// review their card before submitting. Returns the DOCX buffer directly.
+const previewBarangayId = async (req, res) => {
+  try {
+    const barangay = await findBarangay();
+    if (!barangay) return errorResponse(res, 404, 'Barangay profile not found.');
+
+    const application = idCardService.applicationFromKioskPayload(req.body || {});
+    const rendered = await idCardService.renderCardBuffer({
+      application,
+      resident: {},
+      barangay,
+      processedBy: 'PREVIEW'
+    });
+
+    if (!rendered.success) return errorResponse(res, 400, rendered.message);
+
+    res.set({
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'Content-Disposition': 'inline; filename="barangay-id-preview.docx"',
+      'Cache-Control': 'no-store'
+    });
+    return res.send(rendered.buffer);
+  } catch (error) {
+    console.error('Kiosk previewBarangayId error:', error);
     return errorResponse(res, 500, 'Internal server error.');
   }
 };
@@ -386,4 +418,4 @@ const getHardwareStatus = async (req, res) => {
   }
 };
 
-module.exports = { searchResidents, getResident, getServices, createRequest, createBarangayIdApplication, verifyRfid, getStatusDisplay, getHardwareStatus };
+module.exports = { searchResidents, getResident, getServices, createRequest, createBarangayIdApplication, previewBarangayId, verifyRfid, getStatusDisplay, getHardwareStatus };

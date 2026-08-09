@@ -50,3 +50,50 @@ describe('ID card template tag scan', () => {
     assert.deepStrictEqual(idCard.scanTemplateTags(path.join(os.tmpdir(), 'does-not-exist.docx')), []);
   });
 });
+
+describe('ID card kiosk payload mapping', () => {
+  it('maps camelCase form payload to the application row shape', () => {
+    const application = idCard.applicationFromKioskPayload({
+      firstName: 'Juan',
+      middleName: 'Santos',
+      lastName: 'Dela Cruz',
+      gender: 'Male',
+      civilStatus: 'Single',
+      birthDate: '1995-06-15',
+      occupation: 'Student',
+      bloodType: 'O+',
+      addressLine: '123 Mabini St',
+      contactNumber: '09123456789',
+      emergencyContactName: 'Maria Dela Cruz',
+      photo: 'data:image/png;base64,xx',
+      formData: { first_name: 'Juan', last_name: 'Dela Cruz' }
+    });
+    assert.strictEqual(application.first_name, 'Juan');
+    assert.strictEqual(application.last_name, 'Dela Cruz');
+    assert.strictEqual(application.middle_name, 'Santos');
+    assert.strictEqual(application.birth_date, '1995-06-15');
+    assert.strictEqual(application.gender, 'Male');
+    assert.strictEqual(application.civil_status, 'Single');
+    assert.strictEqual(application.occupation, 'Student');
+    assert.strictEqual(application.blood_type, 'O+');
+    assert.strictEqual(application.address_line, '123 Mabini St');
+    assert.strictEqual(application.contact_number, '09123456789');
+    assert.strictEqual(application.emergency_contact_name, 'Maria Dela Cruz');
+    assert.strictEqual(application.photo, 'data:image/png;base64,xx');
+    assert.deepStrictEqual(application.form_data, { first_name: 'Juan', last_name: 'Dela Cruz' });
+    assert.strictEqual(application.id_number, null);
+    assert.strictEqual(application.id_expiration_date, null);
+    assert.strictEqual(application.application_number, 'PREVIEW');
+  });
+
+  it('keeps empty fields as undefined and stringifies empty form data', () => {
+    const application = idCard.applicationFromKioskPayload({
+      firstName: 'Juan',
+      lastName: 'Dela Cruz',
+      addressLine: '123 Mabini St'
+    });
+    assert.strictEqual(application.middle_name, undefined);
+    assert.strictEqual(application.emergency_contact_number, undefined);
+    assert.strictEqual(application.form_data, '{}');
+  });
+});
