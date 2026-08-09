@@ -881,20 +881,20 @@ export type BarangayStep =
 
               <!-- Footer: same as the kiosk landing page (includes the language selector) -->
               <div class="relative z-10 border-t border-[#E5E7EB] bg-white/90 backdrop-blur-sm">
-                <div class="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-3 lg:py-4 grid grid-cols-2 md:grid-cols-4 gap-x-6 lg:gap-x-8 gap-y-4 lg:gap-y-5 items-center">
+                <div class="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-1.5 lg:py-2 grid grid-cols-2 md:grid-cols-4 gap-x-6 lg:gap-x-8 gap-y-2 lg:gap-y-3 items-center">
 
                   <!-- Section 1: Language (same as landing) -->
-                  <div class="flex flex-col items-center gap-2 text-center min-w-0">
-                    <div class="flex items-center gap-2 text-[#0F172A]">
-                      <svg class="w-5 h-5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                  <div class="flex flex-col items-center gap-1.5 text-center min-w-0">
+                    <div class="flex items-center gap-1.5 text-[#0F172A]">
+                      <svg class="w-[18px] h-[18px] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                         <circle cx="12" cy="12" r="9"/><path d="M3.6 9h16.8M3.6 15h16.8M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/>
                       </svg>
-                      <span class="text-sm font-semibold">{{ t('landing.footer.language') }}</span>
+                      <span class="text-[13px] font-semibold">{{ t('landing.footer.language') }}</span>
                     </div>
                     <div class="inline-flex rounded-lg overflow-hidden border border-[#E5E7EB] bg-white shadow-sm min-w-0">
                       <button
                         (click)="setLanguage('en')"
-                        class="px-4 sm:px-6 py-2 text-[13px] sm:text-sm font-semibold transition-colors min-h-[40px]"
+                        class="px-3 sm:px-5 py-1.5 text-[13px] font-semibold transition-colors min-h-[34px]"
                         [class.bg-[#F97316]]="language() === 'en'"
                         [class.text-white]="language() === 'en'"
                         [class.bg-white]="language() !== 'en'"
@@ -903,7 +903,7 @@ export type BarangayStep =
                       </button>
                       <button
                         (click)="setLanguage('fil')"
-                        class="px-4 sm:px-6 py-2 text-[13px] sm:text-sm border-l border-[#E5E7EB] font-semibold transition-colors min-h-[40px]"
+                        class="px-3 sm:px-5 py-1.5 text-[13px] border-l border-[#E5E7EB] font-semibold transition-colors min-h-[34px]"
                         [class.bg-[#F97316]]="language() === 'fil'"
                         [class.text-white]="language() === 'fil'"
                         [class.bg-white]="language() !== 'fil'"
@@ -914,40 +914,40 @@ export type BarangayStep =
                   </div>
 
                   <!-- Section 2: Need Assistance -->
-                  <div class="flex flex-col items-center gap-1.5 text-center min-w-0">
-                    <svg class="w-6 h-6 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                  <div class="flex flex-col items-center gap-1 text-center min-w-0">
+                    <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                       <circle cx="12" cy="12" r="9"/>
                       <path d="M9.5 9a2.5 2.5 0 114.6 1.3c-.8 1-1.9 1.7-1.9 3.2" stroke-linecap="round"/>
                       <path d="M12 17h.01" stroke-linecap="round"/>
                     </svg>
                     <div>
-                      <p class="text-[14px] lg:text-[15px] font-semibold text-[#0F172A]">{{ t('landing.footer.assistance') }}</p>
-                      <p class="text-[12px] lg:text-[13px] text-[#64748B]">{{ t('landing.footer.assistanceDesc') }}</p>
+                      <p class="text-[13px] lg:text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.assistance') }}</p>
+                      <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.assistanceDesc') }}</p>
                     </div>
                   </div>
 
                   <!-- Section 3: Office Hours -->
-                  <div class="flex flex-col items-center gap-1.5 text-center min-w-0">
-                    <svg class="w-6 h-6 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                  <div class="flex flex-col items-center gap-1 text-center min-w-0">
+                    <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                       <circle cx="12" cy="12" r="9"/>
                       <path d="M12 7v5l3 2" stroke-linecap="round"/>
                     </svg>
                     <div>
-                      <p class="text-[14px] lg:text-[15px] font-semibold text-[#0F172A]">{{ t('landing.footer.hours') }}</p>
-                      <p class="text-[12px] lg:text-[13px] text-[#64748B]">{{ t('landing.footer.monFri') }}</p>
-                      <p class="text-[12px] lg:text-[13px] text-[#64748B]">{{ t('landing.footer.hoursRange') }}</p>
+                      <p class="text-[13px] lg:text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.hours') }}</p>
+                      <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.monFri') }}</p>
+                      <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.hoursRange') }}</p>
                     </div>
                   </div>
 
                   <!-- Section 4: Date & Time -->
-                  <div class="flex flex-col items-center gap-1.5 text-center min-w-0">
-                    <svg class="w-6 h-6 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                  <div class="flex flex-col items-center gap-1 text-center min-w-0">
+                    <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                       <rect x="3" y="5" width="18" height="16" rx="2"/>
                       <path d="M8 3v4M16 3v4M3 10h18"/>
                     </svg>
                     <div class="min-w-0">
-                      <p class="text-[12px] lg:text-[14px] font-medium text-[#64748B] leading-snug">{{ formatFooterDate() }}</p>
-                      <p class="text-lg lg:text-xl font-bold text-[#F97316] leading-tight">{{ formatFooterTime() }}</p>
+                      <p class="text-[11px] lg:text-[12px] font-medium text-[#64748B] leading-snug">{{ formatFooterDate() }}</p>
+                      <p class="text-base lg:text-lg font-bold text-[#F97316] leading-tight">{{ formatFooterTime() }}</p>
                     </div>
                   </div>
                 </div>
