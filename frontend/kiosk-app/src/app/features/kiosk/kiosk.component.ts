@@ -133,20 +133,20 @@ export type BarangayStep =
 
             <!-- Footer -->
             <div class="relative border-t border-[#E5E7EB] bg-white/90 backdrop-blur-sm">
-              <div class="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-6 lg:py-7 grid grid-cols-2 md:grid-cols-4 gap-x-6 lg:gap-x-8 gap-y-6 items-center">
+              <div class="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-1.5 lg:py-2 grid grid-cols-2 md:grid-cols-4 gap-x-6 lg:gap-x-8 gap-y-2 lg:gap-y-3 items-center">
 
                 <!-- Section 1: Language -->
-                <div class="flex flex-col items-center gap-3 text-center min-w-0">
-                  <div class="flex items-center gap-2 text-[#0F172A]">
-                    <svg class="w-5 h-5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                <div class="flex flex-col items-center gap-1.5 text-center min-w-0">
+                  <div class="flex items-center gap-1.5 text-[#0F172A]">
+                    <svg class="w-[18px] h-[18px] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                       <circle cx="12" cy="12" r="9"/><path d="M3.6 9h16.8M3.6 15h16.8M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/>
                     </svg>
-                    <span class="text-sm font-semibold">{{ t('landing.footer.language') }}</span>
+                    <span class="text-[13px] font-semibold">{{ t('landing.footer.language') }}</span>
                   </div>
                   <div class="inline-flex rounded-lg overflow-hidden border border-[#E5E7EB] bg-white shadow-sm min-w-0">
                     <button
                       (click)="setLanguage('en')"
-                      class="px-4 sm:px-6 py-2 text-[13px] sm:text-sm font-semibold transition-colors min-h-[40px]"
+                      class="px-3 sm:px-5 py-1.5 text-[13px] font-semibold transition-colors min-h-[34px]"
                       [class.bg-[#F97316]]="language() === 'en'"
                       [class.text-white]="language() === 'en'"
                       [class.bg-white]="language() !== 'en'"
@@ -155,7 +155,7 @@ export type BarangayStep =
                     </button>
                     <button
                       (click)="setLanguage('fil')"
-                      class="px-4 sm:px-6 py-2 text-[13px] sm:text-sm border-l border-[#E5E7EB] font-semibold transition-colors min-h-[40px]"
+                      class="px-3 sm:px-5 py-1.5 text-[13px] border-l border-[#E5E7EB] font-semibold transition-colors min-h-[34px]"
                       [class.bg-[#F97316]]="language() === 'fil'"
                       [class.text-white]="language() === 'fil'"
                       [class.bg-white]="language() !== 'fil'"
@@ -166,40 +166,40 @@ export type BarangayStep =
                 </div>
 
                 <!-- Section 2: Need Assistance -->
-                <div class="flex flex-col items-center gap-1.5 text-center min-w-0">
-                  <svg class="w-6 h-6 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                <div class="flex flex-col items-center gap-1 text-center min-w-0">
+                  <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                     <circle cx="12" cy="12" r="9"/>
                     <path d="M9.5 9a2.5 2.5 0 114.6 1.3c-.8 1-1.9 1.7-1.9 3.2" stroke-linecap="round"/>
                     <path d="M12 17h.01" stroke-linecap="round"/>
                   </svg>
                   <div>
-                    <p class="text-[14px] lg:text-[15px] font-semibold text-[#0F172A]">{{ t('landing.footer.assistance') }}</p>
-                    <p class="text-[12px] lg:text-[13px] text-[#64748B]">{{ t('landing.footer.assistanceDesc') }}</p>
+                    <p class="text-[13px] lg:text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.assistance') }}</p>
+                    <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.assistanceDesc') }}</p>
                   </div>
                 </div>
 
                 <!-- Section 3: Office Hours -->
-                <div class="flex flex-col items-center gap-1.5 text-center min-w-0">
-                  <svg class="w-6 h-6 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                <div class="flex flex-col items-center gap-1 text-center min-w-0">
+                  <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                     <circle cx="12" cy="12" r="9"/>
                     <path d="M12 7v5l3 2" stroke-linecap="round"/>
                   </svg>
                   <div>
-                    <p class="text-[14px] lg:text-[15px] font-semibold text-[#0F172A]">{{ t('landing.footer.hours') }}</p>
-                    <p class="text-[12px] lg:text-[13px] text-[#64748B]">{{ t('landing.footer.monFri') }}</p>
-                    <p class="text-[12px] lg:text-[13px] text-[#64748B]">{{ t('landing.footer.hoursRange') }}</p>
+                    <p class="text-[13px] lg:text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.hours') }}</p>
+                    <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.monFri') }}</p>
+                    <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.hoursRange') }}</p>
                   </div>
                 </div>
 
                 <!-- Section 4: Date & Time -->
-                <div class="flex flex-col items-center gap-1.5 text-center min-w-0">
-                  <svg class="w-6 h-6 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                <div class="flex flex-col items-center gap-1 text-center min-w-0">
+                  <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                     <rect x="3" y="5" width="18" height="16" rx="2"/>
                     <path d="M8 3v4M16 3v4M3 10h18"/>
                   </svg>
                   <div class="min-w-0">
-                    <p class="text-[12px] lg:text-[14px] font-medium text-[#64748B] leading-snug">{{ formatFooterDate() }}</p>
-                    <p class="text-lg lg:text-xl font-bold text-[#F97316] leading-tight">{{ formatFooterTime() }}</p>
+                    <p class="text-[11px] lg:text-[12px] font-medium text-[#64748B] leading-snug">{{ formatFooterDate() }}</p>
+                    <p class="text-base lg:text-lg font-bold text-[#F97316] leading-tight">{{ formatFooterTime() }}</p>
                   </div>
                 </div>
               </div>
@@ -229,13 +229,16 @@ export type BarangayStep =
               <div class="relative flex-1 overflow-y-auto">
                 <div class="min-h-full flex flex-col items-center justify-center px-4 sm:px-8 py-6 sm:py-10">
 
-                  <!-- Back button (pinned top-left, reduced but touch-friendly) -->
+                  <!-- Back button (pinned top-left, compact pill: arrow + label) -->
                   <button (click)="goBack()"
-                          class="fixed top-4 left-4 z-40 w-[52px] h-[52px] rounded-full border-2 border-[#F97316]/60 bg-white flex items-center justify-center shadow-sm hover:bg-[#FFF7ED] active:scale-[0.97] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30"
+                          class="fixed top-4 left-4 z-40 flex items-center gap-2 sm:gap-2.5 min-h-[46px] pl-1.5 sm:pl-2 pr-4 sm:pr-5 rounded-full border-2 border-[#F97316]/50 bg-white text-[#0F172A] font-semibold text-[15px] sm:text-base shadow-sm hover:bg-[#FFF7ED] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30"
                           [attr.aria-label]="t('common.back')">
-                    <svg class="w-7 h-7 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-                    </svg>
+                    <span class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#FFF7ED] flex items-center justify-center shrink-0" aria-hidden="true">
+                      <svg class="w-5 h-5 sm:w-6 sm:h-6 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                      </svg>
+                    </span>
+                    <span>{{ t('common.back') }}</span>
                   </button>
 
                   <!-- Centered logo + title -->
@@ -448,13 +451,16 @@ export type BarangayStep =
               </svg>
             </div>
 
-            <!-- Back button (pinned top-left, consistent with the Scan screen) -->
+            <!-- Back button (pinned top-left, compact pill: arrow + label) -->
             <button (click)="goBack()"
-                    class="fixed top-4 left-4 z-40 w-[52px] h-[52px] rounded-full border-2 border-[#F97316]/60 bg-white flex items-center justify-center shadow-sm hover:bg-[#FFF7ED] active:scale-[0.97] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30"
+                    class="fixed top-4 left-4 z-40 flex items-center gap-2 sm:gap-2.5 min-h-[46px] pl-1.5 sm:pl-2 pr-4 sm:pr-5 rounded-full border-2 border-[#F97316]/50 bg-white text-[#0F172A] font-semibold text-[15px] sm:text-base shadow-sm hover:bg-[#FFF7ED] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30"
                     [attr.aria-label]="t('common.back')">
-              <svg class="w-7 h-7 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-              </svg>
+              <span class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#FFF7ED] flex items-center justify-center shrink-0" aria-hidden="true">
+                <svg class="w-5 h-5 sm:w-6 sm:h-6 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                </svg>
+              </span>
+              <span>{{ t('common.back') }}</span>
             </button>
 
             <!-- Main content -->
@@ -470,11 +476,11 @@ export type BarangayStep =
                   <p class="text-[clamp(1rem,1.9vw,1.25rem)] font-medium text-[#64748B] mt-2.5 sm:mt-3 px-2">{{ t('guest.subtitle') }}</p>
                 </div>
 
-                <!-- Two horizontal cards -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 w-full max-w-4xl mb-5 sm:mb-6">
+                <!-- Two horizontal cards (same responsive layout as the landing page) -->
+                <div class="flex flex-wrap justify-center items-stretch gap-5 sm:gap-8 lg:gap-10 w-full max-w-6xl mb-5 sm:mb-6">
 
                   <!-- Card 1: Request Documents -->
-                  <button class="group flex items-center gap-4 sm:gap-6 rounded-[18px] border border-[#F97316]/50 bg-white p-5 sm:p-8 shadow-sm hover:shadow-md hover:border-[#F97316] transition-all duration-200 text-left"
+                  <button class="group flex items-center gap-4 sm:gap-6 rounded-[18px] border border-[#F97316]/50 bg-white p-5 sm:p-8 shadow-sm hover:shadow-md hover:border-[#F97316] transition-all duration-200 text-left flex-1 min-w-[min(100%,320px)] max-w-[560px]"
                           (click)="startGuestRequest()">
                     <div class="shrink-0 w-14 h-14 sm:w-20 sm:h-20 rounded-xl bg-[#FFF7ED] flex items-center justify-center">
                       <svg class="w-8 h-8 sm:w-12 sm:h-12 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
@@ -493,7 +499,7 @@ export type BarangayStep =
                   </button>
 
                   <!-- Card 2: Apply for Barangay ID -->
-                  <button class="group flex items-center gap-4 sm:gap-6 rounded-[18px] border border-[#F97316]/50 bg-white p-5 sm:p-8 shadow-[6px_6px_16px_-8px_rgba(15,23,42,0.12)] hover:shadow-md hover:border-[#F97316] transition-all duration-200 text-left"
+                  <button class="group flex items-center gap-4 sm:gap-6 rounded-[18px] border border-[#F97316]/50 bg-white p-5 sm:p-8 shadow-[6px_6px_16px_-8px_rgba(15,23,42,0.12)] hover:shadow-md hover:border-[#F97316] transition-all duration-200 text-left flex-1 min-w-[min(100%,320px)] max-w-[560px]"
                           (click)="startBarangay()">
                     <div class="shrink-0 w-14 h-14 sm:w-20 sm:h-20 rounded-xl bg-[#FFF7ED] flex items-center justify-center">
                       <svg class="w-8 h-8 sm:w-12 sm:h-12 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
@@ -513,7 +519,7 @@ export type BarangayStep =
                 </div>
 
                 <!-- Information card -->
-                <div class="flex items-start gap-3 w-full max-w-4xl bg-white/95 border border-[#E5E7EB] rounded-2xl px-4 sm:px-6 py-4 sm:py-5 shadow-sm">
+                <div class="flex items-start gap-3 w-full max-w-6xl bg-white/95 border border-[#E5E7EB] rounded-2xl px-4 sm:px-6 py-4 sm:py-5 shadow-sm">
                   <div class="w-11 h-11 rounded-full bg-[#F8FAFC] border border-[#E5E7EB] flex items-center justify-center shrink-0">
                     <svg class="w-6 h-6 text-[#64748B]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                       <circle cx="12" cy="12" r="9"/>
@@ -527,55 +533,55 @@ export type BarangayStep =
 
             <!-- Footer: four sections, outline icons only -->
             <div class="relative border-t border-[#E5E7EB] bg-white/95 backdrop-blur-sm">
-              <div class="max-w-5xl mx-auto px-4 sm:px-8 py-4 sm:py-6 grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4 sm:gap-y-6 items-center">
+              <div class="max-w-5xl mx-auto px-4 sm:px-8 py-1.5 lg:py-2 grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-2 lg:gap-y-3 items-center">
 
                 <!-- Need Assistance -->
-                <div class="flex flex-col items-center gap-2 text-center min-w-0">
-                  <svg class="w-7 h-7 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                <div class="flex flex-col items-center gap-1 text-center min-w-0">
+                  <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                     <circle cx="12" cy="12" r="9"/>
                     <path d="M9.5 9a2.5 2.5 0 114.6 1.3c-.8 1-1.9 1.7-1.9 3.2" stroke-linecap="round"/>
                     <path d="M12 17h.01" stroke-linecap="round"/>
                   </svg>
                   <div>
-                    <p class="text-[15px] font-semibold text-[#0F172A]">{{ t('landing.footer.assistance') }}</p>
-                    <p class="text-[13px] text-[#64748B]">{{ t('landing.footer.assistanceDesc') }}</p>
+                    <p class="text-[13px] lg:text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.assistance') }}</p>
+                    <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.assistanceDesc') }}</p>
                   </div>
                 </div>
 
                 <!-- Office Hours -->
-                <div class="flex flex-col items-center gap-1.5 text-center min-w-0">
-                  <svg class="w-7 h-7 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                <div class="flex flex-col items-center gap-1 text-center min-w-0">
+                  <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                     <circle cx="12" cy="12" r="9"/>
                     <path d="M12 7v5l3 2" stroke-linecap="round"/>
                   </svg>
                   <div>
-                    <p class="text-[15px] font-semibold text-[#0F172A]">{{ t('landing.footer.hours') }}</p>
-                    <p class="text-[13px] text-[#64748B]">{{ t('landing.footer.monFri') }}</p>
-                    <p class="text-[13px] text-[#64748B]">{{ t('landing.footer.hoursRange') }}</p>
+                    <p class="text-[13px] lg:text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.hours') }}</p>
+                    <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.monFri') }}</p>
+                    <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.hoursRange') }}</p>
                   </div>
                 </div>
 
                 <!-- Current Date -->
-                <div class="flex flex-col items-center gap-1.5 text-center min-w-0">
-                  <svg class="w-7 h-7 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                <div class="flex flex-col items-center gap-1 text-center min-w-0">
+                  <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                     <rect x="3" y="5" width="18" height="16" rx="2"/>
                     <path d="M8 3v4M16 3v4M3 10h18"/>
                   </svg>
                   <div class="min-w-0">
-                    <p class="text-[15px] font-semibold text-[#0F172A]">{{ t('landing.footer.date') }}</p>
-                    <p class="text-[13px] text-[#64748B] leading-snug">{{ formatFooterDate() }}</p>
+                    <p class="text-[13px] lg:text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.date') }}</p>
+                    <p class="text-[11px] lg:text-[12px] text-[#64748B] leading-snug">{{ formatFooterDate() }}</p>
                   </div>
                 </div>
 
                 <!-- Current Time -->
-                <div class="flex flex-col items-center gap-1.5 text-center min-w-0">
-                  <svg class="w-7 h-7 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                <div class="flex flex-col items-center gap-1 text-center min-w-0">
+                  <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                     <circle cx="12" cy="12" r="9"/>
                     <path d="M12 7v5l3 2" stroke-linecap="round"/>
                   </svg>
                   <div class="min-w-0">
-                    <p class="text-[15px] font-semibold text-[#0F172A]">{{ t('landing.footer.time') }}</p>
-                    <p class="text-lg font-bold text-[#F97316] leading-tight">{{ formatFooterTime() }}</p>
+                    <p class="text-[13px] lg:text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.time') }}</p>
+                    <p class="text-base lg:text-lg font-bold text-[#F97316] leading-tight">{{ formatFooterTime() }}</p>
                   </div>
                 </div>
               </div>
@@ -636,17 +642,16 @@ export type BarangayStep =
 
               <!-- Top navigation: back (left) + logo (center) -->
               <div class="relative z-10 flex items-center justify-center px-6 pt-[18px] pb-2">
-                <div class="absolute left-4 sm:left-6 top-[26px] z-40 flex items-center gap-2.5 sm:gap-3">
+                <div class="absolute left-4 sm:left-6 top-[26px] z-40">
                   <button (click)="goBack()"
-                          class="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px] rounded-full border-2 border-[#F97316]/60 bg-white flex items-center justify-center shadow-sm hover:bg-[#FFF7ED] active:scale-[0.97] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30"
+                          class="flex items-center gap-2 sm:gap-2.5 min-h-[46px] pl-1.5 sm:pl-2 pr-4 sm:pr-5 rounded-full border-2 border-[#F97316]/50 bg-white text-[#0F172A] font-semibold text-[15px] sm:text-base shadow-sm hover:bg-[#FFF7ED] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30"
                           [attr.aria-label]="t('common.back')">
-                    <svg class="w-6 h-6 sm:w-7 sm:h-7 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-                    </svg>
-                  </button>
-                  <button (click)="goBack()"
-                          class="flex items-center min-h-[44px] rounded-xl px-1 text-[#0F172A] font-semibold text-[15px] sm:text-base hover:text-[#F97316] transition-colors focus:outline-none focus:ring-2 focus:ring-[#F97316]/40">
-                    {{ t('common.back') }}
+                    <span class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#FFF7ED] flex items-center justify-center shrink-0" aria-hidden="true">
+                      <svg class="w-5 h-5 sm:w-6 sm:h-6 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                      </svg>
+                    </span>
+                    <span>{{ t('common.back') }}</span>
                   </button>
                 </div>
 
