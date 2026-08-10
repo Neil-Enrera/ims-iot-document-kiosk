@@ -598,3 +598,33 @@ Residents wanted to see their official ID card before submitting. Rendering `cre
 - Preview has no `id_number`/expiry yet (correct: the ID number is assigned at approval), so those placeholders render blank on the preview card.
 - `applicationFromKioskPayload` maps the kiosk's camelCase body (same `barangayIdApplicationValidation`) onto the application row columns used by `buildContext`.
 - Verified: live `POST /kiosk/barangay-id/preview` returns a valid DOCX with the photo drawing + media part; backend tests 52/52 (2 new mapper tests), lint 0 errors, both frontend `tsc --noEmit` + `ng build` clean.
+
+---
+
+### DEC-023 - Complete the kiosk ID preview end-to-end (photo tag, sizing, expiry mapping)
+
+**Status:** Accepted
+**Date:** 2026-08-10
+**Decision Maker(s):** Project Owner
+
+**Decision:**
+A live re-verification of the DEC-021 kiosk preview against the **actual barangay template** found three gaps between the design (DEC-020/DEC-021) and the real running system, all fixed:
+
+1. **No photo on the preview.** DEC-021 was verified against the test fixture template, which contains a `{{resident_photo}}` tag. The barangay's active ID template did **not** contain that tag, so `embedPhoto` had no sentinel token to swap and the preview silently rendered without the photo. The live template in `uploads/` was patched to place `{{resident_photo}}` in the photo box (photo only renders where the tag exists — it is a template/data requirement, not code). Code now also allows the caller to size the embedded photo via `embedPhoto(doc, buffer, centered, maxPhotoPx)` with a new `maxPhotoPx` param defaulting to 480; the card pipeline passes 300 so the portrait fits the standard 2x2 box in both the preview and the approved card after DEC-020's natural-aspect cap.
+
+2. **`{{valid_until}}` never filled even on approved cards.** `expiration_date` resolved only from `c.request.expires_at` or `c.application.expiration_date`, but the barangay ID row stores the expiry in `id_expiration_date` (mapped to `id_expiration`). The template's `Valid Until` tag (`{{valid_until}}`, an alias of `expiration_date`) therefore resolved blank on every approved card. `buildContext` now also maps `expiration_date: application.id_expiration_date`, so approved/printed cards show the assigned expiry.
+
+3. **Kiosk shows only the first validation error.** `previewBarangayId`/`submitBarangay` replaced the generic `message` with `errors[0].msg` when the server returns field-level validation failures, so the resident sees the actual offending field on screen instead of a generic failure.
+
+**Reason:**
+The business requirement is that the kiosk preview shows the actual generated ID (photo + submitted info) using exactly the same template and mapping as the approved/printed card. A preview that omits the photo or a printed card with a blank expiry undermines trust in the ID products; surfacing one actionable validation error at a time fits the 1080p landscape kiosk flow.
+
+**Alternatives Considered:**
+1. Auto-inject `{{resident_photo}}` into the template at render time if missing - rejected; injecting a drawing into an arbitrary DOCX box is not robust, and the tag must be authored into the official template anyway for both preview and printed cards.
+2. Surface all validation errors at once on the kiosk - rejected; keeps the single, scannable per-attempt error consistent with the rest of the flow.
+
+**Consequences:**
+- `id-card.service.js`: `embedPhoto` gains `maxPhotoPx`; `renderCardBuffer` passes 300; `buildContext` maps `expiration_date` for the barangay ID context.
+- The barangay's active ID template (under gitignored `uploads/`) now places `{{resident_photo}}` in the photo box; **a fresh clone must re-apply this tag to whichever template is uploaded** so previews and cards include the photo.
+- Kiosk preview/toast error text surfaces the first field error (`errors[0].msg`) on both preview and submit.
+- Verified live: preview render succeeds with photo media embedded, name/id present, `{{valid_until}}` now renders the assigned expiry on an approved-context card (`Valid Until: <date>`), and preview leaves the application `PENDING` with `resident_id` null (no approve/register). Backend tests 54/54, ESLint no new issues.

@@ -135,7 +135,7 @@ const buildDrawingXml = ({ rId, emuW, emuH, centered }) => {
 };
 
 // Embed a photo into the rendered DOCX zip. Returns true on success.
-const embedPhoto = (doc, imageBuffer, centered) => {
+const embedPhoto = (doc, imageBuffer, centered, maxPhotoPx = 480) => {
   if (!imageBuffer) return false;
   const zip = doc.getZip();
   const docXmlPath = 'word/document.xml';
@@ -175,7 +175,7 @@ const embedPhoto = (doc, imageBuffer, centered) => {
 
   // 4. Replace the token's enclosing run with the drawing.
   const size = getImageSize(imageBuffer);
-  const maxEmu = 480 * PX_TO_EMU; // cap longer side ~480px to keep cards compact
+  const maxEmu = (maxPhotoPx || 480) * PX_TO_EMU; // cap the longer side so the photo fits its box
   const scale = Math.min(1, maxEmu / (Math.max(size.width, size.height) * PX_TO_EMU));
   const emuW = Math.round(size.width * PX_TO_EMU * scale);
   const emuH = Math.round(size.height * PX_TO_EMU * scale);
@@ -221,7 +221,8 @@ const buildContext = async ({ application, resident, barangay, processedBy }) =>
     contact_number: application.contact_number,
     email: application.email,
     id_number: application.id_number,
-    id_expiration: application.id_expiration_date
+    id_expiration: application.id_expiration_date,
+    expiration_date: application.id_expiration_date
   };
   // A real resident record wins; otherwise fall back to the application fields.
   const residentContext = {
@@ -330,9 +331,10 @@ const renderCardBuffer = async ({ application, resident, barangay, processedBy }
 
     // If the template actually has a {{resident_photo}} tag, embed the captured
     // photo right where the token sat. Templates without the photo tag render
-    // fine as plain text.
+    // fine as plain text. ~300px fits the standard 2×2 ID photo box while
+    // keeping the generated card compact in both preview and approved cards.
     const photoBuffer = resolveImageBuffer(application.photo);
-    embedPhoto(doc, photoBuffer, true);
+    embedPhoto(doc, photoBuffer, true, 300);
 
     renderedBuffer = doc.getZip().generate({
       type: 'nodebuffer',

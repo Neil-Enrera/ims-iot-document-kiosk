@@ -3398,7 +3398,8 @@ export class KioskComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.submitting.set(false);
-        const msg = err?.error?.message || 'Failed to submit application. Please try again.';
+        const firstErr = err?.error?.errors?.[0];
+        const msg = firstErr?.msg || err?.error?.message || 'Failed to submit application. Please try again.';
         this.errorMessage.set(msg);
         console.error('Barangay ID submit error:', err);
         this.saveState();
@@ -3444,7 +3445,8 @@ export class KioskComponent implements OnInit, OnDestroy {
             let msg = fallback;
             try {
               const parsed = JSON.parse(text);
-              msg = parsed?.message || fallback;
+              const firstErr = parsed?.errors?.[0];
+              msg = firstErr?.msg || parsed?.message || fallback;
             } catch { /* ignore non-JSON error bodies */ }
             this.errorMessage.set(msg);
           });
