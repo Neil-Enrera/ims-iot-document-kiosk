@@ -1344,84 +1344,84 @@ export type BarangayStep =
 
               <!-- Main content -->
               <div class="relative flex-1 overflow-y-auto">
-                <div class="min-h-full flex items-center justify-center px-5 sm:px-10 py-5 sm:py-8">
+                <div class="min-h-full flex items-center justify-center px-5 sm:px-10 py-6 sm:py-9">
 
-                  <div class="w-full max-w-[780px]">
+                  <div class="w-full max-w-[700px]">
 
                     <!-- Page header -->
-                    <div class="text-center mb-5 sm:mb-7">
-                      <h1 class="text-[clamp(1.875rem,3vw,2.625rem)] font-bold tracking-tight text-[#0F172A] leading-tight">{{ t('bar.requirements.title') }}</h1>
-                      <p class="text-[clamp(1rem,1.4vw,1.2rem)] font-medium text-[#64748B] mt-2 sm:mt-3 max-w-2xl mx-auto">{{ t('bar.requirements.desc') }}</p>
+                    <div class="text-center mb-4 sm:mb-6">
+                      <h1 class="text-[clamp(1.5rem,2.2vw,2.125rem)] font-bold tracking-tight text-[#0F172A] leading-tight">{{ t('bar.requirements.title') }}</h1>
+                      <p class="text-[clamp(0.925rem,1.1vw,1.075rem)] font-medium text-[#64748B] mt-1.5 sm:mt-2 max-w-2xl mx-auto">{{ t('bar.requirements.desc') }}</p>
                     </div>
 
                     <!-- Requirements card -->
-                    <div class="bg-white border border-[#E5E7EB] rounded-[20px] shadow-[0_2px_14px_rgba(15,23,42,0.07)] px-6 sm:px-8 py-6 sm:py-8">
+                    <div class="bg-white border border-[#E5E7EB] rounded-[20px] shadow-[0_2px_14px_rgba(15,23,42,0.07)] px-5 sm:px-7 py-5 sm:py-6">
 
                       <!-- Requirement 1 -->
-                      <div class="flex items-start gap-4 sm:gap-5">
-                        <div class="shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
-                          <svg class="w-6 h-6 sm:w-7 sm:h-7 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                      <div class="flex items-start gap-3.5 sm:gap-4">
+                        <div class="shrink-0 w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
+                          <svg class="w-6 h-6 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>
                           </svg>
                         </div>
                         <div class="flex-1 min-w-0">
-                          <h3 class="text-[clamp(1.125rem,1.6vw,1.375rem)] font-bold text-[#0F172A] leading-tight">{{ t('bar.requirements.req1.title') }}</h3>
-                          <p class="text-[clamp(0.925rem,1.2vw,1.0625rem)] text-[#64748B] mt-1 leading-snug">{{ t('bar.requirements.req1.desc') }}</p>
+                          <h3 class="text-[clamp(1rem,1.4vw,1.1875rem)] font-bold text-[#0F172A] leading-tight">{{ t('bar.requirements.req1.title') }}</h3>
+                          <p class="text-[clamp(0.875rem,1.05vw,0.975rem)] text-[#64748B] mt-1 leading-snug">{{ t('bar.requirements.req1.desc') }}</p>
                         </div>
                       </div>
 
                       <!-- Divider -->
-                      <div class="h-px bg-[#E5E7EB] my-5 sm:my-6"></div>
+                      <div class="h-px bg-[#E5E7EB] my-4 sm:my-5"></div>
 
                       <!-- Requirement 2 -->
-                      <div class="flex items-start gap-4 sm:gap-5">
-                        <div class="shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
-                          <svg class="w-6 h-6 sm:w-7 sm:h-7 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                      <div class="flex items-start gap-3.5 sm:gap-4">
+                        <div class="shrink-0 w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
+                          <svg class="w-6 h-6 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955a1.126 1.126 0 0 1 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H18.375c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/>
                           </svg>
                         </div>
                         <div class="flex-1 min-w-0">
-                          <h3 class="text-[clamp(1.125rem,1.6vw,1.375rem)] font-bold text-[#0F172A] leading-tight">{{ t('bar.requirements.req2.title') }}</h3>
-                          <p class="text-[clamp(0.925rem,1.2vw,1.0625rem)] text-[#64748B] mt-1 leading-snug">{{ t('bar.requirements.req2.desc') }}</p>
+                          <h3 class="text-[clamp(1rem,1.4vw,1.1875rem)] font-bold text-[#0F172A] leading-tight">{{ t('bar.requirements.req2.title') }}</h3>
+                          <p class="text-[clamp(0.875rem,1.05vw,0.975rem)] text-[#64748B] mt-1 leading-snug">{{ t('bar.requirements.req2.desc') }}</p>
                         </div>
                       </div>
 
                       <!-- Divider -->
-                      <div class="h-px bg-[#E5E7EB] my-5 sm:my-6"></div>
+                      <div class="h-px bg-[#E5E7EB] my-4 sm:my-5"></div>
 
                       <!-- Requirement 3 -->
-                      <div class="flex items-start gap-4 sm:gap-5">
-                        <div class="shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
-                          <svg class="w-6 h-6 sm:w-7 sm:h-7 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                      <div class="flex items-start gap-3.5 sm:gap-4">
+                        <div class="shrink-0 w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
+                          <svg class="w-6 h-6 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                             <rect x="3" y="5" width="18" height="14" rx="2" stroke-linejoin="round"/>
                             <path d="m3.5 7 8.5 6 8.5-6" stroke-linejoin="round"/>
                           </svg>
                         </div>
                         <div class="flex-1 min-w-0">
-                          <h3 class="text-[clamp(1.125rem,1.6vw,1.375rem)] font-bold text-[#0F172A] leading-tight">{{ t('bar.requirements.req3.title') }}</h3>
-                          <p class="text-[clamp(0.925rem,1.2vw,1.0625rem)] text-[#64748B] mt-1 leading-snug">{{ t('bar.requirements.req3.desc') }}</p>
+                          <h3 class="text-[clamp(1rem,1.4vw,1.1875rem)] font-bold text-[#0F172A] leading-tight">{{ t('bar.requirements.req3.title') }}</h3>
+                          <p class="text-[clamp(0.875rem,1.05vw,0.975rem)] text-[#64748B] mt-1 leading-snug">{{ t('bar.requirements.req3.desc') }}</p>
                         </div>
                       </div>
 
                       <!-- Important notice -->
-                      <div class="flex items-start gap-3 rounded-xl bg-[#FFF7ED] border border-[#F97316]/20 px-4 sm:px-5 py-4 mt-6 sm:mt-7">
-                        <svg class="w-6 h-6 sm:w-7 sm:h-7 text-[#F97316] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+                      <div class="flex items-start gap-3 rounded-xl bg-[#FFF7ED] border border-[#F97316]/20 px-4 sm:px-5 py-3.5 mt-5 sm:mt-6">
+                        <svg class="w-5 h-5 text-[#F97316] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
                           <circle cx="12" cy="12" r="9"/>
                           <path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
                         </svg>
                         <div class="flex-1 min-w-0">
-                          <p class="text-[15px] sm:text-[16px] font-bold text-[#0F172A]">{{ t('bar.requirements.note') }}</p>
-                          <p class="text-[14px] sm:text-[15px] text-[#64748B] mt-1 leading-snug">{{ t('bar.requirements.noteDesc') }}</p>
+                          <p class="text-[14px] sm:text-[15px] font-bold text-[#0F172A]">{{ t('bar.requirements.note') }}</p>
+                          <p class="text-[13px] sm:text-[14px] text-[#64748B] mt-1 leading-snug">{{ t('bar.requirements.noteDesc') }}</p>
                         </div>
                       </div>
                     </div>
 
                     <!-- Continue button (single primary action, centered) -->
-                    <div class="flex items-center justify-center mt-6 sm:mt-8">
+                    <div class="flex items-center justify-center mt-5 sm:mt-6">
                       <button (click)="proceedToBarangayForm()"
-                              class="flex items-center justify-center gap-2.5 min-h-[64px] min-w-[240px] sm:min-w-[260px] px-8 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white text-lg sm:text-xl font-bold shadow-[0_4px_14px_rgba(249,115,22,0.35)] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40">
+                              class="flex items-center justify-center gap-2 min-h-[56px] min-w-[220px] sm:min-w-[240px] px-7 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white text-base sm:text-lg font-bold shadow-[0_4px_14px_rgba(249,115,22,0.35)] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40">
                         {{ t('common.continue') }}
-                        <svg class="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+                        <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
                           <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
                         </svg>
                       </button>
@@ -1508,129 +1508,628 @@ export type BarangayStep =
 
           <!-- BAR STEP 1: Application Form -->
           @if (barangayStep() === 'form') {
-            <div class="absolute inset-0 flex flex-col items-center justify-center p-8 overflow-y-auto">
-              <div class="max-w-lg w-full my-8">
-                <div class="flex items-center justify-between mb-6">
-                  <div>
-                    <h2 class="text-2xl font-bold">{{ t('bar.form.title') }}</h2>
-                    <p class="text-blue-300 text-sm mt-1">{{ t('bar.form.desc') }}</p>
-                  </div>
-                  <button class="text-blue-300 hover:text-white text-lg" (click)="goBack()">{{ t('common.back') }}</button>
+            <div class="absolute inset-0 bg-[#F8FAFC] text-[#0F172A] select-none overflow-hidden [font-family:'Inter',sans-serif] flex flex-col">
+
+              <!-- Background image (same as the kiosk landing page) -->
+              <div class="absolute inset-0 bg-cover bg-center pointer-events-none" style="background-image: url('Background.png')" aria-hidden="true"></div>
+              <!-- Subtle radial glow keeps the form legible without washing the orange -->
+              <div class="absolute inset-0 pointer-events-none" aria-hidden="true"
+                   style="background: radial-gradient(ellipse 72% 58% at 50% 42%, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0.35) 55%, rgba(255,255,255,0.05) 100%);"></div>
+              <!-- Curved orange header accent (top-left, same as landing) -->
+              <div class="absolute top-0 left-0 w-64 h-40 pointer-events-none" aria-hidden="true">
+                <svg viewBox="0 0 256 160" class="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M0 0 H256 V80 C256 124 220 160 176 160 H0 Z" fill="#F97316" opacity="0.12"/>
+                </svg>
+              </div>
+
+              <!-- Top navigation: back (left) + logo (center) -->
+              <div class="relative z-10 flex items-center justify-center px-6 pt-[18px] pb-2">
+                <div class="absolute left-4 sm:left-6 top-[26px] z-40 flex items-center gap-2.5 sm:gap-3">
+                  <button (click)="goBack()"
+                          class="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px] rounded-full border-2 border-[#F97316]/60 bg-white flex items-center justify-center shadow-sm hover:bg-[#FFF7ED] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30"
+                          [attr.aria-label]="t('common.back')">
+                    <svg class="w-6 h-6 sm:w-7 sm:h-7 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                  </button>
+                  <button (click)="goBack()"
+                          class="flex items-center min-h-[44px] rounded-xl px-1 text-[#0F172A] font-semibold text-[15px] sm:text-base hover:text-[#F97316] transition-colors focus:outline-none focus:ring-2 focus:ring-[#F97316]/40">
+                    {{ t('common.back') }}
+                  </button>
                 </div>
 
-                <div class="bg-blue-800/50 rounded-2xl p-6 backdrop-blur space-y-4">
-                  <div class="grid grid-cols-2 gap-4">
-                    <div class="col-span-2 sm:col-span-1">
-                      <label class="block text-blue-300 text-sm mb-1">{{ t('bar.form.firstName') }}</label>
-                      <input type="text" [(ngModel)]="barangayForm.firstName"
-                             class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-400" />
+                <div class="w-[76px] h-[76px] sm:w-[88px] sm:h-[88px] rounded-full bg-white border-2 border-[#F97316]/30 shadow-sm overflow-hidden flex items-center justify-center">
+                  <img src="Barangay Logo.png" alt="Barangay San Manuel logo" class="w-full h-full object-cover">
+                </div>
+              </div>
+
+              <!-- Progress indicator -->
+              <div class="relative z-10 flex items-center justify-center px-4 pb-1">
+                <ol class="flex items-center gap-1.5 sm:gap-2.5" aria-label="Kiosk progress">
+                  <li class="flex items-center gap-1.5 sm:gap-2.5">
+                    <span class="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-base sm:text-lg font-bold text-white bg-[#F97316] border-2 border-[#F97316] shadow-sm" aria-hidden="true">1</span>
+                    <span class="hidden lg:block text-[14px] font-bold text-[#0F172A] whitespace-nowrap">{{ t('progress.yourInfo') }}</span>
+                  </li>
+                  <li class="flex items-center gap-1.5 sm:gap-2.5" aria-hidden="true">
+                    <span class="w-6 sm:w-10 h-[3px] rounded-full bg-[#E5E7EB]"></span>
+                    <span class="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-base sm:text-lg font-bold text-[#94A3B8] bg-white border-2 border-[#CBD5E1]">2</span>
+                    <span class="hidden lg:block text-[14px] font-medium text-[#64748B] whitespace-nowrap">{{ t('progress.selectDoc') }}</span>
+                  </li>
+                  <li class="flex items-center gap-1.5 sm:gap-2.5" aria-hidden="true">
+                    <span class="w-6 sm:w-10 h-[3px] rounded-full bg-[#E5E7EB]"></span>
+                    <span class="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-base sm:text-lg font-bold text-[#94A3B8] bg-white border-2 border-[#CBD5E1]">3</span>
+                    <span class="hidden lg:block text-[14px] font-medium text-[#64748B] whitespace-nowrap">{{ t('progress.review') }}</span>
+                  </li>
+                  <li class="flex items-center gap-1.5 sm:gap-2.5" aria-hidden="true">
+                    <span class="w-6 sm:w-10 h-[3px] rounded-full bg-[#E5E7EB]"></span>
+                    <span class="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-base sm:text-lg font-bold text-[#94A3B8] bg-white border-2 border-[#CBD5E1]">4</span>
+                    <span class="hidden lg:block text-[14px] font-medium text-[#64748B] whitespace-nowrap">{{ t('progress.submit') }}</span>
+                  </li>
+                </ol>
+              </div>
+
+              <!-- Main content -->
+              <div class="relative flex-1 overflow-y-auto">
+                <div class="min-h-full flex items-center justify-center px-5 sm:px-8 py-5 sm:py-7">
+
+                  <div class="w-full max-w-[920px]">
+
+                    <!-- Page header -->
+                    <div class="text-center mb-4 sm:mb-5">
+                      <h1 class="text-[clamp(1.5rem,2.2vw,2.125rem)] font-bold tracking-tight text-[#0F172A] leading-tight">{{ t('bar.form.title') }}</h1>
+                      <p class="text-[clamp(0.925rem,1.1vw,1.075rem)] font-medium text-[#64748B] mt-1.5 sm:mt-2">{{ t('bar.form.desc') }}</p>
                     </div>
-                    <div class="col-span-2 sm:col-span-1">
-                      <label class="block text-blue-300 text-sm mb-1">{{ t('bar.form.middleName') }}</label>
-                      <input type="text" [(ngModel)]="barangayForm.middleName"
-                             class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-400" />
+
+                    <!-- Form card -->
+                    <div class="bg-white border border-[#E5E7EB] rounded-[20px] shadow-[0_2px_14px_rgba(15,23,42,0.07)] px-5 sm:px-7 py-5 sm:py-6">
+
+                      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-x-4 gap-y-4 sm:gap-y-5">
+
+                        <!-- First Name -->
+                        <div>
+                          <label for="barangay-firstName" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
+                            {{ t('bar.form.firstName') }} <span class="text-[#F97316]">*</span>
+                          </label>
+                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
+                               [class.border-[#DC2626]]="barangayInvalid('firstName')">
+                            <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                <circle cx="12" cy="8" r="4"/>
+                                <path d="M4 20c0-3.6 3.6-5 8-5s8 1.4 8 5" stroke-linecap="round"/>
+                              </svg>
+                            </div>
+                            <input id="barangay-firstName" type="text" name="firstName" [(ngModel)]="barangayForm.firstName"
+                                   [placeholder]="t('bar.form.firstNamePh')" autocomplete="given-name"
+                                   class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
+                            @if (barangayForm.firstName) {
+                              <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                </svg>
+                              </div>
+                            }
+                          </div>
+                          @if (barangayInvalid('firstName')) {
+                            <p class="mt-2 flex items-center gap-1.5 text-base font-medium text-[#B91C1C]">
+                              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
+                              </svg>
+                              {{ t('err.bar.firstName') }}
+                            </p>
+                          }
+                        </div>
+
+                        <!-- Middle Name -->
+                        <div>
+                          <label for="barangay-middleName" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
+                            {{ t('bar.form.middleName') }}
+                          </label>
+                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden">
+                            <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                <circle cx="12" cy="8" r="4"/>
+                                <path d="M4 20c0-3.6 3.6-5 8-5s8 1.4 8 5" stroke-linecap="round"/>
+                              </svg>
+                            </div>
+                            <input id="barangay-middleName" type="text" name="middleName" [(ngModel)]="barangayForm.middleName"
+                                   [placeholder]="t('bar.form.middleNamePh')" autocomplete="additional-name"
+                                   class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
+                            @if (barangayForm.middleName) {
+                              <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                </svg>
+                              </div>
+                            }
+                          </div>
+                        </div>
+
+                        <!-- Last Name -->
+                        <div>
+                          <label for="barangay-lastName" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
+                            {{ t('bar.form.lastName') }} <span class="text-[#F97316]">*</span>
+                          </label>
+                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
+                               [class.border-[#DC2626]]="barangayInvalid('lastName')">
+                            <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                <circle cx="12" cy="8" r="4"/>
+                                <path d="M4 20c0-3.6 3.6-5 8-5s8 1.4 8 5" stroke-linecap="round"/>
+                              </svg>
+                            </div>
+                            <input id="barangay-lastName" type="text" name="lastName" [(ngModel)]="barangayForm.lastName"
+                                   [placeholder]="t('bar.form.lastNamePh')" autocomplete="family-name"
+                                   class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
+                            @if (barangayForm.lastName) {
+                              <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                </svg>
+                              </div>
+                            }
+                          </div>
+                          @if (barangayInvalid('lastName')) {
+                            <p class="mt-2 flex items-center gap-1.5 text-base font-medium text-[#B91C1C]">
+                              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
+                              </svg>
+                              {{ t('err.bar.lastName') }}
+                            </p>
+                          }
+                        </div>
+
+                        <!-- Suffix -->
+                        <div>
+                          <label for="barangay-suffix" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
+                            {{ t('bar.form.suffix') }}
+                          </label>
+                          <div class="relative flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden">
+                            <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                <circle cx="12" cy="8" r="4"/>
+                                <path d="M4 20c0-3.6 3.6-5 8-5s8 1.4 8 5" stroke-linecap="round"/>
+                              </svg>
+                            </div>
+                            <select id="barangay-suffix" [(ngModel)]="barangayForm.suffix"
+                                    class="appearance-none flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] bg-transparent outline-none border-none cursor-pointer"
+                                    [class.text-[#94A3B8]]="!barangayForm.suffix">
+                              <option value="">{{ t('bar.form.suffixNone') }}</option>
+                              <option value="Jr.">Jr.</option>
+                              <option value="Sr.">Sr.</option>
+                              <option value="II">II</option>
+                              <option value="III">III</option>
+                              <option value="IV">IV</option>
+                            </select>
+                            <div class="pointer-events-none absolute right-3 text-[#64748B]" aria-hidden="true">
+                              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/>
+                              </svg>
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- Birth Date -->
+                        <div>
+                          <label for="barangay-birthDate" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
+                            {{ t('bar.form.birthDate') }} <span class="text-[#F97316]">*</span>
+                          </label>
+                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
+                               [class.border-[#DC2626]]="barangayInvalid('birthDate')">
+                            <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                <rect x="3" y="5" width="18" height="16" rx="2"/>
+                                <path d="M8 3v4M16 3v4M3 10h18"/>
+                              </svg>
+                            </div>
+                            <input id="barangay-birthDate" type="date" name="birthDate" [(ngModel)]="barangayForm.birthDate"
+                                   class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] bg-transparent outline-none border-none" />
+                            @if (barangayForm.birthDate) {
+                              <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                </svg>
+                              </div>
+                            }
+                          </div>
+                          @if (barangayInvalid('birthDate')) {
+                            <p class="mt-2 flex items-center gap-1.5 text-base font-medium text-[#B91C1C]">
+                              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
+                              </svg>
+                              {{ t('err.bar.birthDate') }}
+                            </p>
+                          }
+                        </div>
+
+                        <!-- Sex -->
+                        <div>
+                          <label for="barangay-gender" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
+                            {{ t('bar.form.sex') }} <span class="text-[#F97316]">*</span>
+                          </label>
+                          <div class="relative flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
+                               [class.border-[#DC2626]]="barangayInvalid('gender')">
+                            <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                <circle cx="12" cy="9" r="3.5"/>
+                                <path d="M5 20c0-3.6 3.6-5 8-5s8 1.4 8 5" stroke-linecap="round"/>
+                              </svg>
+                            </div>
+                            <select id="barangay-gender" name="gender" [(ngModel)]="barangayForm.gender"
+                                    class="appearance-none flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] bg-transparent outline-none border-none cursor-pointer"
+                                    [class.text-[#94A3B8]]="!barangayForm.gender">
+                              <option value="">{{ t('bar.form.select') }}</option>
+                              <option value="Male">{{ t('bar.form.sexMale') }}</option>
+                              <option value="Female">{{ t('bar.form.sexFem') }}</option>
+                              <option value="Other">{{ t('bar.form.sexOther') }}</option>
+                            </select>
+                            <div class="pointer-events-none absolute right-3 text-[#64748B]" aria-hidden="true">
+                              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/>
+                              </svg>
+                            </div>
+                          </div>
+                          @if (barangayInvalid('gender')) {
+                            <p class="mt-2 flex items-center gap-1.5 text-base font-medium text-[#B91C1C]">
+                              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
+                              </svg>
+                              {{ t('err.bar.sex') }}
+                            </p>
+                          }
+                        </div>
+
+                        <!-- Civil Status -->
+                        <div>
+                          <label for="barangay-civilStatus" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
+                            {{ t('bar.form.civilStatus') }} <span class="text-[#F97316]">*</span>
+                          </label>
+                          <div class="relative flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
+                               [class.border-[#DC2626]]="barangayInvalid('civilStatus')">
+                            <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4.6 6.5a4.5 4.5 0 0 1 6.4 0l1 1 1-1a4.5 4.5 0 1 1 6.4 6.4L12 21l-7.4-8.1a4.5 4.5 0 0 1 0-6.4Z"/>
+                              </svg>
+                            </div>
+                            <select id="barangay-civilStatus" name="civilStatus" [(ngModel)]="barangayForm.civilStatus"
+                                    class="appearance-none flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] bg-transparent outline-none border-none cursor-pointer"
+                                    [class.text-[#94A3B8]]="!barangayForm.civilStatus">
+                              <option value="">{{ t('bar.form.select') }}</option>
+                              <option value="Single">{{ t('bar.form.civilSingle') }}</option>
+                              <option value="Married">{{ t('bar.form.civilMarried') }}</option>
+                              <option value="Widowed">{{ t('bar.form.civilWidowed') }}</option>
+                              <option value="Separated">{{ t('bar.form.civilSeparated') }}</option>
+                              <option value="Divorced">{{ t('bar.form.civilDivorced') }}</option>
+                            </select>
+                            <div class="pointer-events-none absolute right-3 text-[#64748B]" aria-hidden="true">
+                              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/>
+                              </svg>
+                            </div>
+                          </div>
+                          @if (barangayInvalid('civilStatus')) {
+                            <p class="mt-2 flex items-center gap-1.5 text-base font-medium text-[#B91C1C]">
+                              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
+                              </svg>
+                              {{ t('err.bar.civilStatus') }}
+                            </p>
+                          }
+                        </div>
+
+                        <!-- Occupation -->
+                        <div>
+                          <label for="barangay-occupation" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
+                            {{ t('bar.form.occupation') }}
+                          </label>
+                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden">
+                            <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                <rect x="3" y="7" width="18" height="13" rx="2"/>
+                                <path d="M9 7V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1M3 12h18" stroke-linecap="round"/>
+                              </svg>
+                            </div>
+                            <input id="barangay-occupation" type="text" name="occupation" [(ngModel)]="barangayForm.occupation"
+                                   [placeholder]="t('bar.form.occupationPh')" autocomplete="organization-title"
+                                   class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
+                            @if (barangayForm.occupation) {
+                              <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                </svg>
+                              </div>
+                            }
+                          </div>
+                        </div>
+
+                        <!-- Blood Type -->
+                        <div>
+                          <label for="barangay-bloodType" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
+                            {{ t('bar.form.bloodType') }}
+                          </label>
+                          <div class="relative flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden">
+                            <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                <path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11Z" stroke-linejoin="round"/>
+                              </svg>
+                            </div>
+                            <select id="barangay-bloodType" name="bloodType" [(ngModel)]="barangayForm.bloodType"
+                                    class="appearance-none flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] bg-transparent outline-none border-none cursor-pointer"
+                                    [class.text-[#94A3B8]]="!barangayForm.bloodType">
+                              <option value="">{{ t('bar.form.bloodUnknown') }}</option>
+                              <option value="A+">A+</option>
+                              <option value="A-">A-</option>
+                              <option value="B+">B+</option>
+                              <option value="B-">B-</option>
+                              <option value="AB+">AB+</option>
+                              <option value="AB-">AB-</option>
+                              <option value="O+">O+</option>
+                              <option value="O-">O-</option>
+                            </select>
+                            <div class="pointer-events-none absolute right-3 text-[#64748B]" aria-hidden="true">
+                              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/>
+                              </svg>
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- Contact Number -->
+                        <div>
+                          <label for="barangay-contactNumber" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
+                            {{ t('bar.form.contact') }} <span class="text-[#F97316]">*</span>
+                          </label>
+                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
+                               [class.border-[#DC2626]]="barangayInvalid('contactNumber')">
+                            <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 4h4l2 5-2.5 1.5a12 12 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/>
+                              </svg>
+                            </div>
+                            <input id="barangay-contactNumber" type="tel" name="contactNumber" [(ngModel)]="barangayForm.contactNumber"
+                                   [placeholder]="t('bar.form.contactPh')" autocomplete="tel" inputmode="tel"
+                                   class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
+                            @if (barangayForm.contactNumber) {
+                              <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                </svg>
+                              </div>
+                            }
+                          </div>
+                          @if (barangayInvalid('contactNumber')) {
+                            <p class="mt-2 flex items-center gap-1.5 text-base font-medium text-[#B91C1C]">
+                              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
+                              </svg>
+                              {{ t('err.bar.contact') }}
+                            </p>
+                          }
+                        </div>
+
+                        <!-- Address -->
+                        <div class="xl:col-span-2">
+                          <label for="barangay-addressLine" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
+                            {{ t('bar.form.address') }} <span class="text-[#F97316]">*</span>
+                          </label>
+                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
+                               [class.border-[#DC2626]]="barangayInvalid('addressLine')">
+                            <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                <path d="M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11Z" stroke-linejoin="round"/>
+                                <circle cx="12" cy="10" r="2.5"/>
+                              </svg>
+                            </div>
+                            <input id="barangay-addressLine" type="text" name="addressLine" [(ngModel)]="barangayForm.addressLine"
+                                   [placeholder]="t('bar.form.addressPh')" autocomplete="street-address"
+                                   class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
+                            @if (barangayForm.addressLine) {
+                              <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                </svg>
+                              </div>
+                            }
+                          </div>
+                          @if (barangayInvalid('addressLine')) {
+                            <p class="mt-2 flex items-center gap-1.5 text-base font-medium text-[#B91C1C]">
+                              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
+                              </svg>
+                              {{ t('err.bar.address') }}
+                            </p>
+                          }
+                        </div>
+
+                        <!-- Email -->
+                        <div class="xl:col-span-2">
+                          <label for="barangay-email" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
+                            {{ t('bar.form.email') }}
+                          </label>
+                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden">
+                            <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                <rect x="3" y="5" width="18" height="14" rx="2"/>
+                                <path d="m3 7 9 6 9-6" stroke-linecap="round" stroke-linejoin="round"/>
+                              </svg>
+                            </div>
+                            <input id="barangay-email" type="email" name="email" [(ngModel)]="barangayForm.email"
+                                   [placeholder]="t('bar.form.emailPh')" autocomplete="email" inputmode="email"
+                                   class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
+                            @if (barangayForm.email) {
+                              <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                </svg>
+                              </div>
+                            }
+                          </div>
+                        </div>
+
+                        <!-- Emergency Contact Person -->
+                        <div class="xl:col-span-2">
+                          <label for="barangay-emergencyContactName" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
+                            {{ t('bar.form.emergencyName') }} <span class="text-[#F97316]">*</span>
+                          </label>
+                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
+                               [class.border-[#DC2626]]="barangayInvalid('emergencyContactName')">
+                            <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                <circle cx="12" cy="8" r="4"/>
+                                <path d="M4 20c0-3.6 3.6-5 8-5s8 1.4 8 5" stroke-linecap="round"/>
+                                <path d="M17 3l1.5 1.5L21 3M17 6.5l1.5 1.5L21 6.5" stroke-linecap="round"/>
+                              </svg>
+                            </div>
+                            <input id="barangay-emergencyContactName" type="text" name="emergencyContactName" [(ngModel)]="barangayForm.emergencyContactName"
+                                   [placeholder]="t('bar.form.emergencyNamePh')" autocomplete="name"
+                                   class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
+                            @if (barangayForm.emergencyContactName) {
+                              <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                </svg>
+                              </div>
+                            }
+                          </div>
+                          @if (barangayInvalid('emergencyContactName')) {
+                            <p class="mt-2 flex items-center gap-1.5 text-base font-medium text-[#B91C1C]">
+                              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
+                              </svg>
+                              {{ t('err.bar.emergencyName') }}
+                            </p>
+                          }
+                        </div>
+
+                        <!-- Emergency Contact Number -->
+                        <div class="xl:col-span-2">
+                          <label for="barangay-emergencyContactNumber" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
+                            {{ t('bar.form.emergencyNumber') }} <span class="text-[#F97316]">*</span>
+                          </label>
+                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
+                               [class.border-[#DC2626]]="barangayInvalid('emergencyContactNumber')">
+                            <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 4h4l2 5-2.5 1.5a12 12 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/>
+                              </svg>
+                            </div>
+                            <input id="barangay-emergencyContactNumber" type="tel" name="emergencyContactNumber" [(ngModel)]="barangayForm.emergencyContactNumber"
+                                   [placeholder]="t('bar.form.emergencyNumberPh')" autocomplete="tel" inputmode="tel"
+                                   class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
+                            @if (barangayForm.emergencyContactNumber) {
+                              <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                </svg>
+                              </div>
+                            }
+                          </div>
+                          @if (barangayInvalid('emergencyContactNumber')) {
+                            <p class="mt-2 flex items-center gap-1.5 text-base font-medium text-[#B91C1C]">
+                              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
+                              </svg>
+                              {{ t('err.bar.emergencyNumber') }}
+                            </p>
+                          }
+                        </div>
+
+                      </div>
+
+                      @if (formError()) {
+                        <div class="mt-5 sm:mt-6 flex items-start gap-3 rounded-xl border-2 border-[#DC2626] bg-[#FEF2F2] px-4 py-3.5" role="alert">
+                          <svg class="w-6 h-6 shrink-0 text-[#DC2626]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                            <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
+                          </svg>
+                          <p class="text-[15px] sm:text-base font-semibold text-[#B91C1C]">{{ formError() }}</p>
+                        </div>
+                      }
                     </div>
-                    <div class="col-span-2 sm:col-span-1">
-                      <label class="block text-blue-300 text-sm mb-1">{{ t('bar.form.lastName') }}</label>
-                      <input type="text" [(ngModel)]="barangayForm.lastName"
-                             class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-400" />
-                    </div>
-                    <div class="col-span-2 sm:col-span-1">
-                      <label class="block text-blue-300 text-sm mb-1">{{ t('bar.form.suffix') }}</label>
-                      <select [(ngModel)]="barangayForm.suffix"
-                              class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-4 focus:ring-blue-400">
-                        <option value="">{{ t('bar.form.suffixNone') }}</option>
-                        <option value="Jr.">Jr.</option>
-                        <option value="Sr.">Sr.</option>
-                        <option value="II">II</option>
-                        <option value="III">III</option>
-                        <option value="IV">IV</option>
-                      </select>
-                    </div>
-                    <div class="col-span-2 sm:col-span-1">
-                      <label class="block text-blue-300 text-sm mb-1">{{ t('bar.form.birthDate') }}</label>
-                      <input type="date" [(ngModel)]="barangayForm.birthDate"
-                             class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-4 focus:ring-blue-400" />
-                    </div>
-                    <div class="col-span-2 sm:col-span-1">
-                      <label class="block text-blue-300 text-sm mb-1">{{ t('bar.form.sex') }}</label>
-                      <select [(ngModel)]="barangayForm.gender"
-                              class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-4 focus:ring-blue-400">
-                        <option value="">{{ t('bar.form.select') }}</option>
-                        <option value="Male">{{ t('bar.form.sexMale') }}</option>
-                        <option value="Female">{{ t('bar.form.sexFem') }}</option>
-                        <option value="Other">{{ t('bar.form.sexOther') }}</option>
-                      </select>
-                    </div>
-                    <div class="col-span-2 sm:col-span-1">
-                      <label class="block text-blue-300 text-sm mb-1">{{ t('bar.form.civilStatus') }}</label>
-                      <select [(ngModel)]="barangayForm.civilStatus"
-                              class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-4 focus:ring-blue-400">
-                        <option value="">{{ t('bar.form.select') }}</option>
-                        <option value="Single">{{ t('bar.form.civilSingle') }}</option>
-                        <option value="Married">{{ t('bar.form.civilMarried') }}</option>
-                        <option value="Widowed">{{ t('bar.form.civilWidowed') }}</option>
-                        <option value="Separated">{{ t('bar.form.civilSeparated') }}</option>
-                        <option value="Divorced">{{ t('bar.form.civilDivorced') }}</option>
-                      </select>
-                    </div>
-                    <div class="col-span-2 sm:col-span-1">
-                      <label class="block text-blue-300 text-sm mb-1">{{ t('bar.form.occupation') }}</label>
-                      <input type="text" [(ngModel)]="barangayForm.occupation"
-                             class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-400" />
-                    </div>
-                    <div class="col-span-2 sm:col-span-1">
-                      <label class="block text-blue-300 text-sm mb-1">{{ t('bar.form.bloodType') }}</label>
-                      <select [(ngModel)]="barangayForm.bloodType"
-                              class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-4 focus:ring-blue-400">
-                        <option value="">{{ t('bar.form.bloodUnknown') }}</option>
-                        <option value="A+">A+</option>
-                        <option value="A-">A-</option>
-                        <option value="B+">B+</option>
-                        <option value="B-">B-</option>
-                        <option value="AB+">AB+</option>
-                        <option value="AB-">AB-</option>
-                        <option value="O+">O+</option>
-                        <option value="O-">O-</option>
-                      </select>
-                    </div>
-                    <div class="col-span-2 sm:col-span-1">
-                      <label class="block text-blue-300 text-sm mb-1">{{ t('bar.form.contact') }}</label>
-                      <input type="tel" [(ngModel)]="barangayForm.contactNumber"
-                             class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-400" />
-                    </div>
-                    <div class="col-span-2">
-                      <label class="block text-blue-300 text-sm mb-1">{{ t('bar.form.address') }}</label>
-                      <input type="text" [(ngModel)]="barangayForm.addressLine"
-                             class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-400" />
-                    </div>
-                    <div class="col-span-2">
-                      <label class="block text-blue-300 text-sm mb-1">{{ t('bar.form.email') }}</label>
-                      <input type="email" [(ngModel)]="barangayForm.email"
-                             class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-400" />
-                    </div>
-                    <div class="col-span-2">
-                      <label class="block text-blue-300 text-sm mb-1">{{ t('bar.form.emergencyName') }}</label>
-                      <input type="text" [(ngModel)]="barangayForm.emergencyContactName"
-                             class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-400" />
-                    </div>
-                    <div class="col-span-2">
-                      <label class="block text-blue-300 text-sm mb-1">{{ t('bar.form.emergencyNumber') }}</label>
-                      <input type="tel" [(ngModel)]="barangayForm.emergencyContactNumber"
-                             class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-400" />
+
+                    <!-- Continue button (single primary action, centered) -->
+                    <div class="flex items-center justify-center mt-5 sm:mt-6">
+                      <button (click)="validateBarangayForm()"
+                              class="flex items-center justify-center gap-2 min-h-[56px] min-w-[220px] sm:min-w-[240px] px-7 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white text-base sm:text-lg font-bold shadow-[0_4px_14px_rgba(249,115,22,0.35)] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40">
+                        {{ t('common.continue') }}
+                        <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                        </svg>
+                      </button>
                     </div>
                   </div>
                 </div>
+              </div>
 
-                @if (formError()) {
-                  <div class="mt-4 bg-red-500/20 border border-red-400 rounded-xl p-4">
-                    <p class="text-red-200">{{ formError() }}</p>
+              <!-- Footer: same as the kiosk landing page (includes the language selector) -->
+              <div class="relative z-10 border-t border-[#E5E7EB] bg-white/90 backdrop-blur-sm">
+                <div class="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-1.5 lg:py-2 grid grid-cols-2 md:grid-cols-4 gap-x-6 lg:gap-x-8 gap-y-2 lg:gap-y-3 items-center">
+
+                  <!-- Section 1: Language (same as landing) -->
+                  <div class="flex flex-col items-center gap-1.5 text-center min-w-0">
+                    <div class="flex items-center gap-1.5 text-[#0F172A]">
+                      <svg class="w-[18px] h-[18px] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="9"/><path d="M3.6 9h16.8M3.6 15h16.8M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/>
+                      </svg>
+                      <span class="text-[13px] font-semibold">{{ t('landing.footer.language') }}</span>
+                    </div>
+                    <div class="inline-flex rounded-lg overflow-hidden border border-[#E5E7EB] bg-white shadow-sm min-w-0">
+                      <button
+                        (click)="setLanguage('en')"
+                        class="px-3 sm:px-5 py-1.5 text-[13px] font-semibold transition-colors min-h-[34px]"
+                        [class.bg-[#F97316]]="language() === 'en'"
+                        [class.text-white]="language() === 'en'"
+                        [class.bg-white]="language() !== 'en'"
+                        [class.text-[#0F172A]]="language() !== 'en'">
+                        English
+                      </button>
+                      <button
+                        (click)="setLanguage('fil')"
+                        class="px-3 sm:px-5 py-1.5 text-[13px] border-l border-[#E5E7EB] font-semibold transition-colors min-h-[34px]"
+                        [class.bg-[#F97316]]="language() === 'fil'"
+                        [class.text-white]="language() === 'fil'"
+                        [class.bg-white]="language() !== 'fil'"
+                        [class.text-[#0F172A]]="language() !== 'fil'">
+                        Filipino
+                      </button>
+                    </div>
                   </div>
-                }
 
-                <div class="flex gap-4 mt-6">
-                  <app-button variant="secondary" size="lg" class="flex-1" (onClick)="goBack()">{{ t('common.back') }}</app-button>
-                  <app-button variant="primary" size="lg" class="flex-1" (onClick)="validateBarangayForm()">{{ t('common.continue') }}</app-button>
+                  <!-- Section 2: Need Assistance -->
+                  <div class="flex flex-col items-center gap-1 text-center min-w-0">
+                    <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="9"/>
+                      <path d="M9.5 9a2.5 2.5 0 114.6 1.3c-.8 1-1.9 1.7-1.9 3.2" stroke-linecap="round"/>
+                      <path d="M12 17h.01" stroke-linecap="round"/>
+                    </svg>
+                    <div>
+                      <p class="text-[13px] lg:text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.assistance') }}</p>
+                      <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.assistanceDesc') }}</p>
+                    </div>
+                  </div>
+
+                  <!-- Section 3: Office Hours -->
+                  <div class="flex flex-col items-center gap-1 text-center min-w-0">
+                    <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="9"/>
+                      <path d="M12 7v5l3 2" stroke-linecap="round"/>
+                    </svg>
+                    <div>
+                      <p class="text-[13px] lg:text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.hours') }}</p>
+                      <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.monFri') }}</p>
+                      <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.hoursRange') }}</p>
+                    </div>
+                  </div>
+
+                  <!-- Section 4: Date & Time -->
+                  <div class="flex flex-col items-center gap-1 text-center min-w-0">
+                    <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                      <rect x="3" y="5" width="18" height="16" rx="2"/>
+                      <path d="M8 3v4M16 3v4M3 10h18"/>
+                    </svg>
+                    <div class="min-w-0">
+                      <p class="text-[11px] lg:text-[12px] font-medium text-[#64748B] leading-snug">{{ formatFooterDate() }}</p>
+                      <p class="text-base lg:text-lg font-bold text-[#F97316] leading-tight">{{ formatFooterTime() }}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1638,31 +2137,334 @@ export type BarangayStep =
 
           <!-- BAR STEP 2: Photo Capture (required) -->
           @if (barangayStep() === 'photo') {
-            <div class="absolute inset-0 flex flex-col items-center justify-center p-8">
-              <div class="max-w-lg w-full">
-                <h2 class="text-3xl font-bold mb-6 text-center">{{ t('bar.photo.title') }}</h2>
-                <p class="text-blue-200 text-center mb-6">{{ t('bar.photo.desc') }}</p>
-                @if (!capturedPhoto()) {
-                  <div class="bg-black rounded-2xl overflow-hidden mb-6">
-                    <video #videoEl autoplay playsinline class="w-full aspect-video object-cover"></video>
+            <div class="absolute inset-0 bg-[#F8FAFC] text-[#0F172A] select-none overflow-hidden [font-family:'Inter',sans-serif] flex flex-col">
+
+              <!-- Background image (same as the kiosk landing page) -->
+              <div class="absolute inset-0 bg-cover bg-center pointer-events-none" style="background-image: url('Background.png')" aria-hidden="true"></div>
+              <!-- Subtle radial glow keeps the form legible without washing the orange -->
+              <div class="absolute inset-0 pointer-events-none" aria-hidden="true"
+                   style="background: radial-gradient(ellipse 72% 58% at 50% 42%, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0.35) 55%, rgba(255,255,255,0.05) 100%);"></div>
+              <!-- Curved orange header accent (top-left, same as landing) -->
+              <div class="absolute top-0 left-0 w-64 h-40 pointer-events-none" aria-hidden="true">
+                <svg viewBox="0 0 256 160" class="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M0 0 H256 V80 C256 124 220 160 176 160 H0 Z" fill="#F97316" opacity="0.12"/>
+                </svg>
+              </div>
+
+              <!-- Top navigation: back (left) + logo (center) -->
+              <div class="relative z-10 flex items-center justify-center px-6 pt-[18px] pb-2">
+                <div class="absolute left-4 sm:left-6 top-[26px] z-40 flex items-center gap-2.5 sm:gap-3">
+                  <button (click)="goBack()"
+                          class="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px] rounded-full border-2 border-[#F97316]/60 bg-white flex items-center justify-center shadow-sm hover:bg-[#FFF7ED] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30"
+                          [attr.aria-label]="t('common.back')">
+                    <svg class="w-6 h-6 sm:w-7 sm:h-7 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                  </button>
+                  <button (click)="goBack()"
+                          class="flex items-center min-h-[44px] rounded-xl px-1 text-[#0F172A] font-semibold text-[15px] sm:text-base hover:text-[#F97316] transition-colors focus:outline-none focus:ring-2 focus:ring-[#F97316]/40">
+                    {{ t('common.back') }}
+                  </button>
+                </div>
+
+                <div class="w-[76px] h-[76px] sm:w-[88px] sm:h-[88px] rounded-full bg-white border-2 border-[#F97316]/30 shadow-sm overflow-hidden flex items-center justify-center">
+                  <img src="Barangay Logo.png" alt="Barangay San Manuel logo" class="w-full h-full object-cover">
+                </div>
+              </div>
+
+              <!-- Progress indicator -->
+              <div class="relative z-10 flex items-center justify-center px-4 pb-1">
+                <ol class="flex items-center gap-1.5 sm:gap-2.5" aria-label="Kiosk progress">
+                  <!-- Step 1: completed -->
+                  <li class="flex items-center gap-1.5 sm:gap-2.5">
+                    <span class="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-[#F97316] border-2 border-[#F97316] shadow-sm" aria-hidden="true">
+                      <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                      </svg>
+                    </span>
+                    <span class="hidden lg:block text-[14px] font-bold text-[#0F172A] whitespace-nowrap">{{ t('progress.yourInfo') }}</span>
+                  </li>
+                  <!-- Step 2: active -->
+                  <li class="flex items-center gap-1.5 sm:gap-2.5" aria-hidden="true">
+                    <span class="w-6 sm:w-10 h-[3px] rounded-full bg-[#F97316]"></span>
+                    <span class="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-base sm:text-lg font-bold text-white bg-[#F97316] border-2 border-[#F97316] shadow-sm">2</span>
+                    <span class="hidden lg:block text-[14px] font-bold text-[#0F172A] whitespace-nowrap">{{ t('progress.capturePhoto') }}</span>
+                  </li>
+                  <!-- Step 3: upcoming -->
+                  <li class="flex items-center gap-1.5 sm:gap-2.5" aria-hidden="true">
+                    <span class="w-6 sm:w-10 h-[3px] rounded-full bg-[#E5E7EB]"></span>
+                    <span class="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-base sm:text-lg font-bold text-[#94A3B8] bg-white border-2 border-[#CBD5E1]">3</span>
+                    <span class="hidden lg:block text-[14px] font-medium text-[#64748B] whitespace-nowrap">{{ t('progress.reviewDetails') }}</span>
+                  </li>
+                  <!-- Step 4: upcoming -->
+                  <li class="flex items-center gap-1.5 sm:gap-2.5" aria-hidden="true">
+                    <span class="w-6 sm:w-10 h-[3px] rounded-full bg-[#E5E7EB]"></span>
+                    <span class="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-base sm:text-lg font-bold text-[#94A3B8] bg-white border-2 border-[#CBD5E1]">4</span>
+                    <span class="hidden lg:block text-[14px] font-medium text-[#64748B] whitespace-nowrap">{{ t('progress.confirmSubmit') }}</span>
+                  </li>
+                </ol>
+              </div>
+
+              <!-- Main content -->
+              <div class="relative flex-1 overflow-y-auto">
+                <div class="min-h-full flex flex-col items-center justify-center px-5 sm:px-8 py-5 sm:py-7">
+
+                  <!-- Page header -->
+                  <div class="text-center mb-4 sm:mb-5">
+                    <h1 class="text-[clamp(1.5rem,2.2vw,2.125rem)] font-bold tracking-tight text-[#0F172A] leading-tight">{{ t('bar.photo.title') }}</h1>
+                    <p class="text-[clamp(0.925rem,1.1vw,1.075rem)] font-medium text-[#64748B] mt-1.5 sm:mt-2">{{ t('bar.photo.desc') }}</p>
                   </div>
-                  <div class="flex gap-4 justify-center">
-                    <app-button variant="primary" size="lg" (onClick)="capturePhoto()">{{ t('bar.photo.take') }}</app-button>
-                  </div>
-                } @else {
-                  <div class="text-center">
-                    <img [src]="capturedPhoto()" class="w-64 h-64 rounded-2xl mx-auto mb-6 object-cover border-4 border-white" />
-                    <div class="flex gap-4 justify-center">
-                      <app-button variant="primary" size="lg" (onClick)="confirmBarangayPhoto()">{{ t('bar.photo.use') }}</app-button>
-                      <app-button variant="secondary" size="lg" (onClick)="retakePhoto()">{{ t('bar.photo.retake') }}</app-button>
+
+                  <div class="w-full max-w-[1180px]">
+                    <div class="grid grid-cols-1 xl:grid-cols-[240px_minmax(0,1fr)_240px] gap-4 sm:gap-5 items-stretch">
+
+                      <!-- LEFT: Photo Guidelines -->
+                      <aside aria-label="Photo Guidelines" class="order-2 xl:order-1 flex flex-col justify-center rounded-[20px] border border-[#E5E7EB] bg-white shadow-[0_2px_14px_rgba(15,23,42,0.07)] px-5 sm:px-6 py-5 sm:py-6">
+                        <div class="flex items-center gap-3 mb-3">
+                          <div class="shrink-0 w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
+                            <svg class="w-6 h-6 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18z"/>
+                              <path stroke-linecap="round" d="M8.5 14.5c1.8 1.6 5.2 1.6 7 0"/>
+                              <circle cx="9" cy="10.2" r=".5" fill="currentColor"/>
+                              <circle cx="15" cy="10.2" r=".5" fill="currentColor"/>
+                            </svg>
+                          </div>
+                          <h3 class="text-[clamp(1rem,1.4vw,1.1875rem)] font-bold text-[#0F172A] leading-tight">{{ t('bar.photo.guideTitle') }}</h3>
+                        </div>
+                        <ul class="space-y-3 sm:space-y-3.5">
+                          <li class="flex items-start gap-3">
+                            <svg class="w-5 h-5 text-[#F97316] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+                              <circle cx="12" cy="8" r="3.5"/>
+                              <path d="M5 20c0-3.8 3.1-6 7-6s7 2.2 7 6" stroke-linecap="round"/>
+                            </svg>
+                            <span class="text-[clamp(0.875rem,1.05vw,0.975rem)] text-[#334155] leading-snug">{{ t('bar.photo.guide1') }}</span>
+                          </li>
+                          <li class="flex items-start gap-3">
+                            <svg class="w-5 h-5 text-[#F97316] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+                              <circle cx="12" cy="12" r="7"/>
+                              <path d="M9 15.5h6" stroke-linecap="round"/>
+                              <circle cx="9" cy="10" r=".5" fill="currentColor"/>
+                              <circle cx="15" cy="10" r=".5" fill="currentColor"/>
+                            </svg>
+                            <span class="text-[clamp(0.875rem,1.05vw,0.975rem)] text-[#334155] leading-snug">{{ t('bar.photo.guide2') }}</span>
+                          </li>
+                          <li class="flex items-start gap-3">
+                            <svg class="w-5 h-5 text-[#F97316] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+                              <path d="M4 13c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke-linecap="round"/>
+                              <path d="M2 14h4M18 14h4M5 16.5c0 1.8 3 2.6 7 2.6s7-.8 7-2.6" stroke-linecap="round"/>
+                              <path d="M2 3l20 18" stroke-linecap="round"/>
+                            </svg>
+                            <span class="text-[clamp(0.875rem,1.05vw,0.975rem)] text-[#334155] leading-snug">{{ t('bar.photo.guide3') }}</span>
+                          </li>
+                          <li class="flex items-start gap-3">
+                            <svg class="w-5 h-5 text-[#F97316] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+                              <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/>
+                              <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                            <span class="text-[clamp(0.875rem,1.05vw,0.975rem)] text-[#334155] leading-snug">{{ t('bar.photo.guide4') }}</span>
+                          </li>
+                          <li class="flex items-start gap-3">
+                            <svg class="w-5 h-5 text-[#F97316] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+                              <circle cx="12" cy="12" r="4"/>
+                              <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1" stroke-linecap="round"/>
+                            </svg>
+                            <span class="text-[clamp(0.875rem,1.05vw,0.975rem)] text-[#334155] leading-snug">{{ t('bar.photo.guide5') }}</span>
+                          </li>
+                        </ul>
+                      </aside>
+
+                      <!-- CENTER: Camera preview -->
+                      <div class="order-1 xl:order-2 w-full max-w-[520px] mx-auto">
+                        <div class="bg-white border border-[#E5E7EB] rounded-[20px] shadow-[0_2px_14px_rgba(15,23,42,0.07)] p-2 sm:p-2.5">
+
+                          <!-- Camera viewport -->
+                          <div class="relative aspect-[4/3] rounded-[14px] overflow-hidden bg-[#0F172A]">
+                            @if (capturedPhoto()) {
+                              <img [src]="capturedPhoto()" alt="Captured ID photo" class="absolute inset-0 w-full h-full object-cover" />
+                            } @else if (errorMessage() && !cameraReady()) {
+                              <!-- Camera unavailable warning (compact) -->
+                              <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center bg-[#0F172A]">
+                                <svg class="w-9 h-9 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M2 2l20 20M8.5 4h7L17 6h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-1"/>
+                                  <path stroke-linecap="round" d="M4 6h.5a2.5 2.5 0 0 0 2.5 2.5V9"/>
+                                  <circle cx="12" cy="14" r="3"/>
+                                </svg>
+                                <p class="text-white text-base font-semibold">{{ t('bar.photo.unavailable') }}</p>
+                                <p class="text-white/70 text-[13px] sm:text-sm max-w-xs">{{ t('bar.photo.unavailableDesc') }}</p>
+                                <button (click)="retryPhotoCamera()"
+                                        class="mt-1 flex items-center gap-2 min-h-[48px] px-6 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white font-semibold text-sm transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40">
+                                  <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v6h6M20 20v-6h-6M4 10a8 8 0 0 1 14-4M20 14a8 8 0 0 1-14 4"/>
+                                  </svg>
+                                  {{ t('bar.photo.tryAgain') }}
+                                </button>
+                              </div>
+                            } @else {
+                              <video #videoEl autoplay playsinline class="absolute inset-0 w-full h-full object-cover"></video>
+
+                              <!-- Face-positioning guide (fades out when the camera is live) -->
+                              <div class="absolute inset-0 pointer-events-none transition-opacity duration-300" [class.opacity-40]="cameraReady()">
+                                <!-- Corner markers -->
+                                <div class="absolute inset-[18%]" aria-hidden="true">
+                                  <span class="absolute left-0 top-0 h-[2.5px] w-6 rounded bg-[#F97316]/90"></span>
+                                  <span class="absolute left-0 top-0 h-6 w-[2.5px] rounded bg-[#F97316]/90"></span>
+                                  <span class="absolute right-0 top-0 h-[2.5px] w-6 rounded bg-[#F97316]/90"></span>
+                                  <span class="absolute right-0 top-0 h-6 w-[2.5px] rounded bg-[#F97316]/90"></span>
+                                  <span class="absolute left-0 bottom-0 h-[2.5px] w-6 rounded bg-[#F97316]/90"></span>
+                                  <span class="absolute left-0 bottom-0 h-6 w-[2.5px] rounded bg-[#F97316]/90"></span>
+                                  <span class="absolute right-0 bottom-0 h-[2.5px] w-6 rounded bg-[#F97316]/90"></span>
+                                  <span class="absolute right-0 bottom-0 h-6 w-[2.5px] rounded bg-[#F97316]/90"></span>
+                                </div>
+                                <!-- Head-and-shoulders silhouette -->
+                                <svg class="absolute inset-0 m-auto w-36 max-w-[42%] text-white/40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 120 140" aria-hidden="true">
+                                  <circle cx="60" cy="46" r="24"/>
+                                  <path d="M28 126c2-26 16-40 32-40s30 14 32 40" stroke-linecap="round"/>
+                                </svg>
+                                <!-- Caption -->
+                                <div class="absolute inset-x-0 bottom-3 flex justify-center px-4">
+                                  <span class="rounded-full bg-black/50 backdrop-blur-sm px-4 py-1.5 text-white text-[13px] font-medium">{{ t('bar.photo.positionGuide') }}</span>
+                                </div>
+                              </div>
+
+                              <!-- Camera status chip -->
+                              <div class="absolute left-3 top-3 flex items-center gap-2 rounded-full bg-black/50 backdrop-blur-sm px-3 py-1.5">
+                                <span class="h-2.5 w-2.5 rounded-full shrink-0"
+                                      [class.bg-[#10B981]]="cameraReady()"
+                                      [class.bg-[#FBBF24]]="!cameraReady()"></span>
+                                @if (cameraReady()) {
+                                  <span class="text-white text-[13px] font-semibold">{{ t('bar.photo.cameraReady') }}</span>
+                                }
+                              </div>
+                            }
+                          </div>
+
+                          <!-- Actions -->
+                          <div class="flex flex-col items-center justify-center gap-2.5 pt-3 sm:pt-3.5 pb-0.5">
+                            @if (!capturedPhoto()) {
+                              <button (click)="capturePhoto()" [disabled]="!cameraReady()"
+                                      class="flex items-center justify-center gap-2.5 min-h-[56px] min-w-[300px] px-7 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white text-base sm:text-lg font-semibold shadow-[0_4px_14px_rgba(249,115,22,0.35)] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none">
+                                <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 8a2 2 0 0 1 2-2h2l1.5-2h7L17 6h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
+                                  <circle cx="12" cy="13" r="3.5"/>
+                                </svg>
+                                {{ t('bar.photo.take') }}
+                              </button>
+                              @if (cameraReady()) {
+                                <p class="text-[13px] sm:text-sm text-[#64748B]">{{ t('bar.photo.waiting') }}</p>
+                              }
+                            } @else {
+                              <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+                                <button (click)="confirmBarangayPhoto()"
+                                        class="flex items-center justify-center gap-2.5 min-h-[56px] min-w-[200px] px-7 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white text-base sm:text-lg font-semibold shadow-[0_4px_14px_rgba(249,115,22,0.35)] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40">
+                                  {{ t('bar.photo.use') }}
+                                  <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                                  </svg>
+                                </button>
+                                <button (click)="retakePhoto()"
+                                        class="flex items-center justify-center gap-2 min-h-[56px] min-w-[160px] px-6 rounded-xl bg-white border-2 border-[#F97316] text-[#F97316] hover:bg-[#FFF7ED] active:scale-[0.98] text-base sm:text-lg font-semibold transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30">
+                                  <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v6h6M20 20v-6h-6M4 10a8 8 0 0 1 14-4M20 14a8 8 0 0 1-14 4"/>
+                                  </svg>
+                                  {{ t('bar.photo.retake') }}
+                                </button>
+                              </div>
+                            }
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- RIGHT: Tips -->
+                      <aside aria-label="Photo Tips" class="order-3 flex flex-col justify-center rounded-[20px] border border-[#F97316]/20 bg-[#FFF7ED] px-5 sm:px-6 py-5 sm:py-6">
+                        <div class="flex items-center gap-3 mb-3">
+                          <div class="shrink-0 w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
+                            <svg class="w-6 h-6 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3a5.5 5.5 0 0 1 3.4 9.8c-.6.5-1.1 1.2-1.3 2.2h-4.2c-.2-1-.7-1.7-1.3-2.2A5.5 5.5 0 0 1 12 3z"/>
+                              <path stroke-linecap="round" d="M9.5 17.5h5M10.5 21h3"/>
+                            </svg>
+                          </div>
+                          <h3 class="text-[clamp(1rem,1.4vw,1.1875rem)] font-bold text-[#0F172A] leading-tight">{{ t('bar.photo.tipsTitle') }}</h3>
+                        </div>
+                        <p class="text-[clamp(0.875rem,1.05vw,0.975rem)] text-[#64748B] leading-relaxed">{{ t('bar.photo.tipsDesc') }}</p>
+                      </aside>
+
                     </div>
                   </div>
-                }
-                @if (errorMessage()) {
-                  <div class="mt-6 bg-red-500/20 border border-red-400 rounded-xl p-4">
-                    <p class="text-red-200">{{ errorMessage() }}</p>
+                </div>
+              </div>
+
+              <!-- Footer: same as the kiosk landing page (includes the language selector) -->
+              <div class="relative z-10 border-t border-[#E5E7EB] bg-white/90 backdrop-blur-sm">
+                <div class="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-1.5 lg:py-2 grid grid-cols-2 md:grid-cols-4 gap-x-6 lg:gap-x-8 gap-y-2 lg:gap-y-3 items-center">
+
+                  <!-- Section 1: Language (same as landing) -->
+                  <div class="flex flex-col items-center gap-1.5 text-center min-w-0">
+                    <div class="flex items-center gap-1.5 text-[#0F172A]">
+                      <svg class="w-[18px] h-[18px] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="9"/><path d="M3.6 9h16.8M3.6 15h16.8M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/>
+                      </svg>
+                      <span class="text-[13px] font-semibold">{{ t('landing.footer.language') }}</span>
+                    </div>
+                    <div class="inline-flex rounded-lg overflow-hidden border border-[#E5E7EB] bg-white shadow-sm min-w-0">
+                      <button
+                        (click)="setLanguage('en')"
+                        class="px-3 sm:px-5 py-1.5 text-[13px] font-semibold transition-colors min-h-[34px]"
+                        [class.bg-[#F97316]]="language() === 'en'"
+                        [class.text-white]="language() === 'en'"
+                        [class.bg-white]="language() !== 'en'"
+                        [class.text-[#0F172A]]="language() !== 'en'">
+                        English
+                      </button>
+                      <button
+                        (click)="setLanguage('fil')"
+                        class="px-3 sm:px-5 py-1.5 text-[13px] border-l border-[#E5E7EB] font-semibold transition-colors min-h-[34px]"
+                        [class.bg-[#F97316]]="language() === 'fil'"
+                        [class.text-white]="language() === 'fil'"
+                        [class.bg-white]="language() !== 'fil'"
+                        [class.text-[#0F172A]]="language() !== 'fil'">
+                        Filipino
+                      </button>
+                    </div>
                   </div>
-                }
+
+                  <!-- Section 2: Need Assistance -->
+                  <div class="flex flex-col items-center gap-1 text-center min-w-0">
+                    <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="9"/>
+                      <path d="M9.5 9a2.5 2.5 0 114.6 1.3c-.8 1-1.9 1.7-1.9 3.2" stroke-linecap="round"/>
+                      <path d="M12 17h.01" stroke-linecap="round"/>
+                    </svg>
+                    <div>
+                      <p class="text-[13px] lg:text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.assistance') }}</p>
+                      <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.assistanceDesc') }}</p>
+                    </div>
+                  </div>
+
+                  <!-- Section 3: Office Hours -->
+                  <div class="flex flex-col items-center gap-1 text-center min-w-0">
+                    <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="9"/>
+                      <path d="M12 7v5l3 2" stroke-linecap="round"/>
+                    </svg>
+                    <div>
+                      <p class="text-[13px] lg:text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.hours') }}</p>
+                      <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.monFri') }}</p>
+                      <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.hoursRange') }}</p>
+                    </div>
+                  </div>
+
+                  <!-- Section 4: Date & Time -->
+                  <div class="flex flex-col items-center gap-1 text-center min-w-0">
+                    <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                      <rect x="3" y="5" width="18" height="16" rx="2"/>
+                      <path d="M8 3v4M16 3v4M3 10h18"/>
+                    </svg>
+                    <div class="min-w-0">
+                      <p class="text-[11px] lg:text-[12px] font-medium text-[#64748B] leading-snug">{{ formatFooterDate() }}</p>
+                      <p class="text-base lg:text-lg font-bold text-[#F97316] leading-tight">{{ formatFooterTime() }}</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           }
@@ -1817,8 +2619,10 @@ export class KioskComponent implements OnInit, OnDestroy {
   capturedSignature = signal<string | null>(null);
   requestNumber = signal('');
   errorMessage = signal('');
+  cameraReady = signal(false);
   formError = signal('');
   guestSubmitted = signal(false);
+  barangaySubmitted = signal(false);
   submitting = signal(false);
   previewing = signal(false);
   showPreview = signal(false);
@@ -2079,6 +2883,7 @@ export class KioskComponent implements OnInit, OnDestroy {
   }
 
   private resetBarangayForm() {
+    this.barangaySubmitted.set(false);
     this.barangayForm = {
       firstName: '',
       middleName: '',
@@ -2436,6 +3241,33 @@ export class KioskComponent implements OnInit, OnDestroy {
     }
   }
 
+  barangayInvalid(key: string): boolean {
+    if (!this.barangaySubmitted()) return false;
+    const f = this.barangayForm;
+    switch (key) {
+      case 'firstName':
+        return !f.firstName.trim();
+      case 'lastName':
+        return !f.lastName.trim();
+      case 'birthDate':
+        return !f.birthDate;
+      case 'gender':
+        return !f.gender;
+      case 'civilStatus':
+        return !f.civilStatus;
+      case 'addressLine':
+        return !f.addressLine.trim();
+      case 'contactNumber':
+        return !f.contactNumber.trim();
+      case 'emergencyContactName':
+        return !f.emergencyContactName.trim();
+      case 'emergencyContactNumber':
+        return !f.emergencyContactNumber.trim();
+      default:
+        return false;
+    }
+  }
+
   // ============================================================
   // BARANGAY ID FLOW
   // ============================================================
@@ -2447,6 +3279,7 @@ export class KioskComponent implements OnInit, OnDestroy {
   }
 
   validateBarangayForm() {
+    this.barangaySubmitted.set(true);
     this.formError.set('');
     const f = this.barangayForm;
     if (!f.firstName.trim()) {
@@ -2634,16 +3467,19 @@ export class KioskComponent implements OnInit, OnDestroy {
 
   startCamera(target?: HTMLVideoElement) {
     if (this.stream) return;
+    this.cameraReady.set(false);
     navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: 'user' } })
       .then(stream => {
         this.stream = stream;
         const el = target || this.videoEl?.nativeElement;
         if (el) el.srcObject = stream;
         this.errorMessage.set('');
+        this.cameraReady.set(true);
       })
       .catch((err) => {
         console.error('Camera error:', err);
         this.errorMessage.set(this.t('err.cameraDenied'));
+        this.cameraReady.set(false);
       });
   }
 
@@ -2652,6 +3488,13 @@ export class KioskComponent implements OnInit, OnDestroy {
       this.stream.getTracks().forEach(t => t.stop());
       this.stream = null;
     }
+    this.cameraReady.set(false);
+  }
+
+  retryPhotoCamera() {
+    this.errorMessage.set('');
+    this.cameraReady.set(false);
+    setTimeout(() => this.startCamera(), 100);
   }
 
   private drawFrame(el: HTMLVideoElement): string {

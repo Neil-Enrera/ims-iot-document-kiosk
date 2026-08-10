@@ -547,6 +547,35 @@ The free image module is abandoned upstream and is incompatible with `docxtempla
 
 ---
 
+### DEC-022 - Scale the Capture Your ID Photo screen to match the optimized kiosk screens
+
+**Status:** Accepted
+**Date:** 2026-08-10
+**Decision Maker(s):** Project Owner
+
+**Decision:**
+The kiosk "Capture Your ID Photo" screen was re-scaled so every element matches the sizing already applied to the optimized Barangay ID Requirements and Barangay ID Application screens (the scale introduced in DEC-019). On the landscape kiosk display it previously felt too large and zoomed in. Concretely, in `kiosk.component.ts` (the `bar.photo.*` step):
+
+- Page title/desc now use the same clamp scale as Requirements/Application (`clamp(1.5rem,2.2vw,2.125rem)` / `clamp(0.925rem,1.1vw,1.075rem)`), down from `clamp(2.5rem,3vw,3rem)` / `clamp(1.125rem,1.15vw,1.25rem)`.
+- The photo-grid container shrank from `max-w-[1280px]` / `270px` side columns to `max-w-[1180px]` / `240px` columns.
+- The camera preview card is `max-w-[520px]` (4:3) instead of `640px`, with the corner markers, silhouette, and status overlays reduced accordingly.
+- Buttons dropped from `min-h-[64px]`/`text-lg font-bold` to `min-h-[56px]`/`text-base sm:text-lg font-semibold`, matching the Requirements "Continue" button while staying touchscreen-friendly.
+- Side panel titles now use `clamp(1rem,1.4vw,1.1875rem)` and tighter padding/spacing, matching the Requirements h3 / card rhythm.
+
+**Reason:**
+The photo step was built before the Requirements/Application steps were scaled down, so it broke the kiosk's visual rhythm and consumed the 1080p landscape viewport (the 640px camera plus large header/buttons pushed content into vertical scroll). Matching the accepted clamp scale keeps one consistent, more spacious look across the whole Barangay ID flow while preserving touch targets.
+
+**Alternatives Considered:**
+1. Keep the photo screen at its larger scale — rejected; it was the odd one out and felt zoomed in.
+2. Rewrite the step at a new custom scale rather than reusing the accepted clamps — rejected; reusing the exact values guarantees consistency.
+
+**Consequences:**
+- Single source of truth for kiosk screen rhythm (same clamp values across Requirements, Application, and Photo steps).
+- Camera is smaller but still a 4:3 capture view appropriate for an ID portrait.
+- Verified: `npm run build:kiosk` clean (pre-existing budget/ESM warnings only); no backend/API changes.
+
+---
+
 ### DEC-021 - Reuse the card render pipeline for a no-persist kiosk live preview
 
 **Status:** Accepted
