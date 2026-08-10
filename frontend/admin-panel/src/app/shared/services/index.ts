@@ -214,7 +214,7 @@ export class RequestService {
 
 @Injectable({ providedIn: 'root' })
 export class ApplicationService {
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService, private http: HttpClient) {}
 
   getAll(params?: any) {
     return this.api.getList<BarangayIdApplication>('/applications', params);
@@ -222,6 +222,13 @@ export class ApplicationService {
 
   getById(id: number) {
     return this.api.get<BarangayIdApplication>(`/applications/${id}`);
+  }
+
+  // Render a DRAFT preview of the Barangay ID card. This never approves the
+  // application, never assigns an ID number, and never creates a resident — it
+  // is a review-only preview of the applicant's submitted information.
+  previewBlob(id: number) {
+    return this.http.post(`${this.api.baseUrl}/applications/${id}/preview`, {}, { responseType: 'blob' });
   }
 
   approve(id: number, remarks?: string) {

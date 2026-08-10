@@ -8,6 +8,7 @@ const { getAllValidation, reviewValidation } = require('../validations/applicati
 
 router.get('/', authenticate, authorize('Administrator', 'Barangay Secretary'), ...getAllValidation, validate, applicationController.getAll);
 router.get('/:id', authenticate, authorize('Administrator', 'Barangay Secretary'), applicationController.getById);
+router.post('/:id/preview', authenticate, authorize('Administrator', 'Barangay Secretary', 'Barangay Captain'), ...reviewValidation, validate, applicationController.preview);
 router.post('/:id/approve', authenticate, authorize('Administrator', 'Barangay Secretary', 'Barangay Captain'), ...reviewValidation, validate, applicationController.approve);
 router.post('/:id/reject', authenticate, authorize('Administrator', 'Barangay Secretary', 'Barangay Captain'), ...reviewValidation, validate, applicationController.reject);
 router.post('/:id/return', authenticate, authorize('Administrator', 'Barangay Secretary', 'Barangay Captain'), ...reviewValidation, validate, applicationController.returnForCorrection);

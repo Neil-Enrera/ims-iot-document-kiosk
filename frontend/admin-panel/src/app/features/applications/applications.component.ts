@@ -111,6 +111,10 @@ type ApplicationRow = BarangayIdApplication & { full_name: string };
 
             @if (app.status === 'PENDING') {
               <div class="md:col-span-2 border-t border-gray-200 pt-4">
+                <div class="flex items-center justify-between gap-4 mb-4">
+                  <p class="text-xs uppercase tracking-wide text-gray-500">Review the generated ID before making a decision</p>
+                  <app-button variant="secondary" (onClick)="previewDraft(app)" [loading]="previewing()">Preview ID Card</app-button>
+                </div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Remarks (optional)</label>
                 <textarea
                   [value]="remarks()"
@@ -123,6 +127,13 @@ type ApplicationRow = BarangayIdApplication & { full_name: string };
                   <app-button variant="danger" (onClick)="requestAction('reject')">Reject</app-button>
                   <app-button variant="success" (onClick)="requestAction('approve')">Approve</app-button>
                 </div>
+              </div>
+            }
+
+            @if (app.status === 'RETURNED') {
+              <div class="md:col-span-2 border-t border-gray-200 pt-4 flex items-center justify-between gap-4">
+                <p class="text-xs uppercase tracking-wide text-gray-500">Review the corrected information before re-approving</p>
+                <app-button variant="secondary" (onClick)="previewDraft(app)" [loading]="previewing()">Preview ID Card</app-button>
               </div>
             }
 
@@ -163,8 +174,9 @@ type ApplicationRow = BarangayIdApplication & { full_name: string };
       <app-document-preview-modal
         [open]="showCardPreview()"
         [title]="cardPreviewTitle()"
+        [blob]="cardPreviewBlob()"
         [blobUrl]="cardPreviewUrl()"
-        (onClose)="showCardPreview.set(false)"
+        (onClose)="closeCardPreview()"
       />
     </div>
   `
@@ -191,6 +203,8 @@ export class ApplicationsComponent implements OnInit, OnDestroy {
   showCardPreview = signal(false);
   cardPreviewTitle = signal('Barangay ID Card');
   cardPreviewUrl = signal<string | null>(null);
+  cardPreviewBlob = signal<Blob | null>(null);
+  previewing = signal(false);
 
   statusOptions = [
     { value: '', label: 'All statuses' },
@@ -348,8 +362,48 @@ export class ApplicationsComponent implements OnInit, OnDestroy {
 
   previewIdCard(app: ApplicationRow) {
     this.cardPreviewTitle.set(`${app.full_name} — Barangay ID (${app.id_number})`);
+    this.cardPreviewBlob.set(null);
     this.cardPreviewUrl.set(this.idCardUrl(app));
     this.showCardPreview.set(true);
+  }
+
+  // Draft preview: render the ID card from the application's submitted data
+  // WITHOUT approving it. The server returns a DOCX buffer (no resident record,
+  // no ID number, nothing persisted), which we display inline for review.
+  previewDraft(app: ApplicationRow) {
+    if (this.previewing()) return;
+    this.previewing.set(true);
+    this.cardPreviewBlob.set(null);
+    this.applicationService.previewBlob(app.application_id).subscribe({
+      next: (blob) => {
+        this.previewing.set(false);
+        this.cardPreviewTitle.set(`${app.full_name} — Barangay ID (Draft Preview)`);
+        this.cardPreviewBlob.set(blob);
+        this.cardPreviewUrl.set(null);
+        this.showCardPreview.set(true);
+      },
+      error: (err: any) => {
+        this.previewing.set(false);
+        let msg = 'Could not render the ID card preview.';
+        if (err?.error instanceof Blob) {
+          err.error.text().then((text: string) => {
+            try {
+              const parsed = JSON.parse(text);
+              msg = parsed?.message || msg;
+            } catch { /* ignore non-JSON error bodies */ }
+            alert(msg);
+          });
+        } else {
+          alert(err?.error?.message || msg);
+        }
+      }
+    });
+  }
+
+  closeCardPreview() {
+    this.showCardPreview.set(false);
+    this.cardPreviewUrl.set(null);
+    this.cardPreviewBlob.set(null);
   }
 
   requestAction(action: 'approve' | 'reject' | 'return') {

@@ -62,6 +62,39 @@ Use one of the following categories:
 
 ---
 
+# Version 2.6.1
+
+**Status:** Active Development
+
+**Date:** 2026-08-10
+
+## Added
+
+- **Admin draft ID preview before approval** in the Barangay ID Applications workflow: a **Preview ID Card** button (with loading state) is available while an application is **PENDING** (and **RETURNED** for corrected info). A new protected endpoint `POST /api/v1/applications/:id/preview` renders the barangay's ID-card template via `renderCardBuffer()` and streams the DOCX buffer inline. It **never** writes to disk, never assigns an official ID number, and never creates a resident record — previewing a card does not register the applicant.
+
+## Changed
+
+- `ApplicationService.previewBlob(id)` posts to the new endpoint and returns a `Blob`; the applications modal binds both `[blob]` and `[blobUrl]` so draft previews render through the same `DocumentPreviewModalComponent` (docx-preview) as approved cards.
+- `id-card.service.js` `buildContext` now synthesizes a resident context from the application's submitted fields when no resident record exists yet, so resident-based placeholders (`{{full_name}}`, `{{address}}`, `{{sex}}`, `{{surname}}`, ...) render the applicant's own information on the draft card. A real resident record still wins when present.
+
+## Fixed
+
+- **Approval/preview dependency removed**: previously the ID card was only generated inside `approveApplication` and the admin panel only previewed the persisted `id_card_path` for `APPROVED` rows — so the administrator had to approve before seeing any generated ID. Draft preview is now decoupled from approval.
+
+**Modules Affected:** Admin Panel, Backend
+
+**Database Changes:** No
+
+**API Changes:** Yes — new protected `POST /api/v1/applications/:id/preview` (Administrator, Barangay Secretary, Barangay Captain).
+
+**Architecture Changes:** No
+
+**Breaking Changes:** No
+
+**Testing Performed:** Backend tests (54/54, incl. 2 new draft-preview tests), backend lint 0 errors, `tsc --noEmit` clean on admin-panel, `ng test admin-panel` 14/14, `ng build admin-panel` passes, live endpoint check returning a valid DOCX with the applicant's name/civil status and no `BRGY-` ID number.
+
+---
+
 # Version 2.6.0
 
 **Status:** Active Development

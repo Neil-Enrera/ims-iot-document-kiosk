@@ -21,6 +21,37 @@ const getApplicationById = async (applicationId) => {
   return { success: true, message: 'Application retrieved successfully.', data: application };
 };
 
+// Render a DRAFT preview of the Barangay ID card for an application WITHOUT
+// approving it. The card is rendered to a buffer (never written to disk), no
+// resident record is created, and no official ID number is assigned — so
+// previewing the card never registers the applicant as an official Barangay ID
+// holder. The official ID (with number, issue/expiry, and persisted card) is only
+// generated later inside approveApplication.
+const previewApplication = async (applicationId) => {
+  const application = await applicationRepository.findById(applicationId);
+  if (!application) {
+    return { success: false, message: 'Application not found.' };
+  }
+
+  const barangay = await findBarangay();
+  if (!barangay) {
+    return { success: false, message: 'Barangay profile not found.' };
+  }
+
+  const rendered = await idCardService.renderCardBuffer({
+    application,
+    resident: {},
+    barangay,
+    processedBy: 'PREVIEW'
+  });
+
+  if (!rendered.success) {
+    return { success: false, message: rendered.message };
+  }
+
+  return { success: true, message: 'Barangay ID preview rendered.', data: rendered.buffer };
+};
+
 const createApplication = async (data, ipAddress) => {
   const applicationNumber = await applicationRepository.generateApplicationNumber();
 
@@ -331,6 +362,7 @@ module.exports = {
   getAllApplications,
   getApplicationById,
   createApplication,
+  previewApplication,
   approveApplication,
   rejectApplication,
   returnApplication,

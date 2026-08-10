@@ -3,6 +3,7 @@ const assert = require('node:assert');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const PizZip = require('pizzip');
 const idCard = require('../src/services/id-card.service');
 
 describe('ID card image size detection', () => {
@@ -95,5 +96,84 @@ describe('ID card kiosk payload mapping', () => {
     assert.strictEqual(application.middle_name, undefined);
     assert.strictEqual(application.emergency_contact_number, undefined);
     assert.strictEqual(application.form_data, '{}');
+  });
+});
+
+describe('ID card draft preview rendering (before approval)', () => {
+  const uploadsTemplates = path.join(__dirname, '../uploads/templates');
+  const templateName = `preview-test-${Date.now()}.docx`;
+  const templatePath = path.join(uploadsTemplates, templateName);
+  const relTemplatePath = `templates/${templateName}`;
+
+  after(() => {
+    try { fs.unlinkSync(templatePath); } catch { /* noop */ }
+  });
+
+  // Copy the barangay's real configured ID-card template so docxtemplater
+  // renders a genuinely valid OOXML file (hand-built zips are rejected).
+  const sourceTemplate = path.join(uploadsTemplates, 'da4927dcbc4b31935f47f59b7e9cbd73.docx');
+  const writeTaggedTemplate = () => {
+    fs.copyFileSync(sourceTemplate, templatePath);
+  };
+
+  // A PENDING application has no resident record and no id_number yet.
+  const pendingApplication = {
+    application_number: 'APP-20260810-000999',
+    first_name: 'Maria',
+    middle_name: 'Santos',
+    last_name: 'Dela Cruz',
+    suffix: null,
+    birth_date: '1995-06-15',
+    gender: 'Female',
+    civil_status: 'Single',
+    occupation: 'Student',
+    blood_type: 'O+',
+    address_line: '456 Rizal St',
+    contact_number: '09171112223',
+    email: 'maria@example.com',
+    emergency_contact_name: 'Ana Dela Cruz',
+    emergency_contact_number: '09174445556',
+    photo: null,
+    signature: null,
+    id_number: null,
+    id_expiration_date: null,
+    form_data: null
+  };
+
+  const barangay = { barangay_id: 1, barangay_name: 'San Manuel', id_template_path: relTemplatePath };
+
+  it('renders a DOCX buffer for a pending application without a resident record', async () => {
+    writeTaggedTemplate();
+    const result = await idCard.renderCardBuffer({
+      application: pendingApplication,
+      resident: {},
+      barangay,
+      processedBy: 'PREVIEW'
+    });
+    assert.strictEqual(result.success, true, result.message);
+    assert.ok(result.buffer && result.buffer.length > 0, 'should return a non-empty DOCX buffer');
+
+    // Re-open the rendered buffer and verify the applicant's submitted fields
+    // are filled in even though no resident record exists yet.
+    const zip = new PizZip(result.buffer);
+    const xml = zip.file('word/document.xml').asText();
+    assert.ok(xml.includes('Maria'), 'first_name should render from the application');
+    assert.ok(xml.includes('Santos'), 'middle_name should render from the application');
+    assert.ok(xml.includes('Dela Cruz'), 'surname should render from the application');
+    assert.ok(xml.includes('Single'), 'civil_status should render from the application');
+  });
+
+  it('does not assign an id_number or expiry when rendering the draft', async () => {
+    writeTaggedTemplate();
+    const result = await idCard.renderCardBuffer({
+      application: pendingApplication,
+      resident: {},
+      barangay,
+      processedBy: 'PREVIEW'
+    });
+    assert.strictEqual(result.success, true, result.message);
+    const zip = new PizZip(result.buffer);
+    const xml = zip.file('word/document.xml').asText();
+    assert.ok(!xml.includes('BRGY-'), 'no official ID number should be present on the draft');
   });
 });

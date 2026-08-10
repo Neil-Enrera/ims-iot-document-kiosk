@@ -195,6 +195,10 @@ const embedPhoto = (doc, imageBuffer, centered) => {
 // Build the placeholder context for an approved application. The application
 // row fields (name, birth date, address, etc.) become the application context
 // and, via the built resident, let every {{placeholder}} resolve normally.
+// When no resident record exists yet (draft preview before approval), the
+// application's submitted fields are synthesized into the resident context so
+// resident-based placeholders ({{full_name}}, {{address}}, {{sex}}, ...) still
+// render the applicant's own information on the preview card.
 const buildContext = async ({ application, resident, barangay, processedBy }) => {
   const parseFormData = (raw) => {
     if (!raw) return {};
@@ -219,9 +223,25 @@ const buildContext = async ({ application, resident, barangay, processedBy }) =>
     id_number: application.id_number,
     id_expiration: application.id_expiration_date
   };
+  // A real resident record wins; otherwise fall back to the application fields.
+  const residentContext = {
+    first_name: application.first_name,
+    middle_name: application.middle_name,
+    last_name: application.last_name,
+    suffix: application.suffix,
+    birth_date: application.birth_date,
+    gender: application.gender,
+    civil_status: application.civil_status,
+    occupation: application.occupation,
+    blood_type: application.blood_type,
+    address_line: application.address_line,
+    contact_number: application.contact_number,
+    email: application.email,
+    ...(resident || {})
+  };
   return placeholderEngine.buildContext({
     request: { form_data: appContext },
-    resident: resident || {},
+    resident: residentContext,
     barangay: barangay || {},
     processedBy: processedBy || ''
   });
