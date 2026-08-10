@@ -628,3 +628,38 @@ The business requirement is that the kiosk preview shows the actual generated ID
 - The barangay's active ID template (under gitignored `uploads/`) now places `{{resident_photo}}` in the photo box; **a fresh clone must re-apply this tag to whichever template is uploaded** so previews and cards include the photo.
 - Kiosk preview/toast error text surfaces the first field error (`errors[0].msg`) on both preview and submit.
 - Verified live: preview render succeeds with photo media embedded, name/id present, `{{valid_until}}` now renders the assigned expiry on an approved-context card (`Valid Until: <date>`), and preview leaves the application `PENDING` with `resident_id` null (no approve/register). Backend tests 54/54, ESLint no new issues.
+
+---
+
+### DEC-024 - Fix Barangay ID photo embedding (broken image relationship + nested paragraph)
+
+**Status:** Accepted
+**Date:** 2026-08-10
+**Decision Maker(s):** Project Owner
+
+**Decision:**
+The kiosk "Preview My ID Card" rendered the resident's information and the card design but the captured photo never appeared in the template's 2×2 photo box. Root cause was two OOXML defects in `embedPhoto` (`backend/src/services/id-card.service.js`) that have existed since DEC-020, both of which make the photo impossible to render:
+
+1. **Broken image relationship.** The `Relationship` Target was written as `media/` + (`word/media/...` minus `word/`) = **`media/media/image1.png`**, while the media part actually lives at `word/media/image1.png`. Every renderer (docx-preview on the kiosk, Word, LibreOffice) resolves that target relative to `word/`, hits a non-existent part, and renders an empty photo area — even though the media part, content-type entry, and drawing were all inserted.
+
+2. **Malformed nested paragraph.** `buildDrawingXml` with `centered: true` wrapped the drawing in its own `<w:p>`, and `embedPhoto` replaced the token's `<w:r>` with that whole paragraph — producing a `<w:p>` nested inside the photo-cell's `<w:p>` (invalid OOXML), which further broke rendering in stricter viewers.
+
+Prior E2E passes (DEC-020/021) only asserted that a media part existed in the generated zip — `embedPhoto` adds the media before attempting the replacement, so those checks passed while the relationship was broken and no image was ever displayable.
+
+**Fix (both in `embedPhoto`):**
+- Relationship Target is now `media/<filename>` (single `media/` segment), resolving to the actual `word/media/image1.png` part.
+- The token `<w:t>` is swapped for a bare inline `<w:drawing>` **inside the same run**, preserving the run's properties and any adjacent `<w:br/>` line breaks. `buildDrawingXml` now returns only the `<w:drawing>` fragment; the drawing sits in a single `<w:r>` with no nested paragraph. The template's photo cell is already a centered paragraph, so the photo lands centered in the 2×2 box at its natural aspect, capped at 300px on the long side.
+
+**Reason:**
+Photos were being "embedded" into unreachable parts, so every Barangay ID card and every preview silently lacked the resident's photo while the code reported success. A correct relationship target and valid run structure are prerequisites for any renderer to display the image, and both were trivial to repair in the same post-render helper.
+
+**Alternatives Considered:**
+1. Reintroduce `docxtemplater-image-module` — rejected; DEC-020 removed it because it crashes with current docxtemplater and the maintained version is paid.
+2. Replace the entire photo-cell paragraph with a new centered one — rejected; the template's paragraph holds the "PHOTO / 2 × 2" caption text that must stay, and splicing into the run preserves layout.
+3. Store the photo as a separate base64 data URI in the DOCX — rejected; not valid OOXML, not editable in Word.
+
+**Consequences:**
+- `embedPhoto(doc, imageBuffer, maxPhotoPx)` signature (dropped unused `centered` param); `buildDrawingXml` returns the `<w:drawing>` fragment.
+- New test sub-suite `ID card photo embedding (valid relay + inline drawing)` asserts: media part exists, relationship target is `media/image1.png` and never `media/media/`, the drawing run is a single `<w:r>` with no nested `<w:p>`, and the referenced `rId` maps to the image target.
+- Verified: backend tests 55/55, ESLint no new issues; live `POST /kiosk/barangay-id/preview` returns 200 DOCX with drawing present, token consumed, `word/media/image1.png` present, `Target="media/image1.png"`, resident info rendered, and `PENDING` application count unchanged (4 → 4 → no persist/approve). The camera capture already produces `canvas.toDataURL('image/jpeg', 0.8)` and preview sends it as a data URL string — no frontend change was required.
+- **Deployment note:** the LAN kiosk backend (`192.168.100.102`) must run this updated `id-card.service.js` for the fix to apply there; the dev backend on this machine was restarted from scratch because a stale pre-fix server process was still occupying port 3000 and serving the old logic.

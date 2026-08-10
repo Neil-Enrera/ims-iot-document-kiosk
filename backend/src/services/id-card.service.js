@@ -110,10 +110,12 @@ const PX_TO_EMU = 9525; // 1 pixel = 9525 EMUs
 // native image support in its free core) focused on pure text substitution.
 const PHOTO_TOKEN = 'IMSPHOTOTOKEN2024';
 
-// Build the DrawingML XML that embeds image rId at a size (in EMUs).
-const buildDrawingXml = ({ rId, emuW, emuH, centered }) => {
-  const graphic =
-    '<w:drawing xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"' +
+// Build the DrawingML XML that embeds image rId at a size (in EMUs). The
+// fragment is a bare <w:drawing> so it can be spliced into the run that held
+// the photo token (keeping any <w:rPr> and <w:br/> breaks) instead of nesting a
+// whole replacement paragraph — which produced invalid OOXML.
+const buildDrawingXml = ({ rId, emuW, emuH }) => {
+  return '<w:drawing xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"' +
     ' xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"' +
     ' xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"' +
     ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
@@ -128,14 +130,10 @@ const buildDrawingXml = ({ rId, emuW, emuH, centered }) => {
     ' <pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="' + emuW + '" cy="' + emuH + '"/></a:xfrm>' +
     ' <a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic>' +
     ' </a:graphicData></a:graphic></wp:inline></w:drawing>';
-  if (!centered) {
-    return '<w:r>' + graphic + '</w:r>';
-  }
-  return '<w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r>' + graphic + '</w:r></w:p>';
 };
 
 // Embed a photo into the rendered DOCX zip. Returns true on success.
-const embedPhoto = (doc, imageBuffer, centered, maxPhotoPx = 480) => {
+const embedPhoto = (doc, imageBuffer, maxPhotoPx = 480) => {
   if (!imageBuffer) return false;
   const zip = doc.getZip();
   const docXmlPath = 'word/document.xml';
@@ -161,7 +159,7 @@ const embedPhoto = (doc, imageBuffer, centered, maxPhotoPx = 480) => {
   relsXml = relsXml.replace('</Relationships>',
     '<Relationship Id="' + rId + '"' +
       ' Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"' +
-      ' Target="media/' + mediaName.replace(/^word\//, '') + '"/></Relationships>');
+      ' Target="' + mediaName.replace(/^word\//, '') + '"/></Relationships>');
   zip.file(relsPath, relsXml);
 
   // 3. Keep [Content_Types].xml aware so Word opens the file cleanly.
@@ -173,20 +171,18 @@ const embedPhoto = (doc, imageBuffer, centered, maxPhotoPx = 480) => {
     zip.file(ctPath, ctXml.replace('</Types>', '<Default Extension="' + ext + '" ContentType="' + ct + '"/></Types>'));
   }
 
-  // 4. Replace the token's enclosing run with the drawing.
+  // 4. Swap the token <w:t> for the drawing, keeping the surrounding run (its
+  //    properties and any <w:br/> line breaks stay intact). The resulting
+  //    run is valid OOXML and, inside this template's centered photo-cell
+  //    paragraph, places the photo in the designated 2×2 area.
   const size = getImageSize(imageBuffer);
   const maxEmu = (maxPhotoPx || 480) * PX_TO_EMU; // cap the longer side so the photo fits its box
   const scale = Math.min(1, maxEmu / (Math.max(size.width, size.height) * PX_TO_EMU));
   const emuW = Math.round(size.width * PX_TO_EMU * scale);
   const emuH = Math.round(size.height * PX_TO_EMU * scale);
-  const drawing = buildDrawingXml({ rId, emuW, emuH, centered });
-  // Match the whole <w:r> that holds a <w:t> containing the token (a run may
-  // carry optional run properties before the text).
-  const runRegex = new RegExp(
-    '<w:r\\b[^>]*>(?:(?!<\\/w:r>)[\\s\\S])*?<w:t[^>]*>\\s*' + PHOTO_TOKEN + '\\s*<\\/w:t>(?:(?!<\\/w:r>)[\\s\\S])*?<\\/w:r>',
-    'g'
-  );
-  const newDocXml = docXml.replace(runRegex, drawing);
+  const drawing = buildDrawingXml({ rId, emuW, emuH });
+  const tokenText = new RegExp('<w:t\\b[^>]*>\\s*' + PHOTO_TOKEN + '\\s*<\\/w:t>');
+  const newDocXml = docXml.replace(tokenText, drawing);
   if (newDocXml === docXml) return false;
   zip.file(docXmlPath, newDocXml);
   return true;
@@ -334,7 +330,7 @@ const renderCardBuffer = async ({ application, resident, barangay, processedBy }
     // fine as plain text. ~300px fits the standard 2×2 ID photo box while
     // keeping the generated card compact in both preview and approved cards.
     const photoBuffer = resolveImageBuffer(application.photo);
-    embedPhoto(doc, photoBuffer, true, 300);
+    embedPhoto(doc, photoBuffer, 300);
 
     renderedBuffer = doc.getZip().generate({
       type: 'nodebuffer',

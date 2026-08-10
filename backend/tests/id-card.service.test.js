@@ -177,3 +177,74 @@ describe('ID card draft preview rendering (before approval)', () => {
     assert.ok(!xml.includes('BRGY-'), 'no official ID number should be present on the draft');
   });
 });
+
+describe('ID card photo embedding (valid relay + inline drawing)', () => {
+  const uploadsTemplates = path.join(__dirname, '../uploads/templates');
+  const templateName = `photo-test-${Date.now()}.docx`;
+  const templatePath = path.join(uploadsTemplates, templateName);
+  const relTemplatePath = `templates/${templateName}`;
+
+  after(() => {
+    try { fs.unlinkSync(templatePath); } catch { /* noop */ }
+  });
+
+  const sourceTemplate = path.join(uploadsTemplates, 'da4927dcbc4b31935f47f59b7e9cbd73.docx');
+
+  // A synthetic 320x240 PNG header (same construction as the size-detection test).
+  const photoBuffer = (() => {
+    const buf = Buffer.alloc(24, 0);
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(buf, 0, 0, 8);
+    buf.writeUInt32BE(320, 16);
+    buf.writeUInt32BE(240, 20);
+    return buf;
+  })();
+
+  const applicationWithPhoto = {
+    application_number: 'PREVIEW',
+    first_name: 'Lita',
+    last_name: 'Santos',
+    address_line: '101 Purok St',
+    photo: 'data:image/png;base64,' + photoBuffer.toString('base64'),
+    id_number: null,
+    id_expiration_date: null
+  };
+
+  it('embeds the photo with a resolvable media relationship (no media/media/ bug)', async () => {
+    fs.copyFileSync(sourceTemplate, templatePath);
+    const barangay = { barangay_id: 1, barangay_name: 'San Manuel', id_template_path: relTemplatePath };
+
+    const result = await idCard.renderCardBuffer({
+      application: applicationWithPhoto,
+      resident: {},
+      barangay,
+      processedBy: 'PREVIEW'
+    });
+    assert.strictEqual(result.success, true, result.message);
+
+    const zip = new PizZip(result.buffer);
+    const docXml = zip.file('word/document.xml').asText();
+    const rels = zip.file('word/_rels/document.xml.rels').asText();
+
+    // The token must be swapped for a real drawing.
+    assert.ok(!docXml.includes('IMSPHOTOTOKEN2024'), 'photo token should be replaced');
+    assert.ok(docXml.includes('<w:drawing'), 'document.xml should contain the photo drawing');
+
+    // Media part is present and the relationship target resolves to it exactly
+    // once (the old code produced media/media/image1.png, which never rendered).
+    assert.ok(zip.file('word/media/image1.png'), 'media part should exist at word/media/image1.png');
+    assert.ok(rels.includes('Target="media/image1.png"'), 'relationship target should be media/image1.png');
+    assert.ok(!rels.includes('media/media/'), 'relationship target must not duplicate the media/ prefix');
+
+    // The drawing sits inside a single <w:r> with no nested <w:p> (the old code
+    // inserted a whole centered paragraph inside the photo-cell paragraph).
+    const drawingRun = docXml.match(/<w:r\b[^>]*>(?:(?!<\/w:r>)[\s\S])*?<w:drawing[\s\S]*?<\/w:r>/);
+    assert.ok(drawingRun, 'drawing should be wrapped by exactly one run');
+    assert.ok(!/<w:p[ >]/.test(drawingRun[0]), 'drawing run must not contain a nested paragraph');
+
+    // The drawing's r:embed must point at the image relationship.
+    const rId = (docXml.match(/r:embed="(rId\d+)"/) || [])[1];
+    assert.ok(rId, 'drawing should reference a relationship id');
+    const relForRid = new RegExp('Id="' + rId + '"[^>]*Target="media/image1.png"');
+    assert.ok(relForRid.test(rels), 'the referenced rid should map to the image target');
+  });
+});
