@@ -663,3 +663,26 @@ Photos were being "embedded" into unreachable parts, so every Barangay ID card a
 - New test sub-suite `ID card photo embedding (valid relay + inline drawing)` asserts: media part exists, relationship target is `media/image1.png` and never `media/media/`, the drawing run is a single `<w:r>` with no nested `<w:p>`, and the referenced `rId` maps to the image target.
 - Verified: backend tests 55/55, ESLint no new issues; live `POST /kiosk/barangay-id/preview` returns 200 DOCX with drawing present, token consumed, `word/media/image1.png` present, `Target="media/image1.png"`, resident info rendered, and `PENDING` application count unchanged (4 → 4 → no persist/approve). The camera capture already produces `canvas.toDataURL('image/jpeg', 0.8)` and preview sends it as a data URL string — no frontend change was required.
 - **Deployment note:** the LAN kiosk backend (`192.168.100.102`) must run this updated `id-card.service.js` for the fix to apply there; the dev backend on this machine was restarted from scratch because a stale pre-fix server process was still occupying port 3000 and serving the old logic.
+
+---
+
+### DEC-025 — Kiosk document request preview becomes a modal (admin-panel-style)
+
+**Status:** Accepted
+**Date:** 2026-08-11
+**Decision Maker(s):** Project Owner
+
+**Decision:**
+The pre-submission document preview on the kiosk Review step is no longer an inline `docx-preview` pane inside the step. It is now a dedicated modal (`document-preview-modal.component.ts`) that mirrors the admin panel's document preview UX: a translucent full-screen overlay with a zoom toolbar (zoom out / in, percentage readout, Fit Width), a scrollable white document area that renders the generated DOCX via `renderAsync`, and an action footer with **Edit Information** and **Submit Request** buttons.
+
+**Reason:**
+The resident should see the generated request document the same way barangay staff do in the admin panel, in a focused, full-size view with size controls, instead of a cramped inline pane. The application form remains the single source of truth: "Edit Information" closes the preview and returns to the form step, and every preview is regenerated from the current form values. Keeping the blob in memory lets the resident reopen the same preview without re-fetching until they edit.
+
+**Alternatives Considered:**
+1. Keep the inline preview pane — rejected; small embedded view, no zoom controls, and inconsistent with the admin panel experience.
+2. Let residents edit the DOCX directly inside the preview — rejected; editing the generated file is not practical and the form already captures the same fields.
+
+**Consequences:**
+- New standalone `document-preview-modal.component.ts` in the kiosk feature, mounted beside the Barangay ID preview modal; new i18n keys (`doc.review.previewScroll`, `doc.review.previewFitWidth`, `common.close`, `common.zoomIn`, `common.zoomOut`) in both `en.ts` and `fil.ts`.
+- The inline `#docPreviewContainer`, `renderDocPreview()`, and the `docx-preview` import were removed from `kiosk.component.ts`; `openDocPreview()`/`closeDocPreview()` manage the modal, and `submitRequest()` closes it on submit so errors surface on the Review step beneath.
+- Verified: `tsc --noEmit` and `ng build kiosk-app` both pass (pre-existing budget/`jszip` ESM warnings only).

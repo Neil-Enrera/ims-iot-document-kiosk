@@ -26,6 +26,9 @@ export const fil: TranslationDictionary = {
   'common.clear': 'Linisan',
   'common.retake': 'Ulitin',
   'common.scanAgain': 'I-scan Muli',
+  'common.close': 'Isara',
+  'common.zoomIn': 'Palakihin',
+  'common.zoomOut': 'Paliitin',
 
   'rfid.title': 'I-scan ang Barangay ID',
   'rfid.subtitle': 'Paki-tap ang iyong RFID-enabled Barangay ID card sa scanner.',
@@ -105,6 +108,8 @@ export const fil: TranslationDictionary = {
   'doc.review.previewDocument': 'I-preview ang Dokumento',
   'doc.review.previewLoading': 'Inihahanda ang preview...',
   'doc.review.previewRefresh': 'I-refresh ang Preview',
+  'doc.review.previewScroll': 'Mag-scroll upang suriin ang lahat ng pahina. Gamitin ang mga kontrol upang ayusin ang laki.',
+  'doc.review.previewFitWidth': 'Kasya ang lapad',
   'doc.review.previewHint': 'I-preview kung paano lalabas ang iyong dokumento, gamit ang parehong template at impormasyong gagamitin ng mga tauhan ng barangay. Suriing mabuti bago isumite.',
   'doc.review.previewFailed': 'Hindi ma-generate ang preview ng dokumento. Pakisubukang muli.',
   'doc.success.title': 'Naipasa ang Kahilingan!',

@@ -540,3 +540,4 @@ Before implementing:
 | Date | Author | Update |
 |------|--------|--------|
 | YYYY-MM-DD | | Task Created |
+| 2026-08-11 | OpenCode | Added pre-submission document preview (inline docx-preview on the Review step), then upgraded it to a modal mirroring the admin panel's preview: zoom in/out + fit-width controls, scrollable white document area, and in-modal actions (Edit Information → back to form, Submit Request). Preview blob is kept so residents can reopen without re-fetching until they edit. |

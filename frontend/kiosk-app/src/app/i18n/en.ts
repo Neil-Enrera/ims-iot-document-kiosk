@@ -32,6 +32,9 @@ export const en: TranslationDictionary = {
   'common.clear': 'Clear',
   'common.retake': 'Retake',
   'common.scanAgain': 'Scan Again',
+  'common.close': 'Close',
+  'common.zoomIn': 'Zoom in',
+  'common.zoomOut': 'Zoom out',
 
   // ===== RFID flow =====
   'rfid.title': 'Scan Barangay ID',
@@ -115,6 +118,8 @@ export const en: TranslationDictionary = {
   'doc.review.previewDocument': 'Preview Document',
   'doc.review.previewLoading': 'Preparing preview...',
   'doc.review.previewRefresh': 'Refresh Preview',
+  'doc.review.previewScroll': 'Scroll to review all pages. Use the controls to adjust the size.',
+  'doc.review.previewFitWidth': 'Fit width',
   'doc.review.previewHint': 'Preview how your document will look, using the same template and information the barangay staff will use. Review carefully before submitting.',
   'doc.review.previewFailed': 'Could not generate the document preview. Please try again.',
   'doc.success.title': 'Request Submitted!',

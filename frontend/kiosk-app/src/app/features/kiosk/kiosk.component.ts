@@ -1,7 +1,6 @@
 import { Component, OnInit, OnDestroy, signal, ElementRef, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { renderAsync } from 'docx-preview';
 import { KioskService, Resident, Service, GuestInfo, FormField, RfidCardInfo, HistoryEntry } from './kiosk.service';
 import { IdentificationService } from './identification.service';
 import { RfidScanService } from './rfid-scan.service';
@@ -9,6 +8,7 @@ import { KioskStateService, KioskState } from './kiosk-state.service';
 import { ButtonComponent } from './button.component';
 import { SignaturePadComponent } from './signature-pad.component';
 import { BarangayPreviewModalComponent } from './barangay-preview-modal.component';
+import { DocumentPreviewModalComponent } from './document-preview-modal.component';
 import { ResidentProfileComponent } from './resident-profile.component';
 import { TranslationService, KioskLanguage } from '../../i18n/translation.service';
 
@@ -40,7 +40,7 @@ export type BarangayStep =
 @Component({
   selector: 'app-kiosk',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonComponent, SignaturePadComponent, BarangayPreviewModalComponent, ResidentProfileComponent],
+  imports: [CommonModule, FormsModule, ButtonComponent, SignaturePadComponent, BarangayPreviewModalComponent, DocumentPreviewModalComponent, ResidentProfileComponent],
   template: `
     <div class="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 text-white select-none flex">
 
@@ -1535,32 +1535,33 @@ export type BarangayStep =
                   <!-- Pre-submission document preview (hidden when the service has no template) -->
                   @if (selectedService()?.has_template) {
                     <div class="bg-blue-800/50 rounded-2xl p-6 backdrop-blur">
-                      <div class="flex items-center justify-between gap-4 mb-4">
-                        <h3 class="font-bold text-lg">{{ t('doc.review.previewTitle') }}</h3>
+                      <div class="flex items-center justify-between gap-4">
+                        <div class="min-w-0">
+                          <h3 class="font-bold text-lg">{{ t('doc.review.previewTitle') }}</h3>
+                          <p class="text-blue-200 text-sm">{{ t('doc.review.previewHint') }}</p>
+                        </div>
                         <button
-                          (click)="previewRequestDocument()"
+                          (click)="openDocPreview()"
                           [disabled]="docPreviewRendering()"
-                          class="shrink-0 text-blue-300 hover:text-white text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
+                          class="shrink-0 flex items-center gap-2 h-11 px-6 rounded-xl bg-[#F97316] text-white text-sm font-bold shadow-[0_2px_10px_rgba(249,115,22,0.35)] hover:bg-[#EA580C] focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 disabled:opacity-60 disabled:cursor-not-allowed">
                           @if (docPreviewRendering()) {
+                            <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                            </svg>
                             {{ t('doc.review.previewLoading') }}
-                          } @else if (docPreviewBlob()) {
-                            {{ t('doc.review.previewRefresh') }}
                           } @else {
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                            </svg>
                             {{ t('doc.review.previewDocument') }}
                           }
                         </button>
                       </div>
 
                       @if (docPreviewError()) {
-                        <p class="text-red-300 text-sm mb-3">{{ docPreviewError() }}</p>
-                      }
-
-                      @if (docPreviewBlob()) {
-                        <div class="bg-white rounded-lg overflow-hidden">
-                          <div #docPreviewContainer class="w-full min-h-[200px] docx-preview-area"></div>
-                        </div>
-                      } @else if (!docPreviewRendering()) {
-                        <p class="text-blue-200 text-sm">{{ t('doc.review.previewHint') }}</p>
+                        <p class="text-red-300 text-sm mt-3">{{ docPreviewError() }}</p>
                       }
                     </div>
                   }
@@ -3784,6 +3785,14 @@ export type BarangayStep =
         }
 
         <app-barangay-preview-modal [open]="showPreview()" [title]="t('bar.preview.title')" [blob]="previewBlob()" (onClose)="closePreview()" />
+        <app-document-preview-modal
+          [open]="showDocPreview()"
+          [title]="t('doc.review.previewTitle')"
+          [blob]="docPreviewBlob()"
+          [submitting]="submitting()"
+          (onClose)="closeDocPreview()"
+          (onEdit)="editInformation()"
+          (onSubmit)="submitRequest()" />
       </div>
     </div>
   `
@@ -3791,7 +3800,6 @@ export type BarangayStep =
 export class KioskComponent implements OnInit, OnDestroy {
   @ViewChild('videoEl') videoEl!: ElementRef<HTMLVideoElement>;
   @ViewChild('inlineVideoEl') inlineVideoEl!: ElementRef<HTMLVideoElement>;
-  @ViewChild('docPreviewContainer', { static: false }) docPreviewContainer!: ElementRef<HTMLDivElement>;
 
   mode = signal<KioskMode>('home');
 
@@ -3826,10 +3834,10 @@ export class KioskComponent implements OnInit, OnDestroy {
   previewing = signal(false);
   showPreview = signal(false);
   previewBlob = signal<Blob | null>(null);
+  showDocPreview = signal(false);
   docPreviewBlob = signal<Blob | null>(null);
   docPreviewRendering = signal(false);
   docPreviewError = signal('');
-  docPreviewRenderedKey: Blob | null = null;
   copied = signal(false);
   searchResults = signal<any[]>([]);
   searching = signal(false);
@@ -4775,8 +4783,8 @@ export class KioskComponent implements OnInit, OnDestroy {
       next: (blob) => {
         this.docPreviewBlob.set(blob);
         this.docPreviewRendering.set(false);
+        this.showDocPreview.set(true);
         this.cdr.detectChanges();
-        setTimeout(() => this.renderDocPreview(), 0);
       },
       error: (err: any) => {
         this.docPreviewRendering.set(false);
@@ -4799,28 +4807,30 @@ export class KioskComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Render the received DOCX buffer into the preview container using docx-preview
-  // (the same library that powers the Barangay ID and admin preview modals).
-  private renderDocPreview() {
-    const container = this.docPreviewContainer?.nativeElement;
-    const blob = this.docPreviewBlob();
-    if (!container || !blob || this.docPreviewRenderedKey === blob) return;
-    this.docPreviewRenderedKey = blob;
-    container.innerHTML = '';
-    renderAsync(blob, container)
-      .catch((e: any) => {
-        this.docPreviewError.set(e?.message || this.t('doc.review.previewFailed'));
-      });
+  // Open the document preview modal. The blob is fetched on demand and rendered
+  // by the modal component (docx-preview), matching the admin panel's preview UX.
+  openDocPreview() {
+    if (this.docPreviewBlob()) {
+      this.showDocPreview.set(true);
+      return;
+    }
+    this.previewRequestDocument();
   }
 
-  // Clear the preview + stop sharing this blob as "rendered". Called whenever the
-  // resident edits information (so the next preview is regenerated) and whenever
-  // the review step is re-entered with a fresh form.
+  // Close the document preview modal. The blob is kept so the resident can
+  // reopen the same preview without re-fetching until they edit information.
+  closeDocPreview() {
+    this.showDocPreview.set(false);
+  }
+
+  // Clear the preview. Called whenever the resident edits information (so the
+  // next preview is regenerated from the updated form) and whenever the review
+  // step is re-entered with a fresh form.
   private clearDocPreview() {
     this.docPreviewBlob.set(null);
     this.docPreviewRendering.set(false);
     this.docPreviewError.set('');
-    this.docPreviewRenderedKey = null;
+    this.showDocPreview.set(false);
   }
 
   // Edit Information: the application form is the single source of truth. All
@@ -5045,6 +5055,7 @@ export class KioskComponent implements OnInit, OnDestroy {
       return;
     }
 
+    this.showDocPreview.set(false);
     this.submitting.set(true);
     this.errorMessage.set('');
     if (!this.submissionKey) this.submissionKey = this.newIdempotencyKey();
