@@ -230,6 +230,7 @@ export const fil: TranslationDictionary = {
   'bar.preview.hint': 'Ito ay preview ng iyong opisyal na ID card.',
   'bar.preview.rendering': 'Ginagawa ang preview...',
   'bar.preview.error': 'Hindi maipakita ang preview sa ngayon. Pakisubukang muli.',
+  'bar.preview.zoom': 'Mga kontrol sa pag-zoom',
   'bar.success.title': 'Matagumpay na Naipasa ang Aplikasyon!',
   'bar.success.subtitle': 'Ang iyong aplikasyon sa Barangay ID ay naipasa na.',
   'bar.success.appNumberLabel': 'ANG IYONG NUMERO NG APLIKASYON',

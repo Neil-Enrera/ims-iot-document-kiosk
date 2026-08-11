@@ -198,6 +198,7 @@ export class DocumentPreviewModalComponent implements AfterViewChecked, OnChange
       }
       this.rendering.set(false);
       this.applyInitialZoom();
+      this.scheduleSettleFit();
     } catch (e: any) {
       this.renderedKey = null;
       this.rendering.set(false);
@@ -232,6 +233,19 @@ export class DocumentPreviewModalComponent implements AfterViewChecked, OnChange
     if (!this.userAdjusted) {
       this.zoom.set(this.fitRatio);
     }
+  }
+
+  // docx-preview injects the pages asynchronously, so the width measured in the
+  // tick right after renderAsync can be stale (0 / not yet laid out). Re-measure
+  // once the browser has settled layout and, unless the user zoomed manually,
+  // apply the fit-width scale. Frames not yet rendered keep natural width.
+  private scheduleSettleFit() {
+    requestAnimationFrame(() => {
+      if (!this.open) return;
+      if (!this.userAdjusted) {
+        this.applyInitialZoom();
+      }
+    });
   }
 
   private fitToWidth() {

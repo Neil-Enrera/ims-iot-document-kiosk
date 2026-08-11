@@ -220,11 +220,25 @@ export class DocumentPreviewModalComponent implements AfterViewChecked, OnChange
       await renderAsync(this.blob, container);
       this.rendering.set(false);
       this.applyInitialZoom();
+      this.scheduleSettleFit();
     } catch (e: any) {
       this.renderedKey = null;
       this.rendering.set(false);
       this.error.set(e?.message || this.t('doc.review.previewFailed'));
     }
+  }
+
+  // docx-preview injects pages asynchronously, so the width read in the tick
+  // right after renderAsync can be stale (0 / not yet laid out), which would
+  // leave the document at 100% until the user hits Fit Width. Re-measure once
+  // the browser has settled layout unless the user already zoomed manually.
+  private scheduleSettleFit() {
+    requestAnimationFrame(() => {
+      if (!this.open) return;
+      if (!this.userAdjusted) {
+        this.applyInitialZoom();
+      }
+    });
   }
 
   private applyInitialZoom() {

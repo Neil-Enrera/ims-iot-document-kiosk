@@ -3,6 +3,10 @@ import { CommonModule } from '@angular/common';
 import { renderAsync } from 'docx-preview';
 import { TranslationService } from '../../i18n/translation.service';
 
+// Barangay ID preview modal. Mirrors the working DocumentPreviewModalComponent
+// behavior so the drafted ID card auto-fits the preview area the moment it
+// opens: zoom (0.5–3) is applied to a centered wrapper, and the initial scale
+// is computed from the rendered .docx page width vs the available area.
 @Component({
   selector: 'app-barangay-preview-modal',
   standalone: true,
@@ -15,25 +19,37 @@ import { TranslationService } from '../../i18n/translation.service';
 
         <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-[min(92vw,820px)] max-h-[92vh] flex flex-col overflow-hidden"
              (click)="$event.stopPropagation()">
+
+          <!-- Header: title + zoom toolbar + close -->
           <div class="px-5 py-3 border-b border-gray-200 bg-gray-50 flex items-center justify-between gap-4">
             <div class="min-w-0">
               <h3 class="text-lg font-bold text-gray-800 truncate">{{ title }}</h3>
               <p class="text-xs text-gray-500 truncate">{{ t('bar.preview.hint') }}</p>
             </div>
-            <div class="flex items-center gap-2 shrink-0">
+            <div class="flex items-center gap-2 shrink-0" role="toolbar" [attr.aria-label]="t('bar.preview.zoom')">
               <button
                 type="button"
                 (click)="zoomOut()"
                 title="Zoom out"
-                class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-300 text-gray-700 font-semibold bg-white hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                [attr.aria-label]="t('common.zoomOut')"
+                class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-300 text-gray-700 text-lg font-semibold bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-40 disabled:cursor-not-allowed"
                 [disabled]="zoom() <= MIN_ZOOM">−</button>
               <span class="w-14 text-center text-sm font-semibold text-gray-700 tabular-nums">{{ zoomPercent() }}</span>
               <button
                 type="button"
                 (click)="zoomIn()"
                 title="Zoom in"
-                class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-300 text-gray-700 font-semibold bg-white hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                [attr.aria-label]="t('common.zoomIn')"
+                class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-300 text-gray-700 text-lg font-semibold bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-40 disabled:cursor-not-allowed"
                 [disabled]="zoom() >= MAX_ZOOM">+</button>
+              <button
+                type="button"
+                (click)="resetZoom()"
+                title="Fit document to width"
+                [attr.aria-label]="t('doc.review.previewFitWidth')"
+                class="h-9 px-3 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                {{ t('doc.review.previewFitWidth') }}
+              </button>
               <button
                 type="button"
                 (click)="close()"
@@ -46,15 +62,16 @@ import { TranslationService } from '../../i18n/translation.service';
             </div>
           </div>
 
+          <!-- Scrollable document area -->
           <div #scrollArea class="flex-1 min-h-0 overflow-auto bg-gray-100 p-4">
-            <div #previewBox>
+            <div #previewBox class="w-fit min-w-full mx-auto flex flex-col items-center" [style.zoom]="zoom()">
               @if (rendering()) {
                 <div class="h-48 w-full flex items-center justify-center text-sm text-gray-500">{{ t('bar.preview.rendering') }}</div>
               }
               @if (error()) {
                 <div class="h-40 w-full flex items-center justify-center text-sm text-red-600 px-4 text-center">{{ error() }}</div>
               }
-              <div #container class="docx-preview-container w-full" [style.zoom]="zoom()"></div>
+              <div #container class="docx-preview-container w-full"></div>
             </div>
           </div>
         </div>
@@ -80,11 +97,14 @@ export class BarangayPreviewModalComponent implements AfterViewChecked, OnChange
 
   @ViewChild('container', { static: false }) container!: ElementRef<HTMLDivElement>;
   @ViewChild('previewBox', { static: false }) previewBox!: ElementRef<HTMLDivElement>;
+  @ViewChild('scrollArea', { static: false }) scrollArea!: ElementRef<HTMLDivElement>;
 
   rendering = signal(false);
   error = signal('');
   zoom = signal(1);
 
+  private fitRatio = 1;
+  private userAdjusted = false;
   private renderedKey: Blob | null = null;
 
   constructor(private translations: TranslationService) {}
@@ -98,11 +118,11 @@ export class BarangayPreviewModalComponent implements AfterViewChecked, OnChange
       this.renderedKey = null;
       this.error.set('');
       this.rendering.set(false);
-      this.zoom.set(1);
+      this.resetZoomState();
     }
     if (changes['blob']) {
       this.renderedKey = null;
-      this.zoom.set(1);
+      this.resetZoomState();
     }
   }
 
@@ -114,6 +134,7 @@ export class BarangayPreviewModalComponent implements AfterViewChecked, OnChange
 
   close() {
     this.renderedKey = null;
+    this.resetZoomState();
     this.onClose.emit();
   }
 
@@ -122,26 +143,45 @@ export class BarangayPreviewModalComponent implements AfterViewChecked, OnChange
   }
 
   zoomIn() {
+    this.userAdjusted = true;
     this.zoom.set(Math.min(this.MAX_ZOOM, this.zoom() * 1.25));
   }
 
   zoomOut() {
+    this.userAdjusted = true;
     this.zoom.set(Math.max(this.MIN_ZOOM, this.zoom() / 1.25));
+  }
+
+  resetZoom() {
+    this.userAdjusted = false;
+    this.fitToWidth();
+  }
+
+  private resetZoomState() {
+    this.zoom.set(1);
+    this.fitRatio = 1;
+    this.userAdjusted = false;
   }
 
   private async render() {
     const container = this.container.nativeElement;
     const key = this.blob;
-    if (!key || this.renderedKey === key) return;
+    if (this.renderedKey === key) return;
+    if (!this.blob) {
+      this.rendering.set(false);
+      this.error.set(this.t('bar.preview.error'));
+      return;
+    }
     this.renderedKey = key;
     this.error.set('');
     this.rendering.set(true);
     container.innerHTML = '';
+    this.previewBox.nativeElement.style.zoom = '1';
 
     try {
-      await renderAsync(key, container);
+      await renderAsync(this.blob, container);
       this.rendering.set(false);
-      this.fitToWidth();
+      this.applyInitialZoom();
     } catch (e: any) {
       this.renderedKey = null;
       this.rendering.set(false);
@@ -149,14 +189,32 @@ export class BarangayPreviewModalComponent implements AfterViewChecked, OnChange
     }
   }
 
+  private applyInitialZoom() {
+    const container = this.container?.nativeElement;
+    const area = this.scrollArea?.nativeElement;
+    if (!container || !area) return;
+    const page = container.querySelector('.docx') as HTMLElement | null;
+    const measured = page?.offsetWidth ?? container.scrollWidth ?? 0;
+    const available = area.clientWidth - 32;
+    if (measured <= 0 || available <= 0) {
+      this.fitRatio = 1;
+      this.zoom.set(1);
+      return;
+    }
+    this.fitRatio = Math.min(this.MAX_ZOOM, Math.max(this.MIN_ZOOM, available / measured));
+    if (!this.userAdjusted) {
+      this.zoom.set(this.fitRatio);
+    }
+  }
+
   private fitToWidth() {
     const container = this.container?.nativeElement;
-    const area = container?.parentElement;
+    const area = this.scrollArea?.nativeElement;
     if (!container || !area) return;
     const page = container.querySelector('.docx') as HTMLElement | null;
     const measured = page?.offsetWidth ?? (container.firstElementChild as HTMLElement | null)?.offsetWidth ?? container.scrollWidth ?? 0;
-    const available = area.clientWidth - 32;
-    const ratio = measured > 0 && available > 0 ? Math.min(1.5, available / measured) : 1;
-    this.zoom.set(Math.max(this.MIN_ZOOM, Math.min(this.MAX_ZOOM, ratio)));
+    const available = area.clientWidth - 24;
+    const ratio = measured > 0 && available > 0 ? available / measured : 1;
+    this.zoom.set(Math.min(this.MAX_ZOOM, Math.max(this.MIN_ZOOM, ratio)));
   }
 }

@@ -241,6 +241,7 @@ export const en: TranslationDictionary = {
   'bar.preview.hint': 'This is a preview of your official ID card.',
   'bar.preview.rendering': 'Generating preview...',
   'bar.preview.error': 'Cannot show the preview right now. Please try again.',
+  'bar.preview.zoom': 'Zoom controls',
   'bar.success.title': 'Application Submitted Successfully!',
   'bar.success.subtitle': 'Your Barangay ID application has been submitted.',
   'bar.success.appNumberLabel': 'YOUR APPLICATION NUMBER',

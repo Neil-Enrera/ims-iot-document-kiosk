@@ -686,3 +686,32 @@ The resident should see the generated request document the same way barangay sta
 - New standalone `document-preview-modal.component.ts` in the kiosk feature, mounted beside the Barangay ID preview modal; new i18n keys (`doc.review.previewScroll`, `doc.review.previewFitWidth`, `common.close`, `common.zoomIn`, `common.zoomOut`) in both `en.ts` and `fil.ts`.
 - The inline `#docPreviewContainer`, `renderDocPreview()`, and the `docx-preview` import were removed from `kiosk.component.ts`; `openDocPreview()`/`closeDocPreview()` manage the modal, and `submitRequest()` closes it on submit so errors surface on the Review step beneath.
 - Verified: `tsc --noEmit` and `ng build kiosk-app` both pass (pre-existing budget/`jszip` ESM warnings only).
+
+---
+
+### DEC-026 — Every document preview auto-fits exactly like the kiosk "Review Your Request" modal
+
+**Status:** Accepted
+**Date:** 2026-08-12
+**Decision Maker(s):** Project Owner
+
+**Decision:**
+All document preview screens behave like the working kiosk pre-submission modal: the document loads automatically, auto-scales to fit the preview width the moment it opens (no manual Fit Width / double-click needed), stays centered, renders every page, and keeps the zoom controls. The fix reuses the exact working pattern rather than building a new implementation:
+
+1. **Root cause:** `docx-preview` injects pages asynchronously and may not have laid out yet in the very tick after `renderAsync` resolves. A single immediate width measure can read 0, so the fit never applies and the preview stays at 100%, forcing the user to click Fit Width (exactly what the admin Document Requests, Generated Document Preview, and Barangay ID previews required).
+2. **Fixes:**
+   - `barangay-preview-modal.component.ts` (kiosk) was rewritten to mirror `document-preview-modal.component.ts`: zoom (`[style.zoom]`) now scales a centered wrapper `<div #previewBox class="w-fit min-w-full mx-auto flex flex-col items-center">`, `applyInitialZoom()` derives the auto-fit from the real `.docx` page `offsetWidth` vs the area (`clientWidth - 32`), and a Fit Width / reset-zoom button was added (previously only zoom ± and close existed, and zoom was bound to the container element itself).
+   - `document-preview-modal.component.ts` (admin) and the kiosk document modal gain `scheduleSettleFit()` — a `requestAnimationFrame` re-measure (guarded by `userAdjusted` so it never overrides a manual zoom) that re-applies the fit-width once the browser has finished layout. The PDF/iframe and image branches keep the existing behavior (native width, zoom 1).
+
+**Reason:**
+The kiosk modal was the reference-good behavior; the admin modal was structurally identical but measured too early, and the kiosk Barangay ID modal was a code outlier (zoom on the container, no fit-width control at all). Fitting at layout-settle time removes the artificial "double-click / click Fit Width before the document is visible" step from every screen while keeping a single consistent implementation pattern across the whole system.
+
+**Alternatives Considered:**
+1. Build a brand-new shared cross-app preview component — rejected; kiosk-app and admin-panel are separate Angular applications with no shared library, and the existing modals are already nearly identical, so a shared component adds indirection without solving the timing bug.
+2. Force a fixed percentage zoom (e.g. always 0.6) on every document — rejected; arbitrary and breaks documents of unusual widths.
+3. Poll/loop until `offsetWidth > 0` — rejected; a single `requestAnimationFrame` settle is sufficient and simpler, and repeated re-measures risk fighting the user's zoom.
+
+**Consequences:**
+- Kiosk Barangay ID preview now opens already fitted and centered, with Zoom In/Out, Fit Width, and close controls (blue accent retained; new `bar.preview.zoom` i18n key in `en.ts`/`fil.ts`).
+- Admin Document Requests / Generated Document Preview and kiosk Review previews auto-fit on open through the settle re-measure; user zooms are never overridden.
+- Verified: `npx ng build kiosk-app` and `npx ng build admin-panel` both pass from repo root (pre-existing initial-budget and `jszip`/ESM warnings only).
