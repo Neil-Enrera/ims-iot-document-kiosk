@@ -178,6 +178,15 @@ All 11 backend modules fully implemented with real MySQL queries:
 - **Known OneDrive quirk**: the first build after edits compiled a stale file placeholder; rebuild after sync resolves. Always verify the freshly built dist chunk contains new strings before declaring success.
 - Verified: `npm run build:kiosk` passes; fresh dist chunk contains the new subtitle keys (en/fil) and the new row/card utility classes.
 
+### Pre-Submission Document Preview (Review → Preview → Submit)
+- **Workflow:** Form → Review Your Request → **Document Preview** → Edit Information / Submit Request. The resident can review the actual generated document before submitting, and the application form remains the single source of truth (edits always re-validate and regenerate the preview).
+- **Backend — `document.service.js`:** added `renderRequestPreview()` — buffer-only render that mirrors `generateDocument`'s template checks, placeholder resolution, and render loop but **never writes a file or touches the DB** (no request row, no status change, no document row). Guest identity is merged under `_guest` exactly like `insertKioskRequest` does, so previews and final stored requests resolve placeholders identically.
+- **Backend — route/controller:** new public `POST /kiosk/requests/preview` (reuses `createRequestValidation`) returning the DOCX buffer inline; `getServices` now exposes `has_template` so the kiosk can hide the preview when a service has no uploaded template.
+- **Frontend:** `kiosk.service.ts` gained `previewRequest()` (blob response). The Review step now offers **Preview Document / Refresh Preview** (renders the DOCX inline via `docx-preview`'s `renderAsync`, same library as the Barangay ID + admin preview modals), plus **Edit Information** (returns to the form step, clears the preview so it regenerates from updated values) and the existing **Submit Request**.
+- **Business rule honored:** previewing is draft-only — it does not approve, generate an official document, or change status. Only the admin's review/approve flow produces the official document (existing `request.service`/`document.service` behavior unchanged).
+- Added i18n keys `doc.review.edit`, `doc.review.previewTitle`, `doc.review.previewDocument`, `doc.review.previewLoading`, `doc.review.previewRefresh`, `doc.review.previewHint`, `doc.review.previewFailed` (en/fil).
+- Verified: backend ESLint clean, backend tests 55/55, `npm run build:kiosk` passes, fresh dist chunk contains the new preview/edit strings in both languages.
+
 ---
 
 ## Known Issues

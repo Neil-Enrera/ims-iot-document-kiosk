@@ -59,6 +59,7 @@ export interface Service {
   processing_fee: number;
   requires_photo: boolean;
   is_active: boolean;
+  has_template?: boolean;
 }
 
 export interface DocumentRequest {
@@ -188,6 +189,15 @@ export class KioskService {
     form_data?: Record<string, unknown>;
   }): Observable<ApiResponse<DocumentRequest>> {
     return this.http.post<ApiResponse<DocumentRequest>>(`${this.apiUrl}/kiosk/requests`, data);
+  }
+
+  previewRequest(data: {
+    resident_id?: number;
+    guest?: GuestInfo;
+    service_id: number;
+    form_data?: Record<string, unknown>;
+  }): Observable<Blob> {
+    return this.http.post(`${this.apiUrl}/kiosk/requests/preview`, data, { responseType: 'blob' });
   }
 
   createBarangayId(data: {

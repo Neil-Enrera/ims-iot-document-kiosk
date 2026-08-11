@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy, signal, ElementRef, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { renderAsync } from 'docx-preview';
 import { KioskService, Resident, Service, GuestInfo, FormField, RfidCardInfo, HistoryEntry } from './kiosk.service';
 import { IdentificationService } from './identification.service';
 import { RfidScanService } from './rfid-scan.service';
@@ -974,7 +975,7 @@ export type BarangayStep =
                     </button>
                   </div>
 
-                  <div class="w-[64px] h-[64px] sm:w-[72px] sm:h-[72px] rounded-full bg-white border-2 border-[#F97316]/30 shadow-sm overflow-hidden flex items-center justify-center [@media(max-height:880px)]:w-[56px] [@media(max-height:880px)]:h-[56px]">
+                  <div class="w-[84px] h-[84px] sm:w-[96px] sm:h-[96px] rounded-full bg-white border-2 border-[#F97316]/30 shadow-md overflow-hidden flex items-center justify-center [@media(max-height:880px)]:w-[72px] [@media(max-height:880px)]:h-[72px]">
                     <img src="Barangay Logo.png" alt="Barangay San Manuel logo" class="w-full h-full object-cover">
                   </div>
                 </div>
@@ -1135,7 +1136,7 @@ export type BarangayStep =
                     </button>
                   </div>
 
-                  <div class="w-[64px] h-[64px] sm:w-[72px] sm:h-[72px] rounded-full bg-white border-2 border-[#F97316]/30 shadow-sm overflow-hidden flex items-center justify-center [@media(max-height:880px)]:w-[56px] [@media(max-height:880px)]:h-[56px]">
+                  <div class="w-[84px] h-[84px] sm:w-[96px] sm:h-[96px] rounded-full bg-white border-2 border-[#F97316]/30 shadow-md overflow-hidden flex items-center justify-center [@media(max-height:880px)]:w-[72px] [@media(max-height:880px)]:h-[72px]">
                     <img src="Barangay Logo.png" alt="Barangay San Manuel logo" class="w-full h-full object-cover">
                   </div>
                 </div>
@@ -1475,55 +1476,99 @@ export type BarangayStep =
 
           <!-- DOC STEP 5: Review & Confirm -->
           @if (currentStep() === 'review') {
-            <div class="absolute inset-0 flex flex-col items-center justify-center p-8">
-              <div class="max-w-lg w-full">
-                <h2 class="text-3xl font-bold mb-6 text-center">{{ t('doc.review.title') }}</h2>
-                <div class="bg-blue-800/50 rounded-2xl p-6 backdrop-blur space-y-4">
-                  <div class="flex items-center gap-4">
-                    @if (displayPhoto()) {
-                      <img [src]="displayPhoto()" class="w-16 h-16 rounded-full object-cover" />
-                    } @else {
-                      <div class="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">
-                        {{ displayName().charAt(0) }}
-                      </div>
-                    }
-                    <div>
-                      <p class="font-bold text-lg">{{ displayName() }}</p>
-                      <p class="text-blue-200 text-sm">{{ displayAddress() }}</p>
-                      @if (displayCode()) {
-                        <p class="text-blue-300 text-xs mt-1">{{ displayCode() }}</p>
+            <div class="absolute inset-0 flex flex-col p-8">
+              <div class="max-w-2xl mx-auto w-full flex-1 flex flex-col">
+
+                <!-- Header: title + back -->
+                <div class="flex items-center justify-between mb-6">
+                  <h2 class="text-3xl font-bold">{{ t('doc.review.title') }}</h2>
+                  <button class="text-blue-300 hover:text-white text-lg" (click)="goBack()">{{ t('common.back') }}</button>
+                </div>
+
+                <!-- Scrollable content: summary + document preview -->
+                <div class="flex-1 overflow-y-auto space-y-4">
+                  <div class="bg-blue-800/50 rounded-2xl p-6 backdrop-blur space-y-4">
+                    <div class="flex items-center gap-4">
+                      @if (displayPhoto()) {
+                        <img [src]="displayPhoto()" class="w-16 h-16 rounded-full object-cover" />
+                      } @else {
+                        <div class="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">
+                          {{ displayName().charAt(0) }}
+                        </div>
                       }
-                    </div>
-                  </div>
-                  <hr class="border-blue-700" />
-                  <div>
-                    <p class="text-blue-300 text-sm">{{ t('doc.review.service') }}</p>
-                    <p class="font-bold text-lg">{{ selectedService()!.service_name }}</p>
-                  </div>
-                  <div>
-                    <p class="text-blue-300 text-sm">{{ t('doc.review.fee') }}</p>
-                    @if (selectedService()!.processing_fee > 0) {
-                      <p class="font-bold text-lg">₱{{ selectedService()!.processing_fee }}</p>
-                    } @else {
-                      <p class="font-bold text-lg text-green-300">{{ t('doc.services.free') }}</p>
-                    }
-                  </div>
-                  @if (selectedService()?.form_fields && selectedService()!.form_fields!.length > 0) {
-                    <div>
-                      <p class="text-blue-300 text-sm mb-2">{{ t('doc.review.details') }}</p>
-                      <div class="space-y-2">
-                        @for (field of selectedService()!.form_fields!; track field.key) {
-                          <div class="flex justify-between items-start gap-4 text-sm">
-                            <span class="text-blue-300 flex-1">{{ field.label }}</span>
-                            <span class="text-white font-medium text-right">{{ displayFormValue(field, formValues()[field.key]) }}</span>
-                          </div>
+                      <div>
+                        <p class="font-bold text-lg">{{ displayName() }}</p>
+                        <p class="text-blue-200 text-sm">{{ displayAddress() }}</p>
+                        @if (displayCode()) {
+                          <p class="text-blue-300 text-xs mt-1">{{ displayCode() }}</p>
                         }
                       </div>
                     </div>
+                    <hr class="border-blue-700" />
+                    <div>
+                      <p class="text-blue-300 text-sm">{{ t('doc.review.service') }}</p>
+                      <p class="font-bold text-lg">{{ selectedService()!.service_name }}</p>
+                    </div>
+                    <div>
+                      <p class="text-blue-300 text-sm">{{ t('doc.review.fee') }}</p>
+                      @if (selectedService()!.processing_fee > 0) {
+                        <p class="font-bold text-lg">₱{{ selectedService()!.processing_fee }}</p>
+                      } @else {
+                        <p class="font-bold text-lg text-green-300">{{ t('doc.services.free') }}</p>
+                      }
+                    </div>
+                    @if (selectedService()?.form_fields && selectedService()!.form_fields!.length > 0) {
+                      <div>
+                        <p class="text-blue-300 text-sm mb-2">{{ t('doc.review.details') }}</p>
+                        <div class="space-y-2">
+                          @for (field of selectedService()!.form_fields!; track field.key) {
+                            <div class="flex justify-between items-start gap-4 text-sm">
+                              <span class="text-blue-300 flex-1">{{ field.label }}</span>
+                              <span class="text-white font-medium text-right">{{ displayFormValue(field, formValues()[field.key]) }}</span>
+                            </div>
+                          }
+                        </div>
+                      </div>
+                    }
+                  </div>
+
+                  <!-- Pre-submission document preview (hidden when the service has no template) -->
+                  @if (selectedService()?.has_template) {
+                    <div class="bg-blue-800/50 rounded-2xl p-6 backdrop-blur">
+                      <div class="flex items-center justify-between gap-4 mb-4">
+                        <h3 class="font-bold text-lg">{{ t('doc.review.previewTitle') }}</h3>
+                        <button
+                          (click)="previewRequestDocument()"
+                          [disabled]="docPreviewRendering()"
+                          class="shrink-0 text-blue-300 hover:text-white text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
+                          @if (docPreviewRendering()) {
+                            {{ t('doc.review.previewLoading') }}
+                          } @else if (docPreviewBlob()) {
+                            {{ t('doc.review.previewRefresh') }}
+                          } @else {
+                            {{ t('doc.review.previewDocument') }}
+                          }
+                        </button>
+                      </div>
+
+                      @if (docPreviewError()) {
+                        <p class="text-red-300 text-sm mb-3">{{ docPreviewError() }}</p>
+                      }
+
+                      @if (docPreviewBlob()) {
+                        <div class="bg-white rounded-lg overflow-hidden">
+                          <div #docPreviewContainer class="w-full min-h-[200px] docx-preview-area"></div>
+                        </div>
+                      } @else if (!docPreviewRendering()) {
+                        <p class="text-blue-200 text-sm">{{ t('doc.review.previewHint') }}</p>
+                      }
+                    </div>
                   }
                 </div>
+
+                <!-- Actions: Edit Information + Submit Request (the form stays the source of truth) -->
                 <div class="flex gap-4 mt-6">
-                  <app-button variant="secondary" size="lg" class="flex-1" (onClick)="goBack()">{{ t('common.back') }}</app-button>
+                  <app-button variant="secondary" size="lg" class="flex-1" (onClick)="editInformation()">{{ t('doc.review.edit') }}</app-button>
                   <app-button variant="primary" size="lg" class="flex-1" (onClick)="submitRequest()" [loading]="submitting()">{{ t('doc.review.submit') }}</app-button>
                 </div>
               </div>
@@ -3746,6 +3791,7 @@ export type BarangayStep =
 export class KioskComponent implements OnInit, OnDestroy {
   @ViewChild('videoEl') videoEl!: ElementRef<HTMLVideoElement>;
   @ViewChild('inlineVideoEl') inlineVideoEl!: ElementRef<HTMLVideoElement>;
+  @ViewChild('docPreviewContainer', { static: false }) docPreviewContainer!: ElementRef<HTMLDivElement>;
 
   mode = signal<KioskMode>('home');
 
@@ -3780,6 +3826,10 @@ export class KioskComponent implements OnInit, OnDestroy {
   previewing = signal(false);
   showPreview = signal(false);
   previewBlob = signal<Blob | null>(null);
+  docPreviewBlob = signal<Blob | null>(null);
+  docPreviewRendering = signal(false);
+  docPreviewError = signal('');
+  docPreviewRenderedKey: Blob | null = null;
   copied = signal(false);
   searchResults = signal<any[]>([]);
   searching = signal(false);
@@ -4353,6 +4403,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     }
     this.formErrors.set(newErrors);
     if (hasErrors) return;
+    this.clearDocPreview();
     const service = this.selectedService();
     if (service?.requires_photo) {
       this.currentStep.set('photo');
@@ -4683,6 +4734,104 @@ export class KioskComponent implements OnInit, OnDestroy {
   }
 
   // ============================================================
+  // PRE-SUBMISSION DOCUMENT PREVIEW (document request flow)
+  // ============================================================
+  // Renders the service's actual document template (same template + placeholder
+  // mappings the admin will generate later) with the resident's in-progress form
+  // data. Buffer only — no request row, no status change, no file on disk. The
+  // resident can preview, restart preview (updated data), or go back and edit.
+  previewRequestDocument() {
+    if (this.docPreviewRendering()) return;
+    const service = this.selectedService();
+    if (!service || !service.has_template) return;
+
+    const resident = this.resident();
+    const data: {
+      service_id: number;
+      form_data: Record<string, unknown>;
+      resident_id?: number;
+      guest?: GuestInfo;
+    } = {
+      service_id: service.service_id,
+      form_data: this.formValues()
+    };
+    if (resident) {
+      data.resident_id = resident.resident_id;
+    } else {
+      data.guest = {
+        full_name: this.guestForm.fullName.trim(),
+        birth_date: this.guestForm.birthDate || undefined,
+        address: this.guestForm.address.trim(),
+        contact_number: this.guestForm.contactNumber.trim(),
+        email: this.guestForm.email.trim() || undefined
+      };
+    }
+
+    this.docPreviewRendering.set(true);
+    this.docPreviewError.set('');
+    this.cdr.detectChanges();
+
+    this.kioskService.previewRequest(data).subscribe({
+      next: (blob) => {
+        this.docPreviewBlob.set(blob);
+        this.docPreviewRendering.set(false);
+        this.cdr.detectChanges();
+        setTimeout(() => this.renderDocPreview(), 0);
+      },
+      error: (err: any) => {
+        this.docPreviewRendering.set(false);
+        const fallback = this.t('doc.review.previewFailed');
+        if (err?.error instanceof Blob) {
+          err.error.text().then((text: string) => {
+            let msg = fallback;
+            try {
+              const parsed = JSON.parse(text);
+              const firstErr = parsed?.errors?.[0];
+              msg = firstErr?.msg || parsed?.message || fallback;
+            } catch { /* ignore non-JSON error bodies */ }
+            this.docPreviewError.set(msg);
+          });
+        } else {
+          this.docPreviewError.set(err?.error?.message || err?.message || fallback);
+        }
+        console.error('Document request preview error:', err);
+      }
+    });
+  }
+
+  // Render the received DOCX buffer into the preview container using docx-preview
+  // (the same library that powers the Barangay ID and admin preview modals).
+  private renderDocPreview() {
+    const container = this.docPreviewContainer?.nativeElement;
+    const blob = this.docPreviewBlob();
+    if (!container || !blob || this.docPreviewRenderedKey === blob) return;
+    this.docPreviewRenderedKey = blob;
+    container.innerHTML = '';
+    renderAsync(blob, container)
+      .catch((e: any) => {
+        this.docPreviewError.set(e?.message || this.t('doc.review.previewFailed'));
+      });
+  }
+
+  // Clear the preview + stop sharing this blob as "rendered". Called whenever the
+  // resident edits information (so the next preview is regenerated) and whenever
+  // the review step is re-entered with a fresh form.
+  private clearDocPreview() {
+    this.docPreviewBlob.set(null);
+    this.docPreviewRendering.set(false);
+    this.docPreviewError.set('');
+    this.docPreviewRenderedKey = null;
+  }
+
+  // Edit Information: the application form is the single source of truth. All
+  // edits happen there; the preview is always regenerated from the form values.
+  editInformation() {
+    this.clearDocPreview();
+    this.currentStep.set('form');
+    this.saveState();
+  }
+
+  // ============================================================
   // CAMERA
   // ============================================================
 
@@ -4736,12 +4885,14 @@ export class KioskComponent implements OnInit, OnDestroy {
   skipPhoto() {
     this.stopCamera();
     this.capturedPhoto.set(null);
+    this.clearDocPreview();
     this.currentStep.set('review');
     this.resetIdleTimer();
     this.saveState();
   }
 
   confirmPhoto() {
+    this.clearDocPreview();
     this.currentStep.set('review');
     this.resetIdleTimer();
     this.saveState();

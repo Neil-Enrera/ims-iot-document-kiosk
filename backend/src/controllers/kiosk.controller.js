@@ -6,6 +6,7 @@ const auditRepository = require('../repositories/audit.repository');
 const notificationService = require('../services/notification.service');
 const sseManager = require('../services/notification-sse');
 const idCardService = require('../services/id-card.service');
+const documentService = require('../services/document.service');
 const { findBarangay } = require('../services/barangay.service');
 const { successResponse, errorResponse, createdResponse } = require('../utils/apiResponse');
 const pool = require('../config/database');
@@ -76,13 +77,14 @@ const getServices = async (req, res) => {
   try {
     const [rows] = await pool.query(
       `SELECT service_id, service_name, description, requirements, form_fields,
-              processing_fee, requires_photo, is_active
+              processing_fee, requires_photo, is_active, template_path
        FROM services WHERE is_active = 1 ORDER BY service_name`
     );
     const services = rows.map(s => ({
       ...s,
       requirements: parseJsonField(s.requirements),
-      form_fields: parseJsonField(s.form_fields)
+      form_fields: parseJsonField(s.form_fields),
+      has_template: !!s.template_path
     }));
     return successResponse(res, 'Services retrieved.', services);
   } catch (error) {
@@ -238,6 +240,42 @@ const previewBarangayId = async (req, res) => {
     return res.send(rendered.buffer);
   } catch (error) {
     console.error('Kiosk previewBarangayId error:', error);
+    return errorResponse(res, 500, 'Internal server error.');
+  }
+};
+
+// Public live preview for a document REQUEST: renders the service's document
+// template with the kiosk's in-progress form data (no request row is created)
+// so the resident can review exactly what the generated document will contain
+// before submitting. Returns the DOCX buffer directly. Previewing NEVER:
+// approves the request, registers/releases a document, changes status, or
+// writes an official file — the admin's later review/approval drives all that.
+const previewRequestDocument = async (req, res) => {
+  try {
+    const { service_id, resident_id, guest, form_data } = req.body;
+
+    if (!service_id) {
+      return errorResponse(res, 400, 'Service is required.');
+    }
+
+    const rendered = await documentService.renderRequestPreview({
+      serviceId: service_id,
+      formData: form_data,
+      residentId: resident_id || null,
+      guest: guest || null,
+      processedBy: 'PREVIEW'
+    });
+
+    if (!rendered.success) return errorResponse(res, 400, rendered.message);
+
+    res.set({
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'Content-Disposition': 'inline; filename="document-preview.docx"',
+      'Cache-Control': 'no-store'
+    });
+    return res.send(rendered.buffer);
+  } catch (error) {
+    console.error('Kiosk previewRequestDocument error:', error);
     return errorResponse(res, 500, 'Internal server error.');
   }
 };
@@ -434,4 +472,4 @@ const getHardwareStatus = async (req, res) => {
   }
 };
 
-module.exports = { searchResidents, getResident, getResidentHistory, getServices, createRequest, createBarangayIdApplication, previewBarangayId, verifyRfid, getStatusDisplay, getHardwareStatus };
+module.exports = { searchResidents, getResident, getResidentHistory, getServices, createRequest, createBarangayIdApplication, previewBarangayId, previewRequestDocument, verifyRfid, getStatusDisplay, getHardwareStatus };

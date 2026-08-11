@@ -213,6 +213,96 @@ const generateDocument = async ({ requestId, userId }) => {
   return { success: true, message: 'Document generated successfully.', data: { generated, requestNumber: request.request_number, warnings } };
 };
 
+// Render a real service document as a DRAFT preview buffer from kiosk form data.
+// This mirrors generateDocument's template checks, placeholder resolution and
+// render loop so the resident sees essentially the same document the admin will
+// generate later — but it NEVER writes a file and NEVER touches the database.
+// The synthetic `request` object simply drives the shared placeholder engine;
+// no request row is created or mutated. Business rule: preview !== official.
+const renderRequestPreview = async ({ serviceId, formData, residentId, guest, processedBy = 'PREVIEW' }) => {
+  const service = await loadServiceWithMappings(serviceId);
+  if (!service) {
+    return { success: false, message: 'Service not found.' };
+  }
+
+  if (!service.template_path) {
+    return { success: false, message: 'This service has no uploaded document template.' };
+  }
+
+  const templatePath = loadTemplatePath(service);
+  if (!templatePath) {
+    return { success: false, message: 'The document template file is missing on the server.' };
+  }
+  if (!templatePath.endsWith('.docx')) {
+    return { success: false, message: 'Automatic document generation requires a DOCX template. The uploaded template is not a .docx file.' };
+  }
+
+  const templateTags = scanTemplatePlaceholders(service);
+  if (templateTags.length === 0) {
+    return {
+      success: false,
+      message: 'The uploaded template contains no {{placeholder}} tags (e.g. {{full_name}}, {{address}}). ' +
+        'Automatic fill-in only works when the DOCX uses placeholders typed inside double curly braces.'
+    };
+  }
+
+  // Mirror what insertKioskRequest stores: guest identity merged under _guest so
+  // the placeholder engine resolves {{full_name}} / {{address}} the same way it
+  // does for the final stored request.
+  const application = { ...(formData || {}) };
+  if (guest) {
+    application._guest = {
+      full_name: guest.full_name || null,
+      middle_name: guest.middle_name || null,
+      birth_date: guest.birth_date || null,
+      address: guest.address || null,
+      contact_number: guest.contact_number || null,
+      email: guest.email || null
+    };
+  }
+
+  const resident = residentId ? await findResident(residentId) : null;
+  const barangay = await findBarangay(resident?.barangay_id);
+
+  const request = {
+    request_number: 'PREVIEW',
+    resident_id: resident?.resident_id || null,
+    form_data: application
+  };
+
+  const context = placeholderEngine.buildContext({ request, resident, service, barangay, processedBy });
+  const { data } = placeholderEngine.apply({ templateTags, service, context });
+
+  let renderedBuffer;
+  try {
+    const content = fs.readFileSync(templatePath, 'binary');
+    const zip = new PizZip(content);
+    const doc = new Docxtemplater(zip, {
+      paragraphLoop: true,
+      linebreaks: true,
+      delimiters: { start: '{{', end: '}}' },
+      nullGetter: () => ''
+    });
+    doc.render(data);
+    renderedBuffer = doc.getZip().generate({
+      type: 'nodebuffer',
+      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    });
+  } catch (error) {
+    return { success: false, message: `Failed to render document template: ${error.message}` };
+  }
+
+  return {
+    success: true,
+    buffer: renderedBuffer,
+    warnings: placeholderEngine.buildWarnings(templateTags, service),
+    data: {
+      requestNumber: 'PREVIEW',
+      hasTemplate: true
+    }
+  };
+};
+
 const tryConvertToPdf = async (docxPath) => {
   const soffice = findLibreOffice();
   if (!soffice) return null;
@@ -398,6 +488,7 @@ const reviewDocument = async (documentId, { status, reviewedBy, remarks }) => {
 
 module.exports = {
   generateDocument,
+  renderRequestPreview,
   listDocuments,
   getDocument,
   deleteDocument,
