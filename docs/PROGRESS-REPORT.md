@@ -169,6 +169,17 @@ All 11 backend modules fully implemented with real MySQL queries:
 
 ---
 
+## Recent Changes (August 11, 2026 Session)
+
+### Kiosk UI Redesign (Service Categories → Requirements Flow)
+- Redesigned the **Service Categories** step to match the new design system: light `#F8FAFC` canvas, background image + radial vignette + orange corner shape, centered logo header with page title/subtitle, service cards as white 20px-radius tiles with rounded orange icon, service name, real DB description (no placeholders), a "How to Use" callout with disabled "In Progress" chip that still asks for visitor details, and a sticky bottom single-action Continue bar (secondary link left, visual icon center).
+- Redesigned the **Requirements** step to the same design system: headed by a back button (top-left), centered logo, a title + new subtitle ("Please review the requirements before proceeding."), and a single centered white card showing the service icon/name/description, a divider, a "What to Bring" heading, and each requirement as a row with a soft circular document icon + green circular confirmation check; bottom actions are Back (outlined) + Continue (solid orange) calling `goBack()`/`proceedToForm()`.
+- Added i18n keys `doc.requirements.subtitle` (en/fil); both redesigned steps use a shared 4-section footer (Language EN/FIL selector, Assistance, Office Hours, Date & Time) identical to the landing page.
+- **Known OneDrive quirk**: the first build after edits compiled a stale file placeholder; rebuild after sync resolves. Always verify the freshly built dist chunk contains new strings before declaring success.
+- Verified: `npm run build:kiosk` passes; fresh dist chunk contains the new subtitle keys (en/fil) and the new row/card utility classes.
+
+---
+
 ## Known Issues
 
 | Issue | Severity | Status |

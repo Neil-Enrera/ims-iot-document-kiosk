@@ -68,18 +68,9 @@ const verifyCard = async (cardUid) => {
     return { success: false, message: 'RFID card is not active.' };
   }
 
-  const {
-    first_name, middle_name, last_name, suffix, resident_code, birth_date,
-    gender, civil_status, blood_type, contact_number, email, address_line,
-    emergency_contact_name, emergency_contact_number, ...rfidData
-  } = card;
-  const resident = {
-    first_name, middle_name, last_name, suffix, resident_code, birth_date,
-    gender, civil_status, blood_type, contact_number, email, address_line,
-    emergency_contact_name, emergency_contact_number
-  };
+  const { resident, rfid } = splitResidentAndRfid(card);
 
-  return { success: true, message: 'RFID verified successfully.', data: { resident, rfid: rfidData } };
+  return { success: true, message: 'RFID verified successfully.', data: { resident, rfid } };
 };
 
 const getResidentByUid = async (cardUid) => {
@@ -88,18 +79,45 @@ const getResidentByUid = async (cardUid) => {
     return { success: false, message: 'RFID card not found.' };
   }
 
+  const { resident, rfid } = splitResidentAndRfid(card);
+
+  return { success: true, message: 'Resident retrieved successfully.', data: { resident, rfid } };
+};
+
+// Splits the flattened rfid_cards JOIN residents row into the resident profile
+// object (resident_id, name, demographics, contact, photo, status, barangay_id)
+// and the RFID card record (card id, uid, issue/expiry, card status).
+const splitResidentAndRfid = (card) => {
   const {
     first_name, middle_name, last_name, suffix, resident_code, birth_date,
-    gender, civil_status, blood_type, contact_number, email, address_line,
-    emergency_contact_name, emergency_contact_number, ...rfidData
+    gender, civil_status, blood_type, occupation, contact_number, email, address_line,
+    emergency_contact_name, emergency_contact_number,
+    resident_photo, resident_status, resident_barangay_id, ...rfidData
   } = card;
+
   const resident = {
-    first_name, middle_name, last_name, suffix, resident_code, birth_date,
-    gender, civil_status, blood_type, contact_number, email, address_line,
-    emergency_contact_name, emergency_contact_number
+    resident_id: card.resident_id,
+    resident_code,
+    first_name,
+    middle_name,
+    last_name,
+    suffix,
+    birth_date,
+    gender,
+    civil_status,
+    blood_type,
+    occupation,
+    barangay_id: resident_barangay_id,
+    address_line,
+    contact_number,
+    email,
+    emergency_contact_name,
+    emergency_contact_number,
+    photo: resident_photo,
+    status: resident_status
   };
 
-  return { success: true, message: 'Resident retrieved successfully.', data: { resident, rfid: rfidData } };
+  return { resident, rfid: rfidData };
 };
 
 const updateCardStatus = async (rfidCardId, status) => {

@@ -14,6 +14,7 @@ export interface Resident {
   gender: string | null;
   civil_status: string | null;
   blood_type: string | null;
+  occupation: string | null;
   barangay_id: number;
   address_line: string;
   contact_number: string | null;
@@ -111,6 +112,24 @@ export interface RfidVerifyResult {
   rfid?: any;
 }
 
+export interface RfidCardInfo {
+  rfid_card_id: number;
+  resident_id: number;
+  card_uid: string;
+  issued_date: string | null;
+  expiration_date: string | null;
+  status: string;
+  created_at?: string;
+}
+
+export interface HistoryEntry {
+  request_id: number;
+  reference_number: string;
+  request_date: string;
+  service_name: string;
+  status_name: string;
+}
+
 export interface BarangayIdApplication {
   application_id: number;
   application_number: string;
@@ -149,6 +168,10 @@ export class KioskService {
 
   getResident(id: number): Observable<ApiResponse<Resident>> {
     return this.http.get<ApiResponse<Resident>>(`${this.apiUrl}/kiosk/residents/${id}`);
+  }
+
+  getResidentHistory(residentId: number): Observable<ApiResponse<HistoryEntry[]>> {
+    return this.http.get<ApiResponse<HistoryEntry[]>>(`${this.apiUrl}/kiosk/residents/${residentId}/requests`);
   }
 
   getServices(): Observable<ApiResponse<Service[]>> {

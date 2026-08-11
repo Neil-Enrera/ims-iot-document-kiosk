@@ -1,6 +1,6 @@
 import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { Resident, Service, FormField } from './kiosk.service';
+import { Resident, Service, FormField, RfidCardInfo } from './kiosk.service';
 
 export interface KioskState {
   mode: 'home' | 'rfid' | 'guest' | 'documents' | 'barangay';
@@ -8,6 +8,7 @@ export interface KioskState {
   currentStep: 'welcome' | 'guest-info' | 'services' | 'requirements' | 'form' | 'photo' | 'review' | 'success';
   barangayStep: 'requirements' | 'form' | 'photo' | 'signature' | 'review' | 'success';
   resident: Resident | null;
+  rfidCard?: RfidCardInfo | null;
   selectedService: Service | null;
   barangayService: Service | null;
   capturedPhoto: string | null;

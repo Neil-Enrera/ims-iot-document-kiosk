@@ -42,6 +42,22 @@ const getResident = async (req, res) => {
   }
 };
 
+// Public service/application history for an identified resident (no auth required).
+// Only returns rows linked to the authenticated resident so no other record is exposed.
+const getResidentHistory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const resident = await kioskService.getResidentById(id);
+    if (!resident) return errorResponse(res, 404, 'Resident not found.');
+    const limit = parseInt(req.query.limit, 10) || 20;
+    const history = await kioskService.getResidentHistory(id, Math.min(Math.max(limit, 1), 50));
+    return successResponse(res, 'Resident requests retrieved.', history);
+  } catch (error) {
+    console.error('Kiosk getResidentHistory error:', error);
+    return errorResponse(res, 500, 'Internal server error.');
+  }
+};
+
 // Idempotent request creation guard. The kiosk sends a stable idempotency key for
 // a single form submission attempt (reused on retry, changed for a new request).
 // If a request with the same key already exists, return it instead of inserting a
@@ -418,4 +434,4 @@ const getHardwareStatus = async (req, res) => {
   }
 };
 
-module.exports = { searchResidents, getResident, getServices, createRequest, createBarangayIdApplication, previewBarangayId, verifyRfid, getStatusDisplay, getHardwareStatus };
+module.exports = { searchResidents, getResident, getResidentHistory, getServices, createRequest, createBarangayIdApplication, previewBarangayId, verifyRfid, getStatusDisplay, getHardwareStatus };

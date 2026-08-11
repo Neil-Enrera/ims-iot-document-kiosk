@@ -1,13 +1,14 @@
 import { Component, OnInit, OnDestroy, signal, ElementRef, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { KioskService, Resident, Service, GuestInfo, FormField } from './kiosk.service';
+import { KioskService, Resident, Service, GuestInfo, FormField, RfidCardInfo, HistoryEntry } from './kiosk.service';
 import { IdentificationService } from './identification.service';
 import { RfidScanService } from './rfid-scan.service';
 import { KioskStateService, KioskState } from './kiosk-state.service';
 import { ButtonComponent } from './button.component';
 import { SignaturePadComponent } from './signature-pad.component';
 import { BarangayPreviewModalComponent } from './barangay-preview-modal.component';
+import { ResidentProfileComponent } from './resident-profile.component';
 import { TranslationService, KioskLanguage } from '../../i18n/translation.service';
 
 export type KioskMode = 'home' | 'rfid' | 'guest' | 'documents' | 'barangay';
@@ -38,7 +39,7 @@ export type BarangayStep =
 @Component({
   selector: 'app-kiosk',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonComponent, SignaturePadComponent, BarangayPreviewModalComponent],
+  imports: [CommonModule, FormsModule, ButtonComponent, SignaturePadComponent, BarangayPreviewModalComponent, ResidentProfileComponent],
   template: `
     <div class="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 text-white select-none flex">
 
@@ -599,36 +600,17 @@ export type BarangayStep =
         <!-- ============ DOCUMENTS: Request flow (resident + guest temporary session) ============ -->
         @if (mode() === 'documents') {
 
-          <!-- DOC STEP 0a: Welcome (RFID path only) -->
+          <!-- DOC STEP 0a: Welcome / Resident Profile (RFID + manual search paths) -->
           @if (currentStep() === 'welcome' && resident()) {
-            <div class="absolute inset-0 flex flex-col items-center justify-center p-8">
-              <div class="max-w-lg w-full">
-                <div class="bg-blue-800/50 rounded-2xl p-8 backdrop-blur text-center">
-                  <h2 class="text-3xl font-bold mb-6">{{ t('doc.welcome') }}</h2>
-                  <div class="bg-white rounded-xl p-6 text-gray-800 mb-6">
-                    @if (resident()!.photo) {
-                      <img [src]="resident()!.photo" class="w-32 h-32 rounded-full mx-auto mb-4 object-cover" />
-                    } @else {
-                      <div class="w-32 h-32 rounded-full bg-blue-100 mx-auto mb-4 flex items-center justify-center text-blue-600 text-4xl font-bold">
-                        {{ resident()!.first_name.charAt(0) }}{{ resident()!.last_name.charAt(0) }}
-                      </div>
-                    }
-                    <h3 class="text-2xl font-bold">{{ resident()!.first_name }} {{ resident()!.last_name }}</h3>
-                    @if (resident()!.middle_name) {
-                      <p class="text-gray-500">{{ resident()!.middle_name }}</p>
-                    }
-                    <p class="text-gray-500 mt-2">{{ resident()!.address_line }}</p>
-                    @if (resident()!.contact_number) {
-                      <p class="text-gray-400 text-sm mt-1">{{ resident()!.contact_number }}</p>
-                    }
-                  </div>
-                  <div class="flex gap-4">
-                    <app-button variant="secondary" size="lg" class="flex-1" (onClick)="goBack()">{{ t('common.back') }}</app-button>
-                    <app-button variant="primary" size="lg" class="flex-1" (onClick)="proceedToServices()">{{ t('common.continue') }}</app-button>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <app-resident-profile
+              [resident]="resident()"
+              [rfidCard]="rfidCard()"
+              [history]="residentHistory()"
+              [historyLoading]="historyLoading()"
+              [language]="language()"
+              (onBack)="goBack()"
+              (onContinue)="proceedToServices()"
+              (languageChange)="setLanguage($event)"></app-resident-profile>
           }
 
           <!-- DOC STEP 0b: Guest basic info (temporary session only) -->
@@ -963,75 +945,366 @@ export type BarangayStep =
 
           <!-- DOC STEP 1: Service Selection -->
           @if (currentStep() === 'services') {
-            <div class="absolute inset-0 flex flex-col p-8">
-              <div class="max-w-3xl mx-auto w-full flex-1 flex flex-col">
-                <div class="flex items-center justify-between mb-8">
-                  <h2 class="text-3xl font-bold">{{ t('doc.services.title') }}</h2>
-                  <button class="text-blue-300 hover:text-white text-lg" (click)="cancel()">{{ t('common.cancel') }}</button>
+            <div class="absolute inset-0 bg-[#F8FAFC] text-[#0F172A] select-none overflow-hidden [font-family:'Inter',sans-serif] flex flex-col">
+
+              <!-- Background: same as the other kiosk pages -->
+              <div class="absolute inset-0 bg-cover bg-center pointer-events-none" style="background-image: url('Background.png')" aria-hidden="true"></div>
+              <div class="absolute inset-0 pointer-events-none" aria-hidden="true"
+                   style="background: radial-gradient(ellipse 72% 58% at 50% 42%, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0.35) 55%, rgba(255,255,255,0.05) 100%);"></div>
+              <div class="absolute top-0 left-0 w-64 h-40 pointer-events-none" aria-hidden="true">
+                <svg viewBox="0 0 256 160" class="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M0 0 H256 V80 C256 124 220 160 176 160 H0 Z" fill="#F97316" opacity="0.12"/>
+                </svg>
+              </div>
+
+              <!-- Header: back (left) + logo (center) + title/subtitle -->
+              <header class="relative z-10 shrink-0">
+                <div class="flex items-center justify-center relative pt-1.5 pb-0.5 min-[1101px]:pt-2 [@media(max-height:880px)]:pt-1">
+                  <div class="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 z-40 flex items-center gap-2.5 sm:gap-3">
+                    <button (click)="goBack()"
+                            class="w-[44px] h-[44px] sm:w-[46px] sm:h-[46px] rounded-full border-2 border-[#F97316]/60 bg-white flex items-center justify-center shadow-sm hover:bg-[#FFF7ED] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30"
+                            [attr.aria-label]="t('common.back')">
+                      <svg class="w-5 h-5 sm:w-6 sm:h-6 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                      </svg>
+                    </button>
+                    <button (click)="goBack()"
+                            class="flex items-center min-h-[40px] rounded-xl px-1 text-[#0F172A] font-semibold text-[13px] sm:text-[14px] hover:text-[#F97316] transition-colors focus:outline-none focus:ring-2 focus:ring-[#F97316]/40">
+                      {{ t('common.back') }}
+                    </button>
+                  </div>
+
+                  <div class="w-[64px] h-[64px] sm:w-[72px] sm:h-[72px] rounded-full bg-white border-2 border-[#F97316]/30 shadow-sm overflow-hidden flex items-center justify-center [@media(max-height:880px)]:w-[56px] [@media(max-height:880px)]:h-[56px]">
+                    <img src="Barangay Logo.png" alt="Barangay San Manuel logo" class="w-full h-full object-cover">
+                  </div>
                 </div>
-                <div class="grid gap-4 flex-1 overflow-y-auto">
+
+                <div class="text-center px-4 pt-0.5 pb-1 [@media(max-height:880px)]:pb-0.5">
+                  <h1 class="text-[clamp(1.5rem,1.8vw,2rem)] font-bold tracking-tight text-[#0F172A] leading-none [@media(max-height:880px)]:text-[1.375rem]">{{ t('doc.services.title') }}</h1>
+                  <p class="text-[clamp(0.875rem,1vw,1rem)] font-medium text-[#64748B] mt-0.5">{{ t('doc.services.subtitle') }}</p>
+                </div>
+              </header>
+
+              <!-- Main: service cards in a responsive grid (one column, two columns when space allows) -->
+              <main class="relative z-10 flex-1 min-h-0 overflow-y-auto">
+                <div class="min-h-full mx-auto w-[calc(100%-32px)] sm:w-[calc(100%-48px)] min-[1101px]:w-[calc(100%-80px)] max-w-[980px] py-2 sm:py-2.5 [@media(max-height:880px)]:py-1.5 grid grid-cols-1 gap-2.5 sm:gap-3.5 content-start">
                   @for (service of services(); track service.service_id) {
-                    <button class="bg-blue-800/50 hover:bg-blue-700/50 rounded-xl p-6 text-left transition-all backdrop-blur border-2 border-transparent hover:border-blue-400"
-                            (click)="selectService(service)">
-                      <div class="flex justify-between items-start">
-                        <div>
-                          <h3 class="text-xl font-bold mb-1">{{ service.service_name }}</h3>
-                          <p class="text-blue-200">{{ service.description }}</p>
-                        </div>
-                        <div class="text-right">
+                    <button type="button"
+                            (click)="selectService(service)"
+                            class="w-full text-left flex items-center gap-4 sm:gap-5 rounded-[18px] border-2 border-[#E5E7EB] bg-white shadow-[0_2px_14px_rgba(15,23,42,0.07)] px-4 sm:px-6 py-4 sm:py-5 transition-all duration-150 hover:border-[#F97316]/50 hover:bg-[#FFF7ED]/40 hover:shadow-[0_4px_18px_rgba(249,115,22,0.12)] active:border-[#F97316] active:bg-[#FFF7ED] active:scale-[0.995] focus:outline-none focus:ring-4 focus:ring-[#F97316]/30 [@media(max-height:880px)]:py-3">
+                      <!-- Left: icon in a light-orange rounded square -->
+                      <div class="shrink-0 w-[56px] h-[56px] sm:w-[64px] sm:h-[64px] rounded-[14px] sm:rounded-[16px] bg-[#FFF7ED] border border-[#F97316]/15 flex items-center justify-center text-[#F97316] [@media(max-height:880px)]:w-[52px] [@media(max-height:880px)]:h-[52px]" aria-hidden="true">
+                        <svg class="w-8 h-8 sm:w-9 sm:h-9" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                          <path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z" stroke-linecap="round" stroke-linejoin="round"/>
+                          <path d="M14 3v5h5M8 13h8M8 17h5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                      </div>
+
+                      <!-- Center: service name + description -->
+                      <div class="flex-1 min-w-0 flex flex-col justify-center">
+                        <h2 class="text-[clamp(1.125rem,1.4vw,1.5rem)] font-bold text-[#0F172A] leading-snug tracking-tight uppercase break-words">{{ service.service_name }}</h2>
+                        @if (service.description) {
+                          <p class="text-[clamp(0.875rem,1vw,0.9375rem)] font-medium text-[#64748B] leading-snug mt-0.5 sm:mt-1 line-clamp-3">{{ service.description }}</p>
+                        }
+                      </div>
+
+                      <!-- Right: processing fee + chevron -->
+                      <div class="shrink-0 flex items-center justify-end gap-3 sm:gap-4 text-right">
+                        <div class="min-w-0 text-right">
                           @if (service.processing_fee > 0) {
-                            <span class="text-2xl font-bold">₱{{ service.processing_fee }}</span>
+                            <p class="text-[clamp(1.25rem,1.8vw,1.75rem)] font-bold text-[#0F172A] leading-none tracking-tight whitespace-nowrap">₱{{ formatServiceFee(service.processing_fee) }}</p>
+                            <p class="text-[11px] sm:text-[12px] font-semibold text-[#64748B] uppercase tracking-wide mt-1 whitespace-nowrap">{{ t('doc.services.processingFee') }}</p>
                           } @else {
-                            <span class="text-lg text-green-300 font-medium">{{ t('doc.services.free') }}</span>
+                            <p class="text-[clamp(1.25rem,1.8vw,1.75rem)] font-bold text-[#10B981] leading-none tracking-tight whitespace-nowrap">{{ t('doc.services.free') }}</p>
+                            <p class="text-[11px] sm:text-[12px] font-semibold text-[#64748B] uppercase tracking-wide mt-1 whitespace-nowrap">{{ t('doc.services.processingFee') }}</p>
                           }
                         </div>
+                        <svg class="w-7 h-7 sm:w-8 sm:h-8 text-[#F97316] shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                        </svg>
                       </div>
                     </button>
                   }
                 </div>
-              </div>
+              </main>
+
+              <!-- Footer: same as the kiosk landing page (includes the language selector) -->
+              <footer class="relative z-10 shrink-0 border-t border-[#E5E7EB] bg-white/95 backdrop-blur-sm">
+                <div class="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-1.5 lg:py-2 grid grid-cols-2 md:grid-cols-4 gap-x-6 lg:gap-x-8 gap-y-2 lg:gap-y-3 items-center">
+
+                  <!-- Section 1: Language (same as landing) -->
+                  <div class="flex flex-col items-center gap-1.5 text-center min-w-0">
+                    <div class="flex items-center gap-1.5 text-[#0F172A]">
+                      <svg class="w-[18px] h-[18px] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="9"/><path d="M3.6 9h16.8M3.6 15h16.8M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/>
+                      </svg>
+                      <span class="text-[13px] font-semibold">{{ t('landing.footer.language') }}</span>
+                    </div>
+                    <div class="inline-flex rounded-lg overflow-hidden border border-[#E5E7EB] bg-white shadow-sm min-w-0">
+                      <button
+                        (click)="setLanguage('en')"
+                        class="px-3 sm:px-5 py-1.5 text-[13px] font-semibold transition-colors min-h-[34px]"
+                        [class.bg-[#F97316]]="language() === 'en'"
+                        [class.text-white]="language() === 'en'"
+                        [class.bg-white]="language() !== 'en'"
+                        [class.text-[#0F172A]]="language() !== 'en'">
+                        English
+                      </button>
+                      <button
+                        (click)="setLanguage('fil')"
+                        class="px-3 sm:px-5 py-1.5 text-[13px] border-l border-[#E5E7EB] font-semibold transition-colors min-h-[34px]"
+                        [class.bg-[#F97316]]="language() === 'fil'"
+                        [class.text-white]="language() === 'fil'"
+                        [class.bg-white]="language() !== 'fil'"
+                        [class.text-[#0F172A]]="language() !== 'fil'">
+                        Filipino
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Section 2: Need Assistance -->
+                  <div class="flex flex-col items-center gap-1 text-center min-w-0">
+                    <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="9"/>
+                      <path d="M9.5 9a2.5 2.5 0 114.6 1.3c-.8 1-1.9 1.7-1.9 3.2" stroke-linecap="round"/>
+                      <path d="M12 17h.01" stroke-linecap="round"/>
+                    </svg>
+                    <div>
+                      <p class="text-[13px] lg:text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.assistance') }}</p>
+                      <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.assistanceDesc') }}</p>
+                    </div>
+                  </div>
+
+                  <!-- Section 3: Office Hours -->
+                  <div class="flex flex-col items-center gap-1 text-center min-w-0">
+                    <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="9"/>
+                      <path d="M12 7v5l3 2" stroke-linecap="round"/>
+                    </svg>
+                    <div>
+                      <p class="text-[13px] lg:text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.hours') }}</p>
+                      <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.monFri') }}</p>
+                      <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.hoursRange') }}</p>
+                    </div>
+                  </div>
+
+                  <!-- Section 4: Date & Time -->
+                  <div class="flex flex-col items-center gap-1 text-center min-w-0">
+                    <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                      <rect x="3" y="5" width="18" height="16" rx="2"/>
+                      <path d="M8 3v4M16 3v4M3 10h18"/>
+                    </svg>
+                    <div class="min-w-0">
+                      <p class="text-[11px] lg:text-[12px] font-medium text-[#64748B] leading-snug">{{ formatFooterDate() }}</p>
+                      <p class="text-base lg:text-lg font-bold text-[#F97316] leading-tight">{{ formatFooterTime() }}</p>
+                    </div>
+                  </div>
+                </div>
+              </footer>
             </div>
           }
 
           <!-- DOC STEP 2: Requirements -->
           @if (currentStep() === 'requirements') {
-            <div class="absolute inset-0 flex flex-col p-8">
-              <div class="max-w-3xl mx-auto w-full flex-1 flex flex-col">
-                <div class="flex items-center justify-between mb-8">
-                  <h2 class="text-3xl font-bold">{{ t('doc.requirements.title') }}</h2>
-                  <button class="text-blue-300 hover:text-white text-lg" (click)="goBack()">{{ t('common.back') }}</button>
-                </div>
-                <div class="flex-1 overflow-y-auto space-y-6">
-                  <div class="bg-blue-800/50 rounded-xl p-6 backdrop-blur">
-                    <h3 class="text-xl font-bold mb-4">{{ selectedService()?.service_name }}</h3>
-                    @if (selectedService()?.description) {
-                      <p class="text-blue-200 mb-6">{{ selectedService()?.description }}</p>
-                    }
-                    @if (selectedService()?.requirements && selectedService()!.requirements!.length > 0) {
-                      <div class="mb-6">
-                        <h4 class="font-bold text-lg mb-3 text-blue-100">{{ t('doc.requirements.whatToBring') }}</h4>
-                        <ul class="space-y-2">
-                          @for (req of selectedService()!.requirements!; track req) {
-                            <li class="flex items-start gap-3 bg-blue-900/30 p-3 rounded-lg">
-                              <svg class="w-5 h-5 text-green-300 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                              </svg>
-                              <span class="text-blue-100">{{ req }}</span>
-                            </li>
-                          }
-                        </ul>
-                      </div>
-                    }
-                    @if (!selectedService()?.requirements || selectedService()!.requirements!.length === 0) {
-                      <p class="text-blue-200/80">{{ t('doc.requirements.none') }}</p>
-                    }
+            <div class="absolute inset-0 bg-[#F8FAFC] text-[#0F172A] select-none overflow-hidden [font-family:'Inter',sans-serif] flex flex-col">
+
+              <!-- Background: same as the other kiosk pages -->
+              <div class="absolute inset-0 bg-cover bg-center pointer-events-none" style="background-image: url('Background.png')" aria-hidden="true"></div>
+              <div class="absolute inset-0 pointer-events-none" aria-hidden="true"
+                   style="background: radial-gradient(ellipse 72% 58% at 50% 42%, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0.35) 55%, rgba(255,255,255,0.05) 100%);"></div>
+              <div class="absolute top-0 left-0 w-64 h-40 pointer-events-none" aria-hidden="true">
+                <svg viewBox="0 0 256 160" class="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M0 0 H256 V80 C256 124 220 160 176 160 H0 Z" fill="#F97316" opacity="0.12"/>
+                </svg>
+              </div>
+
+              <!-- Header: back (left) + logo (center) + title/subtitle -->
+              <header class="relative z-10 shrink-0">
+                <div class="flex items-center justify-center relative pt-1.5 pb-0.5 min-[1101px]:pt-2 [@media(max-height:880px)]:pt-1">
+                  <div class="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 z-40 flex items-center gap-2.5 sm:gap-3">
+                    <button (click)="goBack()"
+                            class="w-[44px] h-[44px] sm:w-[46px] sm:h-[46px] rounded-full border-2 border-[#F97316]/60 bg-white flex items-center justify-center shadow-sm hover:bg-[#FFF7ED] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30"
+                            [attr.aria-label]="t('common.back')">
+                      <svg class="w-5 h-5 sm:w-6 sm:h-6 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                      </svg>
+                    </button>
+                    <button (click)="goBack()"
+                            class="flex items-center min-h-[40px] rounded-xl px-1 text-[#0F172A] font-semibold text-[13px] sm:text-[14px] hover:text-[#F97316] transition-colors focus:outline-none focus:ring-2 focus:ring-[#F97316]/40">
+                      {{ t('common.back') }}
+                    </button>
+                  </div>
+
+                  <div class="w-[64px] h-[64px] sm:w-[72px] sm:h-[72px] rounded-full bg-white border-2 border-[#F97316]/30 shadow-sm overflow-hidden flex items-center justify-center [@media(max-height:880px)]:w-[56px] [@media(max-height:880px)]:h-[56px]">
+                    <img src="Barangay Logo.png" alt="Barangay San Manuel logo" class="w-full h-full object-cover">
                   </div>
                 </div>
-                <div class="flex gap-4 pt-4 border-t border-blue-700">
-                  <app-button variant="secondary" size="lg" class="flex-1" (onClick)="goBack()">{{ t('common.back') }}</app-button>
-                  <app-button variant="primary" size="lg" class="flex-1" (onClick)="proceedToForm()">{{ t('common.continue') }}</app-button>
+
+                <div class="text-center px-4 pt-0.5 pb-1 [@media(max-height:880px)]:pb-0.5">
+                  <h1 class="text-[clamp(1.5rem,1.8vw,2rem)] font-bold tracking-tight text-[#0F172A] leading-none [@media(max-height:880px)]:text-[1.375rem]">{{ t('doc.requirements.title') }}</h1>
+                  <p class="text-[clamp(0.875rem,1vw,1rem)] font-medium text-[#64748B] mt-0.5">{{ t('doc.requirements.subtitle') }}</p>
                 </div>
-              </div>
+              </header>
+
+              <!-- Main: requirements card + page actions -->
+              <main class="relative z-10 flex-1 min-h-0 overflow-y-auto">
+                <div class="min-h-full mx-auto w-[calc(100%-32px)] sm:w-[calc(100%-48px)] min-[1101px]:w-[calc(100%-80px)] max-w-[860px] py-2 sm:py-2.5 flex flex-col justify-center gap-3 sm:gap-4">
+
+                  <!-- Requirements card -->
+                  <section class="bg-white border border-[#E5E7EB] rounded-[20px] shadow-[0_2px_14px_rgba(15,23,42,0.07)] px-4 sm:px-7 py-4 sm:py-5" aria-label="Service requirements">
+
+                    <!-- Service header -->
+                    <div class="flex items-start gap-3 sm:gap-4">
+                      <div class="shrink-0 w-[52px] h-[52px] sm:w-[58px] sm:h-[58px] rounded-[14px] sm:rounded-[16px] bg-[#FFF7ED] border border-[#F97316]/15 flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                        <svg class="w-7 h-7 sm:w-8 sm:h-8" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                          <path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z" stroke-linecap="round" stroke-linejoin="round"/>
+                          <path d="M14 3v5h5M8 13h8M8 17h5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                      </div>
+                      <div class="min-w-0">
+                        <h2 class="text-[clamp(1.125rem,1.4vw,1.5rem)] font-bold text-[#0F172A] leading-tight uppercase break-words">{{ selectedService()?.service_name }}</h2>
+                        @if (selectedService()?.description) {
+                          <p class="text-[clamp(0.875rem,1vw,0.9375rem)] font-medium text-[#64748B] leading-relaxed mt-1.5 max-w-[62ch]">{{ selectedService()?.description }}</p>
+                        }
+                      </div>
+                    </div>
+
+                    @if (selectedService()?.requirements && selectedService()!.requirements!.length > 0) {
+
+                      <!-- Divider -->
+                      <div class="border-t border-[#E5E7EB] my-4 sm:my-5"></div>
+
+                      <!-- What to Bring heading -->
+                      <div class="flex items-center gap-2 mb-3">
+                        <svg class="w-5 h-5 text-[#F97316] shrink-0" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">
+                          <rect x="5" y="4" width="14" height="17" rx="2"/>
+                          <path d="M9 4.5V3h6v1.5" stroke-linecap="round"/>
+                          <path d="M8.5 12.5l2.3 2.3 4.7-4.7" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <h3 class="text-[clamp(1rem,1.2vw,1.125rem)] font-bold text-[#0F172A]">{{ t('doc.requirements.whatToBring') }}</h3>
+                      </div>
+
+                      <!-- Requirement rows -->
+                      <ul class="flex flex-col gap-2.5 sm:gap-3">
+                        @for (req of selectedService()!.requirements!; track req) {
+                          <li class="w-full flex items-center gap-3 sm:gap-4 bg-[#FCF8F5] border border-[#E5E7EB] rounded-[12px] px-3.5 sm:px-4 py-3">
+                            <div class="shrink-0 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#FFF7ED] border border-[#F97316]/15 text-[#F97316] flex items-center justify-center" aria-hidden="true">
+                              <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                <rect x="5" y="4" width="14" height="17" rx="2"/>
+                                <path d="M9 4.5V3h6v1.5" stroke-linecap="round"/>
+                                <path d="M9 12h6M9 16h6" stroke-linecap="round"/>
+                              </svg>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                              <p class="text-[clamp(0.9375rem,1.1vw,1.0625rem)] font-bold text-[#0F172A] leading-snug break-words">{{ req }}</p>
+                            </div>
+                            <div class="shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#DCFCE7] text-[#16A34A] flex items-center justify-center" aria-hidden="true">
+                              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                              </svg>
+                            </div>
+                          </li>
+                        }
+                      </ul>
+                    } @else {
+                      <div class="border-t border-[#E5E7EB] my-4 sm:my-5"></div>
+                      <p class="text-[clamp(0.9375rem,1vw,1rem)] font-medium text-[#64748B]">{{ t('doc.requirements.none') }}</p>
+                    }
+                  </section>
+
+                  <!-- Bottom actions -->
+                  <div class="flex items-center justify-center gap-3 sm:gap-4 pt-1 pb-2">
+                    <button (click)="goBack()"
+                            class="flex items-center justify-center gap-2 min-h-[54px] min-w-[160px] sm:min-w-[180px] px-6 rounded-[14px] border-2 border-[#F97316] bg-white text-[#F97316] text-base sm:text-lg font-bold shadow-sm hover:bg-[#FFF7ED] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/25">
+                      <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                      </svg>
+                      {{ t('common.back') }}
+                    </button>
+                    <button (click)="proceedToForm()"
+                            class="flex items-center justify-center gap-2 min-h-[54px] min-w-[200px] sm:min-w-[220px] px-8 rounded-[14px] bg-[#F97316] text-white text-base sm:text-lg font-bold shadow-[0_4px_14px_rgba(249,115,22,0.35)] hover:bg-[#EA580C] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40">
+                      {{ t('common.continue') }}
+                      <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </main>
+
+              <!-- Footer: same as the kiosk landing page (includes the language selector) -->
+              <footer class="relative z-10 shrink-0 border-t border-[#E5E7EB] bg-white/95 backdrop-blur-sm">
+                <div class="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-1.5 lg:py-2 grid grid-cols-2 md:grid-cols-4 gap-x-6 lg:gap-x-8 gap-y-2 lg:gap-y-3 items-center">
+
+                  <!-- Section 1: Language (same as landing) -->
+                  <div class="flex flex-col items-center gap-1.5 text-center min-w-0">
+                    <div class="flex items-center gap-1.5 text-[#0F172A]">
+                      <svg class="w-[18px] h-[18px] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="9"/><path d="M3.6 9h16.8M3.6 15h16.8M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/>
+                      </svg>
+                      <span class="text-[13px] font-semibold">{{ t('landing.footer.language') }}</span>
+                    </div>
+                    <div class="inline-flex rounded-lg overflow-hidden border border-[#E5E7EB] bg-white shadow-sm min-w-0">
+                      <button
+                        (click)="setLanguage('en')"
+                        class="px-3 sm:px-5 py-1.5 text-[13px] font-semibold transition-colors min-h-[34px]"
+                        [class.bg-[#F97316]]="language() === 'en'"
+                        [class.text-white]="language() === 'en'"
+                        [class.bg-white]="language() !== 'en'"
+                        [class.text-[#0F172A]]="language() !== 'en'">
+                        English
+                      </button>
+                      <button
+                        (click)="setLanguage('fil')"
+                        class="px-3 sm:px-5 py-1.5 text-[13px] border-l border-[#E5E7EB] font-semibold transition-colors min-h-[34px]"
+                        [class.bg-[#F97316]]="language() === 'fil'"
+                        [class.text-white]="language() === 'fil'"
+                        [class.bg-white]="language() !== 'fil'"
+                        [class.text-[#0F172A]]="language() !== 'fil'">
+                        Filipino
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Section 2: Need Assistance -->
+                  <div class="flex flex-col items-center gap-1 text-center min-w-0">
+                    <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="9"/>
+                      <path d="M9.5 9a2.5 2.5 0 114.6 1.3c-.8 1-1.9 1.7-1.9 3.2" stroke-linecap="round"/>
+                      <path d="M12 17h.01" stroke-linecap="round"/>
+                    </svg>
+                    <div>
+                      <p class="text-[13px] lg:text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.assistance') }}</p>
+                      <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.assistanceDesc') }}</p>
+                    </div>
+                  </div>
+
+                  <!-- Section 3: Office Hours -->
+                  <div class="flex flex-col items-center gap-1 text-center min-w-0">
+                    <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="9"/>
+                      <path d="M12 7v5l3 2" stroke-linecap="round"/>
+                    </svg>
+                    <div>
+                      <p class="text-[13px] lg:text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.hours') }}</p>
+                      <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.monFri') }}</p>
+                      <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.hoursRange') }}</p>
+                    </div>
+                  </div>
+
+                  <!-- Section 4: Date & Time -->
+                  <div class="flex flex-col items-center gap-1 text-center min-w-0">
+                    <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                      <rect x="3" y="5" width="18" height="16" rx="2"/>
+                      <path d="M8 3v4M16 3v4M3 10h18"/>
+                    </svg>
+                    <div class="min-w-0">
+                      <p class="text-[11px] lg:text-[12px] font-medium text-[#64748B] leading-snug">{{ formatFooterDate() }}</p>
+                      <p class="text-base lg:text-lg font-bold text-[#F97316] leading-tight">{{ formatFooterTime() }}</p>
+                    </div>
+                  </div>
+                </div>
+              </footer>
             </div>
           }
 
@@ -3489,6 +3762,9 @@ export class KioskComponent implements OnInit, OnDestroy {
   barangayStep = signal<BarangayStep>('requirements');
 
   resident = signal<Resident | null>(null);
+  rfidCard = signal<RfidCardInfo | null>(null);
+  residentHistory = signal<HistoryEntry[]>([]);
+  historyLoading = signal(false);
   services = signal<Service[]>([]);
   selectedService = signal<Service | null>(null);
   barangayService = signal<Service | null>(null);
@@ -3530,6 +3806,11 @@ export class KioskComponent implements OnInit, OnDestroy {
       month: 'long',
       day: 'numeric'
     });
+  }
+
+  formatServiceFee(fee: number | string): string {
+    const value = Number(fee);
+    return isNaN(value) ? '0.00' : value.toFixed(2);
   }
 
   formatFooterTime(): string {
@@ -3620,6 +3901,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.currentStep.set(savedState.currentStep);
     this.barangayStep.set(savedState.barangayStep);
     this.resident.set(savedState.resident);
+    this.rfidCard.set(savedState.rfidCard ?? null);
     this.selectedService.set(savedState.selectedService);
     this.barangayService.set(savedState.barangayService);
     this.capturedPhoto.set(savedState.capturedPhoto);
@@ -3643,6 +3925,12 @@ export class KioskComponent implements OnInit, OnDestroy {
       this.rfidScanService.connect();
     }
 
+    // Reload the resident's service history when restoring the profile screen
+    // (history is always fetched fresh; it is never persisted).
+    if (savedState.mode === 'documents' && savedState.currentStep === 'welcome' && savedState.resident) {
+      setTimeout(() => this.loadResidentHistory(), 0);
+    }
+
     // Restart camera if we were in a photo step
     if ((savedState.mode === 'documents' && savedState.currentStep === 'photo') ||
         (savedState.mode === 'barangay' && savedState.barangayStep === 'photo')) {
@@ -3659,6 +3947,7 @@ export class KioskComponent implements OnInit, OnDestroy {
         currentStep: this.currentStep(),
         barangayStep: this.barangayStep(),
         resident: this.resident(),
+        rfidCard: this.rfidCard(),
         selectedService: this.selectedService(),
         barangayService: this.barangayService(),
         capturedPhoto: this.capturedPhoto(),
@@ -3796,8 +4085,10 @@ export class KioskComponent implements OnInit, OnDestroy {
         if (data?.recognized && data.resident) {
           this.rfidStep.set('search');
           this.resident.set(data.resident);
+          this.rfidCard.set(data?.rfid || null);
           this.mode.set('documents');
           this.currentStep.set('welcome');
+          this.loadResidentHistory();
           this.resetIdleTimer();
           this.cdr.detectChanges();
           this.saveState();
@@ -3851,8 +4142,10 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.kioskService.getResident(r.resident_id).subscribe({
       next: (result: any) => {
         this.resident.set(result.data);
+        this.rfidCard.set(null);
         this.mode.set('documents');
         this.currentStep.set('welcome');
+        this.loadResidentHistory();
         this.resetIdleTimer();
         this.saveState();
       },
@@ -3865,6 +4158,29 @@ export class KioskComponent implements OnInit, OnDestroy {
   clearSearch() {
     this.searchQuery = '';
     this.searchResults.set([]);
+  }
+
+  // Loads the authenticated resident's service/application history for the profile
+  // screen. Falls back silently so profile rendering never blocks on history.
+  private loadResidentHistory() {
+    const res = this.resident();
+    const id = res?.resident_id ?? this.rfidCard()?.resident_id;
+    if (!id) {
+      this.residentHistory.set([]);
+      this.historyLoading.set(false);
+      return;
+    }
+    this.historyLoading.set(true);
+    this.kioskService.getResidentHistory(id).subscribe({
+      next: (result: any) => {
+        this.residentHistory.set(result?.data || []);
+        this.historyLoading.set(false);
+      },
+      error: () => {
+        this.residentHistory.set([]);
+        this.historyLoading.set(false);
+      }
+    });
   }
 
   // ============================================================
@@ -4498,6 +4814,8 @@ export class KioskComponent implements OnInit, OnDestroy {
       const step = this.currentStep();
       if (step === 'welcome') {
         this.resident.set(null);
+        this.rfidCard.set(null);
+        this.residentHistory.set([]);
         this.mode.set('rfid');
         this.rfidStep.set('scan');
         this.rfidScanService.connect();
@@ -4665,6 +4983,9 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.barangayStep.set('requirements');
     this.rfidStep.set('scan');
     this.resident.set(null);
+    this.rfidCard.set(null);
+    this.residentHistory.set([]);
+    this.historyLoading.set(false);
     this.selectedService.set(null);
     this.capturedPhoto.set(null);
     this.capturedSignature.set(null);

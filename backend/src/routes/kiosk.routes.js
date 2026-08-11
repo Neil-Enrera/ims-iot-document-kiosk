@@ -6,6 +6,7 @@ const { barangayIdApplicationValidation, createRequestValidation, rfidVerifyVali
 
 // Public kiosk endpoints (no auth required)
 router.get('/kiosk/residents/search', controller.searchResidents);
+router.get('/kiosk/residents/:id/requests', controller.getResidentHistory);
 router.get('/kiosk/residents/:id', controller.getResident);
 router.get('/kiosk/services', controller.getServices);
 router.post('/kiosk/requests', ...createRequestValidation, validate, controller.createRequest);
