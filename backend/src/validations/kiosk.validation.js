@@ -1,4 +1,4 @@
-const { body } = require('express-validator');
+const { body, param } = require('express-validator');
 
 const barangayIdApplicationValidation = [
   body('firstName').trim().notEmpty().withMessage('First name is required.'),

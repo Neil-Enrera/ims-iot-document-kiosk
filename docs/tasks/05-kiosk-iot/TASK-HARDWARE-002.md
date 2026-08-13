@@ -1,4 +1,4 @@
-# TASK-HARDWARE-002 — Arduino ↔ Backend Communication
+# TASK-HARDWARE-002 — ESP8266 ↔ Backend Communication
 
 > **Phase:** Hardware & Kiosk
 > **Task ID:** TASK-HARDWARE-002
@@ -9,7 +9,7 @@
 
 # Objective
 
-Implement reliable communication between the Arduino Uno and the Express backend using serial communication.
+Implement reliable communication between the ESP8266 and the Express backend using USB serial communication.
 
 The backend will act as the gateway between the hardware devices and the Information Management System, ensuring that hardware events are translated into business operations.
 
@@ -17,14 +17,14 @@ The backend will act as the gateway between the hardware devices and the Informa
 
 # Background
 
-The Arduino Uno is responsible only for hardware interaction.
+The ESP8266 is responsible only for hardware interaction.
 
 Business logic remains entirely within the backend.
 
 Communication flow:
 
 ```
-Arduino
+ESP8266
 
 ↓
 
@@ -54,7 +54,7 @@ Angular Kiosk
 Included
 
 - Serial Communication
-- Arduino Event Listener
+- ESP8266 Event Listener
 - Device Connection Detection
 - RFID UID Transmission
 - Heartbeat Monitoring
@@ -75,7 +75,7 @@ Not Included
 Controller
 
 ```
-Arduino Uno
+ESP8266
 ```
 
 Communication
@@ -110,7 +110,7 @@ serial.events.ts
 
 Responsibilities
 
-- Detect Arduino
+- Detect ESP8266
 - Open Serial Port
 - Read Messages
 - Parse Events
@@ -119,16 +119,16 @@ Responsibilities
 
 ---
 
-# Arduino Responsibilities
+# ESP8266 Responsibilities
 
 Only
 
-- Read RFID
-- Send UID
+- Read UID from MFRC522 reader
+- Send UID to kiosk over USB serial
 - Send Status
 - Respond to Ping
 
-Arduino does NOT
+ESP8266 does NOT
 
 - Query Database
 - Validate Resident
@@ -149,7 +149,7 @@ v1
 
 ## RFID Event
 
-Arduino Sends
+ESP8266 Sends
 
 ```
 RFID:4A8D72E1
@@ -168,7 +168,7 @@ Backend Converts
 
 ## Heartbeat
 
-Arduino
+ESP8266
 
 ```
 PING
@@ -189,7 +189,7 @@ Used for
 
 ## Device Ready
 
-Arduino
+ESP8266
 
 ```
 READY
@@ -207,7 +207,7 @@ Connected
 
 ## Error
 
-Arduino
+ESP8266
 
 ```
 ERROR:RFID_TIMEOUT
@@ -226,7 +226,7 @@ Resident taps RFID
 
 ↓
 
-Arduino reads UID
+ESP8266 reads UID from MFRC522
 
 ↓
 
@@ -302,7 +302,7 @@ Auto reconnect
 Every 5 seconds
 ```
 
-until Arduino becomes available.
+until the ESP8266 becomes available.
 
 ---
 
@@ -320,7 +320,7 @@ Example
 
 ```json
 {
-  "arduino": "Connected",
+  "esp8266": "Connected",
   "rfid": "Ready",
   "camera": "Unavailable",
   "printer": "Offline"
@@ -352,9 +352,9 @@ This removes the need for constant polling.
 Log
 
 ```
-Arduino Connected
+ESP8266 Connected
 
-Arduino Disconnected
+ESP8266 Disconnected
 
 RFID UID Received
 
@@ -370,7 +370,7 @@ Reconnect Attempt
 Serial Port Missing
 
 ```
-Arduino not detected.
+ESP8266 not detected.
 ```
 
 Invalid Message
@@ -415,7 +415,7 @@ hardware.controller.ts
 
 # Testing Checklist
 
-- [ ] Detect Arduino
+- [ ] Detect ESP8266
 - [ ] Open Serial Port
 - [ ] Receive RFID UID
 - [ ] Receive READY event
@@ -428,7 +428,7 @@ hardware.controller.ts
 
 # Acceptance Criteria
 
-- Backend detects Arduino automatically.
+- Backend detects ESP8266 automatically.
 - Serial communication is stable.
 - RFID events reach backend.
 - Connection recovery works.
@@ -439,7 +439,7 @@ hardware.controller.ts
 
 # Definition of Done
 
-- Stable Arduino ↔ Backend communication established.
+- Stable ESP8266 ↔ Backend communication established.
 - Backend ready for RFID processing.
 
 ---
@@ -462,7 +462,7 @@ Before implementing:
 
 1. Encapsulate all serial communication inside a dedicated `SerialService` so other backend modules never access the serial port directly.
 2. Parse incoming serial messages into strongly typed events before passing them to business services.
-3. Implement automatic reconnection when the serial port is disconnected or the Arduino is restarted.
+3. Implement automatic reconnection when the serial port is disconnected or the ESP8266 is restarted.
 4. Use WebSockets (or Socket.IO) to push hardware events to the Angular kiosk in real time instead of polling.
 5. Keep the serial protocol human-readable (e.g., `RFID:<UID>`, `READY`, `PING`, `ERROR:<CODE>`) to simplify debugging during development.
 

@@ -534,7 +534,7 @@ The approving officer rejects the request.
 
 **Trigger**
 
-RFID reader, touchscreen, or webcam is unavailable.
+RFID subsystem (ESP8266 + RFID reader), touchscreen, or webcam is unavailable.
 
 **System Response**
 

@@ -30,7 +30,7 @@ The deployment includes both physical installation and software configuration.
 ## Included
 
 - Touchscreen Installation
-- Arduino Deployment
+- ESP8266 Deployment
 - RFID Reader Installation
 - Webcam Installation
 - Queue Slip Printer Installation
@@ -86,7 +86,7 @@ The deployment includes both physical installation and software configuration.
 
       ▼             ▼             ▼
 
- Arduino Uno   RFID Reader   USB Webcam
+ ESP8266       RFID Reader   USB Webcam
 
                     │
 
@@ -116,7 +116,7 @@ Verify
 
 ---
 
-## Arduino Uno
+## ESP8266 (RFID controller)
 
 Purpose
 
@@ -210,7 +210,7 @@ Kiosk Computer
 
 ↓
 
-Arduino Uno
+ESP8266
 
 ↓
 
@@ -229,7 +229,7 @@ All USB devices should be recognized by Windows.
 
 ---
 
-# Arduino Configuration
+# ESP8266 Configuration
 
 Verify
 
@@ -241,7 +241,7 @@ Verify
 Recommended Baud Rate
 
 ```
-115200
+9600
 ```
 
 ---
@@ -283,7 +283,7 @@ Connect Backend
 
 ↓
 
-Connect Arduino
+Connect ESP8266
 
 ↓
 
@@ -347,7 +347,7 @@ Touchscreen
 - [ ] Touch input
 - [ ] Display resolution
 
-Arduino
+ESP8266
 
 - [ ] Connected
 - [ ] Serial communication
@@ -394,7 +394,7 @@ Connect USB Devices
 
 ↓
 
-Configure Arduino
+Configure ESP8266
 
 ↓
 
@@ -466,7 +466,7 @@ verification.md
 # Deliverables
 
 - Installed Touchscreen
-- Configured Arduino
+- Configured ESP8266
 - Operational RFID Reader
 - Operational Webcam
 - Operational Printer
@@ -491,7 +491,7 @@ Deployment is successful when:
 # Definition of Done
 
 - Hardware installed.
-- Arduino configured.
+- ESP8266 configured.
 - RFID operational.
 - Webcam operational.
 - Printer operational.
@@ -517,8 +517,8 @@ Deployment is successful when:
 
 Before implementing:
 
-1. Label every USB connection (Arduino, RFID reader, webcam, and printer) to simplify maintenance and replacement.
-2. Configure the kiosk application to automatically recover if the backend connection or Arduino serial connection is temporarily lost.
+1. Label every USB connection (ESP8266, RFID reader, webcam, and printer) to simplify maintenance and replacement.
+2. Configure the kiosk application to automatically recover if the backend connection or ESP8266 serial connection is temporarily lost.
 3. Verify the entire resident workflow multiple times using different RFID cards before declaring the kiosk ready for production.
 4. Secure the kiosk hardware by routing cables internally or through protective conduits to reduce accidental disconnection or tampering.
 5. Record hardware model numbers, serial numbers, and COM port assignments in the deployment documentation for future troubleshooting.

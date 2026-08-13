@@ -212,41 +212,6 @@ const approveApplication = async (applicationId, userId, remarks) => {
   return { success: true, message: 'Application approved and resident created.', data: { application: finalApplication, resident } };
 };
 
-const returnApplication = async (applicationId, userId, remarks) => {
-  const application = await applicationRepository.findById(applicationId);
-  if (!application) {
-    return { success: false, message: 'Application not found.' };
-  }
-  if (application.status !== 'PENDING') {
-    return { success: false, message: 'Only pending applications can be returned for correction.' };
-  }
-
-  // Returning keeps the application editable: no resident record is created
-  // and no ID number is consumed. The application stays visible to staff for
-  // later approval or rejection after being corrected by the applicant.
-  await applicationRepository.updateStatus(applicationId, 'RETURNED', userId, remarks);
-  const updated = await applicationRepository.findById(applicationId);
-
-  try {
-    const auditRepository = require('../repositories/audit.repository');
-    await auditRepository.log({
-      userId,
-      action: `Returned Barangay ID application #${applicationId} for correction`,
-      module: 'BarangayID',
-      ipAddress: null
-    });
-  } catch (auditError) {
-    console.error('Failed to create return audit log:', auditError);
-  }
-
-  sseManager.broadcastEvent('application-returned', {
-    applicationId,
-    applicationNumber: application.application_number
-  });
-
-  return { success: true, message: 'Application returned for correction.', data: updated };
-};
-
 const rejectApplication = async (applicationId, userId, remarks) => {
   const application = await applicationRepository.findById(applicationId);
   if (!application) {
@@ -365,6 +330,5 @@ module.exports = {
   previewApplication,
   approveApplication,
   rejectApplication,
-  returnApplication,
   getPendingCount
 };

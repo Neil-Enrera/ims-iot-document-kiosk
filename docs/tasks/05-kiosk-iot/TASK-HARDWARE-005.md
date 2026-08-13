@@ -85,7 +85,7 @@ Tap RFID Card
 
 ↓
 
-Arduino Reads UID
+ESP8266 Reads UID from MFRC522
 
 ↓
 

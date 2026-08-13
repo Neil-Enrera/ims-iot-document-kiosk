@@ -37,7 +37,7 @@ Each phase must complete successfully before proceeding.
                    │
         ┌──────────┼──────────┐
         ▼          ▼          ▼
-   Arduino Uno   RFID Reader  Webcam
+   ESP8266       RFID Reader  Webcam
                                 │
                                 ▼
                          Queue Slip Printer
@@ -56,7 +56,7 @@ Each phase must complete successfully before proceeding.
 | Server Computer | Hosts backend + database | 1 |
 | Staff Workstation | IMS access for staff | 1 |
 | Touchscreen Monitor | Kiosk interface | 1 |
-| Arduino Uno | Hardware controller | 1 |
+| ESP8266 (RFID controller) | Hardware controller | 1 |
 | MFRC522 RFID Reader | Resident authentication | 1 |
 | USB Webcam | Photo capture | 1 |
 | USB Printer | Queue slip printing | 1 |
@@ -104,8 +104,8 @@ Each phase must complete successfully before proceeding.
 - Serve via static file server or nginx
 
 ### Step 5: Configure Kiosk
-- Connect Arduino, RFID reader, webcam, printer
-- Upload Arduino firmware
+- Connect ESP8266 (RFID), RFID reader, webcam, printer
+- Upload/Flash the ESP8266 RFID firmware
 - Configure kiosk browser (Chrome kiosk mode)
 - Set kiosk URL to backend
 

@@ -21,7 +21,7 @@ Unlike unit and API testing, integration testing validates the interaction betwe
 
 For this project, the following hardware devices must communicate correctly with the kiosk application:
 
-- Arduino Uno
+- ESP8266 (RFID controller)
 - MFRC522 RFID Reader
 - Webcam
 - Printer
@@ -35,7 +35,7 @@ The objective is to ensure that every hardware event produces the expected softw
 
 ## Included
 
-- Arduino Communication
+- ESP8266 Communication
 - RFID Reader Integration
 - Resident Verification
 - Webcam Integration
@@ -57,7 +57,7 @@ The objective is to ensure that every hardware event produces the expected softw
 
 # Hardware Components
 
-## Arduino Uno
+## ESP8266 (RFID controller)
 
 Verify
 
@@ -121,7 +121,7 @@ Tap RFID Card
 
 ↓
 
-Arduino Reads UID
+ESP8266 Reads UID
 
 ↓
 
@@ -287,7 +287,7 @@ Retest
 Hardware
 
 ```
-Arduino Uno
+ESP8266 (RFID controller)
 
 MFRC522 RFID Reader
 
@@ -424,7 +424,7 @@ INT-HARDWARE-001
 
 Verify
 
-- Arduino Disconnected
+- ESP8266 Disconnected
 - RFID Not Detected
 - Camera Failure
 - Printer Offline
@@ -451,7 +451,7 @@ Record
 
 # Testing Checklist
 
-Arduino
+ESP8266
 
 - [ ] Serial Connection
 - [ ] Auto Reconnect
@@ -489,7 +489,7 @@ Database
 
 # Acceptance Criteria
 
-- Arduino communicates with the backend successfully.
+- ESP8266 communicates with the backend successfully.
 - RFID reader correctly identifies registered residents.
 - Webcam captures and uploads images.
 - Queue slips print correctly.
@@ -526,7 +526,7 @@ Before implementing:
 
 1. Test using the actual hardware whenever possible instead of simulated devices.
 2. Execute each integration scenario multiple times to verify consistency and stability.
-3. Record serial communication logs from the Arduino during testing to assist with troubleshooting.
+3. Record serial communication logs from the ESP8266 during testing to assist with troubleshooting.
 4. Validate both hardware behavior and resulting database records after each workflow.
 5. Keep hardware connected throughout the test session to identify intermittent communication issues.
 

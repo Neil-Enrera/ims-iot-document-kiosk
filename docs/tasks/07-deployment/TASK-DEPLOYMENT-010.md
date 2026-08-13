@@ -242,7 +242,7 @@ Document
 - Node.js version
 - Angular version
 - MySQL version
-- Arduino firmware version
+- ESP8266 firmware version
 - RFID reader model
 - Webcam model
 - Printer model
@@ -261,7 +261,7 @@ Infrastructure
 Hardware
 
 - [ ] Touchscreen
-- [ ] Arduino Uno
+- [ ] ESP8266
 - [ ] MFRC522 RFID Reader
 - [ ] Webcam
 - [ ] Queue Slip Printer

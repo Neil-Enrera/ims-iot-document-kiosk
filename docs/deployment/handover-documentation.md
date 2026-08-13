@@ -23,11 +23,11 @@
 - [ ] Angular Kiosk Interface
 - [ ] Express.js Backend API
 - [ ] MySQL Database
-- [ ] Arduino Firmware
+- [ ] ESP8266 Firmware
 - [ ] Kiosk WebSocket Server
 
 ### Hardware
-- [ ] Arduino Uno
+- [ ] ESP8266
 - [ ] MFRC522 RFID Reader
 - [ ] USB Webcam
 - [ ] USB Queue Slip Printer
@@ -96,7 +96,7 @@
 
 ### Hardware
 - [ ] Touchscreen installed
-- [ ] Arduino configured
+- [ ] ESP8266 configured
 - [ ] RFID reader operational
 - [ ] Webcam operational
 - [ ] Printer operational
@@ -133,7 +133,7 @@
 - [ ] Backend application
 - [ ] Staff portal
 - [ ] Kiosk interface
-- [ ] Arduino firmware
+- [ ] ESP8266 firmware
 - [ ] Hardware components
 
 ### Documents

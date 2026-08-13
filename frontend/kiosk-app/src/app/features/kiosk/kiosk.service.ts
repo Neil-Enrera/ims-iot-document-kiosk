@@ -78,6 +78,30 @@ export interface DocumentRequest {
   resident_code: string;
 }
 
+// One kiosk submission = one transaction grouping one or more service requests.
+// request_number stays populated (first request) for backward compatibility.
+export interface TransactionSubmission {
+  transaction_id: number | null;
+  transaction_number: string | null;
+  request_id: number | null;
+  request_number: string;
+  request_date: string | null;
+  status: string;
+  duplicate: boolean;
+  requests: {
+    request_id: number;
+    request_number: string;
+    request_date: string | null;
+    service_id: number;
+    service_name: string;
+  }[];
+  possible_duplicates: {
+    service_id: number;
+    service_name: string;
+    matches: { request_id: number; request_number: string; status_name: string }[];
+  }[];
+}
+
 export interface HardwareStatus {
   serial: boolean;
   port: string;
@@ -90,6 +114,8 @@ export interface StatusDisplay {
   underReview: string[];
   readyForRelease: string[];
 }
+
+
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -187,8 +213,9 @@ export class KioskService {
     remarks?: string;
     photo?: string;
     form_data?: Record<string, unknown>;
-  }): Observable<ApiResponse<DocumentRequest>> {
-    return this.http.post<ApiResponse<DocumentRequest>>(`${this.apiUrl}/kiosk/requests`, data);
+    idempotency_key?: string;
+  }): Observable<ApiResponse<TransactionSubmission>> {
+    return this.http.post<ApiResponse<TransactionSubmission>>(`${this.apiUrl}/kiosk/requests`, data);
   }
 
   previewRequest(data: {

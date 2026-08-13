@@ -2,7 +2,6 @@ import { Component, OnInit, OnDestroy, signal, ElementRef, ViewChild, ChangeDete
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { KioskService, Resident, Service, GuestInfo, FormField, RfidCardInfo, HistoryEntry } from './kiosk.service';
-import { IdentificationService } from './identification.service';
 import { RfidScanService } from './rfid-scan.service';
 import { KioskStateService, KioskState } from './kiosk-state.service';
 import { ButtonComponent } from './button.component';
@@ -1309,142 +1308,414 @@ export type BarangayStep =
             </div>
           }
 
-          <!-- DOC STEP 3: Dynamic Form -->
+
+
+          <!-- DOC STEP 3: Application Form -->
           @if (currentStep() === 'form') {
-            <div class="absolute inset-0 flex flex-col p-8 overflow-y-auto">
-              <div class="max-w-2xl mx-auto w-full flex-1">
-                <div class="flex items-center justify-between mb-8">
-                  <h2 class="text-3xl font-bold">{{ t('doc.form.title') }}</h2>
-                  <button class="text-blue-300 hover:text-white text-lg" (click)="goBack()">{{ t('common.back') }}</button>
+            <div class="absolute inset-0 bg-[#F8FAFC] text-[#0F172A] select-none overflow-hidden [font-family:'Inter',sans-serif] flex flex-col">
+
+              <!-- Background image (same as the kiosk landing page) -->
+              <div class="absolute inset-0 bg-cover bg-center pointer-events-none" style="background-image: url('Background.png')" aria-hidden="true"></div>
+              <!-- Subtle radial glow keeps the form legible without washing the orange -->
+              <div class="absolute inset-0 pointer-events-none" aria-hidden="true"
+                   style="background: radial-gradient(ellipse 72% 58% at 50% 42%, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0.35) 55%, rgba(255,255,255,0.05) 100%);"></div>
+              <!-- Curved orange header accent (top-left, same as landing) -->
+              <div class="absolute top-0 left-0 w-64 h-40 pointer-events-none" aria-hidden="true">
+                <svg viewBox="0 0 256 160" class="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M0 0 H256 V80 C256 124 220 160 176 160 H0 Z" fill="#F97316" opacity="0.12"/>
+                </svg>
+              </div>
+
+              <!-- Top navigation: circular back (left) + logo (center) + RFID status (right) -->
+              <div class="relative z-10 flex items-center justify-center px-6 pt-[18px] pb-1">
+                <div class="absolute left-4 sm:left-6 top-[26px] z-40 flex items-center gap-2.5 sm:gap-3">
+                  <button (click)="goBack()"
+                          class="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px] rounded-full border-2 border-[#F97316]/60 bg-white flex items-center justify-center shadow-sm hover:bg-[#FFF7ED] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30"
+                          [attr.aria-label]="t('common.back')">
+                    <svg class="w-6 h-6 sm:w-7 sm:h-7 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                  </button>
+                  <button (click)="goBack()"
+                          class="flex items-center min-h-[44px] rounded-xl px-1 text-[#0F172A] font-semibold text-[15px] sm:text-base hover:text-[#F97316] transition-colors focus:outline-none focus:ring-2 focus:ring-[#F97316]/40">
+                    {{ t('common.back') }}
+                  </button>
                 </div>
-                <div class="bg-blue-800/50 rounded-2xl p-6 backdrop-blur space-y-4">
-                  <p class="text-blue-200">{{ t('doc.form.fillPrompt', { service: selectedService()?.service_name ?? '' }) }}</p>
 
-                  @if (selectedService()?.form_fields && selectedService()!.form_fields!.length > 0) {
-                    @for (field of selectedService()!.form_fields!; track field.key) {
-                      <div class="space-y-1">
-                        <label class="block text-blue-300 text-sm mb-1">
-                          {{ field.label }} @if (field.required) { <span class="text-red-300">*</span> }
-                        </label>
+                <div class="w-[76px] h-[76px] sm:w-[88px] sm:h-[88px] rounded-full bg-white border-2 border-[#F97316]/30 shadow-sm overflow-hidden flex items-center justify-center">
+                  <img src="Barangay Logo.png" alt="Barangay San Manuel logo" class="w-full h-full object-cover">
+                </div>
 
-                        @switch (field.type) {
-                          @case ('select') {
-                            <select
-                              [(ngModel)]="formValues()[field.key]"
-                              [name]="field.key"
-                              (ngModelChange)="updateFormValue(field.key, $event)"
-                              class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-4 focus:ring-blue-400"
-                              [class.border-red-500]="formErrors()[field.key]">
-                              <option value="">{{ t('doc.form.select') }}</option>
-                              @for (opt of field.options || []; track opt) {
-                                <option [value]="opt">{{ opt }}</option>
-                              }
-                            </select>
-                          }
-                          @case ('textarea') {
-                            <textarea
-                              [(ngModel)]="formValues()[field.key]"
-                              [name]="field.key"
-                              (ngModelChange)="updateFormValue(field.key, $event)"
-                              [placeholder]="field.placeholder"
-                              rows="3"
-                              class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-4 focus:ring-blue-400"
-                              [class.border-red-500]="formErrors()[field.key]"></textarea>
-                          }
-                          @case ('radio') {
-                            <div class="space-y-2">
-                              @for (opt of field.options || []; track opt) {
-                                <label class="flex items-center gap-3 bg-white rounded-lg px-4 py-3 cursor-pointer">
-                                  <input type="radio" [name]="field.key" [value]="opt"
-                                         [checked]="formValues()[field.key] === opt"
-                                         (change)="updateFormValue(field.key, opt)"
-                                         class="w-5 h-5 accent-blue-600" />
-                                  <span class="text-gray-800">{{ opt }}</span>
-                                </label>
-                              }
-                            </div>
-                          }
-                          @case ('checkbox') {
-                            <div class="space-y-2">
-                              @for (opt of field.options || []; track opt) {
-                                <label class="flex items-center gap-3 bg-white rounded-lg px-4 py-3 cursor-pointer">
-                                  <input type="checkbox" [value]="opt"
-                                         [checked]="isCheckboxChecked(field, opt)"
-                                         (change)="toggleCheckboxOption(field, opt, $event)"
-                                         class="w-5 h-5 accent-blue-600" />
-                                  <span class="text-gray-800">{{ opt }}</span>
-                                </label>
-                              }
-                            </div>
-                          }
-                          @case ('signature') {
-                            @if (!formValues()[field.key]) {
-                              <app-signature-pad [showError]="!!formErrors()[field.key]" (signature)="onFieldSignature(field.key, $event)" />
-                            } @else {
-                              <div class="bg-white rounded-lg p-3">
-                                <img [src]="formValues()[field.key]" alt="Signature" class="h-24 bg-white rounded" />
-                                <div class="mt-2">
-                                  <button type="button" class="text-blue-300 hover:text-white text-sm" (click)="clearFieldValue(field.key)">{{ t('common.clear') }}</button>
-                                </div>
-                              </div>
-                            }
-                          }
-                          @case ('photo') {
-                            <div>
-                              @if (activePhotoField() === field.key) {
-                                <div class="bg-black rounded-2xl overflow-hidden mb-2">
-                                  <video #inlineVideoEl autoplay playsinline class="w-full aspect-video object-cover"></video>
-                                </div>
-                                <div class="flex gap-3 justify-center">
-                                  <app-button variant="primary" size="lg" (onClick)="captureInlinePhoto(field.key)">{{ t('doc.form.takePhoto') }}</app-button>
-                                  <app-button variant="secondary" size="lg" (onClick)="cancelInlinePhoto(field.key)">{{ t('common.cancel') }}</app-button>
-                                </div>
-                              } @else if (formValues()[field.key]) {
-                                <img [src]="formValues()[field.key]" [alt]="t('err.captured')" class="w-40 h-40 rounded-2xl object-cover border-4 border-white mb-2" />
-                                <div class="flex gap-3">
-                                  <app-button variant="secondary" size="lg" (onClick)="retakeInlinePhoto(field.key)">{{ t('common.retake') }}</app-button>
-                                </div>
-                              } @else {
-                                <app-button variant="primary" size="lg" (onClick)="startInlineCamera(field.key)">{{ t('doc.form.openCamera') }}</app-button>
-                              }
-                            </div>
-                          }
-                          @case ('file') {
-                            <input type="file" [accept]="field.accept || '*'" (change)="onFileSelected(field, $event)"
-                                   class="w-full text-blue-100 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white" />
-                            @if (formValues()[field.key]) {
-                              <p class="text-xs text-green-300 mt-1">{{ t('doc.form.fileAttached') }}</p>
-                            }
-                          }
-                          @default {
-                            <input
-                              [type]="field.type"
-                              [(ngModel)]="formValues()[field.key]"
-                              [name]="field.key"
-                              (ngModelChange)="updateFormValue(field.key, $event)"
-                              [placeholder]="field.placeholder"
-                              class="w-full bg-white text-gray-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-4 focus:ring-blue-400"
-                              [class.border-red-500]="formErrors()[field.key]" />
-                          }
-                        }
+                <!-- RFID verification status (RFID-authenticated resident only) -->
+                @if (resident()) {
+                  <div class="absolute right-4 sm:right-6 top-[26px] z-40 flex items-center gap-2.5 rounded-2xl border border-[#BBF7D0] bg-[#DCFCE7]/95 backdrop-blur-sm px-3.5 sm:px-4 py-2 shadow-sm" role="status">
+                    <div class="shrink-0 w-9 h-9 rounded-full bg-[#16A34A] flex items-center justify-center" aria-hidden="true">
+                      <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 2l7 3v6c0 5-3.2 8.4-7 10-3.8-1.6-7-5-7-10V5l7-3z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m8.7 12 2.3 2.3 4.3-4.3"/>
+                      </svg>
+                    </div>
+                    <div class="text-left">
+                      <p class="text-[13px] sm:text-[14px] font-bold text-[#166534] leading-tight">{{ t('doc.form.rfidVerified') }}</p>
+                      <p class="text-[11px] sm:text-[12px] font-semibold text-[#15803D] leading-tight">{{ t('doc.form.activeResident') }}</p>
+                    </div>
+                  </div>
+                }
+              </div>
 
-                        @if (field.helperText) {
-                          <p class="text-blue-300/70 text-xs mt-1">{{ field.helperText }}</p>
+              <!-- Page header -->
+              <div class="relative z-10 text-center px-4 pt-0.5 pb-0.5">
+                <h1 class="text-[clamp(1.5rem,2.1vw,2.25rem)] font-bold tracking-tight text-[#0F172A] leading-tight uppercase">{{ selectedService()?.service_name }}</h1>
+                <p class="text-[clamp(0.925rem,1.05vw,1.075rem)] font-medium text-[#64748B] mt-1">{{ t('doc.form.desc') }}</p>
+              </div>
+
+              <!-- Progress indicator (6 steps) -->
+              <div class="relative z-10 flex items-center justify-center px-4 pb-1">
+                <ol class="flex items-center gap-1.5 sm:gap-2.5" aria-label="Kiosk progress">
+                  @for (num of [1, 2, 3, 4, 5, 6]; track num) {
+                    <li class="flex items-center gap-1.5 sm:gap-2.5">
+                      @if (num > 1) {
+                        <span class="w-5 sm:w-8 h-[3px] rounded-full"
+                              [class.bg-[#F97316]]="docProgressState(num) !== 'upcoming'"
+                              [class.bg-[#E5E7EB]]="docProgressState(num) === 'upcoming'"></span>
+                      }
+                      @if (docProgressState(num) === 'done') {
+                        <span class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#FFF7ED] border-2 border-[#F97316] flex items-center justify-center" aria-hidden="true">
+                          <svg class="w-4 h-4 sm:w-[18px] sm:h-[18px] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.6" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                          </svg>
+                        </span>
+                        <span class="hidden lg:block text-[13px] sm:text-[14px] font-bold text-[#0F172A] whitespace-nowrap">{{ t('doc.progress.' + num) }}</span>
+                      } @else if (docProgressState(num) === 'current') {
+                        <span class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#F97316] border-2 border-[#F97316] text-white flex items-center justify-center text-sm sm:text-base font-bold shadow-sm" aria-hidden="true">{{ num }}</span>
+                        <span class="hidden lg:block text-[13px] sm:text-[14px] font-bold text-[#F97316] whitespace-nowrap">{{ t('doc.progress.' + num) }}</span>
+                      } @else {
+                        <span class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white border-2 border-[#CBD5E1] text-[#94A3B8] flex items-center justify-center text-sm sm:text-base font-bold" aria-hidden="true">{{ num }}</span>
+                        <span class="hidden lg:block text-[13px] sm:text-[14px] font-medium text-[#64748B] whitespace-nowrap">{{ t('doc.progress.' + num) }}</span>
+                      }
+                    </li>
+                  }
+                </ol>
+              </div>
+
+              <!-- Resident summary (compact, subtle) -->
+              <div class="relative z-10 px-4 sm:px-8 pb-1">
+                <div class="mx-auto w-full max-w-[820px] flex items-center justify-between gap-3 bg-white/80 border border-[#E5E7EB] rounded-2xl shadow-sm px-4 sm:px-5 py-2.5">
+                  <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                    <div class="shrink-0 w-9 h-9 rounded-full bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <circle cx="12" cy="8" r="4"/>
+                        <path d="M4 20c0-3.6 3.6-5 8-5s8 1.4 8 5" stroke-linecap="round"/>
+                      </svg>
+                    </div>
+                    <div class="min-w-0">
+                      <p class="text-[15px] sm:text-[16px] font-bold text-[#0F172A] leading-tight truncate">{{ displayName() }}</p>
+                      <p class="text-[12px] sm:text-[13px] font-medium text-[#64748B] leading-snug">
+                        @if (resident()) {
+                          {{ t('doc.form.rfidNo') }} {{ rfidDisplayNumber() }}
+                        } @else {
+                          {{ displayCode() }}
                         }
-                        @if (formErrors()[field.key]) {
-                          <p class="text-red-300 text-xs mt-1">{{ formErrors()[field.key] }}</p>
-                        }
-                      </div>
-                    }
-                  } @else {
-                    <p class="text-blue-200/80">{{ t('doc.form.noFields') }}</p>
+                      </p>
+                    </div>
+                  </div>
+                  @if (resident()) {
+                    <span class="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-[#DCFCE7] border border-[#BBF7D0] px-3 py-1 text-[12px] sm:text-[13px] font-bold text-[#166534]">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                      </svg>
+                      {{ t('doc.form.activeResident') }}
+                    </span>
                   }
                 </div>
-                <div class="flex gap-4 mt-6">
-                  <app-button variant="secondary" size="lg" class="flex-1" (onClick)="goBack()">{{ t('common.back') }}</app-button>
-                  <app-button variant="primary" size="lg" class="flex-1" (onClick)="validateForm()">{{ t('common.continue') }}</app-button>
+              </div>
+
+              <!-- Main content: Request Details form -->
+              <div class="relative z-10 flex-1 overflow-y-auto">
+                <div class="min-h-full flex items-center justify-center px-5 sm:px-8 py-4 sm:py-5">
+
+                  <div class="w-full max-w-[820px]">
+
+                    <!-- Request details card -->
+                    <div class="bg-white border border-[#E5E7EB] rounded-[20px] shadow-[0_2px_14px_rgba(15,23,42,0.07)] px-5 sm:px-8 py-5 sm:py-6">
+
+                      <!-- Section heading -->
+                      <div class="flex items-center gap-2.5 mb-4 sm:mb-5">
+                        <div class="shrink-0 w-9 h-9 rounded-xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24">
+                            <rect x="5" y="4" width="14" height="17" rx="2"/>
+                            <path d="M9 4.5V3h6v1.5" stroke-linecap="round"/>
+                            <path d="M8.5 12.5l2.3 2.3 4.7-4.7" stroke-linecap="round" stroke-linejoin="round"/>
+                          </svg>
+                        </div>
+                        <h2 class="text-[clamp(1rem,1.3vw,1.1875rem)] font-bold tracking-[0.02em] text-[#0F172A] uppercase">{{ t('doc.form.requestDetails') }}</h2>
+                      </div>
+
+
+
+                      @if (selectedService()?.form_fields && selectedService()!.form_fields!.length > 0) {
+                        <div class="flex flex-wrap gap-x-5 gap-y-4 sm:gap-y-5">
+                          @for (field of selectedService()!.form_fields!; track field.key) {
+                            <div [class]="formGridClass(field)">
+                              <label [attr.for]="'doc-form-' + field.key" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
+                                {{ fieldLabel(field) }} @if (field.required) { <span class="text-[#F97316]">*</span> }
+                              </label>
+
+                              @switch (field.type) {
+                                @case ('select') {
+                                  <div class="relative flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
+                                       [class.border-[#DC2626]]="formErrors()[field.key]">
+                                    <select
+                                      [id]="'doc-form-' + field.key"
+                                      [name]="field.key"
+                                      [(ngModel)]="formValues()[field.key]"
+
+                                      (ngModelChange)="updateFormValue(field.key, $event)"
+                                      class="appearance-none flex-1 min-w-0 bg-transparent px-3.5 sm:px-4 py-3 text-[15px] sm:text-[17px] outline-none border-none cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                                      [class.text-[#0F172A]]="!!formValues()[field.key]"
+                                      [class.text-[#94A3B8]]="!formValues()[field.key]">
+                                      <option value="">{{ t('doc.form.select') }}</option>
+                                      @for (opt of field.options || []; track opt) {
+                                        <option [value]="opt">{{ opt }}</option>
+                                      }
+                                    </select>
+                                    <div class="pointer-events-none absolute right-3 text-[#64748B]" aria-hidden="true">
+                                      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/>
+                                      </svg>
+                                    </div>
+                                  </div>
+                                }
+                                @case ('textarea') {
+                                  <textarea
+                                    [id]="'doc-form-' + field.key"
+                                    [name]="field.key"
+                                    [(ngModel)]="formValues()[field.key]"
+                                    (ngModelChange)="updateFormValue(field.key, $event)"
+                                    [placeholder]="fieldPlaceholder(field)"
+                                    rows="3"
+                                    class="w-full rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm px-3.5 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/15 transition-all duration-150 resize-none"
+                                    [class.border-[#DC2626]]="formErrors()[field.key]"></textarea>
+                                }
+                                @case ('radio') {
+                                  <div class="flex flex-col gap-2">
+                                    @for (opt of field.options || []; track opt) {
+                                      <label class="flex items-center gap-3 rounded-xl border-2 border-[#E5E7EB] bg-white px-4 py-3 cursor-pointer transition-colors duration-150 hover:border-[#F97316]/40 mb-0"
+                                             [class.border-[#F97316]]="formValues()[field.key] === opt"
+                                             [class.bg-[#FFF7ED]]="formValues()[field.key] === opt"
+                                             >
+                                        <input type="radio" [name]="field.key" [value]="opt"
+                                               [checked]="formValues()[field.key] === opt"
+                                               (change)="updateFormValue(field.key, opt)"
+                                               class="w-5 h-5 accent-[#F97316] shrink-0" />
+                                        <span class="text-[15px] sm:text-base font-medium text-[#0F172A]">{{ opt }}</span>
+                                      </label>
+                                    }
+                                  </div>
+                                }
+                                @case ('checkbox') {
+                                  <div class="flex flex-col gap-2">
+                                    @for (opt of field.options || []; track opt) {
+                                      <label class="flex items-center gap-3 rounded-xl border-2 border-[#E5E7EB] bg-white px-4 py-3 cursor-pointer transition-colors duration-150 hover:border-[#F97316]/40 mb-0"
+                                             [class.border-[#F97316]]="isCheckboxChecked(field, opt)"
+                                             [class.bg-[#FFF7ED]]="isCheckboxChecked(field, opt)"
+                                             >
+                                        <input type="checkbox" [value]="opt"
+                                               [checked]="isCheckboxChecked(field, opt)"
+                                               (change)="toggleCheckboxOption(field, opt, $event)"
+                                               class="w-5 h-5 accent-[#F97316] shrink-0" />
+                                        <span class="text-[15px] sm:text-base font-medium text-[#0F172A]">{{ opt }}</span>
+                                      </label>
+                                    }
+                                  </div>
+                                }
+                                @case ('signature') {
+                                  <div>
+                                    @if (!formValues()[field.key]) {
+                                      <app-signature-pad [showError]="!!formErrors()[field.key]" (signature)="onFieldSignature(field.key, $event)" />
+                                    } @else {
+                                      <div class="flex flex-wrap items-center gap-3">
+                                        <img [src]="formValues()[field.key]" alt="Signature" class="h-24 rounded-xl border border-[#E5E7EB] object-contain bg-white" />
+                                        <button type="button" (click)="clearFieldValue(field.key)"
+                                                class="min-h-[48px] px-4 rounded-xl border-2 border-[#F97316] bg-white text-[#F97316] text-sm sm:text-base font-bold shadow-sm hover:bg-[#FFF7ED] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/25">
+                                          {{ t('common.clear') }}
+                                        </button>
+                                      </div>
+                                    }
+                                  </div>
+                                }
+                                @case ('photo') {
+                                  <div>
+                                    @if (activePhotoField() === field.key) {
+                                      <div class="bg-[#0F172A] rounded-2xl overflow-hidden mb-2">
+                                        <video #inlineVideoEl autoplay playsinline class="w-full aspect-video object-cover"></video>
+                                      </div>
+                                      <div class="flex flex-wrap gap-3 justify-center">
+                                        <button (click)="captureInlinePhoto(field.key)"
+                                                class="flex items-center justify-center gap-2 min-h-[48px] px-6 rounded-xl bg-[#F97316] text-white text-sm sm:text-base font-bold shadow-[0_4px_14px_rgba(249,115,22,0.35)] hover:bg-[#EA580C] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40">
+                                          {{ t('doc.form.takePhoto') }}
+                                        </button>
+                                        <button (click)="cancelInlinePhoto(field.key)"
+                                                class="flex items-center justify-center gap-2 min-h-[48px] px-6 rounded-xl border-2 border-[#F97316] bg-white text-[#F97316] text-sm sm:text-base font-bold shadow-sm hover:bg-[#FFF7ED] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/25">
+                                          {{ t('common.cancel') }}
+                                        </button>
+                                      </div>
+                                    } @else if (formValues()[field.key]) {
+                                      <div class="flex flex-wrap items-center gap-3">
+                                        <img [src]="formValues()[field.key]" [alt]="t('err.captured')" class="w-36 h-36 rounded-2xl object-cover border border-[#E5E7EB]" />
+                                        <button (click)="retakeInlinePhoto(field.key)"
+                                                class="flex items-center justify-center gap-2 min-h-[48px] px-5 rounded-xl border-2 border-[#F97316] bg-white text-[#F97316] text-sm sm:text-base font-bold shadow-sm hover:bg-[#FFF7ED] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/25">
+                                          {{ t('common.retake') }}
+                                        </button>
+                                      </div>
+                                    } @else {
+                                      <button (click)="startInlineCamera(field.key)"
+                                              class="flex items-center justify-center gap-2 min-h-[48px] px-6 rounded-xl bg-[#F97316] text-white text-sm sm:text-base font-bold shadow-[0_4px_14px_rgba(249,115,22,0.35)] hover:bg-[#EA580C] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">
+                                          <rect x="3" y="6" width="18" height="13" rx="2"/>
+                                          <path d="M8 6l1.5-2h5L16 6" stroke-linejoin="round"/>
+                                          <circle cx="12" cy="12.5" r="3"/>
+                                        </svg>
+                                        {{ t('doc.form.openCamera') }}
+                                      </button>
+                                    }
+                                  </div>
+                                }
+                                @case ('file') {
+                                  <div>
+                                    <input type="file" [accept]="field.accept || '*'" (change)="onFileSelected(field, $event)"
+                                           class="w-full text-[13px] sm:text-sm text-[#64748B] file:mr-4 file:inline-block file:border-0 file:rounded-lg file:bg-[#F97316] file:px-4 file:py-2.5 file:text-white file:text-sm file:font-bold file:cursor-pointer file:hover:bg-[#EA580C]" />
+                                    @if (formValues()[field.key]) {
+                                      <p class="mt-1.5 flex items-center gap-1.5 text-[13px] sm:text-sm font-semibold text-[#16A34A]">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" aria-hidden="true">
+                                          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                        </svg>
+                                        {{ t('doc.form.fileAttached') }}
+                                      </p>
+                                    }
+                                  </div>
+                                }
+                                @default {
+                                  <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
+                                       [class.border-[#DC2626]]="formErrors()[field.key]">
+                                    <input
+                                      [id]="'doc-form-' + field.key"
+                                      [type]="field.type"
+                                      [name]="field.key"
+                                      [(ngModel)]="formValues()[field.key]"
+                                      (ngModelChange)="updateFormValue(field.key, $event)"
+                                      [placeholder]="fieldPlaceholder(field)"
+                                      class="flex-1 min-w-0 bg-transparent px-3.5 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] outline-none border-none" />
+                                  </div>
+                                }
+                              }
+
+                              @if (field.helperText) {
+                                <p class="mt-1.5 text-[13px] sm:text-[14px] text-[#64748B]">{{ field.helperText }}</p>
+                              }
+                              @if (formErrors()[field.key]) {
+                                <p class="mt-2 flex items-center gap-1.5 text-[14px] sm:text-[15px] font-medium text-[#B91C1C]">
+                                  <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                    <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
+                                  </svg>
+                                  {{ formErrors()[field.key] }}
+                                </p>
+                              }
+                            </div>
+                          }
+                        </div>
+                      } @else {
+                        <p class="text-[clamp(0.9375rem,1vmax,1rem)] font-medium text-[#64748B]">{{ t('doc.form.noFields') }}</p>
+                      }
+
+                      <!-- Bottom action: single Continue (the circular back nav handles going back) -->
+                      <div class="flex items-center justify-center mt-5 sm:mt-7">
+                        <button (click)="validateForm()"
+                                class="flex items-center justify-center gap-2 min-h-[56px] min-w-[220px] sm:min-w-[240px] px-7 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white text-base sm:text-lg font-bold shadow-[0_4px_14px_rgba(249,115,22,0.35)] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40">
+                          {{ t('common.continue') }}
+                          <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
+
+              <!-- Footer: same as the kiosk landing page (includes the language selector) -->
+              <footer class="relative z-10 shrink-0 border-t border-[#E5E7EB] bg-white/90 backdrop-blur-sm">
+                <div class="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-1.5 lg:py-2 grid grid-cols-2 md:grid-cols-4 gap-x-6 lg:gap-x-8 gap-y-2 lg:gap-y-3 items-center">
+
+                  <!-- Section 1: Language (same as landing) -->
+                  <div class="flex flex-col items-center gap-1.5 text-center min-w-0">
+                    <div class="flex items-center gap-1.5 text-[#0F172A]">
+                      <svg class="w-[18px] h-[18px] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="9"/><path d="M3.6 9h16.8M3.6 15h16.8M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/>
+                      </svg>
+                      <span class="text-[13px] font-semibold">{{ t('landing.footer.language') }}</span>
+                    </div>
+                    <div class="inline-flex rounded-lg overflow-hidden border border-[#E5E7EB] bg-white shadow-sm min-w-0">
+                      <button
+                        (click)="setLanguage('en')"
+                        class="px-3 sm:px-5 py-1.5 text-[13px] font-semibold transition-colors min-h-[34px]"
+                        [class.bg-[#F97316]]="language() === 'en'"
+                        [class.text-white]="language() === 'en'"
+                        [class.bg-white]="language() !== 'en'"
+                        [class.text-[#0F172A]]="language() !== 'en'">
+                        English
+                      </button>
+                      <button
+                        (click)="setLanguage('fil')"
+                        class="px-3 sm:px-5 py-1.5 text-[13px] border-l border-[#E5E7EB] font-semibold transition-colors min-h-[34px]"
+                        [class.bg-[#F97316]]="language() === 'fil'"
+                        [class.text-white]="language() === 'fil'"
+                        [class.bg-white]="language() !== 'fil'"
+                        [class.text-[#0F172A]]="language() !== 'fil'">
+                        Filipino
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Section 2: Need Assistance -->
+                  <div class="flex flex-col items-center gap-1 text-center min-w-0">
+                    <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="9"/>
+                      <path d="M9.5 9a2.5 2.5 0 114.6 1.3c-.8 1-1.9 1.7-1.9 3.2" stroke-linecap="round"/>
+                      <path d="M12 17h.01" stroke-linecap="round"/>
+                    </svg>
+                    <div>
+                      <p class="text-[13px] lg:text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.assistance') }}</p>
+                      <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.assistanceDesc') }}</p>
+                    </div>
+                  </div>
+
+                  <!-- Section 3: Office Hours -->
+                  <div class="flex flex-col items-center gap-1 text-center min-w-0">
+                    <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="9"/>
+                      <path d="M12 7v5l3 2" stroke-linecap="round"/>
+                    </svg>
+                    <div>
+                      <p class="text-[13px] lg:text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.hours') }}</p>
+                      <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.monFri') }}</p>
+                      <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.hoursRange') }}</p>
+                    </div>
+                  </div>
+
+                  <!-- Section 4: Date & Time -->
+                  <div class="flex flex-col items-center gap-1 text-center min-w-0">
+                    <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                      <rect x="3" y="5" width="18" height="16" rx="2"/>
+                      <path d="M8 3v4M16 3v4M3 10h18"/>
+                    </svg>
+                    <div class="min-w-0">
+                      <p class="text-[11px] lg:text-[12px] font-medium text-[#64748B] leading-snug">{{ formatFooterDate() }}</p>
+                      <p class="text-base lg:text-lg font-bold text-[#F97316] leading-tight">{{ formatFooterTime() }}</p>
+                    </div>
+                  </div>
+                </div>
+              </footer>
             </div>
           }
 
@@ -1524,7 +1795,9 @@ export type BarangayStep =
                           @for (field of selectedService()!.form_fields!; track field.key) {
                             <div class="flex justify-between items-start gap-4 text-sm">
                               <span class="text-blue-300 flex-1">{{ field.label }}</span>
-                              <span class="text-white font-medium text-right">{{ displayFormValue(field, formValues()[field.key]) }}</span>
+                              <span class="text-white font-medium text-right">
+                                {{ displayFormValue(field, formValues()[field.key]) }}
+                              </span>
                             </div>
                           }
                         </div>
@@ -1563,6 +1836,13 @@ export type BarangayStep =
                       @if (docPreviewError()) {
                         <p class="text-red-300 text-sm mt-3">{{ docPreviewError() }}</p>
                       }
+                    </div>
+                  }
+ 
+                  <!-- Error Message Alert -->
+                  @if (errorMessage()) {
+                    <div class="mt-4 bg-red-500/20 border border-red-400 rounded-xl p-4">
+                      <p class="text-red-200 text-sm">{{ errorMessage() }}</p>
                     </div>
                   }
                 </div>
@@ -3883,6 +4163,23 @@ export class KioskComponent implements OnInit, OnDestroy {
   formValues = signal<Record<string, unknown>>({});
   formErrors = signal<Record<string, string>>({});
 
+  // Maps each document-flow step to its 1-based position in the 6-step
+  // progress indicator (Information → Service → Requirements → Application
+  // Form → Review → Submit). The photo capture is part of the Application
+  // Form milestone.
+  private readonly docStepIndexMap: Record<string, number> = {
+    welcome: 1,
+    'guest-info': 1,
+    services: 2,
+    requirements: 3,
+    form: 4,
+    photo: 4,
+    review: 5,
+    success: 6
+  };
+
+
+
   // Stable idempotency key for ONE submission attempt. Reused across retries so a
   // network error + retry never creates a duplicate request; cleared after success
   // or when the flow resets, so a fresh submission gets a new key.
@@ -3928,7 +4225,6 @@ export class KioskComponent implements OnInit, OnDestroy {
 
   constructor(
     private kioskService: KioskService,
-    public identificationService: IdentificationService,
     private rfidScanService: RfidScanService,
     private kioskStateService: KioskStateService,
     private translations: TranslationService,
@@ -3971,6 +4267,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.guestForm = savedState.guestForm;
     this.barangayForm = savedState.barangayForm;
     this.submissionKey = savedState.submissionKey;
+
 
     // Restore language preference and sync the TranslationService
     if (savedState.language) {
@@ -4017,6 +4314,7 @@ export class KioskComponent implements OnInit, OnDestroy {
         guestForm: this.guestForm,
         barangayForm: this.barangayForm,
         submissionKey: this.submissionKey,
+
         language: this.language(),
         timestamp: Date.now()
       };
@@ -4090,6 +4388,8 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.errorMessage.set('');
     this.formError.set('');
     this.guestForm = { fullName: '', birthDate: '', address: '', contactNumber: '', email: '' };
+    this.resident.set(null);
+    this.rfidCard.set(null);
     this.mode.set('documents');
     this.currentStep.set('guest-info');
     this.resetIdleTimer();
@@ -4241,6 +4541,8 @@ export class KioskComponent implements OnInit, OnDestroy {
     });
   }
 
+
+
   // ============================================================
   // DOCUMENTS FLOW: WORKFLOW STEPS
   // ============================================================
@@ -4251,6 +4553,8 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.resetIdleTimer();
     this.saveState();
   }
+
+
 
   selectService(service: Service) {
     this.selectedService.set(service);
@@ -4300,6 +4604,56 @@ export class KioskComponent implements OnInit, OnDestroy {
 
   private formatDate(value: string | null): string {
     return value ? value.slice(0, 10) : '';
+  }
+
+  // ---- Application Form page helpers (presentation only) ----
+
+  // 1-based step position for the 6-step progress indicator.
+  docProgressState(step: number): 'done' | 'current' | 'upcoming' {
+    const current = this.docStepIndexMap[this.currentStep()] ?? 1;
+    if (current > step) return 'done';
+    if (current === step) return 'current';
+    return 'upcoming';
+  }
+
+  // Block/Lot are rendered side by side in the landscape layout and stack on
+  // narrow screens. All other fields span the full card width.
+  fieldIsHalf(field: FormField): boolean {
+    const key = (field.key || '').toLowerCase();
+    return key === 'block' || key === 'lot';
+  }
+
+  // CSS layout classes for a field slot, matching the requested rows.
+  formGridClass(field: FormField): string {
+    return this.fieldIsHalf(field) ? 'w-full sm:w-[calc(50%-10px)]' : 'w-full';
+  }
+
+  // Friendly, localized labels for the Certificate of Indigency fields; other
+  // fields fall back to the administrator-configured label.
+  fieldLabel(field: FormField): string {
+    const map: Record<string, string> = {
+      purpose: 'doc.form.purpose',
+      relative_name: 'doc.form.relativeName',
+      block: 'doc.form.block',
+      lot: 'doc.form.lot',
+      subdivision: 'doc.form.subdivision'
+    };
+    return map[(field.key || '').toLowerCase()] ? this.t(map[(field.key || '').toLowerCase()]) : field.label;
+  }
+
+  fieldPlaceholder(field: FormField): string {
+    const map: Record<string, string> = {
+      purpose: 'doc.form.purposePh',
+      relative_name: 'doc.form.relativeNamePh',
+      block: 'doc.form.blockPh',
+      lot: 'doc.form.lotPh',
+      subdivision: 'doc.form.subdivisionPh'
+    };
+    return map[(field.key || '').toLowerCase()] ? this.t(map[(field.key || '').toLowerCase()]) : (field.placeholder || '');
+  }
+
+  rfidDisplayNumber(): string {
+    return this.rfidCard()?.card_uid ?? '';
   }
 
   updateFormValue(key: string, value: any) {
@@ -4397,6 +4751,8 @@ export class KioskComponent implements OnInit, OnDestroy {
     return String(value);
   }
 
+
+
   validateForm() {
     const fields = this.selectedService()?.form_fields || [];
     let hasErrors = false;
@@ -4413,6 +4769,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     if (hasErrors) return;
     this.clearDocPreview();
     const service = this.selectedService();
+
     if (service?.requires_photo) {
       this.currentStep.set('photo');
       this.resetIdleTimer();
@@ -5009,6 +5366,18 @@ export class KioskComponent implements OnInit, OnDestroy {
         this.saveState();
         return;
       }
+      // 'services' is reachable from either entry path. Back must return to the
+      // screen the resident actually came from: the profile/welcome screen for
+      // RFID/manual-search residents, or the guest info form for temporary sessions.
+      if (step === 'services') {
+        if (this.resident()) {
+          this.currentStep.set('welcome');
+        } else {
+          this.currentStep.set('guest-info');
+        }
+        this.saveState();
+        return;
+      }
       const steps: DocStep[] = ['welcome', 'guest-info', 'services', 'requirements', 'form', 'photo', 'review', 'success'];
       const idx = steps.indexOf(step);
       if (idx > 0) {
@@ -5059,6 +5428,8 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.submitting.set(true);
     this.errorMessage.set('');
     if (!this.submissionKey) this.submissionKey = this.newIdempotencyKey();
+
+
 
     const resident = this.resident();
     const data: any = {

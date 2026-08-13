@@ -62,7 +62,7 @@
 
 ## 5. Hardware Verification
 
-- [ ] Arduino connected and communicating
+- [ ] ESP8266 connected and communicating
 - [ ] RFID reader reads registered cards
 - [ ] RFID reader rejects invalid cards
 - [ ] Webcam captures photos

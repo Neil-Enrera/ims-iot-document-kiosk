@@ -107,7 +107,7 @@ ims-iot-document-kiosk/
 │   └── backups/
 │
 ├── hardware/
-│   ├── arduino/
+│   ├── arduino/  (ESP8266 firmware)
 │   ├── firmware/
 │   ├── wiring/
 │   └── documentation/
@@ -142,7 +142,7 @@ ims-iot-document-kiosk/
 | backend | Backend API and business logic |
 | frontend | Angular application |
 | database | Database scripts, migrations, backups |
-| hardware | Arduino sketches, firmware, wiring diagrams |
+| hardware | ESP8266 firmware, wiring diagrams |
 | docs | Documentation, diagrams, task specifications |
 | tests | Test cases and test scripts |
 | scripts | Utility and automation scripts |

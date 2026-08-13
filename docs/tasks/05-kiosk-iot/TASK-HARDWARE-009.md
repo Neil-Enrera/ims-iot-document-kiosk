@@ -123,7 +123,7 @@ OR
 Return Idle
 ```
 
-Arduino Disconnect
+ESP8266 Disconnect
 
 ```
 Disable RFID
@@ -260,7 +260,7 @@ Maximum retries configurable in System Settings.
 
 Monitor
 
-- Arduino
+- ESP8266
 - RFID
 - Camera
 - Printer
@@ -444,8 +444,8 @@ Include
 - [ ] Browser refresh
 - [ ] Network disconnect
 - [ ] Network reconnect
-- [ ] Arduino disconnect
-- [ ] Arduino reconnect
+- [ ] ESP8266 disconnect
+- [ ] ESP8266 reconnect
 - [ ] Camera recovery
 - [ ] Printer recovery
 - [ ] Automatic cleanup

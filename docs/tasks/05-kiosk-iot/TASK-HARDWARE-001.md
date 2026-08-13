@@ -26,7 +26,7 @@ Responsibilities
 - Runs Angular application
 - Controls kiosk session
 - Communicates with backend
-- Interfaces with Arduino
+- Interfaces with ESP8266
 
 Recommended
 
@@ -55,7 +55,7 @@ Functions
 
 ---
 
-## Arduino Uno
+## ESP8266 (RFID Controller)
 
 Purpose
 
@@ -67,7 +67,7 @@ Responsibilities
 - Hardware Status
 - Serial Communication
 
-Arduino should **not** perform business logic.
+ESP8266 should **not** perform business logic.
 
 ---
 
@@ -80,7 +80,7 @@ Resident Identification
 Functions
 
 - Read RFID UID
-- Send UID to Arduino
+- Send UID to ESP8266
 - Forward UID to Backend
 
 Supported
@@ -165,7 +165,7 @@ Print
 
                  │            │
 
-           MySQL Database     Arduino Service
+MySQL Database     ESP8266 Service
 
                                │
 
@@ -173,9 +173,9 @@ Print
 
                                │
 
-                           Arduino Uno
+                            ESP8266
 
-                      │                 │
+                       │                 │
 
                 RFID Reader        Status LEDs
 ```
@@ -192,7 +192,7 @@ Tap RFID Card
 
 ↓
 
-Arduino Reads UID
+ESP8266 Reads UID from MFRC522
 
 ↓
 
@@ -238,7 +238,7 @@ Node.js
 - Business Logic
 - Database
 
-Arduino
+ESP8266
 
 - RFID Reading
 - Device Status
@@ -253,7 +253,7 @@ MySQL
 
 # Hardware Services
 
-Arduino Service
+ESP8266 Service
 
 Responsibilities
 
@@ -283,7 +283,7 @@ Responsibilities
 ```
 hardware/
 
-arduino/
+arduino/  (ESP8266 firmware)
 
 firmware/
 
@@ -308,7 +308,7 @@ hardware/
 
 # Communication Protocol
 
-Arduino
+ESP8266
 
 ↓
 
@@ -364,7 +364,7 @@ Ready
 Offline
 ```
 
-Arduino
+ESP8266
 
 ```
 Connected
@@ -382,7 +382,7 @@ Unknown RFID
 Resident not found.
 ```
 
-Arduino Offline
+ESP8266 Offline
 
 ```
 RFID reader unavailable.
@@ -404,7 +404,7 @@ Printing unavailable.
 
 # Security
 
-Arduino
+ESP8266
 
 Never stores
 
@@ -440,7 +440,7 @@ without redesigning the system.
 
 - [ ] Finalize hardware architecture
 - [ ] Define communication protocol
-- [ ] Configure Arduino responsibilities
+- [ ] Configure ESP8266 responsibilities
 - [ ] Configure Node hardware services
 - [ ] Define Angular hardware services
 - [ ] Validate data flow
@@ -467,7 +467,7 @@ Communication responsibilities are clearly separated.
 - Device responsibilities defined.
 - Communication flow validated.
 - Security boundaries established.
-- Ready for Arduino communication.
+- Ready for ESP8266 communication.
 
 ---
 
@@ -486,7 +486,7 @@ Communication responsibilities are clearly separated.
 
 # Next Task
 
-**TASK-HARDWARE-002 — Arduino ↔ Backend Communication**
+**TASK-HARDWARE-002 — ESP8266 ↔ Backend Communication**
 
 ---
 
@@ -494,10 +494,10 @@ Communication responsibilities are clearly separated.
 
 Before implementing:
 
-1. Keep Arduino firmware lightweight and event-driven; it should only read hardware inputs and send structured messages.
+1. Keep ESP8266 firmware lightweight and event-driven; it should only read hardware inputs and send structured messages.
 2. Implement a dedicated Node.js hardware service responsible for serial communication so the rest of the backend remains hardware-agnostic.
 3. Define a simple, versioned serial protocol (for example, `RFID:<UID>` and `PING`) that can be extended later without breaking compatibility.
-4. Design Angular to consume hardware events through backend APIs or WebSockets rather than communicating with Arduino directly.
+4. Design Angular to consume hardware events through backend APIs or WebSockets rather than communicating with the ESP8266 directly.
 5. Make all hardware components optional at startup so the IMS can still run in development mode without connected devices.
 
 ---

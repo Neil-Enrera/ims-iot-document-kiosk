@@ -460,7 +460,7 @@ const deleteDocument = async (documentId) => {
 // Document review / approval workflow
 // ============================================================
 
-const ALLOWED_APPROVAL_STATUSES = ['approved', 'rejected', 'returned'];
+const ALLOWED_APPROVAL_STATUSES = ['approved', 'rejected'];
 
 // Approve / reject / return a generated document. A document that has already
 // reached a terminal review state cannot be re-reviewed.

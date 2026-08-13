@@ -15,7 +15,7 @@ describe('Request State Machine', () => {
   };
 
   const VALID_TRANSITIONS = {
-    1: [2, 8, 9],    // Submitted -> Waiting for Requirements, Rejected, Cancelled
+    1: [2, 4, 8, 9],    // Submitted -> Waiting for Requirements, Under Review, Rejected, Cancelled
     2: [3, 8, 9],    // Waiting for Requirements -> Requirements Received, Rejected, Cancelled
     3: [4, 8, 9],    // Requirements Received -> Under Review, Rejected, Cancelled
     4: [5, 6, 8, 9], // Under Review -> Document Processing, Ready for Release, Rejected, Cancelled
@@ -40,6 +40,10 @@ describe('Request State Machine', () => {
 
   it('should allow Submitted -> Waiting for Requirements', () => {
     assert.ok(VALID_TRANSITIONS[STATUS_IDS.SUBMITTED].includes(STATUS_IDS.WAITING_FOR_REQUIREMENTS));
+  });
+
+  it('should allow Submitted -> Under Review', () => {
+    assert.ok(VALID_TRANSITIONS[STATUS_IDS.SUBMITTED].includes(STATUS_IDS.UNDER_REVIEW));
   });
 
   it('should allow Submitted -> Rejected', () => {

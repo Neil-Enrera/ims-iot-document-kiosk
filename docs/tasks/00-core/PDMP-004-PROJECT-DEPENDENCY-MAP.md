@@ -238,7 +238,7 @@ RFID Card
 RFID Reader
       │
       ▼
-Arduino Uno
+ESP8266 (RFID controller)
       │
       ▼
 Backend API
@@ -282,7 +282,7 @@ The frontend should never access the database directly.
 | Node.js | Runtime Environment |
 | Express.js | Backend Framework |
 | MySQL | Relational Database |
-| Arduino Uno | Hardware Controller |
+| ESP8266 (RFID controller) | Hardware Controller |
 | RFID Reader | Resident Identification |
 | Webcam | Photo Capture |
 

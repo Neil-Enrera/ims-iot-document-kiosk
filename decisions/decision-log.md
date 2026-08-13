@@ -715,3 +715,62 @@ The kiosk modal was the reference-good behavior; the admin modal was structurall
 - Kiosk Barangay ID preview now opens already fitted and centered, with Zoom In/Out, Fit Width, and close controls (blue accent retained; new `bar.preview.zoom` i18n key in `en.ts`/`fil.ts`).
 - Admin Document Requests / Generated Document Preview and kiosk Review previews auto-fit on open through the settle re-measure; user zooms are never overridden.
 - Verified: `npx ng build kiosk-app` and `npx ng build admin-panel` both pass from repo root (pre-existing initial-budget and `jszip`/ESM warnings only).
+
+---
+
+### DEC-027 — Kiosk submissions become transaction-grouped batches (one transaction → one or more service requests)
+
+**Status:** Accepted
+**Date:** 2026-08-13
+**Decision Maker(s):** Project Owner
+
+**Decision:**
+Every kiosk submission now creates one row in a new `transactions` table (`transaction_number` `TXN-YYYY-NNNNN`, optional `guest_snapshot` JSON for temporary sessions, unique `idempotency_key`), and each requested service becomes a `requests` row linked via `requests.transaction_id`. The whole-submission idempotency guard moved from the request row (migration 014) to the transaction row, so a retry of the same submission (double-click, refresh, network retry) returns the original transaction instead of duplicating service requests. `POST /kiosk/requests` was rewired through a new `transaction.service.submitTransaction()`; the current single-service kiosk still works unchanged (the response keeps `request_number` = the first request) while the payload already accepts a `services` array for a future multi-select UI.
+
+**Reason:**
+Migration 020 already defined the model (one submission → multiple independent service requests, each with its own status/history/corrections, grouped only by the transaction). Routing the kiosk through it now unlocks the multi-service step later without another rework, moves idempotency to a single anchor per submission, and gives guest sessions a place to persist the temporary identity (`guest_snapshot`) used for possible-duplicate matching. It also lets per-service policy flags (`allow_multiple_active_requests`, `allow_new_request_after_release`, `can_combine_with_others`) be enforced at submit time.
+
+**Alternatives Considered:**
+1. Keep request-level idempotency and add transactions as a pure grouping layer — rejected; two levels of idempotency keys (request + transaction) would be redundant and the request-level unique key complicates a multi-request batch.
+2. Enforce duplicate policy only in the admin panel — rejected; blocking duplicates at submission time is where the resident learns about them.
+
+**Consequences:**
+- New `backend/src/repositories/transaction.repository.js` and `backend/src/services/transaction.service.js`; migration 020 applied to the dev DB.
+- Policy rejections return `400 { code, message, existing }` where `code` is `ACTIVE_REQUEST_EXISTS` or `NO_REPEAT_AFTER_RELEASE`; guest matching is advisory and surfaced as `possible_duplicates`, never a hard block.
+- Verified: 78/78 backend tests, ESLint clean (pre-existing warnings only), `tsc --noEmit` clean in `kiosk-app`, and live smoke tests (guest + resident submissions, idempotent retry returns same transaction with no extra request row, resident duplicate blocked, advisory guest duplicate surfaced) — all created rows were deleted afterwards.
+- **Deployment note:** the LAN kiosk backend (`192.168.100.102`) must run the updated `transaction.service.js`/`kiosk.controller.js` and have migration 020 applied for the new flow to take effect there.
+
+
+---
+
+### DEC-028 — Replace "Regenerate Document" with "Edit Document" in the admin request workflow
+
+**Status:** Accepted
+**Date:** 2026-08-14
+**Decision Maker(s):** Project Owner
+
+**Decision:**
+The admin-panel request details modal replaces the **Regenerate Document** action (established in DEC-017) with **Edit Document**. The Edit Document button opens an inline form that pre-populates the request's `form_data`, `purpose`, and `remarks`, lets staff correct typos or wrong information, and on save:
+
+1. Persists the corrected `form_data` (via `PUT /requests/:id`) without changing the request `status_id`.
+2. Logs each changed field as a `RESOLVED` row in the `request_corrections` audit table (migration 019) with original → updated values and the staff member's id.
+3. Regenerates the official document from the corrected data (pruning old generations, per DEC-017's replace-on-regenerate behavior).
+4. Immediately previews the updated document in the same modal.
+
+The edit form supports all dynamic field types (select, radio, checkbox, textarea, input, date, email) and, for guest requests (no resident record), shows the guest identity fields at the top level whose values are synced into the `form_data._guest` mirror by the backend. The form is only available while the request status is **Submitted** (1) or **Under Review** (4); the document can only be previewed/edited in those states.
+
+**Reason:**
+Barangay staff previously had no way to correct typos or wrong information that residents entered on the kiosk application form. The old "Return for Correction" workflow (status 10/11) was removed because it requires resident action, adds latency, and complicates the status state machine. In-place editing with immediate regeneration matches how a real barangay counter works: the officer fixes the form, prints the corrected document, and hands it over — all in one pass, with the correction audited.
+
+**Alternatives Considered:**
+1. Keep "Return for Correction" as a status transition — rejected (reintroduces statuses 10/11, requires resident resubmission, adds round-trip latency).
+2. Admin-only document text editing (no form data changes) — rejected; the generated document is a derivative of `form_data`, so editing form data and regenerating is the single source of truth.
+3. Separate "Edit Form Data" and "Regenerate Document" buttons — rejected; combining them as "Edit Document" is a single atomic action (edit + save = regenerate + preview), which is the actual staff mental model.
+
+**Consequences:**
+- `requests.component.ts` (admin panel): `openEditForm`/`closeEditForm`/`saveEditForm`/`canEditDocument` methods + inline template-driven edit form; "Regenerate Document" button replaced by "Edit Document" (gated by `canEditDocument()`); new `editingDocument` and `savingEdit` signals.
+- `services/index.ts` (admin panel): `RequestService.update()` extended to send `formData`, `purpose`, `remarks`, and `reason`.
+- `request.service.js` (backend): `updateRequest` accepts `formData` + `reason`, syncs `_guest` for null-resident requests, logs corrections via `correctionRepository.logCorrection`, and regenerates the document if one already exists.
+- `request.validation.js` (backend): `updateValidation` accepts `formData` (object) + `reason` (optional string).
+- New `correction.repository.js` + migration 019 `request_corrections` table; dbcheck script `_dbcheck.tmp.js` confirms no requests/history reference statuses 10/11.
+- Verified: 71/71 backend tests pass, ESLint 0 errors (pre-existing warnings only), both admin-panel and kiosk-app `ng build` succeed, dbcheck clean.

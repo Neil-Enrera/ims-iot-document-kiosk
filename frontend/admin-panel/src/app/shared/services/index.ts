@@ -238,10 +238,6 @@ export class ApplicationService {
   reject(id: number, remarks?: string) {
     return this.api.post<BarangayIdApplication>(`/applications/${id}/reject`, { remarks });
   }
-
-  returnForCorrection(id: number, remarks?: string) {
-    return this.api.post<BarangayIdApplication>(`/applications/${id}/return`, { remarks });
-  }
 }
 
 @Injectable({ providedIn: 'root' })

@@ -387,7 +387,7 @@ The hardware layer should:
 - Handle disconnections gracefully.
 - Log communication failures.
 
-Business logic should never reside inside Arduino code.
+Business logic should never reside inside the ESP8266 firmware code.
 
 ---
 

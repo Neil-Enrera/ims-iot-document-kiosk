@@ -50,7 +50,7 @@ Included
 Not Included
 
 - RFID Reader Driver
-- Arduino Firmware
+- ESP8266 Firmware
 - Kiosk Touchscreen Logic
 
 Those belong to the Hardware & Kiosk phase.
@@ -489,7 +489,7 @@ Kiosk
 RFID Login
 ```
 
-Arduino
+ESP8266
 
 ```
 RFID Reader Events
@@ -546,7 +546,7 @@ RFID assignment updates the linked Resident Profile.
 - RFID Management module completed.
 - Backend integration verified.
 - Ready for Service Management.
-- Prepared for Arduino/kiosk integration.
+- Prepared for ESP8266/kiosk integration.
 
 ---
 
@@ -570,7 +570,7 @@ Before implementing:
 2. Design the RFID assignment form so it can accept scanned input automatically or manual UID entry for testing.
 3. Record every assignment and replacement in an RFID history component for traceability.
 4. Reuse the Resident search component instead of duplicating resident lookup logic.
-5. Build the module so it can later connect to your Arduino-based RFID reader without major UI changes.
+5. Build the module so it can later connect to your ESP8266-based RFID reader without major UI changes.
 
 ---
 

@@ -1,8 +1,10 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, Inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Observable, Subject } from 'rxjs';
 import { Router } from '@angular/router';
+import { environment } from '../../../environments/environment';
 
 export interface Notification {
   notification_id: number;
@@ -19,30 +21,42 @@ export interface Notification {
 @Injectable({ providedIn: 'root' })
 export class NotificationService {
   unreadCount = signal(0);
+  isConnected = signal(false);
   private eventSource: EventSource | null = null;
   private notification$ = new Subject<Notification>();
   private sseEvent$ = new Subject<any>();
   private reconnectTimer: any = null;
-  private isConnected = false;
   private reconnectAttempts = 0;
   private readonly MAX_RECONNECT_ATTEMPTS = 10;
   private readonly BASE_RECONNECT_DELAY = 2000;
+  private seenNotificationIds = new Set<number>();
 
-  constructor(private api: ApiService, private auth: AuthService, private router: Router) {}
+  constructor(
+    private api: ApiService,
+    private auth: AuthService,
+    private router: Router,
+    @Inject(PLATFORM_ID) private platformId: Object
+  ) {}
+
+  private buildSseUrl(): string {
+    const token = this.auth.getToken();
+    const baseUrl = environment.apiUrl;
+    const origin = baseUrl.startsWith('http') ? baseUrl.split('/api/')[0] : (isPlatformBrowser(this.platformId) ? window.location.origin : '');
+    return `${origin}/api/v1/notifications/stream?token=${token}`;
+  }
 
   /**
    * Connect to the SSE stream for real-time notifications.
    * Call this once when the app initializes (e.g., in LayoutComponent).
    */
   connectSSE() {
+    if (!isPlatformBrowser(this.platformId)) return;
     if (this.eventSource) return; // Already connected
     if (!this.auth.getToken()) return;
 
-    // Reset reconnect attempts on fresh connect (e.g., page reload)
     this.reconnectAttempts = 0;
 
-    const token = this.auth.getToken();
-    const url = `http://localhost:3000/api/v1/notifications/stream?token=${token}`;
+    const url = this.buildSseUrl();
 
     try {
       this.eventSource = new EventSource(url);
@@ -53,9 +67,11 @@ export class NotificationService {
 
     this.eventSource.addEventListener('connected', (event) => {
       try {
-        this.isConnected = true;
+        this.isConnected.set(true);
         this.reconnectAttempts = 0;
         console.log('SSE connected:', JSON.parse(event.data));
+        // Catch-up: fetch latest unread count on successful connect/reconnect
+        this.refreshUnreadCount();
       } catch (e) {
         console.error('Error parsing connected event:', e);
       }
@@ -64,8 +80,15 @@ export class NotificationService {
     this.eventSource.addEventListener('notification', (event) => {
       try {
         const notification: Notification = JSON.parse(event.data);
+        // Dedup: skip if we've already seen this notification
+        if (this.seenNotificationIds.has(notification.notification_id)) {
+          return;
+        }
+        this.seenNotificationIds.add(notification.notification_id);
         this.notification$.next(notification);
         this.sseEvent$.next({ type: 'notification', data: notification });
+        // Increment unread count optimistically
+        this.unreadCount.update(c => c + 1);
       } catch (e) {
         console.error('Error parsing notification event:', e);
       }
@@ -75,6 +98,7 @@ export class NotificationService {
       try {
         const data = JSON.parse(event.data);
         this.unreadCount.set(data.count);
+        this.sseEvent$.next({ type: 'unread-count', data });
       } catch (e) {
         console.error('Error parsing unread-count event:', e);
       }
@@ -97,18 +121,17 @@ export class NotificationService {
     });
 
     this.eventSource.onerror = () => {
-      this.isConnected = false;
+      this.isConnected.set(false);
       this.eventSource?.close();
       this.eventSource = null;
 
-      // Check if we're still authenticated before reconnecting
+      if (!isPlatformBrowser(this.platformId)) return;
       if (!this.auth.getToken()) {
         console.warn('SSE: No auth token. Not reconnecting.');
         return;
       }
 
       this.reconnectAttempts++;
-      // Exponential backoff: 2s, 4s, 8s, 16s, 32s
       const delay = Math.min(this.BASE_RECONNECT_DELAY * Math.pow(2, this.reconnectAttempts - 1), 30000);
       console.log(`SSE: Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.MAX_RECONNECT_ATTEMPTS})`);
       this.reconnectTimer = setTimeout(() => this.connectSSE(), delay);
@@ -119,6 +142,7 @@ export class NotificationService {
    * Disconnect from the SSE stream.
    */
   disconnectSSE() {
+    if (!isPlatformBrowser(this.platformId)) return;
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
@@ -126,9 +150,10 @@ export class NotificationService {
     if (this.eventSource) {
       this.eventSource.close();
       this.eventSource = null;
-      this.isConnected = false;
+      this.isConnected.set(false);
     }
     this.reconnectAttempts = 0;
+    this.seenNotificationIds.clear();
   }
 
   /**

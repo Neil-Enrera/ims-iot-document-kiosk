@@ -44,7 +44,7 @@ This Master Test Plan defines the testing strategy, scope, environment, and proc
 | System Settings | Configuration management |
 | Kiosk Interface | Search, select, photo, submit, receipt |
 | RFID Integration | Card verification (when hardware present) |
-| Hardware | Arduino, RFID reader, webcam, printer |
+| Hardware | ESP8266 (RFID), RFID reader, webcam, printer |
 
 ### 3.2 Out of Scope
 
@@ -79,7 +79,7 @@ This Master Test Plan defines the testing strategy, scope, environment, and proc
 | Device | Purpose |
 |--------|---------|
 | Development PC | Backend + database server |
-| Arduino Uno | Hardware controller |
+| ESP8266 | RFID controller |
 | MFRC522 RFID Reader | Resident authentication |
 | USB Webcam | Photo capture |
 | USB Printer | Queue slip printing |

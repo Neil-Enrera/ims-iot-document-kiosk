@@ -19,7 +19,7 @@ The module enables administrators to quickly identify hardware issues, perform b
 
 The kiosk depends on several hardware devices:
 
-- Arduino Uno
+- ESP8266
 - RFID Reader
 - Webcam
 - Printer
@@ -69,7 +69,7 @@ Route
 
 # Monitored Devices
 
-Arduino Uno
+ESP8266
 
 - Connection Status
 - Serial Port
@@ -112,7 +112,7 @@ System Health
 
 Hardware Status
 
-✓ Arduino Connected
+✓ ESP8266 Connected
 
 ✓ RFID Ready
 
@@ -212,10 +212,10 @@ Backend polls or receives events from the Hardware Integration Layer.
 
 Administrator can run
 
-Arduino Test
+ESP8266 Test
 
 ```
-Verify Serial Communication
+Verify USB Serial Communication
 ```
 
 RFID Test
@@ -299,7 +299,7 @@ Record
 Example
 
 ```
-Arduino Connected
+ESP8266 Connected
 
 10:15 AM
 ```
@@ -368,7 +368,7 @@ diagnostics/
 
 # Error Handling
 
-Arduino Disconnected
+ESP8266 Disconnected
 
 ```
 Hardware controller unavailable.
@@ -428,7 +428,7 @@ Residents never see diagnostic information.
 
 # Testing Checklist
 
-- [ ] Detect Arduino
+- [ ] Detect ESP8266
 - [ ] Detect RFID Reader
 - [ ] Detect Webcam
 - [ ] Detect Printer

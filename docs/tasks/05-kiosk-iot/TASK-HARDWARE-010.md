@@ -22,7 +22,7 @@ This task verifies the integration of:
 - Angular Frontend
 - Express Backend
 - MySQL Database
-- Arduino Uno
+- ESP8266
 - MFRC522 RFID Reader
 - Webcam
 - Printer
@@ -108,7 +108,7 @@ Verify
 
 # Hardware Testing
 
-Arduino
+ESP8266
 
 - Connection
 - Reconnection
@@ -162,7 +162,7 @@ Simulate
 
 - Network loss
 - Browser refresh
-- Arduino disconnect
+- ESP8266 disconnect
 - Camera failure
 - Printer offline
 - Power restart

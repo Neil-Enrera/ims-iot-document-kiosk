@@ -36,7 +36,7 @@ Each resident may be assigned one RFID card, which serves as their identificatio
 
 ## Not Included
 
-- Arduino communication
+- ESP8266 communication
 - Kiosk interface
 - Webcam verification
 
@@ -261,7 +261,7 @@ Flow:
 Resident taps RFID
         │
         ▼
-Arduino reads UID
+ESP8266 reads UID
         │
         ▼
 Backend verifies RFID
@@ -354,7 +354,7 @@ Before implementing:
 2. Keep RFID verification logic in the service layer.
 3. Enforce one active RFID card per resident.
 4. Ensure all verification responses follow the standardized API format.
-5. Design the module so the Arduino kiosk can consume it without additional backend changes.
+5. Design the module so the ESP8266 kiosk can consume it without additional backend changes.
 
 ---
 

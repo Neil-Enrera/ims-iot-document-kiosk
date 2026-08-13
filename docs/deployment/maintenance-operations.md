@@ -70,7 +70,7 @@
 - Verify print quality
 - Clean print head (if needed)
 
-### Arduino
+### ESP8266 (RFID controller)
 - Check USB cable condition
 - Verify serial communication
 

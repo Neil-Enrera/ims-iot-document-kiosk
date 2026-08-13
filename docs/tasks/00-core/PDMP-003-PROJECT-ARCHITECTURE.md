@@ -170,14 +170,14 @@ Functions:
 
 Devices:
 
-- RFID Reader
-- Arduino Uno
-- Webcam
-- Touchscreen
+- RFID Reader (MFRC522)
+- ESP8266 (RFID controller)
+- Webcam (attached to the kiosk tablet)
+- Touchscreen Kiosk Tablet
 
 Purpose:
 
-Provide physical interaction with the kiosk.
+Provide physical interaction with the kiosk. The ESP8266 handles RFID hardware communication only and connects to the kiosk over USB serial; it is not the kiosk device itself.
 
 ---
 
@@ -339,15 +339,19 @@ Resident
 
 ↓
 
-RFID Card
+RFID Card (Barangay ID)
 
 ↓
 
-RFID Reader
+RFID Reader (MFRC522)
 
 ↓
 
-Arduino
+ESP8266 (RFID controller)
+
+↓  USB serial → hardware bridge → WebSocket
+
+Kiosk Tablet (Angular kiosk app)
 
 ↓
 
@@ -363,7 +367,7 @@ Response
 
 ↓
 
-Touchscreen Display
+Kiosk Tablet (touchscreen display)
 ```
 
 ---

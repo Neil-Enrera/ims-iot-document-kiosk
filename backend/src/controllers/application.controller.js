@@ -72,15 +72,4 @@ const reject = async (req, res) => {
   }
 };
 
-const returnForCorrection = async (req, res) => {
-  try {
-    const result = await applicationService.returnApplication(req.params.id, req.user.userId, req.body.remarks);
-    if (!result.success) return errorResponse(res, 400, result.message);
-    return successResponse(res, result.message, result.data);
-  } catch (error) {
-    console.error('Application return error:', error);
-    return errorResponse(res, 500, 'Internal server error.');
-  }
-};
-
-module.exports = { getAll, getById, preview, approve, reject, returnForCorrection };
+module.exports = { getAll, getById, preview, approve, reject };

@@ -98,7 +98,7 @@ The deployment plan aims to:
                    │
         ┌──────────┼──────────┐
         ▼          ▼          ▼
-   Arduino Uno   RFID Reader  Webcam
+   ESP8266       RFID Reader  Webcam
                                 │
                                 ▼
                          Queue Slip Printer
@@ -224,7 +224,7 @@ Minimum Specification
 | Component | Purpose |
 |-----------|----------|
 | Touchscreen Monitor | Resident Interface |
-| Arduino Uno | Hardware Controller |
+| ESP8266 (RFID controller) | Hardware Controller |
 | MFRC522 RFID Reader | Resident Authentication |
 | USB Webcam | Resident Photo |
 | USB Printer | Queue Slip Printing |
@@ -341,7 +341,7 @@ Responsible for
 - [ ] Server prepared
 - [ ] Staff workstation prepared
 - [ ] Touchscreen installed
-- [ ] Arduino connected
+- [ ] ESP8266 connected
 - [ ] RFID reader connected
 - [ ] Webcam connected
 - [ ] Printer connected
@@ -545,7 +545,7 @@ Before implementing:
 1. Keep all deployment configuration values (database credentials, API URLs, file paths, ports) in environment variables rather than hardcoding them.
 2. Prepare a deployment package containing the frontend build, backend source, SQL initialization scripts, and required documentation so installation can be performed consistently.
 3. Use a deployment checklist during installation and have one team member verify each completed step to reduce configuration mistakes.
-4. Label all hardware connections (USB ports, RFID reader, webcam, printer, Arduino) to simplify troubleshooting during deployment.
+4. Label all hardware connections (USB ports, RFID reader, webcam, printer, ESP8266) to simplify troubleshooting during deployment.
 5. Perform a dry-run deployment in a test environment before installing the system at the barangay to identify issues early.
 
 ---

@@ -232,7 +232,7 @@ Verify
 
 Verify
 
-Arduino
+ESP8266
 
 - Stable serial communication
 
@@ -256,7 +256,7 @@ Verify system recovery after
 
 - Backend restart
 - Database restart
-- Arduino reconnection
+- ESP8266 reconnection
 - Camera reconnection
 - Printer reconnection
 - Browser refresh
@@ -348,7 +348,7 @@ System
 Hardware
 
 ```
-Arduino Uno
+ESP8266 (RFID controller)
 
 MFRC522 RFID Reader
 

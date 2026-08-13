@@ -50,7 +50,7 @@ Kiosk
 
 Hardware
 
-- Arduino Uno
+- ESP8266 (RFID controller)
 - RFID Reader
 - Webcam
 - Printer
@@ -244,7 +244,7 @@ MySQL
 Hardware
 
 ```
-Arduino Uno
+ESP8266 (RFID controller)
 
 RFID
 
@@ -264,7 +264,7 @@ Administrator Dashboard
 Hardware
 
 ```
-Arduino Uno
+ESP8266 (RFID controller)
 
 MFRC522 RFID Reader
 

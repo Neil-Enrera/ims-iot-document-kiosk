@@ -1,17 +1,15 @@
 const kioskService = require('../services/kiosk.service');
-const residentService = require('../services/resident.service');
+const requestService = require('../services/request.service');
 const applicationService = require('../services/application.service');
 const rfidService = require('../services/rfid.service');
-const auditRepository = require('../repositories/audit.repository');
 const notificationService = require('../services/notification.service');
 const sseManager = require('../services/notification-sse');
+const transactionService = require('../services/transaction.service');
 const idCardService = require('../services/id-card.service');
 const documentService = require('../services/document.service');
 const { findBarangay } = require('../services/barangay.service');
 const { successResponse, errorResponse, createdResponse } = require('../utils/apiResponse');
 const pool = require('../config/database');
-const fs = require('fs');
-const path = require('path');
 
 // ============================================================
 // MANUAL RESIDENT SELECTION (active — no hardware needed)
@@ -59,17 +57,64 @@ const getResidentHistory = async (req, res) => {
   }
 };
 
-// Idempotent request creation guard. The kiosk sends a stable idempotency key for
-// a single form submission attempt (reused on retry, changed for a new request).
-// If a request with the same key already exists, return it instead of inserting a
-// duplicate — this prevents accidental double-submits (double-click, retries).
-const findByIdempotencyKey = async (key) => {
-  if (!key) return null;
-  const [rows] = await pool.query(
-    'SELECT request_id, request_number, request_date FROM requests WHERE idempotency_key = ? LIMIT 1',
-    [key]
-  );
-  return rows[0] || null;
+// Public request creation for kiosk (no auth required)
+// One submission becomes one TRANSACTION grouping one or more Service Requests.
+// Supports both:
+//   - identified residents (resident_id + optional form_data)
+//   - temporary guest sessions (guest {full_name, birth_date, address, contact_number, email?} + form_data)
+// Accepts a single `service_id` (current kiosk) or a `services` array (future
+// multi-select). The response stays request-number compatible with the kiosk.
+const createRequest = async (req, res) => {
+  try {
+    const { resident_id, guest, idempotency_key, idempotencyKey } = req.body;
+    console.log('[Kiosk] createRequest body:', JSON.stringify({ resident_id, hasGuest: !!guest, hasServices: Array.isArray(req.body.services), service_id: req.body.service_id, hasPhoto: !!req.body.photo, hasFormData: !!req.body.form_data }));
+
+    const services = Array.isArray(req.body.services) && req.body.services.length
+      ? req.body.services.map(s => ({
+          service_id: s.service_id,
+          form_data: s.form_data ?? s.formData ?? undefined,
+          photo: s.photo ?? undefined
+        }))
+      : req.body.service_id
+        ? [{
+            service_id: req.body.service_id,
+            form_data: req.body.form_data !== undefined ? req.body.form_data : req.body.formData,
+            photo: req.body.photo || undefined
+          }]
+        : [];
+
+    const result = await transactionService.submitTransaction({
+      services,
+      resident_id: resident_id || undefined,
+      guest,
+      idempotency_key: idempotency_key || idempotencyKey || undefined,
+      ip: req.ip
+    });
+
+    if (!result.success) {
+      const body = { success: false, message: result.message };
+      if (result.code) body.code = result.code;
+      if (result.existing) body.existing = result.existing;
+      return res.status(400).json(body);
+    }
+
+    const data = result.data;
+    const first = data.requests?.[0] || {};
+    return successResponse(res, data.duplicate ? 'Request already submitted.' : 'Request submitted successfully.', {
+      transaction_id: data.transaction_id,
+      transaction_number: data.transaction_number,
+      request_id: first.request_id ?? null,
+      request_number: first.request_number ?? data.transaction_number,
+      request_date: first.request_date ?? data.created_at,
+      status: 'Submitted',
+      duplicate: data.duplicate,
+      requests: data.requests || [],
+      possible_duplicates: data.possible_duplicates || []
+    });
+  } catch (error) {
+    console.error('Kiosk createRequest error:', error);
+    return errorResponse(res, 500, 'Internal server error.');
+  }
 };
 
 // Public services list for kiosk (no auth required)
@@ -99,87 +144,6 @@ const parseJsonField = (value) => {
     try { return JSON.parse(value); } catch { return null; }
   }
   return value;
-};
-
-// Public request creation for kiosk (no auth required)
-// Supports both:
-//   - identified residents (resident_id + optional form_data)
-//   - temporary guest sessions (guest {full_name, birth_date, address, contact_number, email?} + form_data)
-const createRequest = async (req, res) => {
-  try {
-    const { service_id, resident_id, guest } = req.body;
-    console.log('[Kiosk] createRequest body:', JSON.stringify({ service_id, resident_id, hasGuest: !!guest, hasPhoto: !!req.body.photo, hasFormData: !!req.body.form_data }));
-
-    if (!service_id) {
-      return errorResponse(res, 400, 'Service is required.');
-    }
-    if (!resident_id && !guest) {
-      return errorResponse(res, 400, 'Resident or guest information is required.');
-    }
-
-    // Return the existing request if this exact submission was already recorded.
-    const idempotencyKey = req.body.idempotency_key || req.body.idempotencyKey || null;
-    const existing = await findByIdempotencyKey(idempotencyKey);
-    if (existing) {
-      return successResponse(res, 'Request already submitted.', {
-        request_id: existing.request_id,
-        request_number: existing.request_number,
-        request_date: existing.request_date,
-        status: 'Submitted',
-        duplicate: true
-      });
-    }
-
-    const formData = req.body.form_data !== undefined ? req.body.form_data : req.body.formData;
-
-    // Get service details for notification
-    const [services] = await pool.query('SELECT * FROM services WHERE service_id = ?', [service_id]);
-    const service = services[0];
-    if (!service) return errorResponse(res, 404, 'Service not found.');
-
-    let resident = null;
-    let applicant = null;
-
-    if (resident_id) {
-      const [residents] = await pool.query('SELECT resident_id, first_name, last_name, resident_code FROM residents WHERE resident_id = ?', [resident_id]);
-      resident = residents[0];
-      if (!resident) return errorResponse(res, 404, 'Resident not found.');
-      applicant = { ...resident, isGuest: false };
-    } else {
-      const guestInfo = guest || {};
-      if (!guestInfo.full_name) {
-        return errorResponse(res, 400, 'Guest full name is required.');
-      }
-      applicant = {
-        resident_id: null,
-        first_name: guestInfo.full_name,
-        middle_name: guestInfo.middle_name || null,
-        last_name: '',
-        resident_code: 'GUEST',
-        isGuest: true,
-        guestInfo
-      };
-    }
-
-    const { requestId, requestNumber, requestDate } = await insertKioskRequest({
-      resident: applicant,
-      service,
-      photo: req.body.photo,
-      formData,
-      idempotencyKey,
-      req
-    });
-
-    return successResponse(res, 'Request submitted successfully.', {
-      request_id: requestId,
-      request_number: requestNumber,
-      request_date: requestDate,
-      status: 'Submitted'
-    });
-  } catch (error) {
-    console.error('Kiosk createRequest error:', error);
-    return errorResponse(res, 500, 'Internal server error.');
-  }
 };
 
 // Public Barangay ID application: creates an APPLICATION record (no resident yet)
@@ -300,137 +264,6 @@ const verifyRfid = async (req, res) => {
     console.error('Kiosk verifyRfid error:', error);
     return errorResponse(res, 500, 'Internal server error.');
   }
-};
-
-// Shared helper: inserts a request row, saves photo attachment, creates audit + notification + SSE
-// resident may be a real resident or a guest applicant (resident.resident_id === null, isGuest === true)
-const insertKioskRequest = async ({ resident, service, photo, formData, idempotencyKey = null, req }) => {
-  // Generate request number from the highest existing suffix (avoids duplicates after deletions/out-of-order ids)
-  const [maxResult] = await pool.query(
-    "SELECT MAX(CAST(SUBSTRING_INDEX(request_number, '-', -1) AS UNSIGNED)) AS max_num FROM requests"
-  );
-  const next = (maxResult[0]?.max_num || 0) + 1;
-  const requestNumber = `REQ-${String(next).padStart(5, '0')}`;
-
-  // Get default status_id (Submitted)
-  const [statusResult] = await pool.query("SELECT status_id FROM request_statuses WHERE status_name = 'Submitted' LIMIT 1");
-  const status = statusResult[0];
-  const statusId = status?.status_id || 1;
-
-  // For guest sessions, merge the basic guest information into form_data
-  let storedFormData = formData || {};
-  if (resident.isGuest && resident.guestInfo) {
-    storedFormData = {
-      ...storedFormData,
-      _guest: {
-        full_name: resident.guestInfo.full_name,
-        middle_name: resident.guestInfo.middle_name || null,
-        birth_date: resident.guestInfo.birth_date || null,
-        address: resident.guestInfo.address || null,
-        contact_number: resident.guestInfo.contact_number || null,
-        email: resident.guestInfo.email || null
-      }
-    };
-  }
-
-  // Create request (resident_id may be NULL for guest sessions)
-  let requestId;
-  try {
-    const [result] = await pool.query(
-      `INSERT INTO requests (resident_id, service_id, request_number, status_id, request_date, form_data, service_snapshot, idempotency_key, created_at)
-       VALUES (?, ?, ?, ?, NOW(), ?, ?, ?, NOW())`,
-      [
-        resident.resident_id,
-        service.service_id,
-        requestNumber,
-        statusId,
-        Object.keys(storedFormData).length ? JSON.stringify(storedFormData) : null,
-        JSON.stringify({
-          service_id: service.service_id,
-          service_name: service.service_name,
-          description: service.description ?? null,
-          requirements: parseJsonField(service.requirements),
-          form_fields: parseJsonField(service.form_fields),
-          processing_fee: service.processing_fee ?? null,
-          requires_photo: service.requires_photo ?? false
-        }),
-        idempotencyKey
-      ]
-    );
-    requestId = result.insertId;
-  } catch (error) {
-    // Race between two identical rapid submissions: the unique idempotency_key
-    // rejected the second insert. Return the already-created request instead.
-    if (error.code === 'ER_DUP_ENTRY' && idempotencyKey) {
-      const existing = await findByIdempotencyKey(idempotencyKey);
-      return { requestId: existing.request_id, requestNumber: existing.request_number, requestDate: existing.request_date, duplicate: true };
-    }
-    throw error;
-  }
-
-  // Save captured photo to request_attachments if provided
-  if (photo) {
-    try {
-      // Ensure kiosk-photos directory exists
-      const photoDir = path.join(__dirname, '../../uploads/kiosk-photos');
-      if (!fs.existsSync(photoDir)) {
-        fs.mkdirSync(photoDir, { recursive: true });
-      }
-
-      // Decode Base64 data URL
-      const base64Data = photo.replace(/^data:image\/\w+;base64,/, '');
-      const buffer = Buffer.from(base64Data, 'base64');
-
-      // Generate filename and save
-      const fileName = `request_${requestId}_${Date.now()}.jpg`;
-      const filePath = path.join(photoDir, fileName);
-      fs.writeFileSync(filePath, buffer);
-
-      // Insert attachment record
-      await pool.query(
-        `INSERT INTO request_attachments (request_id, file_name, file_type, file_path)
-         VALUES (?, ?, 'image/jpeg', ?)`,
-        [requestId, fileName, `kiosk-photos/${fileName}`]
-      );
-    } catch (photoError) {
-      console.error('Failed to save kiosk photo:', photoError);
-      // Don't fail the request if photo storage fails
-    }
-  }
-
-  try {
-    auditRepository.log({ userId: 2, action: `Kiosk request created: ${requestNumber}`, module: 'Kiosk', ipAddress: req.ip });
-  } catch (auditError) {
-    console.error('Failed to create audit log:', auditError);
-  }
-
-  // Create notifications for all admins
-  const residentName = resident.isGuest
-    ? resident.guestInfo.full_name
-    : `${resident.first_name} ${resident.last_name}`;
-  const residentCode = resident.isGuest ? 'GUEST' : resident.resident_code;
-  try {
-    await notificationService.createNotificationForAdmins(
-      'New Document Request',
-      `${residentName} (${residentCode}) requested ${service.service_name} — ${requestNumber}`,
-      'info',
-      'request',
-      requestId
-    );
-  } catch (notifError) {
-    console.error('Failed to create notification:', notifError);
-    // Don't fail the request if notification fails
-  }
-
-  // Broadcast a request-created event so the admin panel auto-refreshes
-  sseManager.broadcastEvent('request-created', {
-    requestId,
-    requestNumber,
-    serviceName: service.service_name,
-    residentName
-  });
-
-  return { requestId, requestNumber, requestDate: new Date() };
 };
 
 // Public status display board (no auth required)

@@ -17,7 +17,7 @@ The project is divided into seven major phases, each focusing on a specific stag
 | Phase 1 | Requirements Gathering and Planning | Approved project proposal, requirements, and project plan |
 | Phase 2 | System Design | User flows, ERD, system architecture, API design, UI prototypes |
 | Phase 3 | System Development | Angular frontend, Node.js backend, MySQL database |
-| Phase 4 | Hardware Integration | RFID reader, touchscreen, webcam integration |
+| Phase 4 | Hardware Integration | ESP8266 + RFID reader, webcam, touchscreen tablet integration |
 | Phase 5 | System Testing | Functional, integration, hardware, security, and user acceptance testing |
 | Phase 6 | Deployment | Installation, configuration, and initial deployment in the barangay |
 | Phase 7 | Maintenance and Enhancement | Bug fixes, optimizations, and future improvements |
@@ -103,9 +103,9 @@ Activities include:
 
 Activities include:
 
-- Connect RFID reader
+- Connect the RFID reader (via the ESP8266, USB serial)
 - Configure webcam
-- Integrate touchscreen interface
+- Integrate touchscreen tablet interface
 - Verify communication between hardware and software
 
 ### Deliverables
@@ -186,7 +186,7 @@ The following milestones indicate the expected progression of the project:
 | Project Planning Completed | Requirements approved |
 | System Design Completed | Architecture and database finalized |
 | Core Development Completed | Major system modules implemented |
-| Hardware Successfully Integrated | RFID, webcam, and touchscreen operational |
+| Hardware Successfully Integrated | ESP8266 + RFID reader, webcam, and touchscreen tablet operational |
 | Testing Successfully Completed | System validated by developers and users |
 | Deployment Completed | System installed and operational |
 | Project Turnover | System formally delivered to Barangay San Manuel |

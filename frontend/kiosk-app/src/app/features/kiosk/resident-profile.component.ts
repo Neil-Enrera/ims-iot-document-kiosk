@@ -23,43 +23,43 @@ import { TranslationService, KioskLanguage } from '../../i18n/translation.servic
 
       <!-- ============ HEADER: back (left) + logo (center) + RFID status (right) + title/subtitle ============ -->
       <header class="relative z-10 shrink-0">
-        <div class="flex items-center justify-center relative pt-2 pb-1 min-[1101px]:pt-3 [@media(max-height:880px)]:pt-1.5">
-          <div class="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 z-40 flex items-center gap-2.5 sm:gap-3">
+        <div class="flex items-center justify-center relative pt-1.5 pb-0.5 [@media(max-height:768px)]:pt-1 [@media(max-height:768px)]:pb-0.5">
+          <div class="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 z-40 flex items-center gap-2 sm:gap-2.5">
             <button (click)="onBack.emit()"
-                    class="w-[46px] h-[46px] rounded-full border-2 border-[#F97316]/60 bg-white flex items-center justify-center shadow-sm hover:bg-[#FFF7ED] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30"
+                    class="w-[42px] h-[42px] sm:w-[44px] sm:h-[44px] rounded-full border-2 border-[#F97316]/60 bg-white flex items-center justify-center shadow-sm hover:bg-[#FFF7ED] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30"
                     [attr.aria-label]="t('common.back')">
-              <svg class="w-6 h-6 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <svg class="w-5 h-5 sm:w-6 sm:h-6 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
               </svg>
             </button>
             <button (click)="onBack.emit()"
-                    class="flex items-center min-h-[40px] rounded-xl px-1 text-[#0F172A] font-semibold text-[14px] sm:text-[15px] hover:text-[#F97316] transition-colors focus:outline-none focus:ring-2 focus:ring-[#F97316]/40">
+                    class="flex items-center min-h-[38px] rounded-xl px-1 text-[#0F172A] font-semibold text-[13px] sm:text-[14px] hover:text-[#F97316] transition-colors focus:outline-none focus:ring-2 focus:ring-[#F97316]/40">
               {{ t('common.back') }}
             </button>
           </div>
 
-          <div class="w-[60px] h-[60px] sm:w-[68px] sm:h-[68px] min-[1101px]:w-[72px] min-[1101px]:h-[72px] rounded-full bg-white border-2 border-[#F97316]/30 shadow-sm overflow-hidden flex items-center justify-center [@media(max-height:880px)]:w-[56px] [@media(max-height:880px)]:h-[56px]">
+          <div class="w-[52px] h-[52px] sm:w-[58px] sm:h-[58px] min-[1101px]:w-[64px] min-[1101px]:h-[64px] rounded-full bg-white border-2 border-[#F97316]/30 shadow-sm overflow-hidden flex items-center justify-center [@media(max-height:768px)]:w-[48px] [@media(max-height:768px)]:h-[48px]">
             <img src="Barangay Logo.png" alt="Barangay San Manuel logo" class="w-full h-full object-cover">
           </div>
 
           @if (rfidCard) {
-            <div class="absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 flex items-center gap-2 rounded-xl border-[1.5px] border-[#86EFAC] bg-[#DCFCE7] px-3 py-1.5 shadow-sm">
-              <svg class="w-6 h-6 text-[#16A34A] shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+            <div class="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 rounded-xl border-[1.5px] border-[#86EFAC] bg-[#DCFCE7] px-2.5 py-1 shadow-sm">
+              <svg class="w-5 h-5 text-[#16A34A] shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
                 <rect x="3" y="6" width="18" height="12" rx="2"/>
                 <path d="M7 9.5h8M7 12h8" stroke-linecap="round"/>
                 <path d="M18 9v0.01M18 12.5v0.01M18 16v0.01" stroke-linecap="round" stroke-width="2.5"/>
               </svg>
               <div>
-                <p class="text-[14px] sm:text-[15px] font-bold text-[#15803D] leading-tight">{{ t('profile.rfidScanned') }}</p>
-                <p class="text-[12px] sm:text-[12.5px] font-medium text-[#166534] leading-tight">{{ t('profile.rfidScannedDesc') }}</p>
+                <p class="text-[12.5px] sm:text-[13.5px] font-bold text-[#15803D] leading-tight">{{ t('profile.rfidScanned') }}</p>
+                <p class="text-[11px] sm:text-[11.5px] font-medium text-[#166534] leading-tight">{{ t('profile.rfidScannedDesc') }}</p>
               </div>
             </div>
           }
         </div>
 
-        <div class="text-center px-4 pt-0.5 pb-1.5 min-[1101px]:pb-2 [@media(max-height:880px)]:pb-1">
-          <h1 class="text-[clamp(2.25rem,2.4vw,2.625rem)] font-bold tracking-tight text-[#0F172A] leading-none [@media(max-height:880px)]:text-[2rem]">{{ t('profile.title') }}</h1>
-          <p class="text-[clamp(1.125rem,1.1vw,1.25rem)] font-medium text-[#64748B] mt-1.5 [@media(max-height:880px)]:mt-1">{{ t('profile.subtitle') }}</p>
+        <div class="text-center px-4 pt-0.25 pb-0.75 [@media(max-height:768px)]:pb-0.5">
+          <h1 class="text-[clamp(1.625rem,1.9vw,2rem)] font-bold tracking-tight text-[#0F172A] leading-none [@media(max-height:768px)]:text-[1.375rem]">{{ t('profile.title') }}</h1>
+          <p class="text-[clamp(0.9375rem,1vw,1.0625rem)] font-medium text-[#64748B] mt-0.75 [@media(max-height:768px)]:mt-0.5">{{ t('profile.subtitle') }}</p>
         </div>
       </header>
 
@@ -71,37 +71,37 @@ import { TranslationService, KioskLanguage } from '../../i18n/translation.servic
           <div class="min-h-0 flex flex-col gap-3 min-[1101px]:gap-4">
 
             <!-- Resident profile card -->
-            <section aria-label="Resident Profile" class="shrink-0 bg-white border border-[#E5E7EB] rounded-[18px] shadow-[0_2px_14px_rgba(15,23,42,0.07)] p-5 sm:p-6 [@media(max-height:880px)]:p-4">
+            <section aria-label="Resident Profile" class="shrink-0 bg-white border border-[#E5E7EB] rounded-[16px] shadow-[0_2px_14px_rgba(15,23,42,0.07)] p-4 sm:p-5 [@media(max-height:768px)]:p-3">
 
-              <!-- Identity header: photo + name + status -->
-              <div class="flex items-center gap-4 sm:gap-5">
+              <!-- Identity header: photo/initials + name + status -->
+              <div class="flex items-center gap-3 sm:gap-4">
                 @if (resident?.photo && !photoFailed()) {
                   <img [src]="residentPhoto()" (error)="onPhotoError()" alt="{{ residentFullName() }}"
-                       class="shrink-0 w-[104px] h-[122px] sm:w-[120px] sm:h-[140px] min-[1101px]:w-[132px] min-[1101px]:h-[152px] rounded-[10px] object-cover border border-[#E5E7EB] shadow-sm bg-[#F8FAFC] [@media(max-height:880px)]:w-[96px] [@media(max-height:880px)]:h-[112px]" />
+                       class="shrink-0 w-[84px] h-[98px] sm:w-[96px] sm:h-[112px] min-[1101px]:w-[108px] min-[1101px]:h-[126px] rounded-[8px] object-cover border border-[#E5E7EB] shadow-sm bg-[#F8FAFC] [@media(max-height:768px)]:w-[72px] [@media(max-height:768px)]:h-[84px]" />
                 } @else {
-                  <div class="shrink-0 w-[104px] h-[122px] sm:w-[120px] sm:h-[140px] min-[1101px]:w-[132px] min-[1101px]:h-[152px] rounded-[10px] bg-[#FFF7ED] border border-[#F97316]/25 flex items-center justify-center text-[#F97316] text-3xl font-bold [@media(max-height:880px)]:w-[96px] [@media(max-height:880px)]:h-[112px] [@media(max-height:880px)]:text-2xl"
+                  <div class="shrink-0 w-[84px] h-[98px] sm:w-[96px] sm:h-[112px] min-[1101px]:w-[108px] min-[1101px]:h-[126px] rounded-[8px] bg-[#FFF7ED] border border-[#F97316]/25 flex items-center justify-center text-[#F97316] text-2xl sm:text-3xl font-bold [@media(max-height:768px)]:w-[72px] [@media(max-height:768px)]:h-[84px] [@media(max-height:768px)]:text-xl"
                        aria-hidden="true">
                     {{ residentInitials() }}
                   </div>
                 }
 
                 <div class="min-w-0">
-                  <h2 class="text-[26px] sm:text-[30px] min-[1101px]:text-[32px] font-bold text-[#0F172A] leading-tight break-words [@media(max-height:880px)]:text-[24px]">{{ residentFullName() }}</h2>
+                  <h2 class="text-[22px] sm:text-[24px] min-[1101px]:text-[26px] font-bold text-[#0F172A] leading-tight break-words [@media(max-height:768px)]:text-[20px]">{{ residentFullName() }}</h2>
                   @if (resident?.resident_code) {
-                    <p class="text-[15px] sm:text-[16px] min-[1101px]:text-[17px] font-medium text-[#64748B] mt-1">{{ resident!.resident_code }}</p>
+                    <p class="text-[13px] sm:text-[14px] min-[1101px]:text-[15px] font-medium text-[#64748B] mt-0.5">{{ resident!.resident_code }}</p>
                   }
                   @if (isActiveResident()) {
-                    <span class="mt-2 inline-flex items-center gap-1.5 rounded-full border border-[#BBF7D0] bg-[#DCFCE7] px-3 py-1 [@media(max-height:880px)]:mt-1.5"
+                    <span class="mt-1.5 inline-flex items-center gap-1.5 rounded-full border border-[#BBF7D0] bg-[#DCFCE7] px-2.5 py-0.5 [@media(max-height:768px)]:mt-1"
                           role="status">
-                      <svg class="w-3.5 h-3.5 text-[#16A34A]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="7"/></svg>
-                      <span class="text-[13px] sm:text-[14px] min-[1101px]:text-[15px] font-bold text-[#15803D]">{{ t('profile.activeResident') }}</span>
+                      <svg class="w-3 h-3 text-[#16A34A]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="7"/></svg>
+                      <span class="text-[12px] sm:text-[13px] min-[1101px]:text-[14px] font-bold text-[#15803D]">{{ t('profile.activeResident') }}</span>
                     </span>
                   }
                 </div>
               </div>
 
-              <!-- Personal information -->
-              <div class="mt-3 [@media(max-height:880px)]:mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-7">
+              <!-- Personal information: two-column grid on landscape -->
+              <div class="mt-2 [@media(max-height:768px)]:mt-1.5 grid grid-cols-1 min-[900px]:grid-cols-2 gap-x-4 gap-y-1.5 [@media(max-height:768px)]:gap-y-1">
 
                 <div class="flex items-start gap-3 pr-2 py-2.5 border-t border-[#F1F5F9] min-w-0 [@media(max-height:880px)]:py-2">
                   <span class="shrink-0 w-7 h-7 rounded-lg bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">

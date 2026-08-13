@@ -77,7 +77,7 @@ Blocked
 | Backend | REST API and business logic |
 | Frontend | Administrative web application |
 | Kiosk | Resident self-service interface |
-| Hardware | RFID, Arduino, webcam integration |
+| Hardware | RFID, ESP8266, webcam integration |
 | Testing | Verification and quality assurance |
 | Deployment | Production preparation |
 | Documentation | User and technical documentation |

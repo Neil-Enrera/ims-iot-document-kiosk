@@ -7,7 +7,7 @@
 **Frontend Framework:** Angular  
 **Backend:** Node.js (Express.js) *(Recommended)*  
 **Database:** MySQL *(Recommended)*  
-**Hardware:** RFID Reader, RFID Cards, Webcam, Touchscreen Monitor  
+**Hardware:** RFID Reader (MFRC522), RFID Cards, ESP8266, Webcam, Touchscreen Kiosk Tablet
 **Document Version:** 1.0  
 **Status:** Draft
 
@@ -51,15 +51,27 @@ The system architecture should:
                      +--------------------------------+
                      |           Resident             |
                      +--------------------------------+
-                                  |
-                                  |
-                    Touchscreen + RFID + Webcam
-                                  |
-                                  ▼
-                     +---------------------------+
-                     |     Angular Frontend      |
-                     |      (Kiosk UI)           |
-                     +---------------------------+
+                     |              |                 |
+                     |    RFID scan |                 | Touchscreen
+                     |  (Barangay ID)|                |  + Webcam
+                     |              |                 |
+                     ▼              |                 ▼
+        +-------------------+      |    +-------------------------------+
+        | RFID Reader       |      |    |     Kiosk Tablet (Angular UI)  |
+        | (MFRC522)         |      |    |   (kiosk app + webcam capture) |
+        +-------------------+      |    +-------------------------------+
+                     |              |                 |
+                     ▼              |                 |
+        +-------------------+      |                 |
+        | ESP8266           |      |                 |
+        | (RFID controller) |      |                 |
+        +-------------------+      |                 |
+                     | USB serial   |                 |
+                     ▼              |                 ▼
+        +-----------------------------------------------+
+        |   Kiosk Host — hardware bridge (serial-service |
+        |   / kiosk-server) + Angular kiosk application  |
+        +-----------------------------------------------+
                                   |
                                   |
                             HTTP / REST API
@@ -153,16 +165,19 @@ Responsible for communication with physical devices.
 
 Hardware
 
-- RFID Reader
+- RFID Reader (MFRC522)
 - RFID Cards
+- ESP8266 (RFID controller)
 - Webcam
-- Touchscreen Monitor
+- Touchscreen Kiosk Tablet
 
 Responsibilities
 
-- Read RFID cards
-- Capture resident photos (if applicable)
-- Accept touch input
+- Read RFID cards and transmit the UID via the ESP8266
+- Capture resident photos (if applicable) via the tablet webcam
+- Accept touch input on the kiosk tablet
+
+The ESP8266 is dedicated to RFID hardware communication and connects to the kiosk over USB serial. It is not the kiosk device itself — the tablet is the kiosk interface, and the webcam is attached to the tablet.
 
 ---
 
@@ -262,11 +277,17 @@ Responsibilities
 
 # 6. Hardware Integration
 
-## RFID Reader
+## ESP8266 + RFID Reader
 
 Purpose
 
 Identify residents using RFID Barangay IDs.
+
+Flow
+
+- RFID Reader (MFRC522) reads the card UID.
+- ESP8266 transmits the UID to the kiosk over USB serial (JSON protocol).
+- The kiosk application verifies the UID through the backend and displays the resident profile.
 
 Input
 
@@ -282,15 +303,17 @@ Resident Information
 
 Purpose
 
-Capture resident photos if required by Barangay policy.
+Capture resident photos if required by Barangay policy (e.g. Barangay ID applications).
 
 Current Status
 
 Optional
 
+Attached to the kiosk tablet; not part of the ESP8266 subsystem.
+
 ---
 
-## Touchscreen
+## Touchscreen Kiosk Tablet
 
 Purpose
 
@@ -310,10 +333,16 @@ Functions
 Resident
       │
       ▼
-RFID Reader
+RFID Reader (MFRC522)
       │
       ▼
-Angular Frontend
+ESP8266 (RFID controller)
+      │  USB serial
+      ▼
+Hardware bridge (serial-service / kiosk-server)
+      │  WebSocket
+      ▼
+Angular Kiosk Application (tablet)
       │
  REST API Request
       ▼
@@ -326,7 +355,7 @@ MySQL Database
 Resident Information
       │
       ▼
-Angular UI
+Angular UI (kiosk tablet)
 ```
 
 ---
@@ -383,7 +412,7 @@ These features are outside the current MVP but should be supported by the modula
 | Database | MySQL |
 | API | REST |
 | Authentication | RFID + Staff Login |
-| Hardware | RFID Reader, Webcam, Touchscreen |
+| Hardware | RFID Reader (MFRC522), ESP8266, Webcam, Touchscreen Kiosk Tablet |
 | Version Control | Git |
 | Testing | Unit, Integration, E2E |
 
@@ -434,13 +463,26 @@ The system should adhere to the following principles:
                     +-------------------------+
                     |        Resident         |
                     +-----------+-------------+
-                                |
-                         RFID / Touchscreen
-                                |
-                                ▼
-                +-------------------------------+
-                |      Angular Kiosk System     |
-                +---------------+---------------+
+                    |           |
+        RFID scan   |           | Touchscreen
+        (Barangay ID)|          |  + Webcam
+                    |           |
+                    ▼           ▼
+        +------------------+  +---------------------------+
+        | RFID Reader      |  |   Kiosk Tablet            |
+        | (MFRC522)        |  |   (Angular kiosk app +    |
+        +------------------+  |    webcam capture)        |
+                    |         +---------------------------+
+                    ▼
+        +------------------+
+        | ESP8266          |
+        | (RFID controller)|
+        +------------------+
+                    |  USB serial → hardware bridge → WebSocket
+                    ▼
+                    +---------------------------+
+                    |      Angular Kiosk System |
+                    +---------------+-----------+
                                 |
                            REST API
                                 |
@@ -499,10 +541,11 @@ The system should adhere to the following principles:
                      v
 +------------------------------------------------+
 |               Hardware Layer                   |
-|----------------------------------------------- |
-| RFID Reader                                    |
-| Webcam                                         |
-| Touchscreen                                    |
+|------------------------------------------------|
+| RFID Reader (MFRC522) + ESP8266                |
+|   (RFID subsystem, USB serial to kiosk)        |
+| Webcam (attached to kiosk tablet)              |
+| Touchscreen Kiosk Tablet                       |
 +------------------------------------------------+
 ```
 
@@ -588,13 +631,16 @@ Rejected        Pending Payment
 
 ```text
 +--------------------------------------------------+
-|                  Kiosk Device                    |
+|                  Kiosk Device                     |
 |--------------------------------------------------|
+| Touchscreen Kiosk Tablet                         |
+|   Angular Kiosk Application                      |
+|   Webcam (attached to tablet)                    |
+| Hardware bridge (serial-service / kiosk-server)  |
 |                                                  |
-| Angular Application                              |
-| RFID Reader                                      |
-| Webcam                                           |
-| Touchscreen Monitor                              |
+| RFID Subsystem:                                  |
+|   RFID Reader (MFRC522) --SPI--> ESP8266         |
+|   ESP8266 --USB serial--> kiosk host             |
 +----------------------+---------------------------+
                        |
                   REST API

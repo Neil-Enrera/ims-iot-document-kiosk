@@ -15,7 +15,7 @@ RFID card verification is **temporarily disabled** pending hardware procurement.
 
 # Objective
 
-Integrate the MFRC522 RFID Reader with the Arduino Uno, Express backend, MySQL database, and Angular kiosk to enable resident identification through RFID cards.
+Integrate the MFRC522 RFID Reader with the ESP8266, Express backend, MySQL database, and Angular kiosk to enable resident identification through RFID cards.
 
 The RFID reader serves as the primary authentication mechanism for residents using the self-service kiosk.
 
@@ -23,7 +23,7 @@ The RFID reader serves as the primary authentication mechanism for residents usi
 
 # Background
 
-The Arduino detects an RFID card and sends only its UID to the backend.
+The ESP8266 reads the UID from the MFRC522 reader and transmits it to the kiosk over USB serial.
 
 The backend validates the UID, retrieves the resident's information, and returns the result to the kiosk.
 
@@ -53,7 +53,7 @@ Not Included
 
 # Hardware Components
 
-Arduino Uno
+ESP8266
 
 ↓
 
@@ -70,26 +70,12 @@ RFID Card
 MFRC522
 
 ```
-SDA   → D10
-
-SCK   → D13
-
-MOSI  → D11
-
-MISO  → D12
-
-IRQ   → Not Used
-
-GND   → GND
-
-RST   → D9
-
-3.3V  → 3.3V
+Connect the MFRC522 RFID reader to the ESP8266 over SPI (pin mapping defined in the firmware sketch).
 ```
 
 ---
 
-# Arduino Responsibilities
+# ESP8266 Responsibilities
 
 Read RFID UID
 
@@ -101,7 +87,7 @@ Send UID
 
 Wait for next scan
 
-Arduino must NOT
+ESP8266 must NOT
 
 - Store resident information
 - Validate residents
@@ -125,7 +111,7 @@ MFRC522
 
 ↓
 
-Arduino
+ESP8266
 
 ↓
 
@@ -415,10 +401,10 @@ rfid-status.component
 resident-preview.component
 ```
 
-Arduino
+ESP8266
 
 ```
-rfid_reader.ino
+rfid_reader.ino    (ESP8266 RFID firmware sketch)
 ```
 
 ---
@@ -428,7 +414,7 @@ rfid_reader.ino
 ```
 hardware/
 
-arduino/
+arduino/  (ESP8266 firmware)
 
 rfid_reader.ino
 
@@ -499,7 +485,7 @@ rfid/
 Before implementing:
 
 1. Debounce RFID scans by ignoring repeated reads of the same UID within a short configurable interval (for example, 3 seconds).
-2. Perform all resident validation on the backend; Arduino should only transmit the UID.
+2. Perform all resident validation on the backend; ESP8266 should only transmit the UID.
 3. Use WebSockets to immediately notify the kiosk when a scan has been processed and whether it succeeded.
 4. Log every scan attempt, including unsuccessful ones, to support troubleshooting and auditing.
 5. Keep the RFID module independent of the kiosk workflow so it can later be reused for staff attendance or access control if needed.

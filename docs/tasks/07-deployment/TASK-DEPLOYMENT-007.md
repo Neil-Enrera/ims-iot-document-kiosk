@@ -151,7 +151,7 @@ Verify
 
 # Hardware Verification
 
-## Arduino
+## ESP8266 (RFID controller)
 
 Verify
 

@@ -96,7 +96,7 @@ All 11 backend modules fully implemented with real MySQL queries:
 | Task | Status | Notes |
 |------|--------|-------|
 | TASK-HARDWARE-001 | DONE | Architecture planning |
-| TASK-HARDWARE-002 | DONE | Arduino firmware |
+| TASK-HARDWARE-002 | DONE | ESP8266 firmware |
 | TASK-HARDWARE-003 | **DEFERRED** | RFID reader — pending hardware procurement |
 | TASK-HARDWARE-004 | DONE | Webcam integration |
 | TASK-HARDWARE-005 | **DEFERRED** | RFID auth flow — pending hardware |

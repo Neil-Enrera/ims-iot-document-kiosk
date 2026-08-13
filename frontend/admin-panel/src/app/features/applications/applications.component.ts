@@ -123,19 +123,13 @@ type ApplicationRow = BarangayIdApplication & { full_name: string };
                   class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Notes for this application..."></textarea>
                 <div class="flex justify-end gap-3 mt-4">
-                  <app-button variant="secondary" (onClick)="requestAction('return')">Return for Correction</app-button>
                   <app-button variant="danger" (onClick)="requestAction('reject')">Reject</app-button>
                   <app-button variant="success" (onClick)="requestAction('approve')">Approve</app-button>
                 </div>
               </div>
             }
 
-            @if (app.status === 'RETURNED') {
-              <div class="md:col-span-2 border-t border-gray-200 pt-4 flex items-center justify-between gap-4">
-                <p class="text-xs uppercase tracking-wide text-gray-500">Review the corrected information before re-approving</p>
-                <app-button variant="secondary" (onClick)="previewDraft(app)" [loading]="previewing()">Preview ID Card</app-button>
-              </div>
-            }
+
 
             @if (app.status === 'APPROVED' && app.id_number) {
               <div class="md:col-span-2 border-t border-gray-200 pt-4 grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
@@ -198,7 +192,7 @@ export class ApplicationsComponent implements OnInit, OnDestroy {
   saving = signal(false);
 
   showActionConfirm = signal(false);
-  pendingAction = signal<'approve' | 'reject' | 'return' | null>(null);
+  pendingAction = signal<'approve' | 'reject' | null>(null);
 
   showCardPreview = signal(false);
   cardPreviewTitle = signal('Barangay ID Card');
@@ -209,7 +203,6 @@ export class ApplicationsComponent implements OnInit, OnDestroy {
   statusOptions = [
     { value: '', label: 'All statuses' },
     { value: 'PENDING', label: 'Pending' },
-    { value: 'RETURNED', label: 'Returned' },
     { value: 'APPROVED', label: 'Approved' },
     { value: 'REJECTED', label: 'Rejected' }
   ];
@@ -322,7 +315,6 @@ export class ApplicationsComponent implements OnInit, OnDestroy {
       case 'PENDING': return 'bg-yellow-100 text-yellow-800';
       case 'APPROVED': return 'bg-green-100 text-green-800';
       case 'REJECTED': return 'bg-red-100 text-red-800';
-      case 'RETURNED': return 'bg-blue-100 text-blue-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   }
@@ -331,7 +323,6 @@ export class ApplicationsComponent implements OnInit, OnDestroy {
     const action = this.pendingAction();
     if (action === 'approve') return 'Approve Application';
     if (action === 'reject') return 'Reject Application';
-    if (action === 'return') return 'Return for Correction';
     return '';
   }
 
@@ -342,9 +333,6 @@ export class ApplicationsComponent implements OnInit, OnDestroy {
     if (action === 'approve') {
       return `Approve application ${app.application_number} for ${app.full_name}? A permanent resident record will be created, an official Barangay ID number assigned, and the ID card generated.`;
     }
-    if (action === 'return') {
-      return `Return application ${app.application_number} for ${app.full_name} back for correction? No resident record or ID number will be created; the application can be reviewed again later.`;
-    }
     return `Reject application ${app.application_number} for ${app.full_name}?`;
   }
 
@@ -352,7 +340,6 @@ export class ApplicationsComponent implements OnInit, OnDestroy {
     const action = this.pendingAction();
     if (action === 'approve') return 'Approve';
     if (action === 'reject') return 'Reject';
-    if (action === 'return') return 'Return';
     return '';
   }
 
@@ -406,7 +393,7 @@ export class ApplicationsComponent implements OnInit, OnDestroy {
     this.cardPreviewBlob.set(null);
   }
 
-  requestAction(action: 'approve' | 'reject' | 'return') {
+  requestAction(action: 'approve' | 'reject') {
     this.pendingAction.set(action);
     this.showActionConfirm.set(true);
   }
@@ -417,10 +404,9 @@ export class ApplicationsComponent implements OnInit, OnDestroy {
     if (!app || !action) return;
     this.saving.set(true);
     const remarks = this.remarks().trim() || undefined;
-    const calls: Record<'approve' | 'reject' | 'return', () => any> = {
+    const calls: Record<'approve' | 'reject', () => any> = {
       approve: () => this.applicationService.approve(app.application_id, remarks),
-      reject: () => this.applicationService.reject(app.application_id, remarks),
-      return: () => this.applicationService.returnForCorrection(app.application_id, remarks)
+      reject: () => this.applicationService.reject(app.application_id, remarks)
     };
     calls[action]().subscribe({
       next: () => {

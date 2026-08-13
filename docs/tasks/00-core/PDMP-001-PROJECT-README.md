@@ -68,7 +68,7 @@ The system includes:
 
 - Touchscreen Display
 - RFID Reader
-- Arduino
+- ESP8266 (RFID controller)
 - Webcam
 
 ---
@@ -90,7 +90,7 @@ The system includes:
 
 ## Hardware
 
-- Arduino Uno
+- ESP8266 (RFID controller)
 - RFID Reader
 - Webcam
 - Touchscreen Monitor

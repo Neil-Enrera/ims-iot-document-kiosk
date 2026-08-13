@@ -192,7 +192,7 @@ Verify
 
 ---
 
-## Arduino Uno
+## ESP8266 (RFID controller)
 
 Verify
 

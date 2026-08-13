@@ -272,7 +272,7 @@ Hardware
 ```
 Touchscreen Kiosk
 
-Arduino Uno
+ESP8266 (RFID controller)
 
 MFRC522 RFID Reader
 

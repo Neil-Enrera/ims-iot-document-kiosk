@@ -108,7 +108,7 @@ The following components are included in testing:
 
 ## IoT Hardware
 
-- Arduino Uno
+- ESP8266 (RFID controller)
 - RFID Reader
 - Webcam
 - Printer
@@ -172,7 +172,7 @@ User Acceptance Testing
 ## Hardware
 
 - Development PC
-- Arduino Uno
+- ESP8266 (RFID controller)
 - MFRC522 RFID Reader
 - USB Webcam
 - USB Printer

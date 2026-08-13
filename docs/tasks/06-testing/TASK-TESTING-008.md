@@ -380,7 +380,7 @@ MySQL
 Hardware
 
 ```
-Arduino Uno
+ESP8266 (RFID controller)
 
 RFID Reader
 

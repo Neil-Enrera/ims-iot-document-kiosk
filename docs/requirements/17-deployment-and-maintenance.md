@@ -27,9 +27,8 @@ The deployment process includes:
 
 | Component | Minimum Specification |
 |-----------|-----------------------|
-| Kiosk Computer | Intel Core i3 (or equivalent), 8 GB RAM, 256 GB SSD |
-| Touchscreen Monitor | Capacitive Touchscreen Display |
-| RFID Reader | USB RFID Reader compatible with the selected RFID cards |
+| Kiosk Tablet | Touchscreen tablet (e.g. Android or Windows) running the Angular kiosk application |
+| RFID Subsystem | MFRC522 RFID Reader connected to the ESP8266; ESP8266 links to the kiosk host over USB serial |
 | Webcam | HD USB Webcam |
 | Network | Local Area Network (LAN) or Internet connection (if hosted remotely) |
 
@@ -65,9 +64,9 @@ The deployment process consists of the following steps:
 
 ### Step 3 – Configure Hardware
 
-- Connect the RFID reader.
+- Connect the RFID reader (via the ESP8266) to the kiosk host.
 - Install and test the webcam.
-- Configure the touchscreen display.
+- Configure the touchscreen tablet.
 - Verify that all hardware devices communicate with the application.
 
 ### Step 4 – Create User Accounts

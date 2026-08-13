@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { RequestService, DocumentService } from '../../shared/services';
 import { NotificationService } from '../notifications/notification.service';
 import { DocumentRequest, RequestStatusHistory, GeneratedDocument, FormField } from '../../shared/interfaces/api.interfaces';
@@ -19,7 +20,7 @@ interface RequestDetail extends DocumentRequest {
 @Component({
   selector: 'app-requests',
   standalone: true,
-  imports: [TableComponent, CardComponent, InputComponent, PaginationComponent, ButtonComponent, ModalComponent, RequestFormComponent, DocumentPreviewModalComponent],
+  imports: [TableComponent, CardComponent, InputComponent, PaginationComponent, ButtonComponent, ModalComponent, RequestFormComponent, DocumentPreviewModalComponent, FormsModule],
   template: `
     <div>
       <div class="flex justify-between items-center mb-6">
@@ -184,86 +185,252 @@ interface RequestDetail extends DocumentRequest {
                 title="Preview the fully populated document before approving or rejecting">
                 {{ previewBusy() ? 'Preparing...' : 'Preview Document' }}
               </button>
-              <button
-                type="button"
-                [disabled]="generatingDoc()"
-                (click)="generateDocument()"
-                class="text-xs font-medium text-blue-600 hover:underline disabled:opacity-50"
-                title="Re-generate the official document (replaces the previous one). Only needed after the template or request data changes.">
-                {{ generatingDoc() ? 'Generating...' : 'Regenerate Document' }}
-              </button>
+              @if (canEditDocument()) {
+                <button
+                  type="button"
+                  (click)="openEditForm()"
+                  class="text-xs font-medium text-blue-600 hover:underline disabled:opacity-50"
+                  title="Edit the dynamic application form data, then regenerate and preview the document.">
+                  Edit Document
+                </button>
+              }
             </div>
           </div>
           <p class="text-xs text-gray-500 mb-2">
-            A document is generated automatically when the request reaches <span class="font-medium">Under Review</span>,
-            so you can preview the populated document before approving or rejecting. "Preview Document" generates one if
-            none exists yet; "Regenerate Document" replaces the current version (e.g. after the template changes).
+            A document can be previewed or edited in <span class="font-medium">Submitted</span> or <span class="font-medium">Under Review</span> status.
+            "Preview Document" generates one if none exists yet; "Edit Document" allows modifying submitted fields and automatically updates the generated document.
           </p>
-          @if (documents().length > 0) {
-            <div class="space-y-2">
-              @for (doc of documents(); track doc.document_id) {
-                <div class="border rounded p-2 text-sm bg-white">
-                  <div class="flex items-center justify-between">
-                    <div class="min-w-0">
-                      <p class="font-medium text-gray-900 truncate" [title]="doc.file_name">{{ doc.file_name }}</p>
-                      <p class="text-xs text-gray-500">{{ formatDate(doc.generated_at) }} · {{ formatBytes(doc.file_size) }}</p>
+          @if (!editingDocument()) {
+            @if (documents().length > 0) {
+              <div class="space-y-2">
+                @for (doc of documents(); track doc.document_id) {
+                  <div class="border rounded p-2 text-sm bg-white">
+                    <div class="flex items-center justify-between">
+                      <div class="min-w-0">
+                        <p class="font-medium text-gray-900 truncate" [title]="doc.file_name">{{ doc.file_name }}</p>
+                        <p class="text-xs text-gray-500">{{ formatDate(doc.generated_at) }} · {{ formatBytes(doc.file_size) }}</p>
+                      </div>
+                      <div class="flex shrink-0 items-center gap-2">
+                        @if (approvalBadge(doc.approval_status); as badge) {
+                          <span [class]="badge.class">{{ badge.label }}</span>
+                        }
+                      </div>
                     </div>
-                    <div class="flex shrink-0 items-center gap-2">
-                      @if (approvalBadge(doc.approval_status); as badge) {
-                        <span [class]="badge.class">{{ badge.label }}</span>
+
+                    @if (doc.generation_warnings && doc.generation_warnings.length > 0) {
+                      <div class="mt-2 rounded bg-amber-50 border border-amber-200 px-2 py-1.5">
+                        <p class="text-xs font-medium text-amber-800">Generation warnings</p>
+                        @for (warn of doc.generation_warnings; track warn) {
+                          <p class="text-xs text-amber-700">• {{ warn }}</p>
+                        }
+                      </div>
+                    }
+
+                    <div class="mt-2 flex flex-wrap items-center gap-2">
+                      <button type="button" (click)="previewDocument(doc)" class="text-xs text-blue-600 hover:underline">Preview</button>
+                      <button
+                        type="button"
+                        (click)="downloadDocument(doc)"
+                        [disabled]="doc.approval_status !== 'approved'"
+                        class="text-xs text-blue-600 hover:underline disabled:opacity-40 disabled:cursor-not-allowed"
+                        [title]="doc.approval_status === 'approved' ? 'Download' : 'Download only available after approval'">
+                        Download
+                      </button>
+                      <button
+                        type="button"
+                        (click)="printDocument(doc)"
+                        [disabled]="doc.approval_status !== 'approved'"
+                        class="text-xs text-blue-600 hover:underline disabled:opacity-40 disabled:cursor-not-allowed"
+                        [title]="doc.approval_status === 'approved' ? 'Print' : 'Print only available after approval'">
+                        Print
+                      </button>
+
+                      @if (doc.approval_status === 'pending' && request.status_id === 4) {
+                        <span class="text-gray-300">|</span>
+                        <button type="button" (click)="reviewDocument(doc, 'approved')" class="text-xs text-green-600 hover:underline">Approve</button>
+                        <button type="button" (click)="reviewDocument(doc, 'rejected')" class="text-xs text-red-600 hover:underline">Reject</button>
+                      }
+
+                      @if (doc.review_remarks) {
+                        <span class="text-xs text-gray-500" [title]="doc.review_remarks">Remarks: {{ doc.review_remarks }}</span>
                       }
                     </div>
                   </div>
+                }
+              </div>
+            } @else {
+              <p class="text-sm text-gray-500">
+                No documents generated yet{{ docNotice() }}.
+              </p>
+            }
+            @if (docError()) {
+              <p class="text-xs text-red-500 mt-2">{{ docError() }}</p>
+            }
+          } @else {
+            <!-- Edit Document form: correct submitted application data and regenerate -->
+            <div class="border rounded-lg p-4 bg-gray-50 space-y-4">
+              <h5 class="text-sm font-semibold text-gray-700">Correct Application Data</h5>
 
-                  @if (doc.generation_warnings && doc.generation_warnings.length > 0) {
-                    <div class="mt-2 rounded bg-amber-50 border border-amber-200 px-2 py-1.5">
-                      <p class="text-xs font-medium text-amber-800">Generation warnings</p>
-                      @for (warn of doc.generation_warnings; track warn) {
-                        <p class="text-xs text-amber-700">• {{ warn }}</p>
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Purpose</label>
+                <input
+                  type="text"
+                  [(ngModel)]="editPurpose"
+                  class="w-full px-3 py-2 border rounded-lg text-sm text-gray-800 border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Purpose of request" />
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+                <textarea
+                  [(ngModel)]="editRemarks"
+                  rows="2"
+                  class="w-full px-3 py-2 border rounded-lg text-sm text-gray-800 border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Notes"></textarea>
+              </div>
+
+              @if (selectedRequest()?.resident_id === null) {
+                <div>
+                  <label class="block text-xs font-medium text-gray-600 mb-1">Guest Information</label>
+                  <p class="text-xs text-gray-500 mb-2">Temporary session identity for this request.</p>
+                  @for (field of GUEST_IDENTITY_FIELDS; track field.key) {
+                    <div class="mb-3">
+                      @switch (field.type) {
+                        @case ('textarea') {
+                          <textarea
+                            [id]="'edit-' + field.key"
+                            [name]="field.key"
+                            [(ngModel)]="editFormData[field.key]"
+                            rows="2"
+                            class="w-full px-3 py-2 border rounded-lg text-sm text-gray-800 border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            [placeholder]="field.label"></textarea>
+                        }
+                        @default {
+                          <input
+                            [id]="'edit-' + field.key"
+                            [type]="field.type"
+                            [name]="field.key"
+                            [(ngModel)]="editFormData[field.key]"
+                            class="w-full px-3 py-2 border rounded-lg text-sm text-gray-800 border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            [placeholder]="field.label" />
+                        }
+                      }
+                      @if (editErrors[field.key]) {
+                        <p class="text-xs text-red-500 mt-1">{{ editErrors[field.key] }}</p>
                       }
                     </div>
                   }
-
-                  <div class="mt-2 flex flex-wrap items-center gap-2">
-                    <button type="button" (click)="previewDocument(doc)" class="text-xs text-blue-600 hover:underline">Preview</button>
-                    <button
-                      type="button"
-                      (click)="downloadDocument(doc)"
-                      [disabled]="doc.approval_status !== 'approved'"
-                      class="text-xs text-blue-600 hover:underline disabled:opacity-40 disabled:cursor-not-allowed"
-                      [title]="doc.approval_status === 'approved' ? 'Download' : 'Download only available after approval'">
-                      Download
-                    </button>
-                    <button
-                      type="button"
-                      (click)="printDocument(doc)"
-                      [disabled]="doc.approval_status !== 'approved'"
-                      class="text-xs text-blue-600 hover:underline disabled:opacity-40 disabled:cursor-not-allowed"
-                      [title]="doc.approval_status === 'approved' ? 'Print' : 'Print only available after approval'">
-                      Print
-                    </button>
-
-                    @if (doc.approval_status === 'pending') {
-                      <span class="text-gray-300">|</span>
-                      <button type="button" (click)="reviewDocument(doc, 'approved')" class="text-xs text-green-600 hover:underline">Approve</button>
-                      <button type="button" (click)="reviewDocument(doc, 'returned')" class="text-xs text-amber-600 hover:underline">Return</button>
-                      <button type="button" (click)="reviewDocument(doc, 'rejected')" class="text-xs text-red-600 hover:underline">Reject</button>
-                    }
-
-                    @if (doc.review_remarks) {
-                      <span class="text-xs text-gray-500" [title]="doc.review_remarks">Remarks: {{ doc.review_remarks }}</span>
-                    }
-                  </div>
                 </div>
               }
+
+              @if (editFormFields().length > 0) {
+                <div>
+                  <h6 class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Service Form Fields</h6>
+                  @for (field of editFormFields(); track field.key) {
+                    <div class="mb-3">
+                      <label [attr.for]="'edit-' + field.key" class="block text-xs font-medium text-gray-600 mb-1">
+                        {{ field.label }} @if (field.required) { <span class="text-[#F97316]">*</span> }
+                      </label>
+                      @switch (field.type) {
+                        @case ('select') {
+                          <select
+                            [id]="'edit-' + field.key"
+                            [name]="field.key"
+                            [(ngModel)]="editFormData[field.key]"
+                            class="w-full px-3 py-2 border rounded-lg text-sm text-gray-800 border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Select</option>
+                            @for (opt of field.options || []; track opt) {
+                              <option [value]="opt">{{ opt }}</option>
+                            }
+                          </select>
+                        }
+                        @case ('textarea') {
+                          <textarea
+                            [id]="'edit-' + field.key"
+                            [name]="field.key"
+                            [(ngModel)]="editFormData[field.key]"
+                            rows="3"
+                            class="w-full px-3 py-2 border rounded-lg text-sm text-gray-800 border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            [placeholder]="field.placeholder || field.label"></textarea>
+                        }
+                        @case ('radio') {
+                          <div class="flex flex-col gap-2">
+                            @for (opt of field.options || []; track opt) {
+                              <label class="flex items-center gap-2">
+                                <input type="radio" [name]="field.key" [value]="opt"
+                                  [checked]="editFormData[field.key] === opt"
+                                  (change)="editFormData[field.key] = opt"
+                                  class="w-4 h-4 accent-[#F97316]" />
+                                <span class="text-sm text-gray-700">{{ opt }}</span>
+                              </label>
+                            }
+                          </div>
+                        }
+                        @case ('checkbox') {
+                          <div class="flex flex-col gap-2">
+                            @for (opt of field.options || []; track opt) {
+                              <label class="flex items-center gap-2">
+                                <input type="checkbox" [value]="opt"
+                                  [checked]="isCheckboxChecked(field.key, opt)"
+                                  (change)="toggleCheckbox(field.key, opt, $event)"
+                                  class="w-4 h-4 accent-[#F97316]" />
+                                <span class="text-sm text-gray-700">{{ opt }}</span>
+                              </label>
+                            }
+                          </div>
+                        }
+                        @default {
+                          <input
+                            [id]="'edit-' + field.key"
+                            [type]="field.type"
+                            [name]="field.key"
+                            [(ngModel)]="editFormData[field.key]"
+                            class="w-full px-3 py-2 border rounded-lg text-sm text-gray-800 border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            [placeholder]="field.placeholder || field.label" />
+                        }
+                      }
+                      @if (field.helperText) {
+                        <p class="mt-1 text-xs text-gray-500">{{ field.helperText }}</p>
+                      }
+                      @if (editErrors[field.key]) {
+                        <p class="mt-1 text-xs text-red-500">{{ editErrors[field.key] }}</p>
+                      }
+                    </div>
+                  }
+                </div>
+              } @else {
+                <p class="text-sm text-gray-400">This service has no configurable application form fields.</p>
+              }
+
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Correction Notes (optional)</label>
+                <textarea
+                  [(ngModel)]="editReason"
+                  rows="2"
+                  class="w-full px-3 py-2 border rounded-lg text-sm text-gray-800 border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Why was this data corrected?"></textarea>
+              </div>
+
+              @if (editErrors['form']) {
+                <p class="text-xs text-red-500">{{ editErrors['form'] }}</p>
+              }
+
+              <div class="flex justify-end gap-2 pt-3 border-t border-gray-200">
+                <button
+                  type="button"
+                  (click)="closeEditForm()"
+                  class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  [disabled]="savingEdit()"
+                  (click)="saveEditForm()"
+                  class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50">
+                  {{ savingEdit() ? 'Saving...' : 'Save & Regenerate' }}
+                </button>
+              </div>
             </div>
-          } @else {
-            <p class="text-sm text-gray-500">
-              No documents generated yet{{ docNotice() }}. Use "Generate Document" above once the request is approved.
-            </p>
-          }
-          @if (docError()) {
-            <p class="text-xs text-red-500 mt-2">{{ docError() }}</p>
           }
 
           <h4 class="mt-6 mb-3 text-sm font-semibold text-gray-700 uppercase tracking-wide">Status History</h4>
@@ -314,10 +481,26 @@ export class RequestsComponent implements OnInit, OnDestroy {
   selectedRequest = signal<RequestDetail | null>(null);
   selectedRow = signal<DocumentRequest | null>(null);
   documents = signal<GeneratedDocument[]>([]);
-  generatingDoc = signal(false);
   previewBusy = signal(false);
   docError = signal('');
   docNotice = signal('');
+
+  // --- Edit Document ---
+  editingDocument = signal(false);
+  editFormData: Record<string, any> = {};
+  editPurpose = '';
+  editRemarks = '';
+  editReason = '';
+  editErrors: Record<string, string> = {};
+  savingEdit = signal(false);
+
+  GUEST_IDENTITY_FIELDS: FormField[] = [
+    { key: 'full_name', label: 'Full Name', type: 'text', required: true },
+    { key: 'birth_date', label: 'Birth Date', type: 'date', required: false },
+    { key: 'address', label: 'Address', type: 'textarea', required: false },
+    { key: 'contact_number', label: 'Contact Number', type: 'tel', required: false },
+    { key: 'email', label: 'Email', type: 'email', required: false }
+  ];
 
   private sseSubscription: any = null;
 
@@ -501,7 +684,7 @@ export class RequestsComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.documents.set(res.data || []);
         if (this.documents().length === 0 && !this.canGenerateDocument()) {
-          this.docNotice.set('No document generated yet. It becomes available once the request is Under Review.');
+          this.docNotice.set(' (not available for current status)');
         }
       },
       error: () => {
@@ -512,29 +695,7 @@ export class RequestsComponent implements OnInit, OnDestroy {
 
   canGenerateDocument(): boolean {
     const statusId = this.selectedRequest()?.status_id;
-    return statusId === 4 || statusId === 5 || statusId === 6 || statusId === 7;
-  }
-
-  generateDocument() {
-    const request = this.selectedRequest();
-    if (!request) return;
-    if (!this.canGenerateDocument()) {
-      this.docError.set('Only approved requests (Under Review and onwards) can generate official documents.');
-      return;
-    }
-    this.generatingDoc.set(true);
-    this.docError.set('');
-    this.documentService.generate(request.request_id).subscribe({
-      next: () => {
-        this.generatingDoc.set(false);
-        this.loadDocuments(request.request_id);
-      },
-      error: (err) => {
-        this.generatingDoc.set(false);
-        this.docError.set(err.error?.message || 'Failed to generate document.');
-        this.loadDocuments(request.request_id);
-      }
-    });
+    return statusId === 1 || statusId === 4 || statusId === 5 || statusId === 6 || statusId === 7;
   }
 
   openDocument(doc: GeneratedDocument) {
@@ -587,14 +748,17 @@ export class RequestsComponent implements OnInit, OnDestroy {
   previewDocument(doc: GeneratedDocument) {
     const request = this.selectedRequest();
     if (!request) return;
-    this.previewTitle = doc.file_name;
-    this.previewBlob = null;
-    this.showPreview.set(true);
+    this.previewBusy.set(true);
+    this.docError.set('');
     this.documentService.fetchBlob(request.request_id, doc.document_id).subscribe({
       next: (blob) => {
+        this.previewTitle = doc.file_name;
         this.previewBlob = blob;
+        this.showPreview.set(true);
+        this.previewBusy.set(false);
       },
       error: () => {
+        this.previewBusy.set(false);
         this.docError.set('Could not load the document for preview.');
       }
     });
@@ -616,13 +780,12 @@ export class RequestsComponent implements OnInit, OnDestroy {
     this.docError.set('');
     const docs = this.documents();
     if (docs.length > 0) {
-      this.previewBusy.set(false);
       this.previewDocument(docs[docs.length - 1]);
       return;
     }
     if (!this.canGenerateDocument()) {
       this.previewBusy.set(false);
-      this.docError.set('A document can only be generated once the request is Under Review.');
+      this.docError.set('A document can only be generated for submitted or under review requests.');
       return;
     }
     this.documentService.generate(request.request_id).subscribe({
@@ -648,14 +811,123 @@ export class RequestsComponent implements OnInit, OnDestroy {
     });
   }
 
+  // --- Edit Document (replace Regenerate Document) ---
+  // Lets staff correct typos / wrong info in the resident's submitted
+  // application form data and immediately regenerate + preview the document.
+  canEditDocument(): boolean {
+    const statusId = this.selectedRequest()?.status_id;
+    return statusId === 1 || statusId === 4;
+  }
+
+  editFormFields(): FormField[] {
+    const request = this.selectedRequest();
+    if (!request) return [];
+    const formFields = request.service_snapshot?.form_fields || [];
+    return request.resident_id === null
+      ? [...this.GUEST_IDENTITY_FIELDS, ...formFields]
+      : formFields;
+  }
+
+  openEditForm() {
+    const request = this.selectedRequest();
+    if (!request) return;
+    if (!this.canEditDocument()) {
+      this.docError.set('A document can only be edited while the request is Submitted or Under Review.');
+      return;
+    }
+    // Deep-clone the form_data so we never mutate the original request record
+    // until the admin saves.
+    this.editFormData = JSON.parse(JSON.stringify(request.form_data || {}));
+    this.editPurpose = request.purpose || '';
+    this.editRemarks = request.remarks || '';
+    this.editReason = '';
+    this.editErrors = {};
+    this.savingEdit.set(false);
+    this.editingDocument.set(true);
+    this.docError.set('');
+  }
+
+  closeEditForm() {
+    this.editingDocument.set(false);
+    this.editFormData = {};
+    this.editPurpose = '';
+    this.editRemarks = '';
+    this.editReason = '';
+    this.editErrors = {};
+  }
+
+  isCheckboxChecked(key: string, value: string): boolean {
+    const arr = this.editFormData[key];
+    return Array.isArray(arr) && arr.includes(value);
+  }
+
+  toggleCheckbox(key: string, value: string, event: any) {
+    const arr: string[] = Array.isArray(this.editFormData[key]) ? [...this.editFormData[key]] : [];
+    if (event?.target?.checked) {
+      if (!arr.includes(value)) arr.push(value);
+    } else {
+      const idx = arr.indexOf(value);
+      if (idx > -1) arr.splice(idx, 1);
+    }
+    this.editFormData[key] = arr;
+  }
+
+  saveEditForm() {
+    const request = this.selectedRequest();
+    if (!request) return;
+    this.editErrors = {};
+
+    // Validate required form fields
+    for (const field of this.editFormFields()) {
+      if (field.required && !this.editFormData[field.key]) {
+        this.editErrors[field.key] = `${field.label} is required.`;
+      }
+    }
+    if (Object.keys(this.editErrors).length > 0) {
+      return;
+    }
+
+    this.savingEdit.set(true);
+    this.docError.set('');
+    this.requestService.update(request.request_id, {
+      serviceId: request.service_id,
+      purpose: this.editPurpose || undefined,
+      remarks: this.editRemarks || undefined,
+      reason: this.editReason || undefined,
+      formData: this.editFormData
+    }).subscribe({
+      next: () => {
+        this.savingEdit.set(false);
+        this.editingDocument.set(false);
+        this.editFormData = {};
+        // Reload the request details and documents so the Admin Panel
+        // reflects the corrected data and the regenerated document.
+        this.requestService.getById(request.request_id).subscribe({
+          next: (res) => {
+            this.selectedRequest.set(res.data as RequestDetail);
+            this.loadDocuments(request.request_id);
+            // Preview the updated document immediately.
+            setTimeout(() => this.previewRequestDocument(), 300);
+          },
+          error: () => {
+            this.loadDocuments(request.request_id);
+            setTimeout(() => this.previewRequestDocument(), 300);
+          }
+        });
+      },
+      error: (err) => {
+        this.savingEdit.set(false);
+        this.editErrors['form'] = err.error?.message || 'Failed to save corrections.';
+      }
+    });
+  }
+
   approvalBadge(status: string): { class: string; label: string } | null {
     switch (status) {
       case 'approved':
         return { class: 'inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold text-green-700 bg-green-100', label: 'Approved' };
       case 'rejected':
         return { class: 'inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold text-red-700 bg-red-100', label: 'Rejected' };
-      case 'returned':
-        return { class: 'inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold text-amber-700 bg-amber-100', label: 'Returned' };
       case 'pending':
         return { class: 'inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold text-gray-700 bg-gray-100', label: 'Pending Review' };
       default:
@@ -663,7 +935,7 @@ export class RequestsComponent implements OnInit, OnDestroy {
     }
   }
 
-  reviewDocument(doc: GeneratedDocument, status: 'approved' | 'rejected' | 'returned') {
+  reviewDocument(doc: GeneratedDocument, status: 'approved' | 'rejected') {
     const request = this.selectedRequest();
     if (!request) return;
 
@@ -682,6 +954,8 @@ export class RequestsComponent implements OnInit, OnDestroy {
       }
     });
   }
+
+
 
   formatBytes(bytes: number | null | undefined): string {
     if (!bytes) return '0 B';

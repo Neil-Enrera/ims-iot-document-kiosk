@@ -141,7 +141,7 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
 
   toggleDropdown() {
     this.isOpen.update(v => !v);
-    if (!this.isOpen()) {
+    if (this.isOpen()) {
       this.loadNotifications(true);
     }
   }

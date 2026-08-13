@@ -93,7 +93,7 @@ No phase should begin unless the previous phase has reached its acceptance crite
 | 02 Backend | ⬜ Planned | Critical | Develop REST APIs, authentication, business logic, validation, and integrations. |
 | 03 Frontend | ⬜ Planned | High | Build the Angular web application, dashboards, forms, and responsive interfaces. |
 | 04 Kiosk | ⬜ Planned | High | Develop the resident-facing kiosk interface and workflow. |
-| 05 Hardware Integration | ⬜ Planned | High | Integrate RFID reader, Arduino, webcam, and kiosk hardware. |
+| 05 Hardware Integration | ⬜ Planned | High | Integrate RFID reader, ESP8266, webcam, and kiosk hardware. |
 | 06 Testing | ⬜ Planned | Critical | Execute unit, integration, E2E, performance, and user acceptance testing. |
 | 07 Deployment | ⬜ Planned | Medium | Configure production environment, deployment process, backup, and monitoring. |
 | 08 Documentation & Finalization | ⬜ Planned | Medium | Final documentation, user manuals, technical documentation, and defense preparation. |
@@ -227,7 +227,7 @@ Integrate physical devices with the software platform.
 
 ### Deliverables
 
-- Arduino Communication
+- ESP8266 (RFID) integration
 - RFID Reader
 - Webcam
 - Touchscreen Support

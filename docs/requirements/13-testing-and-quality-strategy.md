@@ -70,7 +70,7 @@ The following integrations will be tested:
 
 - Angular Frontend ↔ Node.js API
 - Node.js API ↔ MySQL Database
-- RFID Reader ↔ Angular Application
+- RFID subsystem (ESP8266 + RFID Reader via USB serial bridge) ↔ Angular Application
 - Webcam ↔ Angular Application
 - Dashboard ↔ Backend Services
 
@@ -84,7 +84,9 @@ All modules exchange data accurately without communication failures.
 
 The project integrates IoT hardware components that require validation.
 
-### RFID Reader
+### RFID Subsystem (ESP8266 + RFID Reader)
+
+The MFRC522 reader captures the card UID, which the ESP8266 forwards to the kiosk host over USB serial.
 
 Test Cases:
 
