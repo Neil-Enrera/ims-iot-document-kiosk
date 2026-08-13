@@ -1,5 +1,0 @@
-export const environment = {
-  production: false,
-  apiUrl: 'http://192.168.100.102:3000/api/v1',
-  hardwareWsUrl: 'ws://192.168.100.102:3001/ws?type=kiosk'
-};
