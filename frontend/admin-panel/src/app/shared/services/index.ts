@@ -203,6 +203,10 @@ export class RequestService {
     return this.api.post(`/requests/${id}/release`, { remarks });
   }
 
+  update(id: number, data: { serviceId: number; purpose?: string; remarks?: string; reason?: string; formData?: any }) {
+    return this.api.put<DocumentRequest>(`/requests/${id}`, data);
+  }
+
   changeStatus(id: number, statusId: number, remarks?: string) {
     return this.api.put(`/requests/${id}/status`, { statusId, remarks });
   }

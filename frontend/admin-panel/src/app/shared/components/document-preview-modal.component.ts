@@ -1,69 +1,82 @@
 import { Component, Input, Output, EventEmitter, AfterViewChecked, ViewChild, ElementRef, signal, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { renderAsync } from 'docx-preview';
-import { ModalOverlayComponent } from './modal-overlay.component';
 
 @Component({
   selector: 'app-document-preview-modal',
   standalone: true,
-  imports: [CommonModule, ModalOverlayComponent],
+  imports: [CommonModule],
   template: `
-    <app-modal-overlay
-      [open]="open"
-      [title]="title"
-      [closeOnBackdropClick]="true"
-      containerClass="max-w-[min(96vw,1240px)]"
-      (onClose)="close()">
+    @if (open) {
+      <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+           role="dialog" aria-modal="true" aria-label="Document preview">
+        <div class="absolute inset-0" (click)="close()" aria-hidden="true"></div>
 
-      <div class="h-full flex flex-col min-h-0">
-        <!-- Zoom toolbar -->
-        <div class="flex items-center justify-between gap-2 shrink-0 mb-3">
-          <p class="text-xs text-gray-500">Scroll to review all pages. Use the controls to adjust the size.</p>
-          <div class="flex items-center gap-2" role="toolbar" aria-label="Document zoom controls">
-            <button
-              type="button"
-              (click)="zoomOut()"
-              title="Zoom out"
-              aria-label="Zoom out"
-              class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-300 text-gray-700 text-lg font-semibold bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-40 disabled:cursor-not-allowed"
-              [disabled]="zoom() <= MIN_ZOOM">
-              −
-            </button>
-            <span class="w-14 text-center text-sm font-semibold text-gray-700 tabular-nums">{{ zoomPercent() }}</span>
-            <button
-              type="button"
-              (click)="zoomIn()"
-              title="Zoom in"
-              aria-label="Zoom in"
-              class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-300 text-gray-700 text-lg font-semibold bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-40 disabled:cursor-not-allowed"
-              [disabled]="zoom() >= MAX_ZOOM">
-              +
-            </button>
-            <button
-              type="button"
-              (click)="resetZoom()"
-              title="Fit document to the preview area"
-              aria-label="Fit document to width"
-              class="h-9 px-3 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
-              Fit Width
-            </button>
-          </div>
-        </div>
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-[min(94vw,1240px)] max-h-[94vh] flex flex-col overflow-hidden"
+             (click)="$event.stopPropagation()">
 
-        <!-- Scrollable preview area -->
-        <div #scrollArea class="flex-1 min-h-0 overflow-auto rounded-xl bg-gray-100 border border-gray-200 p-3 sm:p-4">
-          <div #previewBox class="w-fit min-w-full mx-auto flex flex-col items-center" [style.zoom]="zoom()">
-            @if (rendering()) {
-              <div class="h-48 w-full flex items-center justify-center text-sm text-gray-500">Rendering document...</div>
-            }
-            @if (error()) {
-              <div class="h-40 w-full flex items-center justify-center text-sm text-red-600 px-4 text-center">{{ error() }}</div>
-            }
-            <div #container class="docx-preview-container w-full"></div>
+          <!-- Header: title + hint + zoom toolbar + close -->
+          <div class="px-5 py-3 border-b border-gray-200 bg-gray-50 flex items-center justify-between gap-4">
+            <div class="min-w-0">
+              <h3 class="text-lg font-bold text-gray-800 truncate">{{ title }}</h3>
+              <p class="text-xs text-gray-500 truncate">Scroll to review all pages. Use the controls to adjust the size.</p>
+            </div>
+            <div class="flex items-center gap-2 shrink-0" role="toolbar" aria-label="Document zoom controls">
+              <button
+                type="button"
+                (click)="zoomOut()"
+                title="Zoom out"
+                aria-label="Zoom out"
+                class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-300 text-gray-700 text-lg font-semibold bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-40 disabled:cursor-not-allowed"
+                [disabled]="zoom() <= MIN_ZOOM">
+                −
+              </button>
+              <span class="w-14 text-center text-sm font-semibold text-gray-700 tabular-nums">{{ zoomPercent() }}</span>
+              <button
+                type="button"
+                (click)="zoomIn()"
+                title="Zoom in"
+                aria-label="Zoom in"
+                class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-300 text-gray-700 text-lg font-semibold bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-40 disabled:cursor-not-allowed"
+                [disabled]="zoom() >= MAX_ZOOM">
+                +
+              </button>
+              <button
+                type="button"
+                (click)="resetZoom()"
+                title="Fit document to width"
+                aria-label="Fit document to width"
+                class="h-9 px-3 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                Fit Width
+              </button>
+              <button
+                type="button"
+                (click)="close()"
+                class="ml-2 w-9 h-9 flex items-center justify-center rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                aria-label="Close">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
           </div>
+
+          <!-- Scrollable white document area -->
+          <div #scrollArea class="flex-1 min-h-0 overflow-auto bg-gray-100 p-3 sm:p-4">
+            <div #previewBox class="w-fit min-w-full mx-auto flex flex-col items-center" [style.zoom]="zoom()">
+              @if (rendering()) {
+                <div class="h-48 w-full flex items-center justify-center text-sm text-gray-500">Rendering document...</div>
+              }
+              @if (error()) {
+                <div class="h-40 w-full flex items-center justify-center text-sm text-red-600 px-4 text-center">{{ error() }}</div>
+              }
+              <div #container class="docx-preview-container w-full"></div>
+            </div>
+          </div>
+
         </div>
       </div>
-    </app-modal-overlay>
+    }
   `,
   styles: [`
     .docx-preview-container {
@@ -240,12 +253,15 @@ export class DocumentPreviewModalComponent implements AfterViewChecked, OnChange
   // once the browser has settled layout and, unless the user zoomed manually,
   // apply the fit-width scale. Frames not yet rendered keep natural width.
   private scheduleSettleFit() {
-    requestAnimationFrame(() => {
+    const settle = () => {
       if (!this.open) return;
       if (!this.userAdjusted) {
         this.applyInitialZoom();
       }
-    });
+    };
+    requestAnimationFrame(settle);
+    setTimeout(settle, 100);
+    setTimeout(settle, 300);
   }
 
   private fitToWidth() {

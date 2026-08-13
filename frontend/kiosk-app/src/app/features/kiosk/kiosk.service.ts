@@ -149,13 +149,6 @@ export interface RfidCardInfo {
   created_at?: string;
 }
 
-export interface HistoryEntry {
-  request_id: number;
-  reference_number: string;
-  request_date: string;
-  service_name: string;
-  status_name: string;
-}
 
 export interface BarangayIdApplication {
   application_id: number;
@@ -197,9 +190,6 @@ export class KioskService {
     return this.http.get<ApiResponse<Resident>>(`${this.apiUrl}/kiosk/residents/${id}`);
   }
 
-  getResidentHistory(residentId: number): Observable<ApiResponse<HistoryEntry[]>> {
-    return this.http.get<ApiResponse<HistoryEntry[]>>(`${this.apiUrl}/kiosk/residents/${residentId}/requests`);
-  }
 
   getServices(): Observable<ApiResponse<Service[]>> {
     return this.http.get<ApiResponse<Service[]>>(`${this.apiUrl}/kiosk/services`);

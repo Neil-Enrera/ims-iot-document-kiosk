@@ -345,15 +345,7 @@ export const fil: TranslationDictionary = {
   'profile.contactNumber': 'Numero ng Telepono',
   'profile.email': 'Email',
   'profile.address': 'Tirahan',
-  'profile.history.title': 'Kasaysayan ng Serbisyo / Aplikasyon',
-  'profile.history.date': 'PETSA',
-  'profile.history.service': 'SERBISYO / DOKUMENTO',
-  'profile.history.reference': 'REFERENCE / NUMERO',
-  'profile.history.status': 'STATUS',
-  'profile.history.empty': 'Wala pang kasaysayan ng serbisyo. Lalabas dito ang iyong mga kahilingan.',
-  'profile.history.viewAll': 'Tingnan ang Lahat ng Kasaysayan',
-  'profile.history.allTitle': 'Kasaysayan ng Serbisyo / Aplikasyon',
-  'profile.history.back': 'Bumalik sa Profile',
+
   'profile.rfid.title': 'Impormasyon ng RFID',
   'profile.rfid.cardStatus': 'Katayuan ng Card',
   'profile.rfid.number': 'Numero ng RFID',
@@ -373,6 +365,4 @@ export const fil: TranslationDictionary = {
   'profile.status.inactive': 'Hindi Aktibo',
   'profile.status.blocked': 'Na-block',
   'profile.status.cancelled': 'Kinansela',
-  'profile.history.loading': 'Niloload ang kasaysayan ng serbisyo...',
-  'profile.history.error': 'Hindi ma-load ang iyong kasaysayan ng serbisyo.'
 };

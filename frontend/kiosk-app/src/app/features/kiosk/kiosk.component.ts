@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, signal, ElementRef, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { KioskService, Resident, Service, GuestInfo, FormField, RfidCardInfo, HistoryEntry } from './kiosk.service';
+import { KioskService, Resident, Service, GuestInfo, FormField, RfidCardInfo } from './kiosk.service';
 import { RfidScanService } from './rfid-scan.service';
 import { KioskStateService, KioskState } from './kiosk-state.service';
 import { ButtonComponent } from './button.component';
@@ -602,15 +602,13 @@ export type BarangayStep =
 
           <!-- DOC STEP 0a: Welcome / Resident Profile (RFID + manual search paths) -->
           @if (currentStep() === 'welcome' && resident()) {
-            <app-resident-profile
-              [resident]="resident()"
-              [rfidCard]="rfidCard()"
-              [history]="residentHistory()"
-              [historyLoading]="historyLoading()"
-              [language]="language()"
-              (onBack)="goBack()"
-              (onContinue)="proceedToServices()"
-              (languageChange)="setLanguage($event)"></app-resident-profile>
+             <app-resident-profile
+               [resident]="resident()"
+               [rfidCard]="rfidCard()"
+               [language]="language()"
+               (onBack)="goBack()"
+               (onContinue)="proceedToServices()"
+               (languageChange)="setLanguage($event)"></app-resident-profile>
           }
 
           <!-- DOC STEP 0b: Guest basic info (temporary session only) -->
@@ -4097,8 +4095,6 @@ export class KioskComponent implements OnInit, OnDestroy {
 
   resident = signal<Resident | null>(null);
   rfidCard = signal<RfidCardInfo | null>(null);
-  residentHistory = signal<HistoryEntry[]>([]);
-  historyLoading = signal(false);
   services = signal<Service[]>([]);
   selectedService = signal<Service | null>(null);
   barangayService = signal<Service | null>(null);
@@ -4280,11 +4276,7 @@ export class KioskComponent implements OnInit, OnDestroy {
       this.rfidScanService.connect();
     }
 
-    // Reload the resident's service history when restoring the profile screen
-    // (history is always fetched fresh; it is never persisted).
-    if (savedState.mode === 'documents' && savedState.currentStep === 'welcome' && savedState.resident) {
-      setTimeout(() => this.loadResidentHistory(), 0);
-    }
+
 
     // Restart camera if we were in a photo step
     if ((savedState.mode === 'documents' && savedState.currentStep === 'photo') ||
@@ -4446,7 +4438,6 @@ export class KioskComponent implements OnInit, OnDestroy {
           this.rfidCard.set(data?.rfid || null);
           this.mode.set('documents');
           this.currentStep.set('welcome');
-          this.loadResidentHistory();
           this.resetIdleTimer();
           this.cdr.detectChanges();
           this.saveState();
@@ -4503,7 +4494,6 @@ export class KioskComponent implements OnInit, OnDestroy {
         this.rfidCard.set(null);
         this.mode.set('documents');
         this.currentStep.set('welcome');
-        this.loadResidentHistory();
         this.resetIdleTimer();
         this.saveState();
       },
@@ -4518,28 +4508,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.searchResults.set([]);
   }
 
-  // Loads the authenticated resident's service/application history for the profile
-  // screen. Falls back silently so profile rendering never blocks on history.
-  private loadResidentHistory() {
-    const res = this.resident();
-    const id = res?.resident_id ?? this.rfidCard()?.resident_id;
-    if (!id) {
-      this.residentHistory.set([]);
-      this.historyLoading.set(false);
-      return;
-    }
-    this.historyLoading.set(true);
-    this.kioskService.getResidentHistory(id).subscribe({
-      next: (result: any) => {
-        this.residentHistory.set(result?.data || []);
-        this.historyLoading.set(false);
-      },
-      error: () => {
-        this.residentHistory.set([]);
-        this.historyLoading.set(false);
-      }
-    });
-  }
+
 
 
 
@@ -5333,7 +5302,6 @@ export class KioskComponent implements OnInit, OnDestroy {
       if (step === 'welcome') {
         this.resident.set(null);
         this.rfidCard.set(null);
-        this.residentHistory.set([]);
         this.mode.set('rfid');
         this.rfidStep.set('scan');
         this.rfidScanService.connect();
@@ -5517,8 +5485,6 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.rfidStep.set('scan');
     this.resident.set(null);
     this.rfidCard.set(null);
-    this.residentHistory.set([]);
-    this.historyLoading.set(false);
     this.selectedService.set(null);
     this.capturedPhoto.set(null);
     this.capturedSignature.set(null);

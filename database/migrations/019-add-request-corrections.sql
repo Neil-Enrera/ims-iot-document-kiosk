@@ -1,37 +1,45 @@
 -- =====================================================
--- Migration: Request Correction & Resubmission Workflow
--- Purpose : Allow staff to return a request for correction
---           (status 10) instead of rejecting it, and let the
---           resident correct affected fields and resubmit
---           (status 11) keeping the original request number.
+-- Migration: Correction audit trail for Edit Document
+-- Purpose : "Return for Correction" (status-based resident
+--           resubmission) was removed from the workflow.
+--           Instead, barangay staff correct typos and
+--           wrong information directly via the "Edit
+--           Document" action in the admin panel. This
+--           table records each field-level correction so
+--           the updated values are traceable: every edit
+--           keeps the original request row, updates the
+--           request's form_data in place, and regenerates
+--           the official document from the corrected data.
 -- Date    : 2026-08-12
 -- =====================================================
 
 USE ims_iot_document_kiosk;
 
 -- =====================================================
--- 1. Add the two new workflow statuses
+-- NOTE: statuses 10 ("Returned for Correction") and 11
+-- ("Resubmitted") from the original migration were NOT
+-- created here. "Return for Correction" was intentionally
+-- removed; edits happen in-place via "Edit Document" and
+-- never change the request status.
 -- =====================================================
 
-INSERT INTO request_statuses (status_id, status_name, description) VALUES
-(10, 'Returned for Correction', 'Request returned by staff; resident must correct affected fields and resubmit'),
-(11, 'Resubmitted', 'Resident has corrected the affected fields and resubmitted the request');
-
 -- =====================================================
--- 2. Correction tracking table
---    One request may accumulate multiple correction cycles.
---    A correction is PENDING until the resident resubmits.
+-- 1. Correction tracking table
+--    One correction row is inserted per changed form field
+--    when an administrator saves an "Edit Document" change.
+--    The correction is RESOLVED immediately (the edit is
+--    applied right away, not awaiting resident action).
 -- =====================================================
 
 CREATE TABLE IF NOT EXISTS request_corrections (
     correction_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     request_id BIGINT UNSIGNED NOT NULL,
     affected_field VARCHAR(100) NOT NULL,
-    reason VARCHAR(255) NOT NULL,
-    comment TEXT,
+    reason VARCHAR(255) NULL,
+    comment TEXT NULL,
     original_value JSON NULL,
     updated_value JSON NULL,
-    status ENUM('PENDING','RESOLVED') DEFAULT 'PENDING' NOT NULL,
+    status ENUM('PENDING','RESOLVED') DEFAULT 'RESOLVED' NOT NULL,
     requested_by BIGINT UNSIGNED NOT NULL,
     requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     resolved_at DATETIME NULL,

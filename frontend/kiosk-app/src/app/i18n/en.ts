@@ -359,15 +359,7 @@ export const en: TranslationDictionary = {
   'profile.contactNumber': 'Contact Number',
   'profile.email': 'Email',
   'profile.address': 'Address',
-  'profile.history.title': 'Service / Application History',
-  'profile.history.date': 'DATE',
-  'profile.history.service': 'SERVICE / DOCUMENT',
-  'profile.history.reference': 'REFERENCE / NUMBER',
-  'profile.history.status': 'STATUS',
-  'profile.history.empty': 'No service history found yet. Your requests will appear here.',
-  'profile.history.viewAll': 'View All History',
-  'profile.history.allTitle': 'Service / Application History',
-  'profile.history.back': 'Back to Profile',
+
   'profile.rfid.title': 'RFID Information',
   'profile.rfid.cardStatus': 'Card Status',
   'profile.rfid.number': 'RFID Number',
@@ -387,6 +379,4 @@ export const en: TranslationDictionary = {
   'profile.status.inactive': 'Inactive',
   'profile.status.blocked': 'Blocked',
   'profile.status.cancelled': 'Cancelled',
-  'profile.history.loading': 'Loading service history...',
-  'profile.history.error': 'Could not load your service history.'
 };

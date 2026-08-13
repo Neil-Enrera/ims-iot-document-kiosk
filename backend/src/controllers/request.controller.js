@@ -50,7 +50,7 @@ const create = async (req, res) => {
 
 const update = async (req, res) => {
   try {
-    const result = await requestService.updateRequest(req.params.id, req.body);
+    const result = await requestService.updateRequest(req.params.id, req.body, req.user.userId);
     if (!result.success) return errorResponse(res, 400, result.message);
     sseManager.broadcastEvent('request-updated', { requestId: parseInt(req.params.id), data: result.data });
     return successResponse(res, result.message, result.data);

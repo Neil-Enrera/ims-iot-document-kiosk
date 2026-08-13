@@ -1,7 +1,7 @@
 import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { environment } from '../../../environments/environment';
-import { Resident, RfidCardInfo, HistoryEntry } from './kiosk.service';
+import { Resident, RfidCardInfo } from './kiosk.service';
 import { TranslationService, KioskLanguage } from '../../i18n/translation.service';
 
 @Component({
@@ -213,70 +213,7 @@ import { TranslationService, KioskLanguage } from '../../i18n/translation.servic
               </div>
             </section>
 
-            <!-- Service / Application History -->
-            <section aria-label="{{ t('profile.history.title') }}" class="flex-1 min-h-0 bg-[#FFF7ED] border border-[#FED7AA]/70 rounded-[18px] p-4 sm:p-5 [@media(max-height:880px)]:p-3.5 flex flex-col">
 
-              <div class="flex items-center gap-2.5 mb-2">
-                <span class="shrink-0 w-8 h-8 rounded-xl bg-white border border-[#F97316]/30 flex items-center justify-center" aria-hidden="true">
-                  <svg class="w-[18px] h-[18px] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M12 7v5l3 2"/>
-                  </svg>
-                </span>
-                <h3 class="text-[16px] sm:text-[17px] font-bold text-[#0F172A]">{{ t('profile.history.title') }}</h3>
-              </div>
-
-              <div class="flex-1 min-h-0 overflow-y-auto rounded-xl bg-white border border-[#FED7AA]/50">
-                @if (historyLoading) {
-                  <div class="flex items-center justify-center gap-2 py-6 text-[#64748B]">
-                    <svg class="w-5 h-5 animate-spin text-[#F97316]" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                    </svg>
-                    <span class="text-[14px] font-medium">{{ t('profile.history.loading') }}</span>
-                  </div>
-                } @else {
-                  <table class="w-full text-left border-collapse">
-                    <thead>
-                      <tr class="bg-[#FFF7ED] text-[#0F172A]">
-                        <th scope="col" class="px-3 py-2 text-[12px] sm:text-[12.5px] font-bold uppercase tracking-wide">{{ t('profile.history.date') }}</th>
-                        <th scope="col" class="px-3 py-2 text-[12px] sm:text-[12.5px] font-bold uppercase tracking-wide">{{ t('profile.history.service') }}</th>
-                        <th scope="col" class="px-3 py-2 text-[12px] sm:text-[12.5px] font-bold uppercase tracking-wide">{{ t('profile.history.reference') }}</th>
-                        <th scope="col" class="px-3 py-2 text-[12px] sm:text-[12.5px] font-bold uppercase tracking-wide">{{ t('profile.history.status') }}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (entry of visibleHistory(); track entry.request_id) {
-                        <tr class="border-t border-[#F1F5F9]">
-                          <td class="px-3 py-2 text-[13px] sm:text-[14px] font-medium text-[#64748B] whitespace-nowrap">{{ formatDisplayDate(entry.request_date) }}</td>
-                          <td class="px-3 py-2 text-[13px] sm:text-[14px] font-semibold text-[#0F172A]">{{ entry.service_name || t('placeholder.na') }}</td>
-                          <td class="px-3 py-2 text-[13px] sm:text-[14px] font-medium text-[#0F172A] whitespace-nowrap">{{ entry.reference_number }}</td>
-                          <td class="px-3 py-2">
-                            <span class="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11.5px] sm:text-[12px] font-bold whitespace-nowrap" [class]="historyStatusBadgeClass(entry.status_name)">
-                              {{ entry.status_name }}
-                            </span>
-                          </td>
-                        </tr>
-                      } @empty {
-                        <tr>
-                          <td colspan="4" class="px-4 py-6 text-center text-[14px] font-medium text-[#64748B]">{{ t('profile.history.empty') }}</td>
-                        </tr>
-                      }
-                    </tbody>
-                  </table>
-                }
-              </div>
-
-              @if (!historyLoading && history.length > 0) {
-                <button (click)="showAllHistory.set(true)"
-                        class="mt-2 self-end inline-flex items-center gap-2 min-h-[36px] rounded-xl px-4 text-[14px] sm:text-[15px] font-bold text-[#C2410C] hover:text-[#EA580C] hover:bg-[#FFEDD5] transition-colors focus:outline-none focus:ring-2 focus:ring-[#F97316]/40"
-                        [attr.aria-label]="t('profile.history.viewAll')">
-                  {{ t('profile.history.viewAll') }}
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-                  </svg>
-                </button>
-              }
-            </section>
           </div>
 
           <!-- ============ RIGHT: RFID information + verified ============ -->
@@ -481,76 +418,7 @@ import { TranslationService, KioskLanguage } from '../../i18n/translation.servic
         </div>
       </footer>
 
-      <!-- ============ VIEW ALL HISTORY OVERLAY ============ -->
-      @if (showAllHistory()) {
-        <div class="absolute inset-0 z-50 bg-[#F8FAFC] text-[#0F172A] select-none [font-family:'Inter',sans-serif] flex flex-col">
-          <div class="absolute inset-0 bg-cover bg-center pointer-events-none" style="background-image: url('Background.png')" aria-hidden="true"></div>
-          <div class="absolute inset-0 pointer-events-none" aria-hidden="true"
-               style="background: radial-gradient(ellipse 72% 58% at 50% 42%, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0.35) 55%, rgba(255,255,255,0.05) 100%);"></div>
 
-          <div class="relative z-10 shrink-0 flex items-center justify-center px-4 sm:px-6 pt-[14px] pb-2">
-            <div class="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 z-40 flex items-center gap-2.5 sm:gap-3">
-              <button (click)="showAllHistory.set(false)"
-                      class="w-[46px] h-[46px] rounded-full border-2 border-[#F97316]/60 bg-white flex items-center justify-center shadow-sm hover:bg-[#FFF7ED] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30"
-                      [attr.aria-label]="t('common.back')">
-                <svg class="w-6 h-6 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-                </svg>
-              </button>
-              <button (click)="showAllHistory.set(false)"
-                      class="flex items-center min-h-[40px] rounded-xl px-1 text-[#0F172A] font-semibold text-[14px] sm:text-[15px] hover:text-[#F97316] transition-colors focus:outline-none focus:ring-2 focus:ring-[#F97316]/40">
-                {{ t('profile.history.back') }}
-              </button>
-            </div>
-            <div class="w-[60px] h-[60px] sm:w-[68px] sm:h-[68px] rounded-full bg-white border-2 border-[#F97316]/30 shadow-sm overflow-hidden flex items-center justify-center">
-              <img src="Barangay Logo.png" alt="Barangay San Manuel logo" class="w-full h-full object-cover">
-            </div>
-          </div>
-
-          <div class="relative z-10 shrink-0 text-center pt-1 pb-3">
-            <h1 class="text-[clamp(1.25rem,1.6vw,1.75rem)] font-bold tracking-tight text-[#0F172A] leading-tight">{{ t('profile.history.allTitle') }}</h1>
-          </div>
-
-          <div class="relative z-10 flex-1 min-h-0 overflow-y-auto px-5 sm:px-10 pb-6">
-            <div class="bg-white border border-[#E5E7EB] rounded-[18px] shadow-[0_2px_14px_rgba(15,23,42,0.07)] max-w-7xl mx-auto overflow-hidden">
-              <table class="w-full text-left border-collapse">
-                <thead>
-                  <tr class="bg-[#FFF7ED] text-[#0F172A]">
-                    <th scope="col" class="px-4 py-2.5 text-[13px] font-bold uppercase tracking-wide">{{ t('profile.history.date') }}</th>
-                    <th scope="col" class="px-4 py-2.5 text-[13px] font-bold uppercase tracking-wide">{{ t('profile.history.service') }}</th>
-                    <th scope="col" class="px-4 py-2.5 text-[13px] font-bold uppercase tracking-wide">{{ t('profile.history.reference') }}</th>
-                    <th scope="col" class="px-4 py-2.5 text-[13px] font-bold uppercase tracking-wide">{{ t('profile.history.status') }}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @if (historyLoading) {
-                    <tr>
-                      <td colspan="4" class="px-5 py-8 text-center text-[14px] font-medium text-[#64748B]">{{ t('profile.history.loading') }}</td>
-                    </tr>
-                  } @else if (history.length === 0) {
-                    <tr>
-                      <td colspan="4" class="px-5 py-8 text-center text-[14px] font-medium text-[#64748B]">{{ t('profile.history.empty') }}</td>
-                    </tr>
-                  } @else {
-                    @for (entry of history; track entry.request_id) {
-                      <tr class="border-t border-[#F1F5F9]">
-                        <td class="px-4 py-2.5 text-[14px] sm:text-[15px] font-medium text-[#64748B] whitespace-nowrap">{{ formatDisplayDate(entry.request_date) }}</td>
-                        <td class="px-4 py-2.5 text-[14px] sm:text-[15px] font-semibold text-[#0F172A]">{{ entry.service_name || t('placeholder.na') }}</td>
-                        <td class="px-4 py-2.5 text-[14px] sm:text-[15px] font-medium text-[#0F172A] whitespace-nowrap">{{ entry.reference_number }}</td>
-                        <td class="px-4 py-2.5">
-                          <span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[12.5px] font-bold whitespace-nowrap" [class]="historyStatusBadgeClass(entry.status_name)">
-                            {{ entry.status_name }}
-                          </span>
-                        </td>
-                      </tr>
-                    }
-                  }
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      }
     </div>
   `
 })
@@ -570,15 +438,14 @@ export class ResidentProfileComponent implements OnInit, OnDestroy {
   }
 
   @Input() rfidCard: RfidCardInfo | null = null;
-  @Input() history: HistoryEntry[] = [];
-  @Input() historyLoading = false;
+
   @Input() language: KioskLanguage = 'en';
 
   @Output() onBack = new EventEmitter<void>();
   @Output() onContinue = new EventEmitter<void>();
   @Output() languageChange = new EventEmitter<KioskLanguage>();
 
-  protected showAllHistory = signal(false);
+
   protected rfidCopied = signal(false);
   protected photoFailed = signal(false);
   protected currentDateTime = signal<Date>(new Date());
@@ -627,9 +494,7 @@ export class ResidentProfileComponent implements OnInit, OnDestroy {
   }
 
   // First rows shown on the profile card; the full list is available via "View All History".
-  visibleHistory(): HistoryEntry[] {
-    return this.history.slice(0, 3);
-  }
+
 
   // Builds an absolute URL for the resident photo. The API returns a relative path
   // (e.g. "resident-photos/abc.png") which is served by the backend under /uploads,
@@ -716,12 +581,7 @@ export class ResidentProfileComponent implements OnInit, OnDestroy {
     return 'border-[#E2E8F0] bg-[#F1F5F9] text-[#475569]';
   }
 
-  historyStatusBadgeClass(status: string): string {
-    const s = (status || '').toLowerCase();
-    if (s.includes('rejected') || s.includes('cancelled')) return 'border-[#FECACA] bg-[#FEE2E2] text-[#B91C1C]';
-    if (s.includes('released') || s.includes('completed') || s.includes('approved')) return 'border-[#BBF7D0] bg-[#DCFCE7] text-[#15803D]';
-    return 'border-[#FED7AA] bg-[#FFF7ED] text-[#C2410C]';
-  }
+
 
   copyRfidNumber(): void {
     const num = this.rfidCard?.card_uid;

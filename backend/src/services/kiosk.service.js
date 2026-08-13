@@ -8,10 +8,6 @@ const getResidentById = async (id) => {
   return await kioskRepository.findResidentById(id);
 };
 
-const getResidentHistory = async (id, limit) => {
-  return await kioskRepository.findResidentHistory(id, limit);
-};
-
 const getHardwareStatus = async () => {
   return {
     arduino: 'Disabled',
@@ -22,4 +18,4 @@ const getHardwareStatus = async () => {
   };
 };
 
-module.exports = { searchResidents, getResidentById, getResidentHistory, getHardwareStatus };
+module.exports = { searchResidents, getResidentById, getHardwareStatus };

@@ -167,10 +167,10 @@ const create = async ({ residentId, serviceId, statusId, purpose, remarks, reque
   return { insertId: result.insertId, requestNumber };
 };
 
-const update = async (requestId, { serviceId, purpose, remarks }) => {
+const update = async (requestId, { serviceId, purpose, remarks, formData }) => {
   const [result] = await pool.query(
-    'UPDATE requests SET service_id = ?, purpose = ?, remarks = ? WHERE request_id = ?',
-    [serviceId, purpose, remarks, requestId]
+    'UPDATE requests SET service_id = ?, purpose = ?, remarks = ?, form_data = ? WHERE request_id = ?',
+    [serviceId, purpose, remarks, formData ? JSON.stringify(formData) : null, requestId]
   );
   return result.affectedRows > 0;
 };
