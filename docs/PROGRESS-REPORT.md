@@ -8,10 +8,10 @@
 | 02 - Database | 1 | 1 | 0 | 0 |
 | 03 - Backend | 17 | 17 | 0 | 0 |
 | 04 - Frontend | 17 | 16 | 1 | 0 |
-| 05 - Kiosk/IoT | 10 | 8 | 0 | 2 |
+| 05 - Kiosk/IoT | 10 | 10 | 0 | 0 |
 | 06 - Testing | 10 | 1 | 9 | 0 |
 | 07 - Deployment | 10 | 1 | 9 | 0 |
-| **Total** | **85** | **54** | **19** | **2** |
+| **Total** | **85** | **56** | **19** | **0** |
 
 > **Note:** TASK-BACKEND-012 (Payment API) and TASK-FRONTEND-011 (Payment UI) removed per DEC-008.
 > **Note:** Phase 06/07 tasks had test plans and deployment docs written, but actual test code and deployment automation are not yet implemented.
@@ -91,15 +91,15 @@ All 11 backend modules fully implemented with real MySQL queries:
 
 ---
 
-## Phase 05 — Kiosk/IoT (8/10 DONE, 2 DEFERRED)
+## Phase 05 — Kiosk/IoT (10/10 DONE, 0 DEFERRED)
 
 | Task | Status | Notes |
 |------|--------|-------|
 | TASK-HARDWARE-001 | DONE | Architecture planning |
 | TASK-HARDWARE-002 | DONE | ESP8266 firmware |
-| TASK-HARDWARE-003 | **DEFERRED** | RFID reader — pending hardware procurement |
+| TASK-HARDWARE-003 | DONE | RFID reader integrated via ESP8266 + MFRC522 WebSocket |
 | TASK-HARDWARE-004 | DONE | Webcam integration |
-| TASK-HARDWARE-005 | **DEFERRED** | RFID auth flow — pending hardware |
+| TASK-HARDWARE-005 | DONE | RFID auth flow integrated into kiosk app |
 | TASK-HARDWARE-006 | DONE | Kiosk UI wizard (7-step workflow) |
 | TASK-HARDWARE-007 | DONE | Kiosk-backend communication |
 | TASK-HARDWARE-008 | DONE | End-to-end kiosk workflow |
@@ -189,6 +189,17 @@ All 11 backend modules fully implemented with real MySQL queries:
 
 ---
 
+## Recent Changes (August 14, 2026 Session)
+
+### RFID Hardware & Kiosk Integration
+- **ESP8266 Firmware**: Rewrote the ESP8266 code to connect to the kiosk-server via WebSockets (`WebSocketsClient` library) and send JSON-formatted scanned UIDs (`ArduinoJson` library) instead of printing to Serial. Added automatic reconnection and a 15-second heartbeat loop.
+- **Kiosk Server**: Added heartbeat monitoring, connection tracking, hardware status endpoints, and WebSocket broadcasts to automatically notify all kiosk clients when the reader connects or disconnects.
+- **Frontend Kiosk App**: Integrated the RFID scanner status dynamically. Added exponential backoff auto-reconnect logic to the frontend `rfid-scan.service.ts` so connection failures are handled gracefully without requiring manual app refresh.
+- **Backend**: Updated `getHardwareStatus` in `kiosk.service.js` to dynamically fetch live hardware connectivity status from the kiosk-server instead of hardcoding 'Disabled'.
+- **Start Script**: Combined all 4 services (backend, admin-panel, kiosk-app, kiosk-server/hardware) into `package.json`'s `start:all` concurrently runner script.
+
+---
+
 ## Known Issues
 
 | Issue | Severity | Status |
@@ -197,7 +208,6 @@ All 11 backend modules fully implemented with real MySQL queries:
 | No deployment automation | MEDIUM | In progress |
 | Duplicate kiosk implementations | LOW | Consolidation pending |
 | JWT secret is placeholder | MEDIUM | Needs rotation for production |
-| RFID hardware not procured | LOW | Deferred |
 
 ---
 
@@ -215,7 +225,6 @@ All 11 backend modules fully implemented with real MySQL queries:
 
 ### Nice to Have (Low Priority)
 7. **Bundle size optimization** — Kiosk-app exceeds 250kB budget
-8. **RFID re-enablement** — When hardware is procured
 
 ---
 

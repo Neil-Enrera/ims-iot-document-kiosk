@@ -3,13 +3,7 @@
 > **Phase:** Hardware & Kiosk
 > **Task ID:** TASK-HARDWARE-005
 > **Priority:** P0 (Critical)
-> **Status:** Deferred (Hardware Pending)
-
----
-
-# Deferred Notice
-
-RFID-based kiosk authentication is **temporarily disabled** pending hardware procurement. The kiosk currently uses manual resident selection (search by name/code) instead of RFID tap. All RFID authentication code remains intact and can be re-enabled by setting `KIOSK_RFID_ENABLED=true` in the backend `.env` file.
+> **Status:** Completed
 
 ---
 
@@ -536,3 +530,4 @@ Before implementing:
 | Date | Author | Update |
 |------|--------|--------|
 | YYYY-MM-DD | | Task Created |
+| 2026-08-14 | Antigravity | Authentication flow completed and integrated. |
