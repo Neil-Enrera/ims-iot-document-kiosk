@@ -12,40 +12,121 @@ app.use(express.json({ limit: '10mb' }));
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server, path: '/ws' });
 
+// ============================================================
+// Connected Client Tracking
+// ============================================================
+
 const arduinoClients = new Map();
 const kioskClients = new Set();
+
+// Track Arduino hardware state
+let arduinoState = {
+  connected: false,
+  lastHeartbeat: null,
+  device: null,
+  firmware: null,
+  uptime: 0
+};
+
+// Heartbeat timeout: if no heartbeat within this interval, consider Arduino disconnected
+const HEARTBEAT_TIMEOUT = 30000; // 30 seconds (heartbeat every 15s with margin)
+let heartbeatCheckTimer = null;
+
+
+// ============================================================
+// WebSocket Connection Handling
+// ============================================================
 
 wss.on('connection', (ws, req) => {
   const params = new URL(req.url, 'http://localhost').searchParams;
   const clientType = params.get('type') || 'kiosk';
 
   if (clientType === 'arduino') {
-    console.log('Arduino connected');
+    console.log('[WS] Arduino/ESP8266 connected');
     arduinoClients.set('main', ws);
+    arduinoState.connected = true;
+    arduinoState.lastHeartbeat = Date.now();
+    broadcastHardwareStatus();
+    startHeartbeatCheck();
   } else {
+    console.log('[WS] Kiosk frontend connected');
     kioskClients.add(ws);
+    // Send current hardware status to newly connected kiosk
+    ws.send(JSON.stringify({
+      type: 'hardware_status',
+      data: { arduino: arduinoState.connected }
+    }));
   }
 
   ws.on('message', (msg) => {
     try {
       const data = JSON.parse(msg);
-      handleArduinoMessage(data, ws);
-    } catch (e) {}
+      if (clientType === 'arduino') {
+        handleArduinoMessage(data, ws);
+      }
+    } catch (e) {
+      // Ignore non-JSON messages
+    }
   });
 
   ws.on('close', () => {
-    arduinoClients.delete('main');
-    kioskClients.delete(ws);
+    if (clientType === 'arduino') {
+      console.log('[WS] Arduino/ESP8266 disconnected');
+      arduinoClients.delete('main');
+      arduinoState.connected = false;
+      arduinoState.device = null;
+      arduinoState.firmware = null;
+      broadcastHardwareStatus();
+    } else {
+      kioskClients.delete(ws);
+    }
+  });
+
+  ws.on('error', (err) => {
+    console.error(`[WS] ${clientType} error:`, err.message);
   });
 });
 
+
+// ============================================================
+// Arduino Message Handling
+// ============================================================
+
 function handleArduinoMessage(data, ws) {
-  if (data.type === 'rfid_scan') {
-    broadcastToKiosks({ type: 'rfid_scan', data: { uid: data.uid, timestamp: Date.now() } });
-  } else if (data.type === 'heartbeat') {
-    ws.send(JSON.stringify({ type: 'heartbeat_ack', timestamp: Date.now() }));
+  switch (data.type) {
+    case 'rfid_scan':
+      console.log('[RFID] Card scanned — UID:', data.uid);
+      broadcastToKiosks({
+        type: 'rfid_scan',
+        data: { uid: data.uid, timestamp: Date.now() }
+      });
+      break;
+
+    case 'heartbeat':
+      arduinoState.lastHeartbeat = Date.now();
+      arduinoState.uptime = data.uptime || 0;
+      if (!arduinoState.connected) {
+        arduinoState.connected = true;
+        broadcastHardwareStatus();
+      }
+      ws.send(JSON.stringify({ type: 'heartbeat_ack', timestamp: Date.now() }));
+      break;
+
+    case 'identify':
+      arduinoState.device = data.device || 'unknown';
+      arduinoState.firmware = data.firmware || 'unknown';
+      console.log(`[RFID] Device identified: ${arduinoState.device} (fw ${arduinoState.firmware})`);
+      break;
+
+    default:
+      break;
   }
 }
+
+
+// ============================================================
+// Broadcast Helpers
+// ============================================================
 
 function broadcastToKiosks(message) {
   const payload = JSON.stringify(message);
@@ -56,26 +137,67 @@ function broadcastToKiosks(message) {
   });
 }
 
+function broadcastHardwareStatus() {
+  broadcastToKiosks({
+    type: 'hardware_status',
+    data: { arduino: arduinoState.connected }
+  });
+}
+
+
+// ============================================================
+// Heartbeat Monitoring
+// ============================================================
+// Periodically check if the Arduino has sent a heartbeat within
+// the timeout window. If not, mark it as disconnected.
+
+function startHeartbeatCheck() {
+  if (heartbeatCheckTimer) return;
+  heartbeatCheckTimer = setInterval(() => {
+    if (!arduinoState.connected) return;
+    const elapsed = Date.now() - (arduinoState.lastHeartbeat || 0);
+    if (elapsed > HEARTBEAT_TIMEOUT) {
+      console.log('[RFID] Arduino heartbeat timeout — marking disconnected');
+      arduinoState.connected = false;
+      broadcastHardwareStatus();
+    }
+  }, 10000); // Check every 10 seconds
+}
+
+
+// ============================================================
+// REST API Endpoints
+// ============================================================
+
+// Send a command to the Arduino/ESP8266 (e.g., buzz, blink)
 app.post('/api/arduino/command', async (req, res) => {
   const { command, params } = req.body;
   const arduino = arduinoClients.get('main');
-  if (!arduino) return res.status(503).json({ error: 'Arduino not connected' });
+  if (!arduino || arduino.readyState !== WebSocket.OPEN) {
+    return res.status(503).json({ error: 'Arduino not connected' });
+  }
 
   arduino.send(JSON.stringify({ command, params, timestamp: Date.now() }));
   res.json({ success: true });
 });
 
+// Hardware status endpoint (used by backend kiosk.service.js and admin panel)
 app.get('/api/hardware/status', async (req, res) => {
   const arduino = arduinoClients.get('main');
+  const isConnected = !!(arduino && arduino.readyState === WebSocket.OPEN && arduinoState.connected);
+
   res.json({
-    arduino: arduino ? 'Connected' : 'Disconnected',
-    rfid: 'Ready',
-    camera: 'Ready',
-    printer: 'Offline',
+    arduino: isConnected ? 'Connected' : 'Disconnected',
+    rfid: isConnected ? 'Ready' : 'Offline',
+    device: arduinoState.device,
+    firmware: arduinoState.firmware,
+    lastHeartbeat: arduinoState.lastHeartbeat,
+    uptime: arduinoState.uptime,
     kioskClients: kioskClients.size
   });
 });
 
+// RFID verification via database (direct — used by serial-service path)
 app.post('/api/arduino/rfid/verify', async (req, res) => {
   const { uid } = req.body;
   try {
@@ -96,9 +218,14 @@ app.post('/api/arduino/rfid/verify', async (req, res) => {
       resident: { id: resident.resident_id, firstName: resident.first_name, lastName: resident.last_name, middleName: resident.middle_name, address: resident.address, contactNumber: resident.contact_number, photo: resident.photo_url }
     });
   } catch (err) {
+    console.error('[RFID Verify] Error:', err.message);
     res.status(500).json({ error: 'Verification failed' });
   }
 });
 
+// ============================================================
+// Start Server
+// ============================================================
+
 const PORT = process.env.KIOSK_PORT || 3001;
-server.listen(PORT, () => console.log(`Kiosk WebSocket server on port ${PORT}`));
+server.listen(PORT, () => console.log(`[Kiosk Server] WebSocket + REST on port ${PORT}`));
