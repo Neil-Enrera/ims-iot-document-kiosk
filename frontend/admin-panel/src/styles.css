@@ -1,5 +1,12 @@
 @import 'tailwindcss';
 
+/* Brand theme */
+:root {
+  --color-brand: #EA580C;
+  --color-brand-dark: #C2410C;
+  --color-navy: #0F172A;
+}
+
 /* Responsive utilities */
 @media (max-width: 767px) {
   .hide-mobile { display: none !important; }
@@ -17,7 +24,7 @@ button, a, [role="button"] {
 
 /* Focus visible for keyboard navigation */
 *:focus-visible {
-  outline: 2px solid #2563eb;
+  outline: 2px solid #EA580C;
   outline-offset: 2px;
   border-radius: 4px;
 }

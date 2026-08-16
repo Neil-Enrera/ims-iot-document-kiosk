@@ -62,6 +62,38 @@ Use one of the following categories:
 
 ---
 
+# Version 2.8.0
+
+**Status:** Active Development
+
+**Date:** 2026-08-16
+
+## Changed
+
+- **Redesigned the Admin Dashboard** with a clean municipal/government theme: orange primary brand, white / very-light-cream backgrounds, dark navy text, and rounded cards with subtle shadows and clean borders.
+  - **Sidebar:** white fixed sidebar with simple line-style icons, orange active state (light-orange background + orange icon/text), Logout pinned at the bottom (no Administrator profile section in the sidebar), and a collapsible hamburger drawer on tablet/mobile.
+  - **Top header:** slim white header — "IMS Document Request Services" on the left; notification bell (with unread badge), Administrator avatar + name + dropdown (Logout) on the right.
+  - **Dashboard header:** time-of-day greeting ("Good morning/afternoon/evening, <Role>! 👋") plus a compact current-date selector.
+  - **Summary cards:** six compact stat cards in one responsive row on desktop — Total Residents, Total Requests, Pending Requests, Released Requests, Active Services, Today's Requests — each with an icon, large number, descriptive micro-copy, and a link to its module. Orange is the primary accent; green is reserved for Released.
+  - **Recent Requests:** latest five requests (request number, service, resident, status badge, relative date) with clickable rows that open the request details, plus "View All" actions.
+  - **Quick Actions:** four tiles — Add Resident, New Request, Register RFID Card, Generate Report — each with icon, title, description, and small orange arrow indicator; New Request opens the create form directly.
+  - No graphs/charts/analytics were added; the dashboard stays a fast operational view for barangay staff. Fully responsive: 2-col mobile, 3-col tablet, 6-col desktop; Recent Requests and Quick Actions stack on smaller screens.
+  - Global polish: `rounded-xl` cards, orange focus rings, updated page title.
+
+**Modules Affected:** Admin Panel
+
+**Database Changes:** No
+
+**API Changes:** No — reuses existing `/dashboard/*` and `/requests` endpoints.
+
+**Architecture Changes:** No
+
+**Breaking Changes:** No
+
+**Testing Performed:** `ng build admin-panel` passes, `ng test admin-panel` 14/14 pass.
+
+---
+
 # Version 2.7.0
 
 **Status:** Active Development

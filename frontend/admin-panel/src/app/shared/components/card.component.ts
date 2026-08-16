@@ -27,6 +27,6 @@ export class CardComponent {
   @Input() padded = true;
 
   get classes(): string {
-    return 'bg-white rounded-lg shadow-sm border border-gray-200';
+    return 'bg-white rounded-xl shadow-sm border border-slate-200';
   }
 }

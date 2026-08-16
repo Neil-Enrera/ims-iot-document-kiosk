@@ -29,7 +29,7 @@ import { NotificationService, Notification } from '../../features/notifications/
 
       <!-- Dropdown Panel -->
       @if (isOpen()) {
-        <div class="fixed right-4 top-14 z-50 w-96 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden">
+        <div class="fixed right-2 sm:right-4 top-14 z-50 w-96 max-w-[calc(100vw-1rem)] bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden">
           <!-- Header -->
           <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
             <h3 class="text-lg font-semibold text-gray-900">Notifications</h3>
@@ -38,7 +38,7 @@ import { NotificationService, Notification } from '../../features/notifications/
                 <button
                   type="button"
                   (click)="markAllAsRead()"
-                  class="text-xs text-blue-600 hover:text-blue-800 font-medium px-2 py-1 rounded transition">
+                  class="text-xs text-orange-600 hover:text-orange-800 font-medium px-2 py-1 rounded transition">
                   Mark all as read
                 </button>
               }
@@ -57,13 +57,13 @@ import { NotificationService, Notification } from '../../features/notifications/
                   <li
                     (click)="handleClick(notif)"
                     class="p-4 hover:bg-gray-50 cursor-pointer transition"
-                    [class.bg-blue-50]="!notif.is_read"
+                    [class.bg-orange-50]="!notif.is_read"
                     [class.ring-1]="!notif.is_read"
-                    [class.ring-blue-200]="!notif.is_read">
+                    [class.ring-orange-200]="!notif.is_read">
                     <div class="flex items-start gap-3">
                       <!-- Unread indicator dot -->
                       @if (!notif.is_read) {
-                        <div class="w-2 h-2 bg-blue-600 rounded-full mt-2 flex-shrink-0"></div>
+                        <div class="w-2 h-2 bg-orange-500 rounded-full mt-2 flex-shrink-0"></div>
                       } @else {
                         <div class="w-2 h-2 flex-shrink-0 mt-2"></div>
                       }
@@ -73,7 +73,7 @@ import { NotificationService, Notification } from '../../features/notifications/
                         <div class="flex items-center gap-2 mt-2 text-xs text-gray-400">
                           <span>{{ formatTime(notif.created_at) }}</span>
                           @if (notif.reference_type && notif.reference_id) {
-                            <span class="px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded">{{ notif.reference_type }}</span>
+                            <span class="px-1.5 py-0.5 bg-orange-50 text-orange-700 rounded">{{ notif.reference_type }}</span>
                           }
                         </div>
                       </div>
@@ -89,7 +89,7 @@ import { NotificationService, Notification } from '../../features/notifications/
                 <button
                   type="button"
                   (click)="loadMore()"
-                  class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                  class="text-sm text-orange-600 hover:text-orange-800 font-medium">
                   Load more
                 </button>
               </div>
@@ -201,6 +201,9 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
     // Navigate to reference
     if (notif.reference_type === 'request' && notif.reference_id) {
       this.router.navigate(['/requests'], { queryParams: { requestId: notif.reference_id } });
+      this.closeDropdown();
+    } else if (notif.reference_type === 'application' && notif.reference_id) {
+      this.router.navigate(['/applications'], { queryParams: { applicationId: notif.reference_id } });
       this.closeDropdown();
     }
     // Add more reference types as needed
