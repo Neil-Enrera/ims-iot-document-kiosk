@@ -774,3 +774,35 @@ Barangay staff previously had no way to correct typos or wrong information that 
 - `request.validation.js` (backend): `updateValidation` accepts `formData` (object) + `reason` (optional string).
 - New `correction.repository.js` + migration 019 `request_corrections` table; dbcheck script `_dbcheck.tmp.js` confirms no requests/history reference statuses 10/11.
 - Verified: 71/71 backend tests pass, ESLint 0 errors (pre-existing warnings only), both admin-panel and kiosk-app `ng build` succeed, dbcheck clean.
+
+---
+
+### DEC-029 — Drop the write-only `request_attachments` and `request_corrections` tables
+
+**Status:** Accepted
+**Date:** 2026-08-16
+**Decision Maker(s):** Project Owner
+
+**Decision:**
+Drop the `request_attachments` and `request_corrections` tables (migration 022) and remove every code path that writes to them. The schema is otherwise left untouched — the earlier "safe to remove" candidates `request_statuses` (10/11), `services` dev rows (64/65), and the legacy `barangays.id_template_*` columns remain in place.
+
+**Reason:**
+Both tables were write-only audit/storage tables with **no read path anywhere in the codebase** — no endpoint, repository query, service, or frontend ever consumed their rows, and both had 0 live rows:
+
+- `request_attachments` — `transaction.service.js` `savePhoto()` mirrored kiosk photos into the table after writing them to `uploads/kiosk-photos/`, but nothing ever read those DB rows. The file write is preserved; only the redundant `INSERT` is removed.
+- `request_corrections` — `request.service.js` `updateRequest` logged per-field edit corrections (from DEC-028) via `correctionRepository.logCorrection`. Its only reader, `correctionRepository.findByRequest`, was never called anywhere. The Edit Document workflow itself (edit form + regenerate + preview) remains intact; only the audit-logging portion is removed.
+
+Keeping empty write-only tables adds schema surface with no value, and dropping them removes dead code paths that would otherwise keep inserting rows.
+
+**Alternatives Considered:**
+1. Keep both tables "for the audit trail" — rejected; rows are written but never read, so the audit trail is fictional.
+2. Add a UI/endpoint to actually read the data first — rejected; the kiosk photo is already on disk and the field-level correction diff is reproducible from `request_status_history`/`generated_documents` if ever needed; no requirement surfaced for it.
+3. Keep only `request_corrections` for DEC-028's audit intent — rejected; same no-reader problem.
+
+**Consequences:**
+- Migration `022-drop-request-attachments-and-corrections.sql` applied to the live dev DB (verified 15 tables remain; both tables empty beforehand).
+- `transaction.service.js`: `savePhoto(conn, requestId, photo)` → `savePhoto(requestId, photo)`; the `INSERT INTO request_attachments` is gone, file write to `uploads/kiosk-photos/` preserved.
+- `request.service.js`: `correctionRepository` import and the field-diff/logCorrection block in `updateRequest` removed; `reason` no longer destructured.
+- `request.validation.js`: `updateValidation` no longer accepts `reason` (the admin panel still sends it; it is silently ignored).
+- `correction.repository.js` deleted.
+- Verified: 71/71 backend tests pass, ESLint introduces no new issues (pre-existing warnings/error only), no dangling references to either table in `backend/`, `frontend/`, or `hardware/`.

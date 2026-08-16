@@ -12,7 +12,6 @@ const updateValidation = [
   body('serviceId').isInt({ min: 1 }).withMessage('Service ID is required.'),
   body('purpose').optional().trim(),
   body('remarks').optional().trim(),
-  body('reason').optional().trim().isLength({ max: 255 }).withMessage('Reason must be 255 characters or fewer.'),
   body('formData').optional().isObject().withMessage('Form data must be an object.')
 ];
 

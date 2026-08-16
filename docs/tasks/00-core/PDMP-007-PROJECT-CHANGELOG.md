@@ -62,6 +62,33 @@ Use one of the following categories:
 
 ---
 
+# Version 2.7.0
+
+**Status:** Active Development
+
+**Date:** 2026-08-16
+
+## Removed
+
+- **Write-only `request_attachments` and `request_corrections` tables** (migration 022) and every code path that wrote to them. Both tables had zero live rows and no read path anywhere (no endpoint, query, or frontend consumed them):
+  - `transaction.service.js` `savePhoto()` no longer mirrors kiosk photos into `request_attachments`; the photo file write to `uploads/kiosk-photos/` is preserved.
+  - `request.service.js` no longer logs field-level edit corrections; `correction.repository.js` deleted. The **Edit Document** workflow (edit form + regenerate + preview) is unchanged.
+  - `request.validation.js` `updateValidation` no longer accepts `reason` (the admin panel still sends it; it is silently ignored).
+
+**Modules Affected:** Backend, Database
+
+**Database Changes:** Yes — migration 022 `DROP TABLE` for `request_attachments` and `request_corrections`.
+
+**API Changes:** No endpoints removed; `PUT /requests/:id` simply ignores the now-unused `reason` body field.
+
+**Architecture Changes:** No
+
+**Breaking Changes:** No — both tables were write-only with 0 rows and no consumers.
+
+**Testing Performed:** Backend tests (71/71), backend lint 0 new issues (pre-existing warnings/error only), `SHOW TABLES` confirms 15 tables remain, grep confirms no dangling references in `backend/`, `frontend/`, or `hardware/`.
+
+---
+
 # Version 2.6.1
 
 **Status:** Active Development

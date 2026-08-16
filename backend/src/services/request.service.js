@@ -3,7 +3,6 @@ const residentRepository = require('../repositories/resident.repository');
 const serviceRepository = require('../repositories/service.repository');
 const settingRepository = require('../repositories/setting.repository');
 const documentService = require('./document.service');
-const correctionRepository = require('../repositories/correction.repository');
 
 // Workflow: Submitted -> Waiting for Requirements -> Requirements Received
 //           -> Under Review -> Document Processing -> Ready for Release -> Released
@@ -74,7 +73,7 @@ const createRequest = async ({ residentId, serviceId, purpose, remarks }) => {
 };
 
 const updateRequest = async (requestId, body, userId) => {
-  const { serviceId, purpose, remarks, formData, reason } = body;
+  const { serviceId, purpose, remarks, formData } = body;
   const request = await requestRepository.findById(requestId);
   if (!request) {
     return { success: false, message: 'Request not found.' };
@@ -97,37 +96,7 @@ const updateRequest = async (requestId, body, userId) => {
     };
   }
 
-  // Record field-level corrections before the form_data is overwritten so the
-  // audit trail captures the original values. Each changed top-level field
-  // (excluding the internal _guest mirror) gets a RESOLVED correction row.
-  const originalFormData = (request.form_data && typeof request.form_data === 'object') ? request.form_data : {};
-  const changedFields = [];
-  if (finalFormData && typeof finalFormData === 'object') {
-    for (const key of Object.keys(finalFormData)) {
-      if (key === '_guest') continue;
-      if (JSON.stringify(originalFormData[key]) !== JSON.stringify(finalFormData[key])) {
-        changedFields.push({ key, oldValue: originalFormData[key], newValue: finalFormData[key] });
-      }
-    }
-  }
-
   await requestRepository.update(requestId, { serviceId, purpose, remarks, formData: finalFormData });
-
-  // Log each changed field as an audit correction.
-  for (const field of changedFields) {
-    try {
-      await correctionRepository.logCorrection({
-        requestId,
-        affectedField: field.key,
-        reason: reason || null,
-        originalValue: field.oldValue,
-        updatedValue: field.newValue,
-        requestedBy: userId
-      });
-    } catch (logError) {
-      console.error(`Failed to log correction for field "${field.key}" on request ${requestId}:`, logError.message);
-    }
-  }
 
   // Re-generate document if one was already generated
   const hasDoc = await documentService.hasGeneratedDocument(requestId);

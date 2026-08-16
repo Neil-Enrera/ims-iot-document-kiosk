@@ -295,7 +295,7 @@ const submitTransaction = async (input) => {
       }
 
       if (s.photo) {
-        await savePhoto(conn, requestId, s.photo);
+        await savePhoto(requestId, s.photo);
       }
 
       createdRequests.push({
@@ -382,9 +382,9 @@ const allocateRequestNumbers = async (conn, count) => {
   return Array.from({ length: count }, (_, i) => formatRequestNumber(base + i));
 };
 
-// Saves a base64 photo for a request into kiosk-photos + request_attachments.
+// Saves a base64 photo for a request into kiosk-photos.
 // Photo storage must never fail the submission.
-const savePhoto = async (conn, requestId, photo) => {
+const savePhoto = async (requestId, photo) => {
   try {
     const photoDir = path.join(__dirname, '../../uploads/kiosk-photos');
     if (!fs.existsSync(photoDir)) fs.mkdirSync(photoDir, { recursive: true });
@@ -394,14 +394,7 @@ const savePhoto = async (conn, requestId, photo) => {
     if (!buffer.length) return;
 
     const fileName = `request_${requestId}_${Date.now()}.jpg`;
-    const filePath = path.join(photoDir, fileName);
-    fs.writeFileSync(filePath, buffer);
-
-    await conn.query(
-      `INSERT INTO request_attachments (request_id, file_name, file_type, file_path)
-       VALUES (?, ?, 'image/jpeg', ?)`,
-      [requestId, fileName, `kiosk-photos/${fileName}`]
-    );
+    fs.writeFileSync(path.join(photoDir, fileName), buffer);
   } catch (error) {
     console.error('Failed to save kiosk photo:', error);
   }
