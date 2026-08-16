@@ -806,3 +806,93 @@ Keeping empty write-only tables adds schema surface with no value, and dropping 
 - `request.validation.js`: `updateValidation` no longer accepts `reason` (the admin panel still sends it; it is silently ignored).
 - `correction.repository.js` deleted.
 - Verified: 71/71 backend tests pass, ESLint introduces no new issues (pre-existing warnings/error only), no dangling references to either table in `backend/`, `frontend/`, or `hardware/`.
+
+---
+
+### DEC-030 — Kiosk lets the user request multiple services in one transaction
+
+**Status:** Accepted
+**Date:** 2026-08-16
+**Decision Maker(s):** Project Owner
+
+**Decision:**
+The kiosk services step became a multi-select. The user picks one or more services; each is filled in turn (requirements → form → photo) with per-service form data and photos kept in `kiosk-state` (`selectedServices`, `serviceIndex`, `serviceForms`, `servicePhotos`); the Review step lists every service; Submit sends one `POST /kiosk/requests` with a `services[]` array; the success screen shows every issued request number.
+
+**Reason:**
+A barangay client often needs several documents at once (e.g., Barangay ID + Barangay Clearance). Requiring a separate kiosk run per document is slow for both the client and the queue. The backend already supported `services[]` (DEC-027 transaction grouping) — only the kiosk UI was single-service. Reusing the existing per-service steps (requirements/form/photo) keeps the flow familiar and correct, since `selectedService` is now a `computed` over the active service index.
+
+**Alternatives Considered:**
+1. Parallel forms (all services on one page) — rejected; many fields repeat and validation/preview per service would be confusing on a touch screen.
+2. Separate transactions per service — rejected; loses the single-queue UX and re-fills resident/guest identity every time.
+3. Cart-style add-to-cart then batch submit — functionally identical; the toggle-and-continue bar (count + total fee) achieves the same without a separate screen.
+
+**Consequences:**
+- Backward compatible: `service_id`/`form_data`/`photo` top-level payload still works; kiosk now always sends `services[]`.
+- `KioskState` extended with the four multi-service signals; `saveState`/`restoreState` round-trip them for kiosk restarts.
+- Success screen shows all request numbers; review shows per-service details + preview.
+
+---
+
+### DEC-031 — Reports PDF export is generated client-side (jsPDF)
+
+**Status:** Accepted
+**Date:** 2026-08-16
+**Decision Maker(s):** Project Owner
+
+**Decision:**
+The Admin Reports module exports the current filtered report to PDF in the browser using `jspdf` + `jspdf-autotable` (landscape, header, per-row fees, footer total + count). No new backend endpoint or server-side PDF generation was added.
+
+**Reason:**
+The backend already returns the exact filtered dataset the report shows, so the PDF is a pure presentation transform of already-fetched data. Client-side generation keeps the backend unchanged, works offline in the barangay network, and avoids another dependency/service on the server.
+
+**Alternatives Considered:**
+1. Server-side PDF (e.g., generate a PDF endpoint) — rejected; adds backend surface and re-fetches data the frontend already has.
+2. Print-to-PDF via browser dialog — rejected; inconsistent formatting and no control over totals/columns.
+
+**Consequences:**
+- `jspdf` + `jspdf-autotable` added to the workspace root `package.json`.
+- Reports component also fixed to send `dateFrom`/`dateTo` and read the `{ success, data, pagination }` response shape (it previously used wrong param names and an incorrect response path).
+
+---
+
+### DEC-032 — Status display board uses Server-Sent Events instead of polling
+
+**Status:** Accepted
+**Date:** 2026-08-16
+**Decision Maker(s):** Project Owner
+
+**Decision:**
+The kiosk status display board subscribes to `GET /kiosk/status-display/stream` (public SSE) and pushes an initial snapshot plus updates every 5 seconds. The client reconnects with exponential backoff (2s → 30s cap). The previous 7-second REST polling is removed.
+
+**Reason:**
+SSE gives near-real-time updates with a single open connection and far fewer requests than polling, which matters for a lobby display running all day. It is simpler than WebSockets (no extra protocol/client state), and the backend already had SSE infrastructure (the admin `sseManager`) to mirror. A dedicated public client set is used because `sseManager` is userId-keyed and admin-only.
+
+**Alternatives Considered:**
+1. Keep 7s polling — rejected; wasteful and visibly laggier.
+2. WebSockets — rejected; more moving parts (upgrade handling, client reconnect logic) than the one-way push SSE provides.
+
+**Consequences:**
+- New public route `GET /kiosk/status-display/stream`; data-fetch logic shared between REST and stream via `fetchStatusDisplayData()`.
+- `status-display.component.ts` switched to `EventSource` with reconnect backoff; clock timer kept.
+
+---
+
+### DEC-033 — Residents are archived/restored instead of hard-deleted
+
+**Status:** Accepted
+**Date:** 2026-08-16
+**Decision Maker(s):** Project Owner
+
+**Decision:**
+The Residents module replaced the hard-delete action with Archive (`PATCH /residents/:id/archive`, sets status `INACTIVE`) and Restore (`PATCH /residents/:id/restore`, sets `ACTIVE`). A status filter (All/Active/Archived) was added to the table, and the status badge now uses the real `ACTIVE`/`INACTIVE` values.
+
+**Reason:**
+Hard-deleting residents destroys history (requests reference resident data) and is dangerous in a barangay record system. Archiving preserves the record and history while removing the person from active use. The backend already had `archive`/`restore` routes and service methods; only the UI deleted.
+
+**Alternatives Considered:**
+1. Keep hard delete — rejected; loses history and violates the record-keeping intent of an IMS.
+2. Soft delete with `deleted_at` — rejected; DEC-004 already removed soft-delete columns; status-based `INACTIVE` was the existing mechanism.
+
+**Consequences:**
+- Badge mapping corrected (`isActive` → `=== 'ACTIVE'`), so archived residents display correctly.
+- Archived residents remain queryable via the status filter and are excluded from active lists by default.

@@ -14,6 +14,7 @@ router.post('/kiosk/barangay-id', ...barangayIdApplicationValidation, validate, 
 router.post('/kiosk/barangay-id/preview', ...barangayIdApplicationValidation, validate, controller.previewBarangayId);
 router.post('/kiosk/rfid/verify', ...rfidVerifyValidation, validate, controller.verifyRfid);
 router.get('/kiosk/status-display', controller.getStatusDisplay);
+router.get('/kiosk/status-display/stream', controller.getStatusDisplayStream);
 router.get('/kiosk/hardware/status', controller.getHardwareStatus);
 
 module.exports = router;

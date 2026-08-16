@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard } from './core/guards/auth.guard';
+import { authGuard, adminGuard } from './core/guards/auth.guard';
 import { LayoutComponent } from './core/layouts/layout.component';
 import { PublicLayoutComponent } from './core/layouts/public-layout.component';
 
@@ -23,10 +23,10 @@ export const routes: Routes = [
       { path: 'applications', loadComponent: () => import('./features/applications/applications.component').then(m => m.ApplicationsComponent) },
       { path: 'services', loadComponent: () => import('./features/services/services.component').then(m => m.ServicesComponent) },
       { path: 'rfid', loadComponent: () => import('./features/rfid/rfid.component').then(m => m.RfidComponent) },
-      { path: 'users', loadComponent: () => import('./features/users/users.component').then(m => m.UsersComponent), canActivate: [authGuard] },
-      { path: 'reports', loadComponent: () => import('./features/reports/reports.component').then(m => m.ReportsComponent), canActivate: [authGuard] },
-      { path: 'settings', loadComponent: () => import('./features/settings/settings.component').then(m => m.SettingsComponent), canActivate: [authGuard] },
-      { path: 'audit', loadComponent: () => import('./features/audit/audit.component').then(m => m.AuditComponent), canActivate: [authGuard] },
+      { path: 'users', loadComponent: () => import('./features/users/users.component').then(m => m.UsersComponent), canActivate: [authGuard, adminGuard] },
+      { path: 'reports', loadComponent: () => import('./features/reports/reports.component').then(m => m.ReportsComponent), canActivate: [authGuard, adminGuard] },
+      { path: 'settings', loadComponent: () => import('./features/settings/settings.component').then(m => m.SettingsComponent), canActivate: [authGuard, adminGuard] },
+      { path: 'audit', loadComponent: () => import('./features/audit/audit.component').then(m => m.AuditComponent), canActivate: [authGuard, adminGuard] },
     ]
   },
   { path: '403', loadComponent: () => import('./features/errors/forbidden.component').then(m => m.ForbiddenComponent) },

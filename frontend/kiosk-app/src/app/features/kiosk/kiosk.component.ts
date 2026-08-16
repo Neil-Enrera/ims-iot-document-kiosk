@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, signal, ElementRef, ViewChild, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, computed, ElementRef, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { KioskService, Resident, Service, GuestInfo, FormField, RfidCardInfo } from './kiosk.service';
@@ -988,7 +988,9 @@ export type BarangayStep =
                 <div class="min-h-full mx-auto w-[calc(100%-32px)] sm:w-[calc(100%-48px)] min-[1101px]:w-[calc(100%-80px)] max-w-[980px] py-2 sm:py-2.5 [@media(max-height:880px)]:py-1.5 grid grid-cols-1 gap-2.5 sm:gap-3.5 content-start">
                   @for (service of services(); track service.service_id) {
                     <button type="button"
-                            (click)="selectService(service)"
+                            (click)="toggleService(service)"
+                            [class.border-[#F97316]]="isServiceSelected(service)"
+                            [class.bg-[#FFF7ED]]="isServiceSelected(service)"
                             class="w-full text-left flex items-center gap-4 sm:gap-5 rounded-[18px] border-2 border-[#E5E7EB] bg-white shadow-[0_2px_14px_rgba(15,23,42,0.07)] px-4 sm:px-6 py-4 sm:py-5 transition-all duration-150 hover:border-[#F97316]/50 hover:bg-[#FFF7ED]/40 hover:shadow-[0_4px_18px_rgba(249,115,22,0.12)] active:border-[#F97316] active:bg-[#FFF7ED] active:scale-[0.995] focus:outline-none focus:ring-4 focus:ring-[#F97316]/30 [@media(max-height:880px)]:py-3">
                       <!-- Left: icon in a light-orange rounded square -->
                       <div class="shrink-0 w-[56px] h-[56px] sm:w-[64px] sm:h-[64px] rounded-[14px] sm:rounded-[16px] bg-[#FFF7ED] border border-[#F97316]/15 flex items-center justify-center text-[#F97316] [@media(max-height:880px)]:w-[52px] [@media(max-height:880px)]:h-[52px]" aria-hidden="true">
@@ -1006,7 +1008,7 @@ export type BarangayStep =
                         }
                       </div>
 
-                      <!-- Right: processing fee + chevron -->
+                      <!-- Right: processing fee + selection state -->
                       <div class="shrink-0 flex items-center justify-end gap-3 sm:gap-4 text-right">
                         <div class="min-w-0 text-right">
                           @if (service.processing_fee > 0) {
@@ -1017,14 +1019,51 @@ export type BarangayStep =
                             <p class="text-[11px] sm:text-[12px] font-semibold text-[#64748B] uppercase tracking-wide mt-1 whitespace-nowrap">{{ t('doc.services.processingFee') }}</p>
                           }
                         </div>
-                        <svg class="w-7 h-7 sm:w-8 sm:h-8 text-[#F97316] shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-                        </svg>
+                        @if (isServiceSelected(service)) {
+                          <div class="shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#F97316] flex items-center justify-center" aria-hidden="true">
+                            <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                            </svg>
+                          </div>
+                        } @else {
+                          <svg class="w-7 h-7 sm:w-8 sm:h-8 text-[#F97316] shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                          </svg>
+                        }
                       </div>
                     </button>
                   }
                 </div>
               </main>
+
+              <!-- Multi-select action bar -->
+              <div class="relative z-10 shrink-0 px-4 sm:px-8 pb-1 pt-0.5">
+                <div class="mx-auto w-full max-w-[980px] flex flex-wrap items-center gap-3 bg-white/90 backdrop-blur-sm border border-[#E5E7EB] rounded-2xl shadow-sm px-4 sm:px-5 py-2.5">
+                  <p class="flex-1 min-w-[160px] text-[13px] sm:text-[14px] font-semibold text-[#0F172A]">
+                    @if (selectedServiceCount() > 0) {
+                      {{ selectedServiceCount() }} {{ selectedServiceCount() === 1 ? t('doc.services.selected') : t('doc.services.selectedPlural') }} ·
+                      @if (selectedTotalFee() > 0) {
+                        ₱{{ formatServiceFee(selectedTotalFee()) }}
+                      } @else {
+                        {{ t('doc.services.free') }}
+                      }
+                    } @else {
+                      {{ t('doc.services.hint') }}
+                    }
+                  </p>
+                  <button (click)="proceedFromServices()"
+                          [disabled]="selectedServiceCount() === 0"
+                          class="flex items-center justify-center gap-2 min-h-[48px] px-6 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white text-base font-bold shadow-[0_4px_14px_rgba(249,115,22,0.35)] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40 disabled:opacity-50 disabled:cursor-not-allowed">
+                    {{ t('common.continue') }}
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                    </svg>
+                  </button>
+                </div>
+                @if (serviceError()) {
+                  <p class="mx-auto mt-1.5 w-full max-w-[980px] text-[13px] sm:text-sm font-medium text-[#B91C1C] text-center">{{ serviceError() }}</p>
+                }
+              </div>
 
               <!-- Footer: same as the kiosk landing page (includes the language selector) -->
               <footer class="relative z-10 shrink-0 border-t border-[#E5E7EB] bg-white/95 backdrop-blur-sm">
@@ -1723,11 +1762,13 @@ export type BarangayStep =
               <div class="max-w-lg w-full">
                 <h2 class="text-3xl font-bold mb-6 text-center">{{ t('doc.photo.title') }}</h2>
                 @if (!capturedPhoto()) {
-                  <div class="bg-black rounded-2xl overflow-hidden mb-6">
+                  <div class="bg-black rounded-2xl overflow-hidden mb-6 relative aspect-video flex flex-col items-center justify-center text-white">
                     <video #videoEl autoplay playsinline class="w-full aspect-video object-cover"></video>
                   </div>
                   <div class="flex gap-4 justify-center">
-                    <app-button variant="primary" size="lg" (onClick)="capturePhoto()">{{ t('doc.form.takePhoto') }}</app-button>
+                    <app-button variant="primary" size="lg" [disabled]="submitting()" (onClick)="capturePhoto()">
+                      @if (submitting()) { Capturing... } @else { {{ t('doc.form.takePhoto') }} }
+                    </app-button>
                     <app-button variant="secondary" size="lg" (onClick)="skipPhoto()">{{ t('common.skip') }}</app-button>
                   </div>
                 } @else {
@@ -1745,131 +1786,657 @@ export type BarangayStep =
 
           <!-- DOC STEP 5: Review & Confirm -->
           @if (currentStep() === 'review') {
-            <div class="absolute inset-0 flex flex-col p-8">
-              <div class="max-w-2xl mx-auto w-full flex-1 flex flex-col">
+            <div class="absolute inset-0 bg-[#F8FAFC] text-[#0F172A] select-none overflow-hidden [font-family:'Inter',sans-serif] flex flex-col">
 
-                <!-- Header: title + back -->
-                <div class="flex items-center justify-between mb-6">
-                  <h2 class="text-3xl font-bold">{{ t('doc.review.title') }}</h2>
-                  <button class="text-blue-300 hover:text-white text-lg" (click)="goBack()">{{ t('common.back') }}</button>
+              <!-- Background image (same as the kiosk landing page) -->
+              <div class="absolute inset-0 bg-cover bg-center pointer-events-none" style="background-image: url('Background.png')" aria-hidden="true"></div>
+              <!-- Subtle radial glow keeps the content legible without washing the orange -->
+              <div class="absolute inset-0 pointer-events-none" aria-hidden="true"
+                   style="background: radial-gradient(ellipse 72% 58% at 50% 42%, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0.35) 55%, rgba(255,255,255,0.05) 100%);"></div>
+              <!-- Curved orange header accent (top-left, same as landing) -->
+              <div class="absolute top-0 left-0 w-64 h-40 pointer-events-none" aria-hidden="true">
+                <svg viewBox="0 0 256 160" class="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M0 0 H256 V80 C256 124 220 160 176 160 H0 Z" fill="#F97316" opacity="0.12"/>
+                </svg>
+              </div>
+
+              <!-- Top navigation: circular back (left) + logo (center) + RFID status (right) -->
+              <div class="relative z-10 flex items-center justify-center px-6 pt-[18px] pb-1">
+                <div class="absolute left-4 sm:left-6 top-[26px] z-40 flex items-center gap-2.5 sm:gap-3">
+                  <button (click)="goBack()"
+                          class="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px] rounded-full border-2 border-[#F97316]/60 bg-white flex items-center justify-center shadow-sm hover:bg-[#FFF7ED] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30"
+                          [attr.aria-label]="t('common.back')">
+                    <svg class="w-6 h-6 sm:w-7 sm:h-7 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                  </button>
+                  <button (click)="goBack()"
+                          class="flex items-center min-h-[44px] rounded-xl px-1 text-[#0F172A] font-semibold text-[15px] sm:text-base hover:text-[#F97316] transition-colors focus:outline-none focus:ring-2 focus:ring-[#F97316]/40">
+                    {{ t('common.back') }}
+                  </button>
                 </div>
 
-                <!-- Scrollable content: summary + document preview -->
-                <div class="flex-1 overflow-y-auto space-y-4">
-                  <div class="bg-blue-800/50 rounded-2xl p-6 backdrop-blur space-y-4">
-                    <div class="flex items-center gap-4">
-                      @if (displayPhoto()) {
-                        <img [src]="displayPhoto()" class="w-16 h-16 rounded-full object-cover" />
-                      } @else {
-                        <div class="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">
-                          {{ displayName().charAt(0) }}
-                        </div>
+                <div class="w-[76px] h-[76px] sm:w-[88px] sm:h-[88px] rounded-full bg-white border-2 border-[#F97316]/30 shadow-sm overflow-hidden flex items-center justify-center">
+                  <img src="Barangay Logo.png" alt="Barangay San Manuel logo" class="w-full h-full object-cover">
+                </div>
+
+                <!-- RFID verification status (RFID-authenticated resident only) -->
+                @if (resident()) {
+                  <div class="absolute right-4 sm:right-6 top-[26px] z-40 flex items-center gap-2.5 rounded-2xl border border-[#BBF7D0] bg-[#DCFCE7]/95 backdrop-blur-sm px-3.5 sm:px-4 py-2 shadow-sm" role="status">
+                    <div class="shrink-0 w-9 h-9 rounded-full bg-[#16A34A] flex items-center justify-center" aria-hidden="true">
+                      <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 2l7 3v6c0 5-3.2 8.4-7 10-3.8-1.6-7-5-7-10V5l7-3z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m8.7 12 2.3 2.3 4.3-4.3"/>
+                      </svg>
+                    </div>
+                    <div class="text-left">
+                      <p class="text-[13px] sm:text-[14px] font-bold text-[#166534] leading-tight">{{ t('doc.form.rfidVerified') }}</p>
+                      <p class="text-[11px] sm:text-[12px] font-semibold text-[#15803D] leading-tight">{{ t('doc.form.activeResident') }}</p>
+                    </div>
+                  </div>
+                }
+              </div>
+
+              <!-- Page header -->
+              <div class="relative z-10 text-center px-4 pt-0.5 pb-0.5">
+                <h1 class="text-[clamp(1.375rem,1.9vw,2rem)] font-bold tracking-tight text-[#0F172A] leading-tight">{{ t('doc.review.title') }}</h1>
+                <p class="text-[clamp(0.875rem,1.05vw,1.0625rem)] font-medium text-[#64748B] mt-1">{{ t('doc.review.subtitle') }}</p>
+              </div>
+
+              <!-- Progress indicator (6 steps) -->
+              <div class="relative z-10 flex items-center justify-center px-4 pb-1">
+                <ol class="flex items-center gap-1.5 sm:gap-2.5" aria-label="Kiosk progress">
+                  @for (num of [1, 2, 3, 4, 5, 6]; track num) {
+                    <li class="flex items-center gap-1.5 sm:gap-2.5">
+                      @if (num > 1) {
+                        <span class="w-5 sm:w-8 h-[3px] rounded-full"
+                              [class.bg-[#F97316]]="docProgressState(num) !== 'upcoming'"
+                              [class.bg-[#E5E7EB]]="docProgressState(num) === 'upcoming'"></span>
                       }
-                      <div>
-                        <p class="font-bold text-lg">{{ displayName() }}</p>
-                        <p class="text-blue-200 text-sm">{{ displayAddress() }}</p>
-                        @if (displayCode()) {
-                          <p class="text-blue-300 text-xs mt-1">{{ displayCode() }}</p>
+                      @if (docProgressState(num) === 'done') {
+                        <span class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#FFF7ED] border-2 border-[#F97316] flex items-center justify-center" aria-hidden="true">
+                          <svg class="w-4 h-4 sm:w-[18px] sm:h-[18px] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.6" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                          </svg>
+                        </span>
+                        <span class="hidden lg:block text-[13px] sm:text-[14px] font-bold text-[#0F172A] whitespace-nowrap">{{ t('doc.progress.' + num) }}</span>
+                      } @else if (docProgressState(num) === 'current') {
+                        <span class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#F97316] border-2 border-[#F97316] text-white flex items-center justify-center text-sm sm:text-base font-bold shadow-sm" aria-hidden="true">{{ num }}</span>
+                        <span class="hidden lg:block text-[13px] sm:text-[14px] font-bold text-[#F97316] whitespace-nowrap">{{ t('doc.progress.' + num) }}</span>
+                      } @else {
+                        <span class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white border-2 border-[#CBD5E1] text-[#94A3B8] flex items-center justify-center text-sm sm:text-base font-bold" aria-hidden="true">{{ num }}</span>
+                        <span class="hidden lg:block text-[13px] sm:text-[14px] font-medium text-[#64748B] whitespace-nowrap">{{ t('doc.progress.' + num) }}</span>
+                      }
+                    </li>
+                  }
+                </ol>
+              </div>
+
+              <!-- Resident summary (compact horizontal card) -->
+              <div class="relative z-10 px-4 sm:px-8 pb-1">
+                <div class="mx-auto w-full max-w-[1000px] flex flex-wrap items-center gap-x-10 lg:gap-x-16 gap-y-3 bg-white/80 border border-[#E5E7EB] rounded-2xl shadow-sm px-4 sm:px-6 py-3">
+                  <div class="flex items-center gap-3 min-w-0">
+                    <div class="shrink-0 w-10 h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden bg-[#FFF7ED] border border-[#F97316]/25 flex items-center justify-center" aria-hidden="true">
+                      @if (displayPhoto()) {
+                        <img [src]="displayPhoto()" alt="" class="w-full h-full object-cover" />
+                      } @else {
+                        <span class="text-[#F97316] font-bold text-base">{{ displayName().charAt(0) }}</span>
+                      }
+                    </div>
+                    <div class="min-w-0">
+                      <p class="text-[15px] sm:text-[16px] font-bold text-[#0F172A] leading-tight truncate">{{ displayName() }}</p>
+                      <p class="text-[12px] sm:text-[13px] font-medium text-[#64748B] leading-snug truncate">
+                        {{ t('doc.review.residentId') }}: <span class="font-semibold text-[#0F172A]">{{ displayCode() }}</span>
+                      </p>
+                    </div>
+                  </div>
+                  <div class="hidden md:flex flex-col min-w-0">
+                    <p class="text-[11px] font-semibold uppercase tracking-wide text-[#64748B]">{{ t('profile.address') }}</p>
+                    <p class="text-[13px] sm:text-[14px] font-bold text-[#0F172A] leading-snug truncate">{{ displayAddress() }}</p>
+                  </div>
+                  @if (resident()) {
+                    <div class="hidden md:flex flex-col min-w-0">
+                      <p class="text-[11px] font-semibold uppercase tracking-wide text-[#64748B]">{{ t('doc.form.rfidNo') }}</p>
+                      <p class="text-[13px] sm:text-[14px] font-bold text-[#0F172A] leading-snug">{{ rfidDisplayNumber() }}</p>
+                    </div>
+                  }
+                  <div class="ml-auto shrink-0">
+                    @if (resident()) {
+                      <span class="inline-flex items-center gap-1.5 rounded-full bg-[#DCFCE7] border border-[#BBF7D0] px-3 py-1 text-[12px] sm:text-[13px] font-bold text-[#166534]">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" aria-hidden="true">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        {{ t('doc.form.activeResident') }}
+                      </span>
+                    } @else {
+                      <span class="inline-flex items-center rounded-full bg-[#F1F5F9] border border-[#CBD5E1] px-3 py-1 text-[12px] sm:text-[13px] font-bold text-[#475569]">{{ displayCode() }}</span>
+                    }
+                  </div>
+                </div>
+              </div>
+
+              <!-- Main content: two-column review layout -->
+              <div class="relative z-10 flex-1 overflow-y-auto">
+                <div class="min-h-full flex items-center justify-center px-4 sm:px-8 py-2.5 sm:py-3">
+                  <div class="w-full max-w-[1000px]">
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+                      <!-- LEFT: Request Summary -->
+                      <div class="bg-white border border-[#E5E7EB] rounded-[20px] shadow-[0_2px_14px_rgba(15,23,42,0.07)] px-5 sm:px-6 py-4">
+                        <div class="flex items-center gap-2.5 mb-3">
+                          <div class="shrink-0 w-8 h-8 rounded-lg bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                              <rect x="4" y="4" width="16" height="16" rx="2"/>
+                              <path d="M8 9h8M8 13h8M8 17h5" stroke-linecap="round"/>
+                            </svg>
+                          </div>
+                          <h2 class="text-[14px] sm:text-[15px] font-bold tracking-[0.02em] text-[#0F172A] uppercase">{{ t('doc.review.requestSummary') }}</h2>
+                        </div>
+
+                        <div class="space-y-3">
+                          @for (svc of selectedServices(); track svc.service_id) {
+                            <div class="flex items-start gap-3">
+                              <div class="shrink-0 w-7 h-7 rounded-lg bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                  <path d="M19 5H5a2 2 0 00-2 2v10a2 2 0 002 2h14a2 2 0 002-2V7a2 2 0 00-2-2z" stroke-linejoin="round"/>
+                                  <path d="M2 9h20" stroke-linecap="round"/>
+                                </svg>
+                              </div>
+                              <div class="min-w-0 flex-1">
+                                <p class="text-[11px] font-semibold uppercase tracking-wide text-[#64748B]">{{ t('doc.review.serviceRequested') }}</p>
+                                <p class="text-[clamp(1.0625rem,1.4vw,1.375rem)] font-extrabold text-[#0F172A] leading-tight uppercase break-words">{{ svc.service_name }}</p>
+                              </div>
+                              <div class="shrink-0 text-right pt-4">
+                                @if (svc.processing_fee > 0) {
+                                  <p class="text-[15px] sm:text-base font-bold text-[#F97316] leading-tight whitespace-nowrap">₱{{ formatServiceFee(svc.processing_fee) }}</p>
+                                } @else {
+                                  <p class="text-[14px] sm:text-[15px] font-bold text-[#16A34A] leading-tight whitespace-nowrap">{{ t('doc.services.free') }}</p>
+                                }
+                              </div>
+                            </div>
+                          }
+
+                          @if (selectedTotalFee() > 0) {
+                            <div class="flex items-start gap-3 border-t border-[#F1F5F9] pt-2.5">
+                              <div class="shrink-0 w-7 h-7 rounded-lg bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                  <circle cx="12" cy="12" r="9"/>
+                                  <path d="M12 6v12M9 9.5h4a1.5 1.5 0 010 3H11a1.5 1.5 0 000 3h4" stroke-linecap="round"/>
+                                </svg>
+                              </div>
+                              <div class="min-w-0">
+                                <p class="text-[11px] font-semibold uppercase tracking-wide text-[#64748B]">{{ t('doc.review.totalFee') }}</p>
+                                <p class="text-[clamp(1.0625rem,1.4vw,1.375rem)] font-extrabold text-[#F97316] leading-tight">₱{{ formatServiceFee(selectedTotalFee()) }}</p>
+                              </div>
+                            </div>
+                          }
+
+                          <div class="flex items-start gap-3">
+                            <div class="shrink-0 w-7 h-7 rounded-lg bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18" stroke-linecap="round"/>
+                              </svg>
+                            </div>
+                            <div class="min-w-0">
+                              <p class="text-[11px] font-semibold uppercase tracking-wide text-[#64748B]">{{ t('doc.review.requestedOn') }}</p>
+                              <p class="text-[15px] sm:text-base font-bold text-[#0F172A] leading-snug">{{ formatRequestedOn() }}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- RIGHT: Application Details -->
+                      <div class="bg-white border border-[#E5E7EB] rounded-[20px] shadow-[0_2px_14px_rgba(15,23,42,0.07)] px-5 sm:px-6 py-4">
+                        <div class="flex items-center gap-2.5 mb-2">
+                          <div class="shrink-0 w-8 h-8 rounded-lg bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                              <rect x="5" y="4" width="14" height="17" rx="2"/>
+                              <path d="M9 4.5V3h6v1.5" stroke-linecap="round"/>
+                              <path d="M8.5 12.5l2.3 2.3 4.7-4.7" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                          </div>
+                          <h2 class="text-[14px] sm:text-[15px] font-bold tracking-[0.02em] text-[#0F172A] uppercase">{{ t('doc.review.details') }}</h2>
+                        </div>
+
+                        @for (svc of selectedServices(); track svc.service_id) {
+                          <div class="mb-2 [&:not(:last-child)]:pb-2 [&:not(:last-child)]:border-b [&:not(:last-child)]:border-[#F1F5F9]">
+                            <div class="flex items-center justify-between gap-2">
+                              <h3 class="text-[12px] sm:text-[13px] font-bold text-[#F97316] uppercase tracking-[0.02em] break-words">{{ svc.service_name }}</h3>
+                              @if (svc.has_template) {
+                                <button (click)="openDocPreview(svc)" [disabled]="docPreviewRendering()"
+                                        class="shrink-0 flex items-center gap-1 text-[12px] font-semibold text-[#0284C7] hover:underline disabled:opacity-60 disabled:cursor-not-allowed">
+                                  @if (docPreviewRendering()) {
+                                    <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                                    </svg>
+                                    {{ t('doc.review.previewLoading') }}
+                                  } @else {
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                      <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                    </svg>
+                                    {{ t('doc.review.previewDocument') }}
+                                  }
+                                </button>
+                              } @else {
+                                <span class="shrink-0 text-[11px] font-semibold text-[#64748B]">{{ t('doc.review.previewUnavailable') }}</span>
+                              }
+                            </div>
+                            @if (svc.form_fields && svc.form_fields.length > 0) {
+                              <div class="divide-y divide-[#F1F5F9]">
+                                @for (field of svc.form_fields!; track field.key) {
+                                  <div class="flex items-center gap-3 py-2">
+                                    <div class="shrink-0 w-6 h-6 rounded-md bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                        <path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/>
+                                      </svg>
+                                    </div>
+                                    <span class="flex-1 min-w-0 text-[13px] sm:text-[14px] font-semibold text-[#0F172A] leading-snug">{{ fieldLabel(field) }}</span>
+                                    <span class="shrink-0 text-[13px] sm:text-[14px] font-bold text-[#334155] text-right leading-snug break-words max-w-[50%]">{{ displayFormValue(field, (serviceForms()[svc.service_id] || {})[field.key]) }}</span>
+                                  </div>
+                                }
+                              </div>
+                            } @else {
+                              <p class="text-[13px] sm:text-[14px] text-[#64748B]">{{ t('doc.form.noFields') }}</p>
+                            }
+                          </div>
                         }
                       </div>
                     </div>
-                    <hr class="border-blue-700" />
-                    <div>
-                      <p class="text-blue-300 text-sm">{{ t('doc.review.service') }}</p>
-                      <p class="font-bold text-lg">{{ selectedService()!.service_name }}</p>
-                    </div>
-                    <div>
-                      <p class="text-blue-300 text-sm">{{ t('doc.review.fee') }}</p>
-                      @if (selectedService()!.processing_fee > 0) {
-                        <p class="font-bold text-lg">₱{{ selectedService()!.processing_fee }}</p>
-                      } @else {
-                        <p class="font-bold text-lg text-green-300">{{ t('doc.services.free') }}</p>
-                      }
-                    </div>
-                    @if (selectedService()?.form_fields && selectedService()!.form_fields!.length > 0) {
-                      <div>
-                        <p class="text-blue-300 text-sm mb-2">{{ t('doc.review.details') }}</p>
-                        <div class="space-y-2">
-                          @for (field of selectedService()!.form_fields!; track field.key) {
-                            <div class="flex justify-between items-start gap-4 text-sm">
-                              <span class="text-blue-300 flex-1">{{ field.label }}</span>
-                              <span class="text-white font-medium text-right">
-                                {{ displayFormValue(field, formValues()[field.key]) }}
-                              </span>
-                            </div>
-                          }
-                        </div>
+
+                    @if (docPreviewError()) {
+                      <p class="mt-3 text-[12px] sm:text-[13px] font-medium text-[#B91C1C]">{{ docPreviewError() }}</p>
+                    }
+
+                    <!-- Error Message Alert -->
+                    @if (errorMessage()) {
+                      <div class="mt-3 flex items-center gap-3 rounded-xl bg-[#FEF2F2] border border-[#FECACA] px-4 py-3">
+                        <svg class="w-5 h-5 shrink-0 text-[#DC2626]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                          <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
+                        </svg>
+                        <p class="text-[13px] sm:text-[14px] font-medium text-[#B91C1C]">{{ errorMessage() }}</p>
                       </div>
                     }
+
+                    <!-- Actions: Edit Information + Submit Request -->
+                    <div class="flex flex-wrap items-center justify-center gap-4 mt-4 pb-1">
+                      <button (click)="editInformation()"
+                              class="flex items-center justify-center gap-2.5 min-h-[56px] px-7 rounded-xl border-2 border-[#F97316] bg-white text-[#F97316] text-[15px] sm:text-base font-bold shadow-sm hover:bg-[#FFF7ED] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/25">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/>
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12l3 3"/>
+                        </svg>
+                        {{ t('doc.review.edit') }}
+                      </button>
+                      <button (click)="submitRequest()" [disabled]="submitting()"
+                              class="flex items-center justify-center gap-2.5 min-h-[56px] px-8 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white text-[15px] sm:text-base font-bold shadow-[0_4px_14px_rgba(249,115,22,0.35)] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40 disabled:opacity-60 disabled:cursor-not-allowed">
+                        @if (submitting()) {
+                          <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                          </svg>
+                        } @else {
+                          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M22 2L11 13"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M22 2L15 22l-4-9-9-4 20-7z"/>
+                          </svg>
+                        }
+                        {{ t('doc.review.submit') }}
+                      </button>
+                    </div>
+
                   </div>
-
-                  <!-- Pre-submission document preview (hidden when the service has no template) -->
-                  @if (selectedService()?.has_template) {
-                    <div class="bg-blue-800/50 rounded-2xl p-6 backdrop-blur">
-                      <div class="flex items-center justify-between gap-4">
-                        <div class="min-w-0">
-                          <h3 class="font-bold text-lg">{{ t('doc.review.previewTitle') }}</h3>
-                          <p class="text-blue-200 text-sm">{{ t('doc.review.previewHint') }}</p>
-                        </div>
-                        <button
-                          (click)="openDocPreview()"
-                          [disabled]="docPreviewRendering()"
-                          class="shrink-0 flex items-center gap-2 h-11 px-6 rounded-xl bg-[#F97316] text-white text-sm font-bold shadow-[0_2px_10px_rgba(249,115,22,0.35)] hover:bg-[#EA580C] focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 disabled:opacity-60 disabled:cursor-not-allowed">
-                          @if (docPreviewRendering()) {
-                            <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                            </svg>
-                            {{ t('doc.review.previewLoading') }}
-                          } @else {
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                              <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                            </svg>
-                            {{ t('doc.review.previewDocument') }}
-                          }
-                        </button>
-                      </div>
-
-                      @if (docPreviewError()) {
-                        <p class="text-red-300 text-sm mt-3">{{ docPreviewError() }}</p>
-                      }
-                    </div>
-                  }
- 
-                  <!-- Error Message Alert -->
-                  @if (errorMessage()) {
-                    <div class="mt-4 bg-red-500/20 border border-red-400 rounded-xl p-4">
-                      <p class="text-red-200 text-sm">{{ errorMessage() }}</p>
-                    </div>
-                  }
-                </div>
-
-                <!-- Actions: Edit Information + Submit Request (the form stays the source of truth) -->
-                <div class="flex gap-4 mt-6">
-                  <app-button variant="secondary" size="lg" class="flex-1" (onClick)="editInformation()">{{ t('doc.review.edit') }}</app-button>
-                  <app-button variant="primary" size="lg" class="flex-1" (onClick)="submitRequest()" [loading]="submitting()">{{ t('doc.review.submit') }}</app-button>
                 </div>
               </div>
+
+              <!-- Footer: same as the kiosk landing page (includes the language selector) -->
+              <footer class="relative z-10 shrink-0 border-t border-[#E5E7EB] bg-white/90 backdrop-blur-sm">
+                <div class="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-1.5 lg:py-2 grid grid-cols-2 md:grid-cols-4 gap-x-6 lg:gap-x-8 gap-y-2 lg:gap-y-3 items-center">
+
+                  <!-- Section 1: Language -->
+                  <div class="flex flex-col items-center gap-1.5 text-center min-w-0">
+                    <div class="flex items-center gap-1.5 text-[#0F172A]">
+                      <svg class="w-[18px] h-[18px] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="9"/><path d="M3.6 9h16.8M3.6 15h16.8M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/>
+                      </svg>
+                      <span class="text-[13px] font-semibold">{{ t('landing.footer.language') }}</span>
+                    </div>
+                    <div class="inline-flex rounded-lg overflow-hidden border border-[#E5E7EB] bg-white shadow-sm min-w-0">
+                      <button
+                        (click)="setLanguage('en')"
+                        class="px-3 sm:px-5 py-1.5 text-[13px] font-semibold transition-colors min-h-[34px]"
+                        [class.bg-[#F97316]]="language() === 'en'"
+                        [class.text-white]="language() === 'en'"
+                        [class.bg-white]="language() !== 'en'"
+                        [class.text-[#0F172A]]="language() !== 'en'">
+                        English
+                      </button>
+                      <button
+                        (click)="setLanguage('fil')"
+                        class="px-3 sm:px-5 py-1.5 text-[13px] border-l border-[#E5E7EB] font-semibold transition-colors min-h-[34px]"
+                        [class.bg-[#F97316]]="language() === 'fil'"
+                        [class.text-white]="language() === 'fil'"
+                        [class.bg-white]="language() !== 'fil'"
+                        [class.text-[#0F172A]]="language() !== 'fil'">
+                        Filipino
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Section 2: Need Assistance -->
+                  <div class="flex flex-col items-center gap-1 text-center min-w-0">
+                    <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="9"/>
+                      <path d="M9.5 9a2.5 2.5 0 114.6 1.3c-.8 1-1.9 1.7-1.9 3.2" stroke-linecap="round"/>
+                      <path d="M12 17h.01" stroke-linecap="round"/>
+                    </svg>
+                    <div>
+                      <p class="text-[13px] lg:text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.assistance') }}</p>
+                      <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.assistanceDesc') }}</p>
+                    </div>
+                  </div>
+
+                  <!-- Section 3: Office Hours -->
+                  <div class="flex flex-col items-center gap-1 text-center min-w-0">
+                    <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="9"/>
+                      <path d="M12 7v5l3 2" stroke-linecap="round"/>
+                    </svg>
+                    <div>
+                      <p class="text-[13px] lg:text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.hours') }}</p>
+                      <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.monFri') }}</p>
+                      <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.hoursRange') }}</p>
+                    </div>
+                  </div>
+
+                  <!-- Section 4: Date & Time -->
+                  <div class="flex flex-col items-center gap-1 text-center min-w-0">
+                    <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                      <rect x="3" y="5" width="18" height="16" rx="2"/>
+                      <path d="M8 3v4M16 3v4M3 10h18"/>
+                    </svg>
+                    <div class="min-w-0">
+                      <p class="text-[11px] lg:text-[12px] font-medium text-[#64748B] leading-snug">{{ formatFooterDate() }}</p>
+                      <p class="text-base lg:text-lg font-bold text-[#F97316] leading-tight">{{ formatFooterTime() }}</p>
+                    </div>
+                  </div>
+                </div>
+              </footer>
             </div>
           }
 
           <!-- DOC STEP 6: Success -->
           @if (currentStep() === 'success') {
-            <div class="absolute inset-0 flex flex-col items-center justify-center p-8">
-              <div class="max-w-lg w-full text-center">
-                <div class="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
-                  </svg>
-                </div>
-                <h2 class="text-3xl font-bold mb-4">{{ t('doc.success.title') }}</h2>
-                <p class="text-xl text-blue-200 mb-2">{{ t('doc.success.requestNumber') }}</p>
-                <p class="text-4xl font-bold text-yellow-300 mb-6">{{ requestNumber() }}</p>
-                <p class="text-blue-200 mb-3">{{ t('doc.success.instructions') }}</p>
-                <p class="text-blue-200 mb-8">{{ t('doc.success.monitor') }}</p>
-                <app-button variant="primary" size="lg" (onClick)="finish()">{{ t('common.done') }}</app-button>
+            <div class="absolute inset-0 bg-[#F8FAFC] text-[#0F172A] select-none overflow-hidden [font-family:'Inter',sans-serif] flex flex-col">
+
+              <!-- Background image (same as the kiosk landing page) -->
+              <div class="absolute inset-0 bg-cover bg-center pointer-events-none" style="background-image: url('Background.png')" aria-hidden="true"></div>
+              <!-- Subtle radial glow keeps the content legible without washing the orange -->
+              <div class="absolute inset-0 pointer-events-none" aria-hidden="true"
+                   style="background: radial-gradient(ellipse 72% 58% at 50% 42%, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0.35) 55%, rgba(255,255,255,0.05) 100%);"></div>
+              <!-- Curved orange header accent (top-left, same as landing) -->
+              <div class="absolute top-0 left-0 w-64 h-40 pointer-events-none" aria-hidden="true">
+                <svg viewBox="0 0 256 160" class="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M0 0 H256 V80 C256 124 220 160 176 160 H0 Z" fill="#F97316" opacity="0.12"/>
+                </svg>
               </div>
+
+              <!-- Header: back (left) + logo (center) + RFID verified badge (right) -->
+              <div class="relative z-10 flex items-center justify-center px-6 pt-[14px] pb-1">
+                <div class="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 z-40 flex items-center gap-2.5 sm:gap-3">
+                  <button (click)="finish()"
+                          class="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px] rounded-full border-2 border-[#F97316]/60 bg-white flex items-center justify-center shadow-sm hover:bg-[#FFF7ED] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30"
+                          [attr.aria-label]="t('common.back')">
+                    <svg class="w-6 h-6 sm:w-7 sm:h-7 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                  </button>
+                  <button (click)="finish()"
+                          class="flex items-center min-h-[44px] rounded-xl px-1 text-[#0F172A] font-semibold text-[15px] sm:text-base hover:text-[#F97316] transition-colors focus:outline-none focus:ring-2 focus:ring-[#F97316]/40">
+                    {{ t('common.back') }}
+                  </button>
+                </div>
+
+                <div class="w-[76px] h-[76px] sm:w-[88px] sm:h-[88px] rounded-full bg-white border-2 border-[#F97316]/30 shadow-sm overflow-hidden flex items-center justify-center">
+                  <img src="Barangay Logo.png" alt="Barangay San Manuel logo" class="w-full h-full object-cover">
+                </div>
+
+                @if (rfidCard()) {
+                  <div class="absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 z-40 flex items-center gap-2 rounded-xl border-[1.5px] border-[#86EFAC] bg-[#DCFCE7] px-2.5 sm:px-3 py-1.5 shadow-sm" role="status">
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6 text-[#16A34A] shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 2.75 19 5.5v5.4c0 4.3-2.9 8.1-7 9.6-4.1-1.5-7-5.3-7-9.6V5.5l7-2.75z"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 11.6l2.1 2.1L15 9.4"/>
+                    </svg>
+                    <div>
+                      <p class="text-[12.5px] sm:text-[13.5px] font-bold text-[#15803D] leading-tight">{{ t('doc.success.rfidVerified') }}</p>
+                      <p class="text-[11px] sm:text-[11.5px] font-medium text-[#166534] leading-tight">{{ t('doc.success.activeResident') }}</p>
+                    </div>
+                  </div>
+                }
+              </div>
+
+              <!-- Main content -->
+              <div class="relative flex-1 overflow-y-auto">
+                <div class="min-h-full flex flex-col items-center px-5 sm:px-8 py-3 sm:py-4">
+
+                  <!-- Success indicator -->
+                  <div class="relative mt-1 sm:mt-2" aria-hidden="true">
+                    <!-- Subtle celebratory accents around the checkmark -->
+                    <svg class="absolute -top-2 -left-6 w-6 h-6 text-[#F97316]/50" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 0l2.4 9.6L24 12l-9.6 2.4L12 24l-2.4-9.6L0 12l9.6-2.4z"/>
+                    </svg>
+                    <svg class="absolute top-0 -right-7 w-4 h-4 text-[#10B981]/40" fill="currentColor" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="12"/>
+                    </svg>
+                    <svg class="absolute -bottom-3 -left-4 w-4 h-4 text-[#10B981]/40" fill="currentColor" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="12"/>
+                    </svg>
+                    <svg class="absolute -bottom-1 -right-5 w-5 h-5 text-[#F97316]/40" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 0l2.4 9.6L24 12l-9.6 2.4L12 24l-2.4-9.6L0 12l9.6-2.4z"/>
+                    </svg>
+
+                    <div class="w-[88px] h-[88px] sm:w-[100px] sm:h-[100px] rounded-full bg-[#F0FDF4] border border-[#BBF7D0] flex items-center justify-center shadow-sm">
+                      <div class="w-[64px] h-[64px] sm:w-[72px] sm:h-[72px] rounded-full bg-[#16A34A] flex items-center justify-center">
+                        <svg class="w-8 h-8 sm:w-9 sm:h-9 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Success message -->
+                  <h1 class="text-[clamp(1.75rem,2.4vw,2.5rem)] font-bold tracking-tight text-[#0F172A] text-center leading-tight mt-3">{{ t('doc.success.title') }}</h1>
+                  <p class="text-[clamp(0.95rem,1.1vw,1.15rem)] font-medium text-[#64748B] text-center mt-1.5 max-w-xl mx-auto">{{ t('doc.success.subtitle') }}</p>
+
+                  <!-- Request number card -->
+                  <section aria-label="{{ t('doc.success.yourRequestNumber') }}" class="w-full max-w-[860px] bg-white border border-[#E5E7EB] rounded-[20px] shadow-[0_2px_14px_rgba(15,23,42,0.07)] px-5 sm:px-8 py-4 sm:py-5 text-center mt-4">
+
+                    <div class="flex items-center justify-center gap-2">
+                      <svg class="w-5 h-5 sm:w-6 sm:h-6 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6M9 16h6M9 8h2"/>
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                      </svg>
+                      <span class="text-[13px] sm:text-sm font-bold tracking-[0.14em] text-[#0F172A] uppercase">{{ t('doc.success.yourRequestNumber') }}</span>
+                    </div>
+
+                    <div class="mt-2.5 mx-auto max-w-[720px] rounded-[16px] border-2 border-[#F97316]/40 bg-[#FFF7ED] px-5 py-2.5 sm:py-3">
+                      @if (requestNumbers().length > 1) {
+                        <p class="text-[13px] sm:text-sm font-bold tracking-[0.14em] text-[#F97316] uppercase mb-1.5">{{ t('doc.success.yourRequestNumbers') }}</p>
+                        <div class="flex flex-wrap items-center justify-center gap-2">
+                          @for (num of requestNumbers(); track num) {
+                            <span class="px-3 py-1 rounded-lg bg-white border border-[#F97316]/30 text-[clamp(1.125rem,1.6vw,1.75rem)] font-bold tracking-wide text-[#0F172A] leading-tight">{{ num }}</span>
+                          }
+                        </div>
+                      } @else {
+                        <p class="text-[clamp(1.75rem,2.6vw,2.75rem)] font-bold tracking-wide text-[#0F172A] break-all leading-tight">{{ requestNumber() }}</p>
+                      }
+                    </div>
+
+                    <div class="flex items-center justify-center gap-2 mt-2.5">
+                      <svg class="w-[18px] h-[18px] text-[#64748B] shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6M9 16h6M9 8h2"/>
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                      </svg>
+                      <p class="text-[14px] sm:text-[15px] font-semibold text-[#64748B]">{{ t('doc.success.keepNumber') }}</p>
+                    </div>
+                  </section>
+
+                  <!-- Request status card -->
+                  <section aria-label="Request Status" class="w-full max-w-[860px] rounded-[20px] border-2 border-[#BBF7D0] bg-[#F0FDF4] px-5 sm:px-6 py-3.5 sm:py-4 flex flex-col sm:flex-row items-center gap-3 sm:gap-4 text-center sm:text-left mt-3.5">
+                    <div class="shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[#16A34A] flex items-center justify-center" aria-hidden="true">
+                      <svg class="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M12 6.75V8M12 12v2M12 17v0.5"/>
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                      </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-[16px] sm:text-[17px] font-bold text-[#15803D] tracking-[0.04em] uppercase">{{ t('doc.success.statusReceived') }}</p>
+                      <p class="text-[13.5px] sm:text-[14.5px] font-semibold text-[#166534] mt-0.5">{{ t('doc.success.statusWaiting') }}</p>
+                    </div>
+                    <div class="shrink-0 sm:max-w-[340px] flex items-start gap-2">
+                      <svg class="w-5 h-5 text-[#16A34A] shrink-0 mt-0.5 hidden sm:block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="9"/>
+                        <path d="M9.5 9a2.5 2.5 0 114.6 1.3c-.8 1-1.9 1.7-1.9 3.2" stroke-linecap="round"/>
+                        <path d="M12 17h.01" stroke-linecap="round"/>
+                      </svg>
+                      <p class="text-[13.5px] sm:text-[14.5px] font-medium text-[#166534] leading-snug">{{ t('doc.success.statusHint') }}</p>
+                    </div>
+                  </section>
+
+                  <!-- What happens next -->
+                  <section aria-label="{{ t('doc.success.whatNext') }}" class="w-full max-w-[860px] bg-white border border-[#E5E7EB] rounded-[20px] shadow-[0_2px_14px_rgba(15,23,42,0.07)] px-5 sm:px-7 py-4 sm:py-5 mt-3.5">
+                    <h2 class="text-[clamp(1rem,1.3vw,1.25rem)] font-bold text-[#0F172A] text-center tracking-tight uppercase">{{ t('doc.success.whatNext') }}</h2>
+
+                    <div class="mt-3.5 sm:mt-4 grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4 md:divide-x md:divide-[#E5E7EB]">
+                      <!-- Step 1 -->
+                      <div class="flex flex-col items-center text-center md:px-3">
+                        <span class="shrink-0 w-9 h-9 rounded-full bg-[#F97316] text-white text-[16px] font-bold flex items-center justify-center shadow-sm" aria-hidden="true">1</span>
+                        <div class="mt-2 w-11 h-11 rounded-xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
+                          <svg class="w-6 h-6 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M9 12h6M9 16h6M9 8h2"/>
+                            <rect x="3" y="3" width="18" height="18" rx="2"/>
+                          </svg>
+                        </div>
+                        <h3 class="mt-2 text-[15px] sm:text-base font-bold text-[#0F172A] leading-tight">{{ t('doc.success.step1.title') }}</h3>
+                        <p class="text-[13px] sm:text-sm text-[#64748B] mt-1 leading-snug max-w-[230px]">{{ t('doc.success.step1.desc') }}</p>
+                      </div>
+
+                      <!-- Step 2 -->
+                      <div class="flex flex-col items-center text-center md:px-3">
+                        <span class="shrink-0 w-9 h-9 rounded-full bg-[#F97316] text-white text-[16px] font-bold flex items-center justify-center shadow-sm" aria-hidden="true">2</span>
+                        <div class="mt-2 w-11 h-11 rounded-xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
+                          <svg class="w-6 h-6 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                            <circle cx="10" cy="8" r="3.5"/>
+                            <path stroke-linecap="round" d="M4 19c0-3.3 2.7-5 6-5s6 1.7 6 5"/>
+                            <path stroke-linecap="round" d="M17 6.5l1.2 1.2 2.3-2.4"/>
+                          </svg>
+                        </div>
+                        <h3 class="mt-2 text-[15px] sm:text-base font-bold text-[#0F172A] leading-tight">{{ t('doc.success.step2.title') }}</h3>
+                        <p class="text-[13px] sm:text-sm text-[#64748B] mt-1 leading-snug max-w-[230px]">{{ t('doc.success.step2.desc') }}</p>
+                      </div>
+
+                      <!-- Step 3 -->
+                      <div class="flex flex-col items-center text-center md:px-3">
+                        <span class="shrink-0 w-9 h-9 rounded-full bg-[#F97316] text-white text-[16px] font-bold flex items-center justify-center shadow-sm" aria-hidden="true">3</span>
+                        <div class="mt-2 w-11 h-11 rounded-xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
+                          <svg class="w-6 h-6 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                            <rect x="3" y="4" width="18" height="16" rx="2"/>
+                            <path stroke-linecap="round" d="M3 9h18M8 9v11M12 9v11M16 9v11"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01"/>
+                          </svg>
+                        </div>
+                        <h3 class="mt-2 text-[15px] sm:text-base font-bold text-[#0F172A] leading-tight">{{ t('doc.success.step3.title') }}</h3>
+                        <p class="text-[13px] sm:text-sm text-[#64748B] mt-1 leading-snug max-w-[230px]">{{ t('doc.success.step3.desc') }}</p>
+                      </div>
+                    </div>
+                  </section>
+
+                  <!-- Done button -->
+                  <button type="button" (click)="finish()"
+                          class="flex items-center justify-center gap-2.5 min-h-[64px] w-[300px] sm:w-[380px] px-7 rounded-2xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white text-lg sm:text-xl font-bold shadow-[0_4px_14px_rgba(249,115,22,0.35)] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40 mt-4 mb-1">
+                    <svg class="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    {{ t('common.done') }}
+                  </button>
+                </div>
+              </div>
+
+              <!-- Footer: same as the kiosk landing page (includes the language selector) -->
+              <footer class="relative z-10 shrink-0 border-t border-[#E5E7EB] bg-white/90 backdrop-blur-sm">
+                <div class="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-1.5 lg:py-2 grid grid-cols-2 md:grid-cols-4 gap-x-6 lg:gap-x-8 gap-y-2 lg:gap-y-3 items-center">
+
+                  <!-- Section 1: Language -->
+                  <div class="flex flex-col items-center gap-1.5 text-center min-w-0">
+                    <div class="flex items-center gap-1.5 text-[#0F172A]">
+                      <svg class="w-[18px] h-[18px] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="9"/><path d="M3.6 9h16.8M3.6 15h16.8M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/>
+                      </svg>
+                      <span class="text-[13px] font-semibold">{{ t('landing.footer.language') }}</span>
+                    </div>
+                    <div class="inline-flex rounded-lg overflow-hidden border border-[#E5E7EB] bg-white shadow-sm min-w-0">
+                      <button
+                        (click)="setLanguage('en')"
+                        class="px-3 sm:px-5 py-1.5 text-[13px] font-semibold transition-colors min-h-[34px]"
+                        [class.bg-[#F97316]]="language() === 'en'"
+                        [class.text-white]="language() === 'en'"
+                        [class.bg-white]="language() !== 'en'"
+                        [class.text-[#0F172A]]="language() !== 'en'">
+                        English
+                      </button>
+                      <button
+                        (click)="setLanguage('fil')"
+                        class="px-3 sm:px-5 py-1.5 text-[13px] border-l border-[#E5E7EB] font-semibold transition-colors min-h-[34px]"
+                        [class.bg-[#F97316]]="language() === 'fil'"
+                        [class.text-white]="language() === 'fil'"
+                        [class.bg-white]="language() !== 'fil'"
+                        [class.text-[#0F172A]]="language() !== 'fil'">
+                        Filipino
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Section 2: Need Assistance -->
+                  <div class="flex flex-col items-center gap-1 text-center min-w-0">
+                    <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="9"/>
+                      <path d="M9.5 9a2.5 2.5 0 114.6 1.3c-.8 1-1.9 1.7-1.9 3.2" stroke-linecap="round"/>
+                      <path d="M12 17h.01" stroke-linecap="round"/>
+                    </svg>
+                    <div>
+                      <p class="text-[13px] lg:text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.assistance') }}</p>
+                      <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.assistanceDesc') }}</p>
+                    </div>
+                  </div>
+
+                  <!-- Section 3: Office Hours -->
+                  <div class="flex flex-col items-center gap-1 text-center min-w-0">
+                    <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="9"/>
+                      <path d="M12 7v5l3 2" stroke-linecap="round"/>
+                    </svg>
+                    <div>
+                      <p class="text-[13px] lg:text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.hours') }}</p>
+                      <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.monFri') }}</p>
+                      <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.hoursRange') }}</p>
+                    </div>
+                  </div>
+
+                  <!-- Section 4: Date & Time -->
+                  <div class="flex flex-col items-center gap-1 text-center min-w-0">
+                    <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                      <rect x="3" y="5" width="18" height="16" rx="2"/>
+                      <path d="M8 3v4M16 3v4M3 10h18"/>
+                    </svg>
+                    <div class="min-w-0">
+                      <p class="text-[11px] lg:text-[12px] font-medium text-[#64748B] leading-snug">{{ formatFooterDate() }}</p>
+                      <p class="text-base lg:text-lg font-bold text-[#F97316] leading-tight">{{ formatFooterTime() }}</p>
+                    </div>
+                  </div>
+                </div>
+              </footer>
             </div>
           }
         }
@@ -2887,7 +3454,7 @@ export type BarangayStep =
                                   <circle cx="12" cy="14" r="3"/>
                                 </svg>
                                 <p class="text-white text-base font-semibold">{{ t('bar.photo.unavailable') }}</p>
-                                <p class="text-white/70 text-[13px] sm:text-sm max-w-xs">{{ t('bar.photo.unavailableDesc') }}</p>
+                                <p class="text-white/70 text-[13px] sm:text-sm max-w-xs">{{ errorMessage() || t('bar.photo.unavailableDesc') }}</p>
                                 <button (click)="retryPhotoCamera()"
                                         class="mt-1 flex items-center gap-2 min-h-[48px] px-6 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white font-semibold text-sm transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40">
                                   <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
@@ -2898,7 +3465,7 @@ export type BarangayStep =
                               </div>
                             } @else {
                               <video #videoEl autoplay playsinline class="absolute inset-0 w-full h-full object-cover"></video>
-
+ 
                               <!-- Face-positioning guide (fades out when the camera is live) -->
                               <div class="absolute inset-0 pointer-events-none transition-opacity duration-300" [class.opacity-40]="cameraReady()">
                                 <!-- Corner markers -->
@@ -2922,7 +3489,7 @@ export type BarangayStep =
                                   <span class="rounded-full bg-black/50 backdrop-blur-sm px-4 py-1.5 text-white text-[13px] font-medium">{{ t('bar.photo.positionGuide') }}</span>
                                 </div>
                               </div>
-
+ 
                               <!-- Camera status chip -->
                               <div class="absolute left-3 top-3 flex items-center gap-2 rounded-full bg-black/50 backdrop-blur-sm px-3 py-1.5">
                                 <span class="h-2.5 w-2.5 rounded-full shrink-0"
@@ -2934,17 +3501,17 @@ export type BarangayStep =
                               </div>
                             }
                           </div>
-
+ 
                           <!-- Actions -->
                           <div class="flex flex-col items-center justify-center gap-2.5 pt-3 sm:pt-3.5 pb-0.5">
                             @if (!capturedPhoto()) {
-                              <button (click)="capturePhoto()" [disabled]="!cameraReady()"
+                              <button (click)="capturePhoto()" [disabled]="!cameraReady() || submitting()"
                                       class="flex items-center justify-center gap-2.5 min-h-[56px] min-w-[300px] px-7 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white text-base sm:text-lg font-semibold shadow-[0_4px_14px_rgba(249,115,22,0.35)] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none">
                                 <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
                                   <path stroke-linecap="round" stroke-linejoin="round" d="M3 8a2 2 0 0 1 2-2h2l1.5-2h7L17 6h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
                                   <circle cx="12" cy="13" r="3.5"/>
                                 </svg>
-                                {{ t('bar.photo.take') }}
+                                @if (submitting()) { Capturing... } @else { {{ t('bar.photo.take') }} }
                               </button>
                               @if (cameraReady()) {
                                 <p class="text-[13px] sm:text-sm text-[#64748B]">{{ t('bar.photo.waiting') }}</p>
@@ -4076,8 +4643,33 @@ export type BarangayStep =
   `
 })
 export class KioskComponent implements OnInit, OnDestroy {
-  @ViewChild('videoEl') videoEl!: ElementRef<HTMLVideoElement>;
-  @ViewChild('inlineVideoEl') inlineVideoEl!: ElementRef<HTMLVideoElement>;
+  private _videoEl!: ElementRef<HTMLVideoElement>;
+  @ViewChild('videoEl') set videoEl(el: ElementRef<HTMLVideoElement> | undefined) {
+    if (el) {
+      this._videoEl = el;
+      if (this.stream && el.nativeElement) {
+        el.nativeElement.srcObject = this.stream;
+        this.cameraReady.set(true);
+      }
+    }
+  }
+  get videoEl(): ElementRef<HTMLVideoElement> | undefined {
+    return this._videoEl;
+  }
+
+  private _inlineVideoEl!: ElementRef<HTMLVideoElement>;
+  @ViewChild('inlineVideoEl') set inlineVideoEl(el: ElementRef<HTMLVideoElement> | undefined) {
+    if (el) {
+      this._inlineVideoEl = el;
+      if (this.stream && el.nativeElement) {
+        el.nativeElement.srcObject = this.stream;
+        this.cameraReady.set(true);
+      }
+    }
+  }
+  get inlineVideoEl(): ElementRef<HTMLVideoElement> | undefined {
+    return this._inlineVideoEl;
+  }
 
   mode = signal<KioskMode>('home');
 
@@ -4096,13 +4688,26 @@ export class KioskComponent implements OnInit, OnDestroy {
   resident = signal<Resident | null>(null);
   rfidCard = signal<RfidCardInfo | null>(null);
   services = signal<Service[]>([]);
-  selectedService = signal<Service | null>(null);
+  // Multi-service selection: the resident can request more than one service in a
+  // single transaction. `selectedService` is the service currently being filled
+  // (index = serviceIndex) so the requirements/form/photo steps stay single-purpose.
+  selectedServices = signal<Service[]>([]);
+  serviceIndex = signal(0);
+  selectedService = computed<Service | null>(() => this.selectedServices()[this.serviceIndex()] ?? null);
+  serviceForms = signal<Record<number, Record<string, unknown>>>({});
+  servicePhotos = signal<Record<number, string>>({});
+  serviceError = signal('');
+  requestNumbers = signal<string[]>([]);
   barangayService = signal<Service | null>(null);
   capturedPhoto = signal<string | null>(null);
   capturedSignature = signal<string | null>(null);
   requestNumber = signal('');
   errorMessage = signal('');
   cameraReady = signal(false);
+  availableCameras = signal<MediaDeviceInfo[]>([]);
+  currentCameraIndex = signal<number>(0);
+  useIpCamera = signal(false);
+  ipCameraUrl = signal('http://localhost:4747/video'); // Default DroidCam loopback URL
   formError = signal('');
   guestSubmitted = signal(false);
   barangaySubmitted = signal(false);
@@ -4252,7 +4857,10 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.barangayStep.set(savedState.barangayStep);
     this.resident.set(savedState.resident);
     this.rfidCard.set(savedState.rfidCard ?? null);
-    this.selectedService.set(savedState.selectedService);
+    this.selectedServices.set(savedState.selectedServices ?? []);
+    this.serviceIndex.set(savedState.serviceIndex ?? 0);
+    this.serviceForms.set(savedState.serviceForms ?? {});
+    this.servicePhotos.set(savedState.servicePhotos ?? {});
     this.barangayService.set(savedState.barangayService);
     this.capturedPhoto.set(savedState.capturedPhoto);
     this.capturedSignature.set(savedState.capturedSignature);
@@ -4296,6 +4904,10 @@ export class KioskComponent implements OnInit, OnDestroy {
         resident: this.resident(),
         rfidCard: this.rfidCard(),
         selectedService: this.selectedService(),
+        selectedServices: this.selectedServices(),
+        serviceIndex: this.serviceIndex(),
+        serviceForms: this.serviceForms(),
+        servicePhotos: this.servicePhotos(),
         barangayService: this.barangayService(),
         capturedPhoto: this.capturedPhoto(),
         capturedSignature: this.capturedSignature(),
@@ -4525,24 +5137,53 @@ export class KioskComponent implements OnInit, OnDestroy {
 
 
 
-  selectService(service: Service) {
-    this.selectedService.set(service);
-    this.formValues.set({});
-    this.formErrors.set({});
-    this.inlinePhotos.set({});
-    this.activePhotoField.set(null);
+  toggleService(service: Service) {
+    const current = this.selectedServices();
+    const exists = current.some(s => s.service_id === service.service_id);
+    this.selectedServices.set(exists ? current.filter(s => s.service_id !== service.service_id) : [...current, service]);
+    if (this.serviceError()) this.serviceError.set('');
+    this.saveState();
+  }
+
+  isServiceSelected(service: Service): boolean {
+    return this.selectedServices().some(s => s.service_id === service.service_id);
+  }
+
+  selectedServiceCount(): number {
+    return this.selectedServices().length;
+  }
+
+  selectedTotalFee(): number {
+    return this.selectedServices().reduce((sum, s) => sum + (Number(s.processing_fee) || 0), 0);
+  }
+
+  proceedFromServices() {
+    if (this.selectedServices().length === 0) {
+      this.serviceError.set(this.t('doc.services.required'));
+      return;
+    }
+    this.serviceError.set('');
+    this.serviceIndex.set(0);
+    this.loadServiceForm();
     this.currentStep.set('requirements');
     this.resetIdleTimer();
     this.saveState();
   }
 
-  proceedToForm() {
+  // Load (or initialize) the form values for the currently active service.
+  private loadServiceForm() {
+    const svc = this.selectedService();
+    if (!svc) return;
+    const saved = this.serviceForms()[svc.service_id];
+    if (saved) {
+      this.formValues.set(saved);
+      this.formErrors.set({});
+      return;
+    }
     const defaults: Record<string, unknown> = {};
-    for (const field of this.selectedService()?.form_fields || []) {
+    for (const field of svc.form_fields || []) {
       if (field.defaultValue) defaults[field.key] = field.defaultValue;
     }
-    this.formValues.set(defaults);
-
     const resident = this.resident();
     if (resident) {
       const nameParts = [resident.first_name, resident.middle_name, resident.last_name, resident.suffix].filter(Boolean);
@@ -4559,13 +5200,46 @@ export class KioskComponent implements OnInit, OnDestroy {
         emergency_contact_name: resident.emergency_contact_name,
         emergency_contact_number: resident.emergency_contact_number
       };
-      const prefilled: Record<string, any> = {};
       for (const key of Object.keys(source)) {
         const value = source[key];
-        if (value !== null && value !== undefined) prefilled[key] = value;
+        if (value !== null && value !== undefined) defaults[key] = value;
       }
-      this.formValues.update(v => ({ ...v, ...prefilled }));
     }
+    this.formValues.set(defaults);
+    this.formErrors.set({});
+  }
+
+  // Persist the current form values against the active service.
+  private stashActiveForm() {
+    const svc = this.selectedService();
+    if (!svc) return;
+    this.serviceForms.update(m => ({ ...m, [svc.service_id]: this.formValues() }));
+  }
+
+  // Persist the current captured photo against the active service.
+  private stashActivePhoto() {
+    const svc = this.selectedService();
+    if (!svc) return;
+    this.servicePhotos.update(m => ({ ...m, [svc.service_id]: this.capturedPhoto() ?? '' }));
+  }
+
+  // After a service's form (+ photo) is done, move to the next selected service
+  // or land on the review step when all services are filled.
+  private advanceOrReview() {
+    const idx = this.serviceIndex();
+    if (idx + 1 < this.selectedServices().length) {
+      this.serviceIndex.set(idx + 1);
+      this.loadServiceForm();
+      this.currentStep.set('requirements');
+    } else {
+      this.currentStep.set('review');
+    }
+    this.resetIdleTimer();
+    this.saveState();
+  }
+
+  proceedToForm() {
+    this.loadServiceForm();
     this.currentStep.set('form');
     this.resetIdleTimer();
     this.saveState();
@@ -4720,6 +5394,27 @@ export class KioskComponent implements OnInit, OnDestroy {
     return String(value);
   }
 
+  // Look up a single submitted form value by field key (for the review summary).
+  reviewFormValue(key: string): string {
+    const field = this.selectedService()?.form_fields?.find((f) => f.key === key);
+    return field ? this.displayFormValue(field, this.formValues()[key]) : '—';
+  }
+
+  // "May 12, 2026 • 11:20 AM" style timestamp for the request summary.
+  formatRequestedOn(): string {
+    const d = this.currentDateTime();
+    const date = d.toLocaleDateString(this.language() === 'fil' ? 'fil-PH' : 'en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    const time = d.toLocaleTimeString(this.language() === 'fil' ? 'fil-PH' : 'en-US', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    return `${date} • ${time}`;
+  }
+
 
 
   validateForm() {
@@ -4738,14 +5433,18 @@ export class KioskComponent implements OnInit, OnDestroy {
     if (hasErrors) return;
     this.clearDocPreview();
     const service = this.selectedService();
+    if (!service) return;
 
-    if (service?.requires_photo) {
+    // Persist this service's form values before advancing.
+    this.serviceForms.update(m => ({ ...m, [service.service_id]: this.formValues() }));
+
+    if (service.requires_photo) {
+      this.capturedPhoto.set(this.servicePhotos()[service.service_id] ?? null);
       this.currentStep.set('photo');
       this.resetIdleTimer();
       setTimeout(() => this.startCamera(), 100);
     } else {
-      this.currentStep.set('review');
-      this.resetIdleTimer();
+      this.advanceOrReview();
     }
     this.saveState();
   }
@@ -5074,10 +5773,10 @@ export class KioskComponent implements OnInit, OnDestroy {
   // mappings the admin will generate later) with the resident's in-progress form
   // data. Buffer only — no request row, no status change, no file on disk. The
   // resident can preview, restart preview (updated data), or go back and edit.
-  previewRequestDocument() {
+  previewRequestDocument(service?: Service) {
     if (this.docPreviewRendering()) return;
-    const service = this.selectedService();
-    if (!service || !service.has_template) return;
+    const svc = service || this.selectedService();
+    if (!svc || !svc.has_template) return;
 
     const resident = this.resident();
     const data: {
@@ -5086,8 +5785,8 @@ export class KioskComponent implements OnInit, OnDestroy {
       resident_id?: number;
       guest?: GuestInfo;
     } = {
-      service_id: service.service_id,
-      form_data: this.formValues()
+      service_id: svc.service_id,
+      form_data: service ? (this.serviceForms()[service.service_id] ?? {}) : this.formValues()
     };
     if (resident) {
       data.resident_id = resident.resident_id;
@@ -5135,12 +5834,12 @@ export class KioskComponent implements OnInit, OnDestroy {
 
   // Open the document preview modal. The blob is fetched on demand and rendered
   // by the modal component (docx-preview), matching the admin panel's preview UX.
-  openDocPreview() {
+  openDocPreview(service?: Service) {
     if (this.docPreviewBlob()) {
       this.showDocPreview.set(true);
       return;
     }
-    this.previewRequestDocument();
+    this.previewRequestDocument(service);
   }
 
   // Close the document preview modal. The blob is kept so the resident can
@@ -5163,6 +5862,10 @@ export class KioskComponent implements OnInit, OnDestroy {
   // edits happen there; the preview is always regenerated from the form values.
   editInformation() {
     this.clearDocPreview();
+    if (this.selectedServices().length > 0) {
+      this.serviceIndex.set(this.selectedServices().length - 1);
+      this.loadServiceForm();
+    }
     this.currentStep.set('form');
     this.saveState();
   }
@@ -5172,21 +5875,153 @@ export class KioskComponent implements OnInit, OnDestroy {
   // ============================================================
 
   startCamera(target?: HTMLVideoElement) {
-    if (this.stream) return;
-    this.cameraReady.set(false);
-    navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: 'user' } })
-      .then(stream => {
-        this.stream = stream;
-        const el = target || this.videoEl?.nativeElement;
-        if (el) el.srcObject = stream;
-        this.errorMessage.set('');
+    const el = target || this.videoEl?.nativeElement || this.inlineVideoEl?.nativeElement;
+    if (this.stream) {
+      if (el && el.srcObject !== this.stream) {
+        el.srcObject = this.stream;
         this.cameraReady.set(true);
+      }
+      return;
+    }
+    this.cameraReady.set(false);
+
+    // Helper to start stream with specific constraints
+    const getStream = (constraints: MediaStreamConstraints) => {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        const secureErr = 'Camera requires a secure HTTPS connection or localhost context.';
+        console.error(secureErr);
+        this.errorMessage.set(secureErr);
+        this.cameraReady.set(false);
+        return Promise.reject(new Error(secureErr));
+      }
+      return navigator.mediaDevices.getUserMedia(constraints)
+        .then(stream => {
+          this.stream = stream;
+          const currentEl = target || this.videoEl?.nativeElement || this.inlineVideoEl?.nativeElement;
+          if (currentEl) currentEl.srcObject = stream;
+          this.errorMessage.set('');
+          this.cameraReady.set(true);
+          return stream;
+        });
+    };
+
+    // If not using external webcam, directly request the local tablet camera
+    if (!this.useIpCamera()) {
+      getStream({ video: { width: 640, height: 480, facingMode: 'user' } })
+        .then(() => {
+          return navigator.mediaDevices.enumerateDevices();
+        })
+        .then(devices => {
+          const videoDevices = devices.filter(device => device.kind === 'videoinput');
+          this.availableCameras.set(videoDevices);
+          const activeTrack = this.stream?.getVideoTracks()[0];
+          const settings = activeTrack ? activeTrack.getSettings() : null;
+          if (settings && settings.deviceId) {
+            const idx = videoDevices.findIndex(d => d.deviceId === settings.deviceId);
+            if (idx !== -1) this.currentCameraIndex.set(idx);
+          }
+        })
+        .catch((err) => {
+          console.error('Camera error:', err);
+          this.errorMessage.set(this.t('err.cameraDenied'));
+          this.cameraReady.set(false);
+        });
+      return;
+    }
+
+    // First start with default constraints to prompt for permission
+    getStream({ video: true })
+      .then(() => {
+        // Once permission is granted, check for external/USB cameras
+        return navigator.mediaDevices.enumerateDevices();
+      })
+      .then(devices => {
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        console.log('[Camera] Available video devices:', videoDevices);
+        this.availableCameras.set(videoDevices);
+
+        if (videoDevices.length <= 1) {
+          this.currentCameraIndex.set(0);
+          return;
+        }
+
+        // Look for device labels matching USB/External webcams
+        const usbDevice = videoDevices.find(d => {
+          const label = d.label.toLowerCase();
+          return label.includes('usb') || label.includes('external') || label.includes('uvc') || label.includes('otg') || label.includes('camera 2');
+        });
+
+        // Fallback: if more than 2 cameras exist (e.g. Front, Back, USB), the external webcam is usually the last one
+        const targetDevice = usbDevice || (videoDevices.length > 2 ? videoDevices[videoDevices.length - 1] : null);
+        const activeDevice = targetDevice || videoDevices[0];
+        const activeIndex = videoDevices.findIndex(d => d.deviceId === activeDevice.deviceId);
+        this.currentCameraIndex.set(activeIndex !== -1 ? activeIndex : 0);
+
+        if (targetDevice && this.stream) {
+          const currentTrack = this.stream.getVideoTracks()[0];
+          const currentSettings = currentTrack ? currentTrack.getSettings() : null;
+
+          if (currentSettings && currentSettings.deviceId !== targetDevice.deviceId) {
+            console.log('[Camera] Switching to USB/External webcam:', targetDevice.label);
+            // Stop current preview stream
+            this.stream.getTracks().forEach(t => t.stop());
+            this.stream = null;
+            // Start stream using the exact USB webcam deviceId
+            getStream({
+              video: {
+                deviceId: { exact: targetDevice.deviceId }
+              }
+            }).catch(err => {
+              console.error('[Camera] Failed to switch to USB camera, falling back:', err);
+              getStream({ video: true });
+            });
+          }
+        }
       })
       .catch((err) => {
         console.error('Camera error:', err);
         this.errorMessage.set(this.t('err.cameraDenied'));
         this.cameraReady.set(false);
       });
+  }
+
+  switchCamera(target?: HTMLVideoElement) {
+    const devices = this.availableCameras();
+    if (devices.length <= 1) return;
+
+    const nextIndex = (this.currentCameraIndex() + 1) % devices.length;
+    this.currentCameraIndex.set(nextIndex);
+    const targetDevice = devices[nextIndex];
+
+    console.log('[Camera] User manual switch to camera:', targetDevice.label || `Camera ${nextIndex}`);
+
+    if (this.stream) {
+      this.stream.getTracks().forEach(t => t.stop());
+      this.stream = null;
+    }
+    this.cameraReady.set(false);
+
+    // Helper to start stream with specific constraints
+    const getStream = (constraints: MediaStreamConstraints) => {
+      return navigator.mediaDevices.getUserMedia(constraints)
+        .then(stream => {
+          this.stream = stream;
+          const el = target || this.videoEl?.nativeElement || this.inlineVideoEl?.nativeElement;
+          if (el) el.srcObject = stream;
+          this.errorMessage.set('');
+          this.cameraReady.set(true);
+          return stream;
+        });
+    };
+
+    getStream({
+      video: {
+        deviceId: { exact: targetDevice.deviceId }
+      }
+    }).catch(err => {
+      console.error('[Camera] Failed to switch camera:', err);
+      getStream({ video: true });
+    });
   }
 
   stopCamera() {
@@ -5203,35 +6038,68 @@ export class KioskComponent implements OnInit, OnDestroy {
     setTimeout(() => this.startCamera(), 100);
   }
 
-  private drawFrame(el: HTMLVideoElement): string {
+  private drawFrame(el: any): string {
     const canvas = document.createElement('canvas');
-    canvas.width = el.videoWidth;
-    canvas.height = el.videoHeight;
-    canvas.getContext('2d')?.drawImage(el, 0, 0);
+    canvas.width = el.videoWidth || el.naturalWidth || el.width || 640;
+    canvas.height = el.videoHeight || el.naturalHeight || el.height || 480;
+    canvas.getContext('2d')?.drawImage(el, 0, 0, canvas.width, canvas.height);
     return canvas.toDataURL('image/jpeg', 0.8);
   }
 
-  capturePhoto() {
-    if (!this.videoEl?.nativeElement) return;
-    this.capturedPhoto.set(this.drawFrame(this.videoEl.nativeElement));
-    this.stopCamera();
+  toggleIpCamera() {
+    this.useIpCamera.set(!this.useIpCamera());
+    if (this.useIpCamera()) {
+      this.stopCamera();
+      this.cameraReady.set(true);
+    } else {
+      this.cameraReady.set(false);
+      this.startCamera();
+    }
     this.saveState();
+  }
+
+  capturePhoto() {
+    if (this.useIpCamera()) {
+      this.submitting.set(true);
+      console.log('[Webcam] Triggering capture on Mini-PC/Laptop...');
+      this.kioskService.captureWebcam().subscribe({
+        next: (res) => {
+          this.submitting.set(false);
+          console.log('[Webcam] Capture response:', res);
+          if (res && res.success) {
+            this.capturedPhoto.set(res.image);
+            this.saveState();
+          } else {
+            console.error('[Webcam] Capture error:', res.error);
+            alert(res.error || 'Failed to capture photo from USB webcam.');
+          }
+        },
+        error: (err) => {
+          this.submitting.set(false);
+          console.error('[Webcam] Connection failed:', err);
+          alert('Could not connect to the webcam server. Error: ' + (err.message || 'Network Error'));
+        }
+      });
+    } else {
+      if (!this.videoEl?.nativeElement) return;
+      this.capturedPhoto.set(this.drawFrame(this.videoEl.nativeElement));
+      this.stopCamera();
+      this.saveState();
+    }
   }
 
   skipPhoto() {
     this.stopCamera();
     this.capturedPhoto.set(null);
+    this.stashActivePhoto();
     this.clearDocPreview();
-    this.currentStep.set('review');
-    this.resetIdleTimer();
-    this.saveState();
+    this.advanceOrReview();
   }
 
   confirmPhoto() {
+    this.stashActivePhoto();
     this.clearDocPreview();
-    this.currentStep.set('review');
-    this.resetIdleTimer();
-    this.saveState();
+    this.advanceOrReview();
   }
 
   retakePhoto() {
@@ -5314,10 +6182,13 @@ export class KioskComponent implements OnInit, OnDestroy {
         return;
       }
       if (step === 'review') {
-        if (this.selectedService()?.requires_photo) {
+        const svc = this.selectedService();
+        if (svc?.requires_photo) {
+          this.capturedPhoto.set(this.servicePhotos()[svc.service_id] ?? null);
           this.currentStep.set('photo');
           setTimeout(() => this.startCamera(), 100);
         } else {
+          this.loadServiceForm();
           this.currentStep.set('form');
         }
         this.saveState();
@@ -5325,6 +6196,7 @@ export class KioskComponent implements OnInit, OnDestroy {
       }
       if (step === 'form') {
         this.stopCamera();
+        this.stashActiveForm();
         this.currentStep.set('requirements');
         this.saveState();
         return;
@@ -5386,8 +6258,8 @@ export class KioskComponent implements OnInit, OnDestroy {
 
   submitRequest() {
     if (this.submitting()) return; // re-entry guard: never double-submit
-    const service = this.selectedService();
-    if (!service) {
+    const selected = this.selectedServices();
+    if (selected.length === 0) {
       this.errorMessage.set(this.t('err.missingService'));
       return;
     }
@@ -5397,13 +6269,18 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.errorMessage.set('');
     if (!this.submissionKey) this.submissionKey = this.newIdempotencyKey();
 
+    // Capture the last active service's in-progress values before building the payload.
+    this.stashActiveForm();
 
+    const services = selected.map(svc => ({
+      service_id: svc.service_id,
+      form_data: this.serviceForms()[svc.service_id] ?? {},
+      photo: this.servicePhotos()[svc.service_id] || undefined
+    }));
 
     const resident = this.resident();
     const data: any = {
-      service_id: service.service_id,
-      photo: this.capturedPhoto() || undefined,
-      form_data: this.formValues(),
+      services,
       idempotency_key: this.submissionKey
     };
 
@@ -5422,7 +6299,9 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.kioskService.createRequest(data).subscribe({
       next: (result: any) => {
         // Same key means only one request row exists (server is idempotent).
-        this.requestNumber.set(result?.data?.request_number || 'N/A');
+        const requests = result?.data?.requests || [];
+        this.requestNumbers.set(requests.map((r: any) => r.request_number).filter(Boolean));
+        this.requestNumber.set(result?.data?.request_number || requests[0]?.request_number || 'N/A');
         this.currentStep.set('success');
         this.submitting.set(false);
         this.submissionKey = ''; // done: next request is a fresh submission
@@ -5485,7 +6364,12 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.rfidStep.set('scan');
     this.resident.set(null);
     this.rfidCard.set(null);
-    this.selectedService.set(null);
+    this.selectedServices.set([]);
+    this.serviceIndex.set(0);
+    this.serviceForms.set({});
+    this.servicePhotos.set({});
+    this.serviceError.set('');
+    this.requestNumbers.set([]);
     this.capturedPhoto.set(null);
     this.capturedSignature.set(null);
     this.requestNumber.set('');

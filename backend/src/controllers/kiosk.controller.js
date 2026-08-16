@@ -232,10 +232,12 @@ const previewRequestDocument = async (req, res) => {
 const verifyRfid = async (req, res) => {
   try {
     const { rfidUid } = req.body;
+    console.log('[Kiosk Controller] Received verify request for UID:', rfidUid);
     if (!rfidUid) {
       return errorResponse(res, 400, 'RFID UID is required.');
     }
     const result = await rfidService.getResidentByUid(rfidUid);
+    console.log('[Kiosk Controller] getResidentByUid result:', result);
     if (!result.success) {
       return successResponse(res, 'RFID not recognized.', { recognized: false, message: result.message });
     }
@@ -252,31 +254,83 @@ const verifyRfid = async (req, res) => {
 
 // Public status display board (no auth required)
 // Returns only request numbers grouped by board column for resident privacy.
+const fetchStatusDisplayData = async () => {
+  const [rows] = await pool.query(
+    `SELECT rq.request_number, rq.request_id, rs.status_name
+     FROM requests rq
+     JOIN request_statuses rs ON rq.status_id = rs.status_id
+     WHERE rs.status_name IN ('Under Review', 'Document Processing', 'Ready for Release')
+       AND NOT (rs.status_name = 'Ready for Release' AND rq.expires_at IS NOT NULL AND rq.expires_at < NOW())
+     ORDER BY rq.request_id ASC`
+  );
+
+  return {
+    updatedAt: new Date().toISOString(),
+    underReview: rows
+      .filter(r => r.status_name === 'Under Review' || r.status_name === 'Document Processing')
+      .map(r => r.request_number),
+    readyForRelease: rows
+      .filter(r => r.status_name === 'Ready for Release')
+      .map(r => r.request_number)
+  };
+};
+
 const getStatusDisplay = async (req, res) => {
   try {
-    const [rows] = await pool.query(
-      `SELECT rq.request_number, rq.request_id, rs.status_name
-       FROM requests rq
-       JOIN request_statuses rs ON rq.status_id = rs.status_id
-       WHERE rs.status_name IN ('Under Review', 'Document Processing', 'Ready for Release')
-         AND NOT (rs.status_name = 'Ready for Release' AND rq.expires_at IS NOT NULL AND rq.expires_at < NOW())
-       ORDER BY rq.request_id ASC`
-    );
-
-    const data = {
-      updatedAt: new Date().toISOString(),
-      underReview: rows
-        .filter(r => r.status_name === 'Under Review' || r.status_name === 'Document Processing')
-        .map(r => r.request_number),
-      readyForRelease: rows
-        .filter(r => r.status_name === 'Ready for Release')
-        .map(r => r.request_number)
-    };
-
+    const data = await fetchStatusDisplayData();
     return successResponse(res, 'Status display retrieved.', data);
   } catch (error) {
     console.error('Kiosk getStatusDisplay error:', error);
     return errorResponse(res, 500, 'Internal server error.');
+  }
+};
+
+// Public Server-Sent Events stream for the status display board. Connected
+// clients receive a fresh snapshot every few seconds instead of polling the
+// REST endpoint themselves, so the board stays live with no client requests.
+const statusDisplayClients = new Set();
+const STATUS_DISPLAY_PUSH_MS = 5000;
+
+const getStatusDisplayStream = async (req, res) => {
+  res.set({
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no'
+  });
+  res.flushHeaders?.();
+
+  statusDisplayClients.add(res);
+
+  const writeToClient = (client, data) => {
+    client.write(`data: ${JSON.stringify(data)}\n\n`);
+  };
+
+  const push = async () => {
+    if (statusDisplayClients.size === 0) return;
+    try {
+      const data = await fetchStatusDisplayData();
+      for (const client of statusDisplayClients) {
+        writeToClient(client, data);
+      }
+    } catch (error) {
+      console.error('Status display SSE push error:', error);
+    }
+  };
+
+  const timer = setInterval(push, STATUS_DISPLAY_PUSH_MS);
+
+  res.on('close', () => {
+    clearInterval(timer);
+    statusDisplayClients.delete(res);
+  });
+
+  // Send an initial snapshot immediately on connect
+  try {
+    const data = await fetchStatusDisplayData();
+    writeToClient(res, data);
+  } catch (error) {
+    console.error('Status display SSE initial push error:', error);
   }
 };
 
@@ -289,4 +343,4 @@ const getHardwareStatus = async (req, res) => {
   }
 };
 
-module.exports = { searchResidents, getResident, getServices, createRequest, createBarangayIdApplication, previewBarangayId, previewRequestDocument, verifyRfid, getStatusDisplay, getHardwareStatus };
+module.exports = { searchResidents, getResident, getServices, createRequest, createBarangayIdApplication, previewBarangayId, previewRequestDocument, verifyRfid, getStatusDisplay, getStatusDisplayStream, getHardwareStatus };

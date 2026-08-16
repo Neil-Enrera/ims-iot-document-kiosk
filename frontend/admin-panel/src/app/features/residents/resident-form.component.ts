@@ -18,11 +18,31 @@ import { Resident } from '../../shared/interfaces/api.interfaces';
         <app-input label="Last Name *" [value]="form.lastName" (valueChange)="form.lastName = $event" [error]="errors['lastName']" />
         <app-input label="Suffix" [value]="form.suffix" (valueChange)="form.suffix = $event" />
         <app-input label="Birth Date" type="date" [value]="form.birthDate" (valueChange)="form.birthDate = $event" />
+        <app-input label="Birth Place" [value]="form.birthPlace" (valueChange)="form.birthPlace = $event" />
         <app-select label="Gender" [value]="form.gender" (valueChange)="form.gender = $event" [options]="genderOptions" placeholder="Select gender" />
         <app-select label="Civil Status" [value]="form.civilStatus" (valueChange)="form.civilStatus = $event" [options]="civilStatusOptions" placeholder="Select status" />
+        <app-input label="Nationality" [value]="form.nationality" (valueChange)="form.nationality = $event" />
+        <app-input label="Religion" [value]="form.religion" (valueChange)="form.religion = $event" />
+        <app-input label="Occupation" [value]="form.occupation" (valueChange)="form.occupation = $event" />
+        <app-input label="Blood Type" [value]="form.bloodType" (valueChange)="form.bloodType = $event" />
         <app-input label="Contact Number" [value]="form.contactNumber" (valueChange)="form.contactNumber = $event" />
         <app-input label="Email" type="email" [value]="form.email" (valueChange)="form.email = $event" [error]="errors['email']" />
-        <app-input label="Address *" [value]="form.addressLine" (valueChange)="form.addressLine = $event" [error]="errors['addressLine']" />
+      </div>
+
+      <div class="border-t pt-4">
+        <h4 class="text-sm font-bold text-gray-700 mb-3">Address</h4>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <app-input label="House Number" [value]="form.houseNumber" (valueChange)="form.houseNumber = $event" />
+          <app-input label="Street" [value]="form.street" (valueChange)="form.street = $event" />
+          <app-input label="Purok / Zone" [value]="form.purokZone" (valueChange)="form.purokZone = $event" />
+          <app-input label="Sitio" [value]="form.sitio" (valueChange)="form.sitio = $event" />
+          <app-input label="Municipality" [value]="form.municipality" (valueChange)="form.municipality = $event" />
+          <app-input label="Province" [value]="form.province" (valueChange)="form.province = $event" />
+          <app-input label="ZIP Code" [value]="form.zipCode" (valueChange)="form.zipCode = $event" />
+        </div>
+        <div class="mt-4">
+          <app-input label="Full Address / Barangay Address Line *" [value]="form.addressLine" (valueChange)="form.addressLine = $event" [error]="errors['addressLine']" />
+        </div>
       </div>
 
       @if (serverError) {
@@ -51,10 +71,22 @@ export class ResidentFormComponent implements OnInit, OnChanges {
     lastName: '',
     suffix: '',
     birthDate: '',
+    birthPlace: '',
     gender: '',
     civilStatus: '',
+    nationality: '',
+    religion: '',
+    occupation: '',
+    bloodType: '',
     barangayId: 1,
     addressLine: '',
+    houseNumber: '',
+    street: '',
+    purokZone: '',
+    sitio: '',
+    municipality: '',
+    province: '',
+    zipCode: '',
     contactNumber: '',
     email: ''
   };
@@ -92,10 +124,22 @@ export class ResidentFormComponent implements OnInit, OnChanges {
         lastName: this.resident.last_name || '',
         suffix: this.resident.suffix || '',
         birthDate: this.resident.birth_date ? this.resident.birth_date.split('T')[0] : '',
+        birthPlace: this.resident.birth_place || '',
         gender: this.resident.gender || '',
         civilStatus: this.resident.civil_status || '',
+        nationality: this.resident.nationality || '',
+        religion: this.resident.religion || '',
+        occupation: this.resident.occupation || '',
+        bloodType: this.resident.blood_type || '',
         barangayId: this.resident.barangay_id || 1,
         addressLine: this.resident.address_line || '',
+        houseNumber: this.resident.house_number || '',
+        street: this.resident.street || '',
+        purokZone: this.resident.purok_zone || '',
+        sitio: this.resident.sitio || '',
+        municipality: this.resident.municipality || '',
+        province: this.resident.province || '',
+        zipCode: this.resident.zip_code || '',
         contactNumber: this.resident.contact_number || '',
         email: this.resident.email || ''
       };

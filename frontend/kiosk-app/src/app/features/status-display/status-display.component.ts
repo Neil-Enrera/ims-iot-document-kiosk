@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { KioskService } from '../kiosk/kiosk.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-status-display',
@@ -86,31 +86,72 @@ export class StatusDisplayComponent implements OnInit, OnDestroy {
   now = signal<Date>(new Date());
   loading = signal(true);
 
-  private pollTimer: any;
+  private eventSource: EventSource | null = null;
+  private reconnectTimer: any;
+  private reconnectAttempts = 0;
   private clockTimer: any;
 
-  constructor(private kioskService: KioskService) {}
-
   ngOnInit() {
-    this.load();
-    this.pollTimer = setInterval(() => this.load(), 7000);
+    this.connect();
     this.clockTimer = setInterval(() => this.now.set(new Date()), 1000);
   }
 
   ngOnDestroy() {
-    clearInterval(this.pollTimer);
+    this.closeStream();
     clearInterval(this.clockTimer);
   }
 
-  private load() {
-    this.kioskService.getStatusDisplay().subscribe({
-      next: (res) => {
-        this.underReview.set(res.data.underReview);
-        this.readyForRelease.set(res.data.readyForRelease);
-        this.lastUpdated.set(new Date(res.data.updatedAt));
+  private streamUrl(): string {
+    return `${environment.apiUrl}/kiosk/status-display/stream`;
+  }
+
+  private connect() {
+    try {
+      this.eventSource = new EventSource(this.streamUrl());
+    } catch (e) {
+      console.error('Failed to create status display EventSource:', e);
+      this.loading.set(false);
+      this.scheduleReconnect();
+      return;
+    }
+
+    this.eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        this.underReview.set(data.underReview || []);
+        this.readyForRelease.set(data.readyForRelease || []);
+        this.lastUpdated.set(new Date(data.updatedAt));
         this.loading.set(false);
-      },
-      error: () => this.loading.set(false)
-    });
+        this.reconnectAttempts = 0;
+      } catch (e) {
+        console.error('Error parsing status display event:', e);
+      }
+    };
+
+    this.eventSource.onerror = () => {
+      this.eventSource?.close();
+      this.eventSource = null;
+      this.loading.set(false);
+      this.scheduleReconnect();
+    };
+  }
+
+  private scheduleReconnect() {
+    if (this.reconnectTimer) return;
+    const delay = Math.min(2000 * Math.pow(2, this.reconnectAttempts), 30000);
+    this.reconnectAttempts++;
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      this.connect();
+    }, delay);
+  }
+
+  private closeStream() {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    this.eventSource?.close();
+    this.eventSource = null;
   }
 }

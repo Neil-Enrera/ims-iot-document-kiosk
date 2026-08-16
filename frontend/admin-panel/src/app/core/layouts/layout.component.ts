@@ -4,6 +4,8 @@ import { isPlatformBrowser } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../features/notifications/notification.service';
 import { NotificationDropdownComponent } from '../../shared/components/notification-dropdown.component';
+import { ToastContainerComponent } from '../../shared/components/toast-container.component';
+import { ToastService } from '../../shared/components/toast.service';
 
 interface NavItem {
   label: string;
@@ -14,9 +16,10 @@ interface NavItem {
 @Component({
   selector: 'app-layout',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, NotificationDropdownComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, NotificationDropdownComponent, ToastContainerComponent],
   template: `
     <div class="flex h-screen bg-[#F6F5F2]">
+      <app-toast-container />
       <!-- Desktop Sidebar -->
       <aside class="hidden lg:flex w-64 flex-col bg-white border-r border-slate-200 flex-shrink-0">
         <!-- Brand -->
@@ -253,9 +256,10 @@ export class LayoutComponent implements OnInit, OnDestroy {
   sidebarOpen = signal(false);
   profileOpen = signal(false);
   private notificationSub: any;
+  private sseSub: any;
   private isBrowser: boolean;
 
-  constructor(public auth: AuthService, public notifService: NotificationService, @Inject(PLATFORM_ID) platformId: Object) {
+  constructor(public auth: AuthService, public notifService: NotificationService, private toast: ToastService, @Inject(PLATFORM_ID) platformId: Object) {
     this.isBrowser = isPlatformBrowser(platformId);
   }
 
@@ -292,21 +296,64 @@ export class LayoutComponent implements OnInit, OnDestroy {
       console.error('Failed to connect SSE:', e);
     }
 
-    // Subscribe to incoming notifications (optional: show toast/snackbar)
+    // Subscribe to incoming notifications and show a toast for each new one
     this.notificationSub = this.notifService.onNotification().subscribe({
       next: (notif) => {
-        console.log('New notification received:', notif);
+        this.toast.show(notif.title, notif.message, this.notifTypeToToastType(notif.type));
       },
       error: (e) => {
         console.error('Notification subscription error:', e);
       }
     });
+
+    // Subscribe to live request events (new requests / status changes)
+    this.sseSub = this.notifService.sse$.subscribe({
+      next: (event: any) => {
+        if (!event?.type) return;
+        const data = event.data || {};
+        switch (event.type) {
+          case 'request-created':
+            this.toast.info(
+              'New Document Request',
+              data.residentName
+                ? `${data.residentName} requested ${data.serviceName || 'a service'} — ${data.requestNumber || ''}`
+                : `${data.serviceName || 'A service'} was requested — ${data.requestNumber || ''}`
+            );
+            break;
+          case 'request-status-changed':
+          case 'request-approved':
+          case 'request-released':
+          case 'request-cancelled':
+            this.toast.warning(
+              'Request Updated',
+              `${data.serviceName || 'A request'} ${data.requestNumber || ''} is now ${data.statusName || event.type.replace('request-', '')}`
+            );
+            break;
+          case 'request-rejected':
+            this.toast.error(
+              'Request Rejected',
+              `${data.serviceName || 'A request'} ${data.requestNumber || ''} was rejected`
+            );
+            break;
+        }
+      },
+      error: (e) => {
+        console.error('SSE event subscription error:', e);
+      }
+    });
+  }
+
+  private notifTypeToToastType(type: string): 'success' | 'info' | 'warning' | 'error' {
+    return (type === 'success' || type === 'info' || type === 'warning' || type === 'error') ? type : 'info';
   }
 
   ngOnDestroy() {
     this.notifService.disconnectSSE();
     if (this.notificationSub) {
       this.notificationSub.unsubscribe();
+    }
+    if (this.sseSub) {
+      this.sseSub.unsubscribe();
     }
   }
 

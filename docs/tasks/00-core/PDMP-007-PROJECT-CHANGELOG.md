@@ -62,6 +62,36 @@ Use one of the following categories:
 
 ---
 
+# Version 2.9.0
+
+**Status:** Active Development
+
+**Date:** 2026-08-16
+
+## Added
+
+- **Kiosk multi-service request** — residents/guests can select more than one service in a single transaction. The services step is now a multi-select list (toggle cards with a selected check, live count + total processing fee in a sticky action bar); each selected service is filled in turn (requirements → form → photo) with per-service form data and photos stashed in `kiosk-state`; the Review step lists every service with its own details and document preview; Submit sends a single `POST /kiosk/requests` with a `services[]` array (each `{service_id, form_data, photo}`); the success screen shows every issued request number. Single-service behavior is fully preserved.
+- **Toast notifications in the Admin Panel** — new `ToastService` (signal-backed `show/success/info/warning/error/dismiss/clear`) and `app-toast-container` (fixed top-right, Tailwind, type-colored). The shell layout now shows toasts for in-app events and for real-time SSE notifications (`request-created` → info, status changes → warning/error) pushed through the existing `NotificationService`.
+- **Admin route hardening** — `adminGuard` (redirects non-administrators to `/dashboard`) is now applied to the Users, Reports, Settings, and Audit routes alongside `authGuard`; the sidebar already hid those items from non-admins.
+- **Resident archive/restore** — Residents module replaced hard delete with Archive (`PATCH /residents/:id/archive`) and Restore (`PATCH /residents/:id/restore`); status badges corrected to the real `ACTIVE`/`INACTIVE` values; a status filter (All/Active/Archived) was added to the residents table.
+- **Reports PDF export** — Reports module now exports the current filtered report to PDF via `jspdf` + `jspdf-autotable` (landscape, header, per-row processing fee, footer with total fees and request count). The module was also fixed to send the backend's expected `dateFrom`/`dateTo` query params and to read the `{ success, data, pagination }` response shape.
+- **Real-time status display board** — the kiosk status display switched from 7-second REST polling to Server-Sent Events (`GET /kiosk/status-display/stream`, public). Backend pushes an initial snapshot then updates every 5 seconds to a dedicated client set; the kiosk reconnects with exponential backoff (2s→30s).
+- **Resident form fields** — resident create/update now persists the 11 placeholder-source columns (birth place, nationality, religion, occupation, house number, street, purok/zone, sitio, municipality, province, zip code) that already existed in the schema (migration 015); the Resident form UI, model, and validation cover them.
+
+**Modules Affected:** Backend, Admin Panel, Kiosk, Database (no new schema)
+
+**Database Changes:** No
+
+**API Changes:** No new endpoints; `POST /kiosk/requests` now accepts an optional `services[]` array (backward compatible with the existing `service_id` form); report endpoint usage corrected to `dateFrom`/`dateTo`.
+
+**Architecture Changes:** No
+
+**Breaking Changes:** No — `services[]` is additive; the single-service payload still works.
+
+**Testing Performed:** `ng build kiosk-app` + `ng build admin-panel` pass, `ng test admin-panel` 14/14, backend tests 71/71.
+
+---
+
 # Version 2.8.0
 
 **Status:** Active Development

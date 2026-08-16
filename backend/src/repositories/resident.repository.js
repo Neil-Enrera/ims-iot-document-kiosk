@@ -60,18 +60,18 @@ const findByCode = async (residentCode) => {
   return rows[0] || null;
 };
 
-const create = async ({ residentCode, firstName, middleName, lastName, suffix, birthDate, gender, civilStatus, barangayId, addressLine, contactNumber, email, bloodType, emergencyContactName, emergencyContactNumber }) => {
+const create = async ({ residentCode, firstName, middleName, lastName, suffix, birthDate, birthPlace, nationality, religion, occupation, gender, civilStatus, barangayId, addressLine, houseNumber, street, purokZone, sitio, municipality, province, zipCode, contactNumber, email, bloodType, emergencyContactName, emergencyContactNumber }) => {
   const [result] = await pool.query(
-    'INSERT INTO residents (resident_code, first_name, middle_name, last_name, suffix, birth_date, gender, civil_status, barangay_id, address_line, contact_number, email, blood_type, emergency_contact_name, emergency_contact_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-    [residentCode, firstName, middleName, lastName, suffix, birthDate, gender, civilStatus, barangayId, addressLine, contactNumber, email, bloodType || null, emergencyContactName || null, emergencyContactNumber || null]
+    'INSERT INTO residents (resident_code, first_name, middle_name, last_name, suffix, birth_date, birth_place, nationality, religion, occupation, gender, civil_status, barangay_id, address_line, house_number, street, purok_zone, sitio, municipality, province, zip_code, contact_number, email, blood_type, emergency_contact_name, emergency_contact_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    [residentCode, firstName, middleName, lastName, suffix, birthDate, birthPlace || null, nationality || null, religion || null, occupation || null, gender, civilStatus, barangayId, addressLine, houseNumber || null, street || null, purokZone || null, sitio || null, municipality || null, province || null, zipCode || null, contactNumber, email, bloodType || null, emergencyContactName || null, emergencyContactNumber || null]
   );
   return result.insertId;
 };
 
-const update = async (residentId, { firstName, middleName, lastName, suffix, birthDate, gender, civilStatus, barangayId, addressLine, contactNumber, email, bloodType, emergencyContactName, emergencyContactNumber }) => {
+const update = async (residentId, { firstName, middleName, lastName, suffix, birthDate, birthPlace, nationality, religion, occupation, gender, civilStatus, barangayId, addressLine, houseNumber, street, purokZone, sitio, municipality, province, zipCode, contactNumber, email, bloodType, emergencyContactName, emergencyContactNumber }) => {
   const [result] = await pool.query(
-    'UPDATE residents SET first_name = ?, middle_name = ?, last_name = ?, suffix = ?, birth_date = ?, gender = ?, civil_status = ?, barangay_id = ?, address_line = ?, contact_number = ?, email = ?, blood_type = ?, emergency_contact_name = ?, emergency_contact_number = ? WHERE resident_id = ?',
-    [firstName, middleName, lastName, suffix, birthDate, gender, civilStatus, barangayId, addressLine, contactNumber, email, bloodType || null, emergencyContactName || null, emergencyContactNumber || null, residentId]
+    'UPDATE residents SET first_name = ?, middle_name = ?, last_name = ?, suffix = ?, birth_date = ?, birth_place = ?, nationality = ?, religion = ?, occupation = ?, gender = ?, civil_status = ?, barangay_id = ?, address_line = ?, house_number = ?, street = ?, purok_zone = ?, sitio = ?, municipality = ?, province = ?, zip_code = ?, contact_number = ?, email = ?, blood_type = ?, emergency_contact_name = ?, emergency_contact_number = ? WHERE resident_id = ?',
+    [firstName, middleName, lastName, suffix, birthDate, birthPlace || null, nationality || null, religion || null, occupation || null, gender, civilStatus, barangayId, addressLine, houseNumber || null, street || null, purokZone || null, sitio || null, municipality || null, province || null, zipCode || null, contactNumber, email, bloodType || null, emergencyContactName || null, emergencyContactNumber || null, residentId]
   );
   return result.affectedRows > 0;
 };

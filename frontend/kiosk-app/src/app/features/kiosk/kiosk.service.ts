@@ -198,7 +198,12 @@ export class KioskService {
   createRequest(data: {
     resident_id?: number;
     guest?: GuestInfo;
-    service_id: number;
+    service_id?: number;
+    services?: {
+      service_id: number;
+      form_data?: Record<string, unknown>;
+      photo?: string;
+    }[];
     purpose?: string;
     remarks?: string;
     photo?: string;
@@ -271,6 +276,13 @@ export class KioskService {
 
   getStatusDisplay(): Observable<ApiResponse<StatusDisplay>> {
     return this.http.get<ApiResponse<StatusDisplay>>(`${this.apiUrl}/kiosk/status-display`);
+  }
+
+  captureWebcam(): Observable<any> {
+    const hardwareHttpUrl = environment.hardwareWsUrl
+      .replace(/^ws/, 'http')
+      .replace(/\/ws.*$/, '');
+    return this.http.post<any>(`${hardwareHttpUrl}/api/hardware/capture`, {});
   }
 
   reset() {

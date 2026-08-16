@@ -10,6 +10,10 @@ export interface KioskState {
   resident: Resident | null;
   rfidCard?: RfidCardInfo | null;
   selectedService: Service | null;
+  selectedServices: Service[];
+  serviceIndex: number;
+  serviceForms: Record<number, Record<string, unknown>>;
+  servicePhotos: Record<number, string>;
   barangayService: Service | null;
   capturedPhoto: string | null;
   capturedSignature: string | null;
