@@ -42,7 +42,7 @@ import { CommonModule } from '@angular/common';
             </button>
           </div>
           
-          <div class="p-6 overflow-y-auto flex-1">
+          <div [class]="'p-6 overflow-y-auto flex-1 ' + bodyClass">
             <ng-content />
           </div>
         </div>
@@ -78,6 +78,7 @@ export class ModalOverlayComponent {
   @Input() title = '';
   @Input() closeOnBackdropClick = true;
   @Input() containerClass = 'max-w-lg';
+  @Input() bodyClass = '';
   @Output() onClose = new EventEmitter<void>();
   
   isVisible = signal(false);

@@ -3,10 +3,12 @@ const { successResponse, errorResponse, paginatedResponse } = require('../utils/
 
 const getAll = async (req, res) => {
   try {
-    const { search, status, page, limit, sortBy, sortOrder } = req.query;
+    const { search, status, dateFrom, dateTo, page, limit, sortBy, sortOrder } = req.query;
     const result = await applicationService.getAllApplications({
       search,
       status,
+      dateFrom,
+      dateTo,
       page: parseInt(page) || 1,
       limit: parseInt(limit) || 20,
       sortBy,

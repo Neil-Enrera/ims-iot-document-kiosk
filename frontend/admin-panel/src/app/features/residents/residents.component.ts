@@ -1,4 +1,5 @@
 import { Component, OnInit, OnDestroy, signal } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { DatePipe, CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ResidentService, RfidService, RequestService, ApplicationService } from '../../shared/services';
@@ -19,7 +20,10 @@ import { ResidentFormComponent } from './resident-form.component';
   template: `
     <div>
       <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold text-gray-800">Residents</h1>
+        <div>
+          <h1 class="text-2xl font-bold text-gray-800">Residents</h1>
+          <p class="text-sm text-slate-500 mt-1">Manage and view all registered residents in the system.</p>
+        </div>
         <app-button variant="primary" (onClick)="openCreateForm()">+ Add Resident</app-button>
       </div>
 
@@ -48,16 +52,54 @@ import { ResidentFormComponent } from './resident-form.component';
           trackBy="resident_id"
           emptyMessage="No residents found"
           [selectedRow]="selectedRow()"
+          [cellTemplates]="{ full_name: nameCell, rfid_card: rfidCell, status: statusCell }"
           (onSort)="onSort($event)"
           (onRowClick)="onRowClick($event)"
         />
 
-        @if (total() > limit) {
+        <ng-template #nameCell let-value let-row="row">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-orange-100 border border-orange-200 text-orange-700 font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
+              {{ getInitials(row) }}
+            </div>
+            <div class="min-w-0">
+              <p class="font-semibold text-slate-900 text-sm leading-tight truncate">{{ formatResidentName(row) }}</p>
+              @if (row.gender || row.civil_status) {
+                <p class="text-[11px] text-slate-400 leading-tight mt-0.5 capitalize">{{ row.gender || '-' }} · {{ row.civil_status || '-' }}</p>
+              }
+            </div>
+          </div>
+        </ng-template>
+
+        <ng-template #rfidCell let-value let-row="row">
+          @if (row.card_uid) {
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-50 text-orange-700 border border-orange-200">
+              <svg class="w-3.5 h-3.5 text-orange-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 9.5h8M7 12h8" stroke-linecap="round"/>
+              </svg>
+              {{ row.card_uid }}
+            </span>
+          } @else {
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-400">
+              No Card
+            </span>
+          }
+        </ng-template>
+
+        <ng-template #statusCell let-value let-row="row">
+          <span [class]="'px-2.5 py-1 rounded-full text-xs font-bold border ' + (isActive(row) ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-red-50 text-red-800 border-red-200')">
+            {{ row.status }}
+          </span>
+        </ng-template>
+
+        @if (total() > 0) {
           <app-pagination
             [total]="total()"
             [currentPage]="page()"
             [limit]="limit"
+            itemLabel="residents"
             (onPageChange)="onPageChange($event)"
+            (onLimitChange)="onLimitChange($event)"
           />
         }
       </app-card>
@@ -318,13 +360,29 @@ export class ResidentsComponent implements OnInit, OnDestroy {
     return res?.status === 'ACTIVE' || res?.status === 'Active';
   }
 
+  formatResidentName(res: any): string {
+    if (!res) return '';
+    const parts = [
+      res.last_name ? `${res.last_name},` : '',
+      res.first_name,
+      res.middle_name ? `${res.middle_name.charAt(0)}.` : '',
+      res.suffix
+    ].filter(Boolean);
+    return parts.join(' ') || '-';
+  }
+
+  getInitials(res: any): string {
+    if (!res) return 'R';
+    const first = (res.first_name || '')[0] || '';
+    const last = (res.last_name || '')[0] || '';
+    return (first + last).toUpperCase() || 'R';
+  }
+
   columns: TableColumn[] = [
     { key: 'resident_code', label: 'Code', sortable: true },
-    { key: 'first_name', label: 'First Name', sortable: true },
-    { key: 'last_name', label: 'Last Name', sortable: true },
-    { key: 'gender', label: 'Gender' },
-    { key: 'civil_status', label: 'Civil Status' },
+    { key: 'full_name', label: 'Full Name', sortable: true },
     { key: 'contact_number', label: 'Contact' },
+    { key: 'rfid_card', label: 'RFID Card' },
     { key: 'status', label: 'Status', sortable: true }
   ];
 
@@ -332,10 +390,18 @@ export class ResidentsComponent implements OnInit, OnDestroy {
     private residentService: ResidentService,
     private rfidService: RfidService,
     private requestService: RequestService,
-    private applicationService: ApplicationService
-  ) {}
+    private applicationService: ApplicationService,
+    private route: ActivatedRoute,
+    private router: Router
+  ) { }
 
   ngOnInit() {
+    this.route.queryParams.subscribe(params => {
+      if (params['new'] === '1') {
+        this.openCreateForm();
+        this.router.navigate([], { queryParams: { new: null }, queryParamsHandling: 'merge' });
+      }
+    });
     this.loadResidents();
   }
 
@@ -375,10 +441,11 @@ export class ResidentsComponent implements OnInit, OnDestroy {
   }
 
   onSort(column: string) {
-    if (this.sortColumn() === column) {
+    const backendColumn = column === 'full_name' ? 'last_name' : column;
+    if (this.sortColumn() === backendColumn) {
       this.sortDirection.set(this.sortDirection() === 'ASC' ? 'DESC' : 'ASC');
     } else {
-      this.sortColumn.set(column);
+      this.sortColumn.set(backendColumn);
       this.sortDirection.set('ASC');
     }
     this.loadResidents();
@@ -386,6 +453,12 @@ export class ResidentsComponent implements OnInit, OnDestroy {
 
   onPageChange(page: number) {
     this.page.set(page);
+    this.loadResidents();
+  }
+
+  onLimitChange(limit: number) {
+    this.limit = limit;
+    this.page.set(1);
     this.loadResidents();
   }
 

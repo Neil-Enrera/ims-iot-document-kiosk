@@ -24,13 +24,11 @@ interface NavItem {
       <aside class="hidden lg:flex w-64 flex-col bg-white border-r border-slate-200 flex-shrink-0">
         <!-- Brand -->
         <div class="h-14 flex items-center gap-3 px-5 border-b border-slate-100 flex-shrink-0">
-          <div class="w-9 h-9 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-            </svg>
+          <div class="w-9 h-9 rounded-full bg-white border border-orange-200 overflow-hidden flex items-center justify-center flex-shrink-0 shadow-sm">
+            <img src="Barangay Logo.png" alt="Barangay San Manuel logo" class="w-full h-full object-cover">
           </div>
-          <div class="leading-tight">
-            <p class="font-bold text-slate-900 text-sm tracking-tight">Barangay San Manuel</p>
+          <div class="leading-tight min-w-0">
+            <p class="font-bold text-slate-900 text-sm tracking-tight truncate">Barangay San Manuel</p>
             <p class="text-[11px] text-slate-500 font-medium">IMS Kiosk</p>
           </div>
         </div>
@@ -174,13 +172,11 @@ interface NavItem {
         <div class="absolute inset-0 bg-black/40" (click)="toggleSidebar()"></div>
         <aside class="absolute left-0 top-0 h-full w-72 bg-white border-r border-slate-200 flex flex-col shadow-xl">
           <div class="h-14 flex items-center gap-3 px-5 border-b border-slate-100 flex-shrink-0">
-            <div class="w-9 h-9 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-              </svg>
+            <div class="w-9 h-9 rounded-full bg-white border border-orange-200 overflow-hidden flex items-center justify-center flex-shrink-0 shadow-sm">
+              <img src="Barangay Logo.png" alt="Barangay San Manuel logo" class="w-full h-full object-cover">
             </div>
-            <div class="leading-tight flex-1">
-              <p class="font-bold text-slate-900 text-sm tracking-tight">Barangay San Manuel</p>
+            <div class="leading-tight flex-1 min-w-0">
+              <p class="font-bold text-slate-900 text-sm tracking-tight truncate">Barangay San Manuel</p>
               <p class="text-[11px] text-slate-500 font-medium">IMS Kiosk</p>
             </div>
             <button (click)="toggleSidebar()" class="p-1 text-slate-400 hover:text-slate-600" aria-label="Close navigation">

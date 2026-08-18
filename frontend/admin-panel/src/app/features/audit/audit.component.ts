@@ -1,4 +1,5 @@
 import { Component, OnInit, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { AuditService } from '../../shared/services';
 import { AuditLog } from '../../shared/interfaces/api.interfaces';
 import { TableComponent, TableColumn } from '../../shared/components/table.component';
@@ -9,10 +10,10 @@ import { PaginationComponent } from '../../shared/components/pagination.componen
 @Component({
   selector: 'app-audit',
   standalone: true,
-  imports: [TableComponent, CardComponent, InputComponent, PaginationComponent],
+  imports: [TableComponent, CardComponent, InputComponent, PaginationComponent, DatePipe],
   template: `
     <div>
-      <h1 class="text-2xl font-bold text-gray-800 mb-6">Audit Logs</h1>
+      <h1 class="text-2xl font-bold text-slate-900 tracking-tight mb-6">Audit Logs</h1>
 
       <app-card>
         <div class="mb-4">
@@ -24,14 +25,34 @@ import { PaginationComponent } from '../../shared/components/pagination.componen
           [data]="logs()"
           [loading]="loading()"
           trackBy="audit_log_id"
-          emptyMessage="No audit logs found" />
+          emptyMessage="No audit logs found"
+          [cellTemplates]="{ username: userCell, action: actionCell, created_at: dateCell }"
+        >
+          <ng-template #userCell let-row="row">
+            <span class="text-sm font-semibold text-slate-900">
+              {{ row.username || 'System' }}
+            </span>
+          </ng-template>
+          <ng-template #actionCell let-row="row">
+            <span class="text-sm font-semibold text-slate-900">
+              {{ row.action }}
+            </span>
+          </ng-template>
+          <ng-template #dateCell let-row="row">
+            <span class="text-sm font-medium text-slate-700">
+              {{ row.created_at | date: 'medium' }}
+            </span>
+          </ng-template>
+        </app-table>
 
-        @if (total() > limit) {
+        @if (total() > 0) {
           <app-pagination
             [total]="total()"
             [currentPage]="page()"
             [limit]="limit"
-            (onPageChange)="onPageChange($event)" />
+            itemLabel="logs"
+            (onPageChange)="onPageChange($event)"
+            (onLimitChange)="onLimitChange($event)" />
         }
       </app-card>
     </div>
@@ -68,4 +89,5 @@ export class AuditComponent implements OnInit {
 
   onSearch(value: string) { this.search.set(value); this.page.set(1); this.loadLogs(); }
   onPageChange(page: number) { this.page.set(page); this.loadLogs(); }
+  onLimitChange(limit: number) { this.limit = limit; this.page.set(1); this.loadLogs(); }
 }

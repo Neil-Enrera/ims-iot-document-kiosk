@@ -14,6 +14,12 @@
 | **Total** | **85** | **56** | **19** | **0** |
 
 > **Note:** TASK-BACKEND-012 (Payment API) and TASK-FRONTEND-011 (Payment UI) removed per DEC-008.
+> **Recent Updates (August 2026):**
+> - Redesigned "Barangay ID Applications" page: 4 clean columns (Application #, Applicant, Date Submitted, Status), "All Dates" and "All Statuses" filters, and clean typography.
+> - Added "All Services", "All Dates" (Today, Yesterday, 7 Days, Month, Custom Range), "All Statuses", and "Reset" filters in Document Requests.
+> - Standardized Pagination component across all Admin pages (`< [1] 2 3 > [10/page]`).
+> - Added official Barangay San Manuel Logo to Admin Sidebar.
+> - Converted primary action buttons and active indicators from blue to official orange.
 > **Note:** Phase 06/07 tasks had test plans and deployment docs written, but actual test code and deployment automation are not yet implemented.
 
 ---

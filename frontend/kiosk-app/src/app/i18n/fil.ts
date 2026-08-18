@@ -371,6 +371,8 @@ export const fil: TranslationDictionary = {
   'profile.contactNumber': 'Numero ng Telepono',
   'profile.email': 'Email',
   'profile.address': 'Tirahan',
+  'profile.showDetails': 'Ipakita ang Detalye',
+  'profile.hideDetails': 'Itago ang Detalye',
 
   'profile.rfid.title': 'Impormasyon ng RFID',
   'profile.rfid.cardStatus': 'Katayuan ng Card',

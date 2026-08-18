@@ -7,6 +7,9 @@ const getSummary = async () => {
   const [released] = await pool.query('SELECT COUNT(*) AS total FROM requests WHERE status_id = 7');
   const [activeServices] = await pool.query('SELECT COUNT(*) AS total FROM services WHERE is_active = 1');
   const [todayRequests] = await pool.query('SELECT COUNT(*) AS total FROM requests WHERE DATE(request_date) = CURDATE()');
+  const [awaitingIdReview] = await pool.query("SELECT COUNT(*) AS total FROM barangay_id_applications WHERE status = 'PENDING'");
+  const [readyForRelease] = await pool.query('SELECT COUNT(*) AS total FROM requests WHERE status_id = 6');
+  const [processingRequests] = await pool.query('SELECT COUNT(*) AS total FROM requests WHERE status_id = 5');
 
   return {
     totalResidents: residents[0].total,
@@ -14,7 +17,10 @@ const getSummary = async () => {
     pendingRequests: pending[0].total,
     releasedRequests: released[0].total,
     activeServices: activeServices[0].total,
-    todayRequests: todayRequests[0].total
+    todayRequests: todayRequests[0].total,
+    awaitingIdReview: awaitingIdReview[0].total,
+    readyForRelease: readyForRelease[0].total,
+    processingRequests: processingRequests[0].total
   };
 };
 

@@ -42,6 +42,6 @@ export class ConfirmDialogComponent {
     const base = 'px-4 py-2 text-sm font-medium rounded-lg text-white';
     return this.variant === 'danger'
       ? `${base} bg-red-600 hover:bg-red-700`
-      : `${base} bg-blue-600 hover:bg-blue-700`;
+      : `${base} bg-orange-600 hover:bg-orange-700`;
   }
 }

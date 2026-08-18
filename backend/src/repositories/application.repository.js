@@ -1,6 +1,6 @@
 const pool = require('../config/database');
 
-const findAll = async ({ search, status, page, limit, sortBy, sortOrder }) => {
+const findAll = async ({ search, status, dateFrom, dateTo, page, limit, sortBy, sortOrder }) => {
   let query = 'SELECT a.*, CONCAT(IFNULL(u.first_name, ""), " ", IFNULL(u.last_name, "")) AS reviewed_by_name FROM barangay_id_applications a LEFT JOIN users u ON a.reviewed_by = u.user_id';
   let countQuery = 'SELECT COUNT(*) AS total FROM barangay_id_applications a';
   const conditions = [];
@@ -8,16 +8,30 @@ const findAll = async ({ search, status, page, limit, sortBy, sortOrder }) => {
   const countParams = [];
 
   if (search) {
-    conditions.push('(a.application_number LIKE ? OR a.first_name LIKE ? OR a.last_name LIKE ? OR a.address_line LIKE ?)');
+    conditions.push('(a.application_number LIKE ? OR a.first_name LIKE ? OR a.last_name LIKE ? OR CONCAT(a.first_name, " ", a.last_name) LIKE ? OR a.address_line LIKE ?)');
     const term = `%${search}%`;
-    params.push(term, term, term, term);
-    countParams.push(term, term, term, term);
+    params.push(term, term, term, term, term);
+    countParams.push(term, term, term, term, term);
   }
 
   if (status) {
     conditions.push('a.status = ?');
     params.push(status);
     countParams.push(status);
+  }
+
+  if (dateFrom) {
+    const fromVal = dateFrom.includes(' ') || dateFrom.includes('T') ? dateFrom : `${dateFrom} 00:00:00`;
+    conditions.push('a.created_at >= ?');
+    params.push(fromVal);
+    countParams.push(fromVal);
+  }
+
+  if (dateTo) {
+    const toVal = dateTo.includes(' ') || dateTo.includes('T') ? dateTo : `${dateTo} 23:59:59`;
+    conditions.push('a.created_at <= ?');
+    params.push(toVal);
+    countParams.push(toVal);
   }
 
   if (conditions.length > 0) {

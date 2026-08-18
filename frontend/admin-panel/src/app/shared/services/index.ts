@@ -290,14 +290,4 @@ export class BarangayService {
   get(id = 1) {
     return this.api.get<any>(`/barangays/${id}`);
   }
-
-  uploadIdTemplate(id: number, file: File) {
-    const formData = new FormData();
-    formData.append('template', file);
-    return this.api.post<any>(`/barangays/${id}/id-template`, formData);
-  }
-
-  removeIdTemplate(id: number) {
-    return this.api.delete<any>(`/barangays/${id}/id-template`);
-  }
 }

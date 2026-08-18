@@ -15,7 +15,7 @@ import { DocumentRequest } from '../../shared/interfaces/api.interfaces';
       <!-- Dashboard Header -->
       <div class="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Good {{ greeting() }}, {{ displayName() }}! 👋</h1>
+          <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Good {{ greeting() }}, {{ displayName() }}!</h1>
           <p class="text-sm text-slate-500 mt-1">Here's what's happening in Barangay San Manuel today.</p>
         </div>
         <div class="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-4 py-2.5 shadow-sm">
@@ -204,9 +204,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   });
 
   quickActions = [
-    { key: 'resident', title: 'Add Resident', desc: 'Register a new resident to the system.', route: '/residents' },
+    { key: 'resident', title: 'Add Resident', desc: 'Register a new resident to the system.', route: '/residents', params: { new: 1 } },
     { key: 'request', title: 'New Request', desc: 'Create a new document request.', route: '/requests', params: { new: 1 } },
-    { key: 'rfid', title: 'Register RFID Card', desc: 'Assign an RFID card to a resident.', route: '/rfid' },
+    { key: 'rfid', title: 'Register RFID Card', desc: 'Assign an RFID card to a resident.', route: '/rfid', params: { new: 1 } },
     { key: 'report', title: 'Generate Report', desc: 'View and export system reports.', route: '/reports' }
   ];
 
@@ -215,7 +215,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     private dashboardService: DashboardService,
     private requestService: RequestService,
     private notificationService: NotificationService
-  ) {}
+  ) { }
 
   ngOnInit() {
     this.loadSummary();

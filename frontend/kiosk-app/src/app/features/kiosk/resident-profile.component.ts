@@ -73,30 +73,57 @@ import { TranslationService, KioskLanguage } from '../../i18n/translation.servic
             <!-- Resident profile card -->
             <section aria-label="Resident Profile" class="shrink-0 bg-white border border-[#E5E7EB] rounded-[16px] shadow-[0_2px_14px_rgba(15,23,42,0.07)] p-4 sm:p-5 [@media(max-height:768px)]:p-3">
 
-              <!-- Identity header: photo/initials + name + status -->
-              <div class="flex items-center gap-3 sm:gap-4">
-                @if (resident?.photo && !photoFailed()) {
-                  <img [src]="residentPhoto()" (error)="onPhotoError()" alt="{{ residentFullName() }}"
-                       class="shrink-0 w-[84px] h-[98px] sm:w-[96px] sm:h-[112px] min-[1101px]:w-[108px] min-[1101px]:h-[126px] rounded-[8px] object-cover border border-[#E5E7EB] shadow-sm bg-[#F8FAFC] [@media(max-height:768px)]:w-[72px] [@media(max-height:768px)]:h-[84px]" />
-                } @else {
-                  <div class="shrink-0 w-[84px] h-[98px] sm:w-[96px] sm:h-[112px] min-[1101px]:w-[108px] min-[1101px]:h-[126px] rounded-[8px] bg-[#FFF7ED] border border-[#F97316]/25 flex items-center justify-center text-[#F97316] text-2xl sm:text-3xl font-bold [@media(max-height:768px)]:w-[72px] [@media(max-height:768px)]:h-[84px] [@media(max-height:768px)]:text-xl"
-                       aria-hidden="true">
-                    {{ residentInitials() }}
-                  </div>
-                }
+              <!-- Identity header: photo/initials + name + status + privacy toggle button -->
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pb-3 border-b border-[#F1F5F9]">
+                <div class="flex items-center gap-3 sm:gap-4 min-w-0">
+                  @if (resident?.photo && !photoFailed()) {
+                    <img [src]="residentPhoto()" (error)="onPhotoError()" alt="{{ residentFullName() }}"
+                         class="shrink-0 w-[84px] h-[98px] sm:w-[96px] sm:h-[112px] min-[1101px]:w-[108px] min-[1101px]:h-[126px] rounded-[8px] object-cover border border-[#E5E7EB] shadow-sm bg-[#F8FAFC] [@media(max-height:768px)]:w-[72px] [@media(max-height:768px)]:h-[84px]" />
+                  } @else {
+                    <div class="shrink-0 w-[84px] h-[98px] sm:w-[96px] sm:h-[112px] min-[1101px]:w-[108px] min-[1101px]:h-[126px] rounded-[8px] bg-[#FFF7ED] border border-[#F97316]/25 flex items-center justify-center text-[#F97316] text-2xl sm:text-3xl font-bold [@media(max-height:768px)]:w-[72px] [@media(max-height:768px)]:h-[84px] [@media(max-height:768px)]:text-xl"
+                         aria-hidden="true">
+                      {{ residentInitials() }}
+                    </div>
+                  }
 
-                <div class="min-w-0">
-                  <h2 class="text-[22px] sm:text-[24px] min-[1101px]:text-[26px] font-bold text-[#0F172A] leading-tight break-words [@media(max-height:768px)]:text-[20px]">{{ residentFullName() }}</h2>
-                  @if (resident?.resident_code) {
-                    <p class="text-[13px] sm:text-[14px] min-[1101px]:text-[15px] font-medium text-[#64748B] mt-0.5">{{ resident!.resident_code }}</p>
-                  }
-                  @if (isActiveResident()) {
-                    <span class="mt-1.5 inline-flex items-center gap-1.5 rounded-full border border-[#BBF7D0] bg-[#DCFCE7] px-2.5 py-0.5 [@media(max-height:768px)]:mt-1"
-                          role="status">
-                      <svg class="w-3 h-3 text-[#16A34A]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="7"/></svg>
-                      <span class="text-[12px] sm:text-[13px] min-[1101px]:text-[14px] font-bold text-[#15803D]">{{ t('profile.activeResident') }}</span>
-                    </span>
-                  }
+                  <div class="min-w-0">
+                    <h2 class="text-[22px] sm:text-[24px] min-[1101px]:text-[26px] font-bold text-[#0F172A] leading-tight break-words tracking-tight [@media(max-height:768px)]:text-[20px]">{{ residentDisplayName() }}</h2>
+                    @if (resident?.resident_code) {
+                      <p class="text-[13px] sm:text-[14px] min-[1101px]:text-[15px] font-medium text-[#64748B] mt-0.5 tracking-wide">{{ maskResidentCode(resident!.resident_code) }}</p>
+                    }
+                    @if (isActiveResident()) {
+                      <span class="mt-1.5 inline-flex items-center gap-1.5 rounded-full border border-[#BBF7D0] bg-[#DCFCE7] px-2.5 py-0.5 [@media(max-height:768px)]:mt-1"
+                            role="status">
+                        <svg class="w-3 h-3 text-[#16A34A]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="7"/></svg>
+                        <span class="text-[12px] sm:text-[13px] min-[1101px]:text-[14px] font-bold text-[#15803D]">{{ t('profile.activeResident') }}</span>
+                      </span>
+                    }
+                  </div>
+                </div>
+
+                <!-- Touchscreen-friendly Show/Hide Details Privacy Control -->
+                <div class="shrink-0 self-end sm:self-center">
+                  <button
+                    (click)="detailsHidden.set(!detailsHidden())"
+                    class="inline-flex items-center gap-2 rounded-xl border px-3.5 sm:px-4 py-2 sm:py-2.5 text-[13px] sm:text-[14px] font-bold transition-all duration-150 active:scale-[0.97] focus:outline-none focus:ring-4 min-h-[44px] sm:min-h-[48px] shadow-sm select-none"
+                    [class]="detailsHidden()
+                      ? 'border-[#F97316]/50 bg-[#FFF7ED] text-[#EA580C] hover:bg-[#FFEDD5] focus:ring-[#F97316]/30'
+                      : 'border-[#CBD5E1] bg-[#F8FAFC] text-[#475569] hover:bg-[#F1F5F9] focus:ring-[#94A3B8]/30'"
+                    [attr.aria-label]="detailsHidden() ? t('profile.showDetails') : t('profile.hideDetails')"
+                    [attr.aria-pressed]="!detailsHidden()">
+                    @if (detailsHidden()) {
+                      <svg class="w-4 h-4 sm:w-5 sm:h-5 shrink-0 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                      </svg>
+                      <span>{{ t('profile.showDetails') }}</span>
+                    } @else {
+                      <svg class="w-4 h-4 sm:w-5 sm:h-5 shrink-0 text-[#64748B]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/>
+                      </svg>
+                      <span>{{ t('profile.hideDetails') }}</span>
+                    }
+                  </button>
                 </div>
               </div>
 
@@ -111,7 +138,7 @@ import { TranslationService, KioskLanguage } from '../../i18n/translation.servic
                   </span>
                   <div class="min-w-0">
                     <p class="text-[13px] sm:text-[14px] font-semibold text-[#64748B]">{{ t('profile.fullName') }}</p>
-                    <p class="text-[15px] sm:text-[17px] font-semibold text-[#0F172A] break-words mt-0.5">{{ residentFullName() || t('profile.notProvided') }}</p>
+                    <p class="text-[15px] sm:text-[17px] font-semibold text-[#0F172A] break-words mt-0.5">{{ maskName(residentFullName() || t('profile.notProvided')) }}</p>
                   </div>
                 </div>
 
@@ -123,7 +150,7 @@ import { TranslationService, KioskLanguage } from '../../i18n/translation.servic
                   </span>
                   <div class="min-w-0">
                     <p class="text-[13px] sm:text-[14px] font-semibold text-[#64748B]">{{ t('profile.birthDate') }}</p>
-                    <p class="text-[15px] sm:text-[17px] font-semibold text-[#0F172A] break-words mt-0.5">{{ fallback(formatDisplayDate(resident?.birth_date)) }}</p>
+                    <p class="text-[15px] sm:text-[17px] font-semibold text-[#0F172A] break-words mt-0.5">{{ mask(fallback(formatDisplayDate(resident?.birth_date))) }}</p>
                   </div>
                 </div>
 
@@ -135,7 +162,7 @@ import { TranslationService, KioskLanguage } from '../../i18n/translation.servic
                   </span>
                   <div class="min-w-0">
                     <p class="text-[13px] sm:text-[14px] font-semibold text-[#64748B]">{{ t('profile.sex') }}</p>
-                    <p class="text-[15px] sm:text-[17px] font-semibold text-[#0F172A] break-words mt-0.5">{{ fallback(resident?.gender) }}</p>
+                    <p class="text-[15px] sm:text-[17px] font-semibold text-[#0F172A] break-words mt-0.5">{{ mask(fallback(resident?.gender)) }}</p>
                   </div>
                 </div>
 
@@ -147,7 +174,7 @@ import { TranslationService, KioskLanguage } from '../../i18n/translation.servic
                   </span>
                   <div class="min-w-0">
                     <p class="text-[13px] sm:text-[14px] font-semibold text-[#64748B]">{{ t('profile.civilStatus') }}</p>
-                    <p class="text-[15px] sm:text-[17px] font-semibold text-[#0F172A] break-words mt-0.5">{{ fallback(resident?.civil_status) }}</p>
+                    <p class="text-[15px] sm:text-[17px] font-semibold text-[#0F172A] break-words mt-0.5">{{ mask(fallback(resident?.civil_status)) }}</p>
                   </div>
                 </div>
 
@@ -159,7 +186,7 @@ import { TranslationService, KioskLanguage } from '../../i18n/translation.servic
                   </span>
                   <div class="min-w-0">
                     <p class="text-[13px] sm:text-[14px] font-semibold text-[#64748B]">{{ t('profile.bloodType') }}</p>
-                    <p class="text-[15px] sm:text-[17px] font-semibold text-[#0F172A] break-words mt-0.5">{{ fallback(resident?.blood_type) }}</p>
+                    <p class="text-[15px] sm:text-[17px] font-semibold text-[#0F172A] break-words mt-0.5">{{ mask(fallback(resident?.blood_type)) }}</p>
                   </div>
                 </div>
 
@@ -171,7 +198,7 @@ import { TranslationService, KioskLanguage } from '../../i18n/translation.servic
                   </span>
                   <div class="min-w-0">
                     <p class="text-[13px] sm:text-[14px] font-semibold text-[#64748B]">{{ t('profile.occupation') }}</p>
-                    <p class="text-[15px] sm:text-[17px] font-semibold text-[#0F172A] break-words mt-0.5">{{ fallback(resident?.occupation) }}</p>
+                    <p class="text-[15px] sm:text-[17px] font-semibold text-[#0F172A] break-words mt-0.5">{{ mask(fallback(resident?.occupation)) }}</p>
                   </div>
                 </div>
 
@@ -183,7 +210,7 @@ import { TranslationService, KioskLanguage } from '../../i18n/translation.servic
                   </span>
                   <div class="min-w-0">
                     <p class="text-[13px] sm:text-[14px] font-semibold text-[#64748B]">{{ t('profile.contactNumber') }}</p>
-                    <p class="text-[15px] sm:text-[17px] font-semibold text-[#0F172A] break-words mt-0.5">{{ fallback(resident?.contact_number) }}</p>
+                    <p class="text-[15px] sm:text-[17px] font-semibold text-[#0F172A] break-words mt-0.5">{{ maskContact(resident?.contact_number) }}</p>
                   </div>
                 </div>
 
@@ -195,7 +222,7 @@ import { TranslationService, KioskLanguage } from '../../i18n/translation.servic
                   </span>
                   <div class="min-w-0">
                     <p class="text-[13px] sm:text-[14px] font-semibold text-[#64748B]">{{ t('profile.email') }}</p>
-                    <p class="text-[15px] sm:text-[17px] font-semibold text-[#0F172A] break-words mt-0.5">{{ fallback(resident?.email) }}</p>
+                    <p class="text-[15px] sm:text-[17px] font-semibold text-[#0F172A] break-words mt-0.5">{{ maskEmail(resident?.email) }}</p>
                   </div>
                 </div>
 
@@ -207,7 +234,7 @@ import { TranslationService, KioskLanguage } from '../../i18n/translation.servic
                   </span>
                   <div class="min-w-0">
                     <p class="text-[13px] sm:text-[14px] font-semibold text-[#64748B]">{{ t('profile.address') }}</p>
-                    <p class="text-[15px] sm:text-[17px] font-semibold text-[#0F172A] break-words mt-0.5">{{ fallback(resident?.address_line) }}</p>
+                    <p class="text-[15px] sm:text-[17px] font-semibold text-[#0F172A] break-words mt-0.5">{{ mask(fallback(resident?.address_line)) }}</p>
                   </div>
                 </div>
               </div>
@@ -248,7 +275,7 @@ import { TranslationService, KioskLanguage } from '../../i18n/translation.servic
                 <div class="flex items-center justify-between gap-4 mt-2.5 rounded-xl border border-[#E5E7EB] border-dashed px-4 py-2.5">
                   <div class="min-w-0">
                     <p class="text-[13px] font-semibold text-[#64748B]">{{ t('profile.rfid.number') }}</p>
-                    <p class="text-[19px] font-bold text-[#0F172A] tracking-[0.08em] mt-0.5 break-all">{{ rfidCard.card_uid }}</p>
+                    <p class="text-[19px] font-bold text-[#0F172A] tracking-[0.08em] mt-0.5 break-all">{{ maskRfidUid(rfidCard.card_uid) }}</p>
                   </div>
                   @if (rfidCard.card_uid) {
                     <button (click)="copyRfidNumber()"
@@ -430,6 +457,8 @@ export class ResidentProfileComponent implements OnInit, OnDestroy {
     // transient load error never permanently hides a valid photo.
     if (r?.resident_id !== this._resident?.resident_id) {
       this.photoFailed.set(false);
+      // Always start private — resident decides to reveal their own data.
+      this.detailsHidden.set(true);
     }
     this._resident = r;
   }
@@ -449,6 +478,7 @@ export class ResidentProfileComponent implements OnInit, OnDestroy {
   protected rfidCopied = signal(false);
   protected photoFailed = signal(false);
   protected currentDateTime = signal<Date>(new Date());
+  protected detailsHidden = signal(true);
 
   private dateTimeTimer: any;
   private copyTimer: any;
@@ -543,6 +573,112 @@ export class ResidentProfileComponent implements OnInit, OnDestroy {
       return this.t('profile.notProvided');
     }
     return String(value);
+  }
+
+  /**
+   * Returns a masked placeholder when detailsHidden is true, otherwise
+   * returns the original value unchanged. This is intentionally a plain
+   * method (not a pipe) so it re-evaluates whenever the signal changes.
+   */
+  mask(value: string): string {
+    return this.detailsHidden() ? '••••••' : value;
+  }
+
+  /**
+   * Masks individual name words in standard format (e.g. 'ANDREW MARANAN G.' -> 'AN•••W MA••••N G.')
+   * when privacy mode is active.
+   */
+  maskName(name: string): string {
+    if (!name) return '';
+    if (!this.detailsHidden()) return name;
+
+    return name
+      .split(/\s+/)
+      .map(part => {
+        const trimmed = part.trim();
+        if (trimmed.length <= 2) {
+          return trimmed; // Single letters, initials (e.g. 'G.', 'JR', 'DE')
+        } else if (trimmed.length === 3) {
+          return `${trimmed[0]}•${trimmed[2]}`; // e.g. 'IAN' -> 'I•N', 'DEL' -> 'D•L'
+        } else if (trimmed.length === 4) {
+          return `${trimmed[0]}••${trimmed[3]}`; // e.g. 'JOHN' -> 'J••N'
+        } else {
+          // 5+ letters: keep first 2 and last 1, mask the rest with bullet dots (e.g. 'ANDREW' -> 'AN•••W', 'MARANAN' -> 'MA••••N')
+          const dots = '•'.repeat(trimmed.length - 3);
+          return `${trimmed.slice(0, 2)}${dots}${trimmed.slice(-1)}`;
+        }
+      })
+      .join(' ');
+  }
+
+  residentDisplayName(): string {
+    return this.maskName(this.residentFullName());
+  }
+
+  /**
+   * Masks resident code when details are hidden (e.g., 'RES-2024-000123' -> 'RES-••••-0123')
+   */
+  maskResidentCode(code: string | null | undefined): string {
+    if (!code) return '';
+    if (!this.detailsHidden()) return code;
+
+    const parts = code.split('-');
+    if (parts.length >= 3) {
+      return `${parts[0]}-••••-${parts.slice(2).join('-')}`;
+    }
+    if (code.length > 6) {
+      return `${code.slice(0, 3)}••••${code.slice(-4)}`;
+    }
+    return '••••••';
+  }
+
+  /**
+   * Masks contact phone numbers when hidden (e.g., '09171234567' -> '0917 ••• •567')
+   */
+  maskContact(phone: string | null | undefined): string {
+    if (!phone || !String(phone).trim()) return this.t('profile.notProvided');
+    if (!this.detailsHidden()) return phone;
+    const clean = String(phone).trim();
+    if (clean.length >= 10) {
+      return `${clean.slice(0, 4)} ••• •${clean.slice(-3)}`;
+    }
+    return '••••••';
+  }
+
+  /**
+   * Masks email address when hidden (e.g., 'andrew@example.com' -> 'an•••w@example.com')
+   */
+  maskEmail(email: string | null | undefined): string {
+    if (!email || !String(email).trim()) return this.t('profile.notProvided');
+    if (!this.detailsHidden()) return email;
+    const clean = String(email).trim();
+    const parts = clean.split('@');
+    if (parts.length === 2 && parts[0].length >= 3) {
+      const user = parts[0];
+      const maskedUser = user.length <= 4
+        ? `${user[0]}••${user.slice(-1)}`
+        : `${user.slice(0, 2)}${'•'.repeat(user.length - 3)}${user.slice(-1)}`;
+      return `${maskedUser}@${parts[1]}`;
+    }
+    return '••••••';
+  }
+
+  /**
+   * Masks RFID UID when hidden (e.g., '04A1B2C3D4' -> '04••••••D4' or '04:A1:B2:C3' -> '04:•••:•••:C3')
+   */
+  maskRfidUid(uid: string | null | undefined): string {
+    if (!uid) return '';
+    if (!this.detailsHidden()) return uid;
+    if (uid.includes(':')) {
+      const parts = uid.split(':');
+      if (parts.length >= 3) {
+        return `${parts[0]}:•••:•••:${parts[parts.length - 1]}`;
+      }
+    }
+    if (uid.length >= 6) {
+      return `${uid.slice(0, 2)}${'•'.repeat(uid.length - 4)}${uid.slice(-2)}`;
+    }
+    return '••••••••';
   }
 
   formatFooterDate(): string {

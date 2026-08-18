@@ -37,14 +37,54 @@ const formatDate = (input) => {
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
+const getBirthDate = (ctx) => {
+  return pick(
+    ctx.resident?.birth_date,
+    ctx.application?.birth_date,
+    ctx.application?.birthDate,
+    ctx.application?.birthdate,
+    ctx.application?._guest?.birth_date,
+    ctx.application?._guest?.birthDate
+  );
+};
+
 const computeAge = (birthDate) => {
   if (!birthDate) return '';
-  const bd = new Date(birthDate);
+  
+  let birthYear, birthMonth, birthDay;
+  
+  if (birthDate instanceof Date) {
+    birthYear = birthDate.getFullYear();
+    birthMonth = birthDate.getMonth();
+    birthDay = birthDate.getDate();
+  } else {
+    const s = String(birthDate).trim();
+    const match = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+    if (match) {
+      birthYear = parseInt(match[1], 10);
+      birthMonth = parseInt(match[2], 10) - 1;
+      birthDay = parseInt(match[3], 10);
+    } else {
+      const d = new Date(birthDate);
+      if (isNaN(d.getTime())) return '';
+      birthYear = d.getFullYear();
+      birthMonth = d.getMonth();
+      birthDay = d.getDate();
+    }
+  }
+  
   const now = new Date();
-  if (isNaN(bd.getTime())) return '';
-  let age = now.getFullYear() - bd.getFullYear();
-  const m = now.getMonth() - bd.getMonth();
-  if (m < 0 || (m === 0 && now.getDate() < bd.getDate())) age -= 1;
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+  const currentDay = now.getDate();
+  
+  let age = currentYear - birthYear;
+  const monthDiff = currentMonth - birthMonth;
+  
+  if (monthDiff < 0 || (monthDiff === 0 && currentDay < birthDay)) {
+    age -= 1;
+  }
+  
   return age >= 0 ? String(age) : '';
 };
 
@@ -74,8 +114,8 @@ const PLACEHOLDERS = [
   { key: 'suffix', category: 'resident', source: 'resident', label: 'Suffix', aliases: ['name_suffix'], description: 'Name suffix (Jr., Sr., III).', resolve: (c) => c.resident.suffix || '' },
   { key: 'gender', category: 'resident', source: 'resident', label: 'Gender', aliases: ['sex'], description: "Resident's gender.", resolve: (c) => c.resident.gender || '' },
   { key: 'civil_status', category: 'resident', source: 'resident', label: 'Civil status', aliases: ['civilstatus', 'marital_status'], description: "Resident's civil status (Single, Married, etc.).", resolve: (c) => pick(c.resident.civil_status, c.application.civil_status) },
-  { key: 'birth_date', category: 'resident', source: 'resident', label: 'Birth date', aliases: ['birthdate', 'date_of_birth', 'dob'], description: "Resident's birth date.", resolve: (c) => pick(formatDate(c.resident.birth_date), formatDate(c.application.birth_date)) },
-  { key: 'age', category: 'resident', source: 'resident', label: 'Age', aliases: ['age_years'], description: "Resident's age computed from birth date.", resolve: (c) => pick(computeAge(c.resident.birth_date), computeAge(c.application.birth_date), c.application.age) },
+  { key: 'birth_date', category: 'resident', source: 'resident', label: 'Birth date', aliases: ['birthdate', 'date_of_birth', 'dob'], description: "Resident's birth date.", resolve: (c) => formatDate(getBirthDate(c)) },
+  { key: 'age', category: 'resident', source: 'resident', label: 'Age', aliases: ['age_years'], description: "Resident's age computed from birth date.", resolve: (c) => pick(computeAge(getBirthDate(c)), c.application.age) },
   { key: 'birth_place', category: 'resident', source: 'resident', label: 'Birth place', aliases: ['place_of_birth', 'birthplace'], description: "Resident's place of birth.", resolve: (c) => pick(c.resident.birth_place, c.application.birth_place) },
   { key: 'nationality', category: 'resident', source: 'resident', label: 'Nationality', aliases: ['citizenship'], description: "Resident's nationality.", resolve: (c) => pick(c.resident.nationality, c.application.nationality) || 'Filipino' },
   { key: 'religion', category: 'resident', source: 'resident', label: 'Religion', aliases: ['religious_affiliation'], description: "Resident's religion.", resolve: (c) => pick(c.resident.religion, c.application.religion) },
@@ -218,7 +258,7 @@ const buildContext = ({ request, resident, service, barangay, processedBy, now }
   // into the application context so guest-derived placeholders (name, age, etc.)
   // resolve through the same generic path as registered residents.
   if (application && typeof application === 'object' && application._guest && typeof application._guest === 'object') {
-    application = { ...application._guest, ...application };
+    application = { ...application, ...application._guest };
   }
   return {
     resident: resident || {},

@@ -3,11 +3,19 @@ const http = require('http');
 const WebSocket = require('ws');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
+const { exec } = require('child_process');
 const pool = require(path.join(__dirname, '../../backend/src/config/database'));
 
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
+
+// Log all incoming HTTP requests for diagnostics
+app.use((req, res, next) => {
+  console.log(`[HTTP Server] ${req.method} ${req.url}`);
+  next();
+});
 
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server, path: '/ws' });
@@ -194,6 +202,48 @@ app.get('/api/hardware/status', async (req, res) => {
     lastHeartbeat: arduinoState.lastHeartbeat,
     uptime: arduinoState.uptime,
     kioskClients: kioskClients.size
+  });
+});
+
+// Webcam capture endpoint
+app.post('/api/hardware/capture', (req, res) => {
+  console.log('[Webcam] Capture request received from tablet');
+  const tempFilename = `capture_${Date.now()}.bmp`;
+  const outputPath = path.join(__dirname, tempFilename);
+  
+  // Call CommandCam specifying device 1 (Webcam) using relative path and CWD
+  const cmd = `CommandCam.exe /devnum 1 /filename "${tempFilename}" /delay 500`;
+  
+  exec(cmd, { cwd: __dirname }, (error, stdout, stderr) => {
+    if (error) {
+      console.error('[Webcam] CommandCam failed:', error.message);
+      console.error('[Webcam] stdout:', stdout);
+      console.error('[Webcam] stderr:', stderr);
+      return res.status(500).json({ 
+        success: false, 
+        error: `Webcam capture failed: ${error.message}` 
+      });
+    }
+    
+    // Check if file exists
+    if (!fs.existsSync(outputPath)) {
+      return res.status(500).json({ success: false, error: 'Captured file not found' });
+    }
+    
+    try {
+      // Read file and convert to base64
+      const imageBuffer = fs.readFileSync(outputPath);
+      const base64Image = `data:image/bmp;base64,${imageBuffer.toString('base64')}`;
+      
+      // Delete temporary file
+      fs.unlinkSync(outputPath);
+      
+      console.log('[Webcam] Image captured and converted successfully');
+      res.json({ success: true, image: base64Image });
+    } catch (readError) {
+      console.error('[Webcam] File operation failed:', readError.message);
+      res.status(500).json({ success: false, error: 'Failed to process captured image' });
+    }
   });
 });
 

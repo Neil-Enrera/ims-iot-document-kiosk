@@ -11,6 +11,8 @@ import { ModalOverlayComponent } from './modal-overlay.component';
       [open]="open" 
       [title]="title" 
       [closeOnBackdropClick]="true"
+      [containerClass]="containerClass"
+      [bodyClass]="bodyClass"
       (onClose)="onClose.emit()">
       <ng-content />
     </app-modal-overlay>
@@ -19,5 +21,7 @@ import { ModalOverlayComponent } from './modal-overlay.component';
 export class ModalComponent {
   @Input() open = false;
   @Input() title = '';
+  @Input() containerClass = 'max-w-lg';
+  @Input() bodyClass = '';
   @Output() onClose = new EventEmitter<void>();
 }

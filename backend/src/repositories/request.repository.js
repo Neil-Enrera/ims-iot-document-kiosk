@@ -54,15 +54,17 @@ const findAll = async ({ search, statusId, residentId, serviceId, dateFrom, date
   }
 
   if (dateFrom) {
+    const fromVal = dateFrom.includes(' ') || dateFrom.includes('T') ? dateFrom : `${dateFrom} 00:00:00`;
     conditions.push('rq.request_date >= ?');
-    params.push(dateFrom);
-    countParams.push(dateFrom);
+    params.push(fromVal);
+    countParams.push(fromVal);
   }
 
   if (dateTo) {
+    const toVal = dateTo.includes(' ') || dateTo.includes('T') ? dateTo : `${dateTo} 23:59:59`;
     conditions.push('rq.request_date <= ?');
-    params.push(dateTo);
-    countParams.push(dateTo);
+    params.push(toVal);
+    countParams.push(toVal);
   }
 
   if (conditions.length > 0) {

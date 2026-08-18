@@ -37,7 +37,7 @@ const unsigned long WIFI_CHECK_INTERVAL = 10000; // 10 seconds
 // for WebSocket connections on this host:port at path /ws.
 // The ESP8266 connects as an "arduino" type client.
 
-const char* KIOSK_SERVER_HOST = "192.168.1.100";
+const char* KIOSK_SERVER_HOST = "192.168.100.102";
 const uint16_t KIOSK_SERVER_PORT = 3001;
 const char* KIOSK_SERVER_PATH = "/ws?type=arduino";
 

@@ -16,7 +16,16 @@ app.use(cors({
     process.env.KIOSK_URL || 'http://localhost:4201'
   ]
 }));
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// Serve uploaded files (photos, signatures, documents) with cross-origin headers
+// so the admin panel (port 4200) can display images from the backend (port 3000).
+// This must be registered AFTER CORS so the Access-Control-Allow-Origin header is
+// already set, and with an explicit Cross-Origin-Resource-Policy override because
+// Helmet's default is 'same-origin' which blocks cross-site image loads.
+app.use('/uploads', (req, res, next) => {
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+}, express.static(path.join(__dirname, '../uploads')));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 

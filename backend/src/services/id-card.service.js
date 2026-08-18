@@ -23,10 +23,25 @@ const ensureDir = () => {
   if (!fs.existsSync(ID_CARDS_DIR)) fs.mkdirSync(ID_CARDS_DIR, { recursive: true });
 };
 
-const getCardTemplatePath = (barangay) => {
-  if (!barangay || !barangay.id_template_path) return null;
-  const fullPath = path.join(__dirname, '../../uploads', barangay.id_template_path);
-  return fs.existsSync(fullPath) ? fullPath : null;
+const getCardTemplatePath = async (barangay) => {
+  // 1. Fallback to passed barangay for test compat
+  if (barangay && barangay.id_template_path) {
+    const fullPath = path.join(__dirname, '../../uploads', barangay.id_template_path);
+    if (fs.existsSync(fullPath)) return fullPath;
+  }
+  // 2. Load from the services table for Barangay ID
+  const db = require('../config/database');
+  try {
+    const [rows] = await db.query('SELECT template_path FROM services WHERE service_name = ? LIMIT 1', ['Barangay ID']);
+    const service = rows[0];
+    if (service && service.template_path) {
+      const fullPath = path.join(__dirname, '../../uploads', service.template_path);
+      if (fs.existsSync(fullPath)) return fullPath;
+    }
+  } catch (err) {
+    console.error('Failed to query Barangay ID template path from database:', err);
+  }
+  return null;
 };
 
 // Extract the {{placeholder}} tags from the card template. A leading "%" or
@@ -276,9 +291,9 @@ const applicationFromKioskPayload = (payload) => {
 // written to disk, so both the persisted card generation and the kiosk's live
 // preview can share the exact same rendering pipeline.
 const renderCardBuffer = async ({ application, resident, barangay, processedBy }) => {
-  const templatePath = getCardTemplatePath(barangay);
+  const templatePath = await getCardTemplatePath(barangay);
   if (!templatePath) {
-    return { success: false, message: 'No official ID card template is configured for this barangay. Upload one in Settings.' };
+    return { success: false, message: 'No official ID card template is configured. Upload one in Barangay ID Apps.' };
   }
   if (!templatePath.endsWith('.docx')) {
     return { success: false, message: 'The ID card template must be a .docx file.' };
@@ -294,7 +309,18 @@ const renderCardBuffer = async ({ application, resident, barangay, processedBy }
   }
 
   const context = await buildContext({ application, resident, barangay, processedBy });
-  const applied = placeholderEngine.apply({ templateTags, service: null, context });
+
+  // Query the 'Barangay ID' service to fetch custom placeholder mappings
+  let service = null;
+  const db = require('../config/database');
+  try {
+    const [services] = await db.query('SELECT * FROM services WHERE service_name = ? LIMIT 1', ['Barangay ID']);
+    service = services[0] || null;
+  } catch (err) {
+    console.error('Failed to load Barangay ID service from database:', err);
+  }
+
+  const applied = placeholderEngine.apply({ templateTags, service, context });
   const data = applied.data;
 
   // The photo is injected post-render (see embedPhoto), so the placeholder value

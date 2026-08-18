@@ -1,9 +1,9 @@
 import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { RequestService, DocumentService } from '../../shared/services';
+import { RequestService, DocumentService, ServiceService } from '../../shared/services';
 import { NotificationService } from '../notifications/notification.service';
-import { DocumentRequest, RequestStatusHistory, GeneratedDocument, FormField } from '../../shared/interfaces/api.interfaces';
+import { DocumentRequest, RequestStatusHistory, GeneratedDocument, FormField, Service } from '../../shared/interfaces/api.interfaces';
 import { TableComponent, TableColumn } from '../../shared/components/table.component';
 import { CardComponent } from '../../shared/components/card.component';
 import { InputComponent } from '../../shared/components/input.component';
@@ -20,29 +20,104 @@ interface RequestDetail extends DocumentRequest {
 @Component({
   selector: 'app-requests',
   standalone: true,
-  imports: [TableComponent, CardComponent, InputComponent, PaginationComponent, ButtonComponent, ModalComponent, RequestFormComponent, DocumentPreviewModalComponent, FormsModule],
+  imports: [TableComponent, CardComponent, InputComponent, PaginationComponent, ButtonComponent, ModalComponent, RequestFormComponent, DocumentPreviewModalComponent],
   template: `
     <div>
       <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold text-gray-800">Document Requests</h1>
+        <div>
+          <h1 class="text-2xl font-bold text-gray-800">Document Requests</h1>
+          <p class="text-sm text-slate-500 mt-1">Track, process, and release resident document service requests.</p>
+        </div>
         <app-button variant="primary" (onClick)="showForm.set(true)">+ New Request</app-button>
       </div>
 
       <app-card>
-        <div class="mb-4 flex flex-wrap items-center gap-4">
-          <div class="flex-1 min-w-48">
-            <app-input placeholder="Search requests..." [value]="search()" (valueChange)="onSearch($event)" />
+        <div class="mb-4 flex flex-col gap-3">
+          <!-- Main Filter Bar -->
+          <div class="flex flex-wrap items-center gap-3">
+            <!-- Search Input -->
+            <div class="flex-1 min-w-[220px]">
+              <app-input placeholder="Search requests (e.g. #, name, service)..." [value]="search()" (valueChange)="onSearch($event)" />
+            </div>
+
+            <!-- All Services Filter -->
+            <div class="w-48 sm:w-52">
+              <select
+                [value]="serviceFilter()"
+                (change)="onServiceFilter($any($event.target).value)"
+                class="w-full h-10 px-3 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 cursor-pointer shadow-xs">
+                <option value="">All Services</option>
+                @for (svc of services(); track svc.service_id) {
+                  <option [value]="svc.service_id">{{ svc.service_name }}</option>
+                }
+              </select>
+            </div>
+
+            <!-- All Dates Filter -->
+            <div class="w-44 sm:w-48">
+              <select
+                [value]="datePreset()"
+                (change)="onDatePresetChange($any($event.target).value)"
+                class="w-full h-10 px-3 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 cursor-pointer shadow-xs">
+                <option value="">All Dates</option>
+                <option value="today">Today</option>
+                <option value="yesterday">Yesterday</option>
+                <option value="last7days">Last 7 Days</option>
+                <option value="thisMonth">This Month</option>
+                <option value="custom">Custom Date Range...</option>
+              </select>
+            </div>
+
+            <!-- Status Filter -->
+            <div class="w-48 sm:w-52">
+              <select
+                [value]="statusFilter()"
+                (change)="onStatusFilter($any($event.target).value)"
+                class="w-full h-10 px-3 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 cursor-pointer shadow-xs">
+                @for (opt of filterOptions; track opt.value) {
+                  <option [value]="opt.value">{{ opt.label }}</option>
+                }
+              </select>
+            </div>
+
+            <!-- Reset Filters Button -->
+            @if (hasActiveFilters()) {
+              <button
+                type="button"
+                (click)="resetFilters()"
+                class="h-10 px-3 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 text-xs font-semibold flex items-center gap-1.5 transition shadow-xs">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+                Reset
+              </button>
+            }
           </div>
-          <div class="w-56">
-            <select
-              [value]="statusFilter()"
-              (change)="onStatusFilter($any($event.target).value)"
-              class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-300">
-              @for (opt of filterOptions; track opt.value) {
-                <option [value]="opt.value">{{ opt.label }}</option>
-              }
-            </select>
-          </div>
+
+          <!-- Custom Date Range Sub-row (revealed when 'custom' is picked) -->
+          @if (datePreset() === 'custom') {
+            <div class="flex flex-wrap items-center gap-3 p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+              <span class="text-xs font-bold text-slate-600 uppercase tracking-wide">Custom Date:</span>
+              <div class="flex items-center gap-2">
+                <label class="text-xs text-slate-500">From:</label>
+                <input
+                  type="date"
+                  [value]="dateFrom()"
+                  (change)="onCustomDateChange('from', $any($event.target).value)"
+                  class="h-8 px-2.5 border border-gray-300 rounded-lg text-xs text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 shadow-xs"
+                />
+              </div>
+              <div class="flex items-center gap-2">
+                <label class="text-xs text-slate-500">To:</label>
+                <input
+                  type="date"
+                  [value]="dateTo()"
+                  (change)="onCustomDateChange('to', $any($event.target).value)"
+                  class="h-8 px-2.5 border border-gray-300 rounded-lg text-xs text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 shadow-xs"
+                />
+              </div>
+            </div>
+          }
         </div>
 
         <app-table
@@ -53,10 +128,35 @@ interface RequestDetail extends DocumentRequest {
           [sortDirection]="sortDirection()"
           trackBy="request_id"
           emptyMessage="No requests found"
-          [cellTemplates]="{ status_name: statusCell, expires_at: expiryCell }"
+          [cellTemplates]="{
+            request_number: reqNumCell,
+            resident_name: residentCell,
+            request_date: dateCell,
+            status_name: statusCell,
+            expires_at: expiryCell
+          }"
           [selectedRow]="selectedRow()"
           (onSort)="onSort($event)"
           (onRowClick)="onRowClick($event)">
+
+          <ng-template #reqNumCell let-row="row">
+            <span class="text-sm font-semibold text-slate-900">
+              {{ row.request_number }}
+            </span>
+          </ng-template>
+
+          <ng-template #residentCell let-row="row">
+            <span class="text-sm font-semibold text-slate-900">
+              {{ row.resident_name }}
+            </span>
+          </ng-template>
+
+          <ng-template #dateCell let-row="row">
+            <div class="leading-tight">
+              <p class="text-sm font-medium text-slate-800">{{ formatSubmissionDate(row.request_date) }}</p>
+              <p class="text-xs text-slate-400 mt-0.5">{{ formatSubmissionTime(row.request_date) }}</p>
+            </div>
+          </ng-template>
 
           <ng-template #statusCell let-status let-row="row">
             <select
@@ -64,7 +164,7 @@ interface RequestDetail extends DocumentRequest {
               [disabled]="row.status_id === 7 || row.status_id === 8 || row.status_id === 9"
               (click)="$event.stopPropagation()"
               (change)="onStatusChange($any($event.target).value, row); $event.stopPropagation()"
-              class="w-full px-2 py-1.5 border rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-300 bg-white">
+              class="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 bg-white cursor-pointer shadow-xs">
               @for (opt of statusOptions; track opt.value) {
                 <option [value]="opt.value">{{ opt.label }}</option>
               }
@@ -73,24 +173,26 @@ interface RequestDetail extends DocumentRequest {
 
           <ng-template #expiryCell let-value let-row="row">
             @if (row.is_expired) {
-              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold text-red-700 bg-red-100">Expired</span>
+              <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold text-red-800 bg-red-50 border border-red-200">Expired</span>
             } @else if (row.expires_at) {
               <span
                 [class]="expiryBadgeClass(row.expires_at)">
                 {{ daysRemaining(row.expires_at) }}d left
               </span>
             } @else {
-              <span class="text-gray-400">-</span>
+              <span class="text-slate-400 font-medium">-</span>
             }
           </ng-template>
         </app-table>
 
-        @if (total() > limit) {
+        @if (total() > 0) {
           <app-pagination
             [total]="total()"
             [currentPage]="page()"
             [limit]="limit"
-            (onPageChange)="onPageChange($event)" />
+            itemLabel="requests"
+            (onPageChange)="onPageChange($event)"
+            (onLimitChange)="onLimitChange($event)" />
         }
       </app-card>
 
@@ -104,352 +206,177 @@ interface RequestDetail extends DocumentRequest {
       </app-modal>
 
       <!-- Request Details Modal -->
-      <app-modal [open]="showDetails()" [title]="selectedRequest()?.request_number || 'Request Details'" (onClose)="closeDetails()">
+      <app-modal [open]="showDetails()" [title]="selectedRequest()?.request_number || 'Request Details'" (onClose)="closeDetails()" containerClass="max-w-xl">
         @if (selectedRequest(); as request) {
-          <dl class="space-y-3 text-sm">
-            <div class="grid grid-cols-3 gap-2">
-              <dt class="text-gray-500 font-medium">Request Number</dt>
-              <dd class="col-span-2 font-semibold text-gray-900">{{ request.request_number }}</dd>
-            </div>
-            <div class="grid grid-cols-3 gap-2">
-              <dt class="text-gray-500 font-medium">Resident</dt>
-              <dd class="col-span-2 text-gray-900">{{ request.resident_name }} <span class="text-gray-400">({{ request.resident_code }})</span></dd>
-            </div>
-            <div class="grid grid-cols-3 gap-2">
-              <dt class="text-gray-500 font-medium">Service</dt>
-              <dd class="col-span-2 text-gray-900">{{ request.service_name }}</dd>
-            </div>
-            <div class="grid grid-cols-3 gap-2">
-              <dt class="text-gray-500 font-medium">Date Submitted</dt>
-              <dd class="col-span-2 text-gray-900">{{ formatDate(request.request_date) }}</dd>
-            </div>
-            <div class="grid grid-cols-3 gap-2">
-              <dt class="text-gray-500 font-medium">Current Status</dt>
-              <dd class="col-span-2 text-gray-900">{{ request.status_name }}</dd>
-            </div>
-            @if (request.expires_at) {
-              <div class="grid grid-cols-3 gap-2">
-                <dt class="text-gray-500 font-medium">Claim Expiry</dt>
-                <dd class="col-span-2">
-                  @if (request.is_expired) {
-                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold text-red-700 bg-red-100">Expired</span>
-                  } @else {
-                    <span class="text-gray-900">{{ formatDate(request.expires_at) }} · {{ daysRemaining(request.expires_at) }}d left</span>
-                  }
-                </dd>
-              </div>
-            }
-            <div class="grid grid-cols-3 gap-2">
-              <dt class="text-gray-500 font-medium">Assigned Staff</dt>
-              <dd class="col-span-2 text-gray-900">{{ request.assigned_staff || '-' }}</dd>
-            </div>
-            <div class="grid grid-cols-3 gap-2">
-              <dt class="text-gray-500 font-medium">Purpose</dt>
-              <dd class="col-span-2 text-gray-900">{{ request.purpose || '-' }}</dd>
-            </div>
-            <div class="grid grid-cols-3 gap-2">
-              <dt class="text-gray-500 font-medium">Notes</dt>
-              <dd class="col-span-2 text-gray-900">{{ request.remarks || '-' }}</dd>
-            </div>
-          </dl>
-
-          <!-- Form Data Preview -->
-          @if (request.form_data && hasFormData(request.form_data)) {
-            <div class="flex items-center justify-between mt-6 mb-2">
-              <h4 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Submitted Form Data</h4>
-              <button
-                type="button"
-                (click)="previewRequestData(request)"
-                class="text-xs font-medium text-blue-600 hover:underline">
-                Preview Form Data
-              </button>
-            </div>
-            <div class="bg-gray-50 rounded p-3 text-sm max-h-60 overflow-y-auto">
-              @for (entry of formDataEntries(request.form_data); track entry.key) {
-                <div class="mb-2">
-                  <span class="font-medium text-gray-700">{{ formatFieldLabel(entry.key) }}:</span>
-                  <span class="ml-2 text-gray-900 whitespace-pre-wrap">{{ entry.value }}</span>
-                </div>
-              }
-            </div>
-          }
-
-          <div class="flex items-center justify-between mt-6 mb-2">
-            <h4 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Generated Documents</h4>
-            <div class="flex items-center gap-3">
-              <button
-                type="button"
-                [disabled]="previewBusy()"
-                (click)="previewRequestDocument()"
-                class="text-xs font-medium text-blue-600 hover:underline disabled:opacity-50"
-                title="Preview the fully populated document before approving or rejecting">
-                {{ previewBusy() ? 'Preparing...' : 'Preview Document' }}
-              </button>
-              @if (canEditDocument()) {
-                <button
-                  type="button"
-                  (click)="openEditForm()"
-                  class="text-xs font-medium text-blue-600 hover:underline disabled:opacity-50"
-                  title="Edit the dynamic application form data, then regenerate and preview the document.">
-                  Edit Document
-                </button>
-              }
-            </div>
-          </div>
-          <p class="text-xs text-gray-500 mb-2">
-            A document can be previewed or edited in <span class="font-medium">Submitted</span> or <span class="font-medium">Under Review</span> status.
-            "Preview Document" generates one if none exists yet; "Edit Document" allows modifying submitted fields and automatically updates the generated document.
-          </p>
-          @if (!editingDocument()) {
-            @if (documents().length > 0) {
-              <div class="space-y-2">
-                @for (doc of documents(); track doc.document_id) {
-                  <div class="border rounded p-2 text-sm bg-white">
-                    <div class="flex items-center justify-between">
-                      <div class="min-w-0">
-                        <p class="font-medium text-gray-900 truncate" [title]="doc.file_name">{{ doc.file_name }}</p>
-                        <p class="text-xs text-gray-500">{{ formatDate(doc.generated_at) }} · {{ formatBytes(doc.file_size) }}</p>
-                      </div>
-                      <div class="flex shrink-0 items-center gap-2">
-                        @if (approvalBadge(doc.approval_status); as badge) {
-                          <span [class]="badge.class">{{ badge.label }}</span>
-                        }
-                      </div>
-                    </div>
-
-                    @if (doc.generation_warnings && doc.generation_warnings.length > 0) {
-                      <div class="mt-2 rounded bg-amber-50 border border-amber-200 px-2 py-1.5">
-                        <p class="text-xs font-medium text-amber-800">Generation warnings</p>
-                        @for (warn of doc.generation_warnings; track warn) {
-                          <p class="text-xs text-amber-700">• {{ warn }}</p>
-                        }
-                      </div>
-                    }
-
-                    <div class="mt-2 flex flex-wrap items-center gap-2">
-                      <button type="button" (click)="previewDocument(doc)" class="text-xs text-blue-600 hover:underline">Preview</button>
-                      <button
-                        type="button"
-                        (click)="downloadDocument(doc)"
-                        [disabled]="doc.approval_status !== 'approved'"
-                        class="text-xs text-blue-600 hover:underline disabled:opacity-40 disabled:cursor-not-allowed"
-                        [title]="doc.approval_status === 'approved' ? 'Download' : 'Download only available after approval'">
-                        Download
-                      </button>
-                      <button
-                        type="button"
-                        (click)="printDocument(doc)"
-                        [disabled]="doc.approval_status !== 'approved'"
-                        class="text-xs text-blue-600 hover:underline disabled:opacity-40 disabled:cursor-not-allowed"
-                        [title]="doc.approval_status === 'approved' ? 'Print' : 'Print only available after approval'">
-                        Print
-                      </button>
-
-                      @if (doc.approval_status === 'pending' && request.status_id === 4) {
-                        <span class="text-gray-300">|</span>
-                        <button type="button" (click)="reviewDocument(doc, 'approved')" class="text-xs text-green-600 hover:underline">Approve</button>
-                        <button type="button" (click)="reviewDocument(doc, 'rejected')" class="text-xs text-red-600 hover:underline">Reject</button>
-                      }
-
-                      @if (doc.review_remarks) {
-                        <span class="text-xs text-gray-500" [title]="doc.review_remarks">Remarks: {{ doc.review_remarks }}</span>
-                      }
-                    </div>
+          <div class="space-y-4">
+              <!-- Stepper Header -->
+              <div class="flex items-center justify-between mb-4 border-b border-gray-100 pb-3">
+                @for (step of stepperSteps; track step.id) {
+                  <div class="flex items-center gap-1.5">
+                    <span [class]="'w-5 h-5 flex items-center justify-center rounded-full text-[10px] font-bold ' + (isStepActive(request.status_id, step.id) ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500')">
+                      {{ step.id }}
+                    </span>
+                    <span [class]="'text-[10px] font-semibold hidden md:inline ' + (isStepActive(request.status_id, step.id) ? 'text-blue-600' : 'text-gray-400')">
+                      {{ step.label }}
+                    </span>
                   </div>
+                  @if (step.id < 7) {
+                    <div [class]="'h-0.5 flex-1 border-t ' + (request.status_id >= 4 && step.id === 1 ? 'border-blue-600' : request.status_id >= 5 && step.id === 4 ? 'border-blue-600' : request.status_id >= 6 && step.id === 5 ? 'border-blue-600' : request.status_id === 7 && step.id === 6 ? 'border-blue-600' : 'border-gray-200')"></div>
+                  }
                 }
               </div>
-            } @else {
-              <p class="text-sm text-gray-500">
-                No documents generated yet{{ docNotice() }}.
-              </p>
-            }
-            @if (docError()) {
-              <p class="text-xs text-red-500 mt-2">{{ docError() }}</p>
-            }
-          } @else {
-            <!-- Edit Document form: correct submitted application data and regenerate -->
-            <div class="border rounded-lg p-4 bg-gray-50 space-y-4">
-              <h5 class="text-sm font-semibold text-gray-700">Correct Application Data</h5>
 
-              <div>
-                <label class="block text-xs font-medium text-gray-600 mb-1">Purpose</label>
-                <input
-                  type="text"
-                  [(ngModel)]="editPurpose"
-                  class="w-full px-3 py-2 border rounded-lg text-sm text-gray-800 border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Purpose of request" />
+              <!-- Metadata Description List -->
+              <dl class="grid grid-cols-3 gap-y-2 gap-x-4 text-sm bg-gray-50 p-3 rounded-lg border border-gray-100">
+                <dt class="text-gray-500 font-medium">Request #</dt>
+                <dd class="col-span-2 font-bold text-gray-900">{{ request.request_number }}</dd>
+
+                <dt class="text-gray-500 font-medium">Resident</dt>
+                <dd class="col-span-2 text-gray-900 font-medium">{{ request.resident_name }} <span class="text-gray-400">({{ request.resident_code || 'Guest' }})</span></dd>
+
+                <dt class="text-gray-500 font-medium">Service</dt>
+                <dd class="col-span-2 text-gray-900 font-medium">{{ request.service_name }}</dd>
+
+                <dt class="text-gray-500 font-medium">Submitted</dt>
+                <dd class="col-span-2 text-gray-900">{{ formatDate(request.request_date) }}</dd>
+
+                <dt class="text-gray-500 font-medium">Status</dt>
+                <dd class="col-span-2 text-gray-900 font-semibold">{{ request.status_name }}</dd>
+
+                @if (request.expires_at) {
+                  <dt class="text-gray-500 font-medium">Claim Expiry</dt>
+                  <dd class="col-span-2">
+                    @if (request.is_expired) {
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold text-red-700 bg-red-100">Expired</span>
+                    } @else {
+                      <span class="text-gray-900 font-medium">{{ formatDate(request.expires_at) }} ({{ daysRemaining(request.expires_at) }}d left)</span>
+                    }
+                  </dd>
+                }
+                
+                <dt class="text-gray-500 font-medium">Purpose</dt>
+                <dd class="col-span-2 text-gray-900">{{ request.purpose || '-' }}</dd>
+
+                <dt class="text-gray-500 font-medium">Notes</dt>
+                <dd class="col-span-2 text-gray-900">{{ request.remarks || '-' }}</dd>
+              </dl>
+
+              <!-- Stepper workflow actions -->
+              <div class="border-t border-gray-100 pt-4 mt-2">
+                <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Workflow Quick Actions</h4>
+                <div class="flex flex-wrap gap-2">
+                  @if (request.status_id === 1) {
+                    <app-button variant="primary" size="sm" (onClick)="onStatusChange('4', request)">Review Request</app-button>
+                    <app-button variant="danger" size="sm" (onClick)="onStatusChange('8', request)">Reject</app-button>
+                  }
+                  @if (request.status_id === 2 || request.status_id === 3 || request.status_id === 4) {
+                    <app-button variant="success" size="sm" (onClick)="onStatusChange('5', request)">Approve & Start Processing</app-button>
+                    <app-button variant="danger" size="sm" (onClick)="onStatusChange('8', request)">Reject</app-button>
+                  }
+                  @if (request.status_id === 5) {
+                    <app-button variant="primary" size="sm" (onClick)="onStatusChange('6', request)">Complete & Mark Ready for Release</app-button>
+                  }
+                  @if (request.status_id === 6) {
+                    <app-button variant="success" size="sm" (onClick)="onStatusChange('7', request)">Release to Resident</app-button>
+                  }
+                  @if (request.status_id < 7 && request.status_id !== 8 && request.status_id !== 9) {
+                    <app-button variant="secondary" size="sm" (onClick)="onStatusChange('9', request)">Cancel Request</app-button>
+                  }
+                </div>
               </div>
 
-              <div>
-                <label class="block text-xs font-medium text-gray-600 mb-1">Notes</label>
-                <textarea
-                  [(ngModel)]="editRemarks"
-                  rows="2"
-                  class="w-full px-3 py-2 border rounded-lg text-sm text-gray-800 border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Notes"></textarea>
-              </div>
-
-              @if (selectedRequest()?.resident_id === null) {
-                <div>
-                  <label class="block text-xs font-medium text-gray-600 mb-1">Guest Information</label>
-                  <p class="text-xs text-gray-500 mb-2">Temporary session identity for this request.</p>
-                  @for (field of GUEST_IDENTITY_FIELDS; track field.key) {
-                    <div class="mb-3">
-                      @switch (field.type) {
-                        @case ('textarea') {
-                          <textarea
-                            [id]="'edit-' + field.key"
-                            [name]="field.key"
-                            [(ngModel)]="editFormData[field.key]"
-                            rows="2"
-                            class="w-full px-3 py-2 border rounded-lg text-sm text-gray-800 border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            [placeholder]="field.label"></textarea>
-                        }
-                        @default {
-                          <input
-                            [id]="'edit-' + field.key"
-                            [type]="field.type"
-                            [name]="field.key"
-                            [(ngModel)]="editFormData[field.key]"
-                            class="w-full px-3 py-2 border rounded-lg text-sm text-gray-800 border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            [placeholder]="field.label" />
-                        }
-                      }
-                      @if (editErrors[field.key]) {
-                        <p class="text-xs text-red-500 mt-1">{{ editErrors[field.key] }}</p>
-                      }
+              <!-- Form Data Preview -->
+              @if (request.form_data && hasFormData(request.form_data)) {
+                <div class="flex items-center justify-between mt-4 mb-2">
+                  <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wide">Submitted Form Data</h4>
+                  <button type="button" (click)="previewRequestData(request)" class="text-xs font-semibold text-blue-600 hover:underline">Preview Json</button>
+                </div>
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm space-y-1.5">
+                  @for (entry of formDataEntries(request.form_data); track entry.key) {
+                    <div class="mb-1.5 flex justify-between border-b border-gray-100 pb-1 last:border-0 last:pb-0">
+                      <span class="font-medium text-gray-500">{{ formatFieldLabel(entry.key) }}:</span>
+                      <span class="font-semibold text-gray-800 text-right">{{ entry.value }}</span>
                     </div>
                   }
                 </div>
               }
 
-              @if (editFormFields().length > 0) {
-                <div>
-                  <h6 class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Service Form Fields</h6>
-                  @for (field of editFormFields(); track field.key) {
-                    <div class="mb-3">
-                      <label [attr.for]="'edit-' + field.key" class="block text-xs font-medium text-gray-600 mb-1">
-                        {{ field.label }} @if (field.required) { <span class="text-[#F97316]">*</span> }
-                      </label>
-                      @switch (field.type) {
-                        @case ('select') {
-                          <select
-                            [id]="'edit-' + field.key"
-                            [name]="field.key"
-                            [(ngModel)]="editFormData[field.key]"
-                            class="w-full px-3 py-2 border rounded-lg text-sm text-gray-800 border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="">Select</option>
-                            @for (opt of field.options || []; track opt) {
-                              <option [value]="opt">{{ opt }}</option>
-                            }
-                          </select>
+              <!-- Generated Documents Section -->
+              <div class="flex items-center justify-between mt-4 mb-2">
+                <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wide">Document Artifacts</h4>
+                <div class="flex items-center gap-2">
+                  <button type="button" [disabled]="previewBusy()" (click)="previewRequestDocument()" class="text-xs font-semibold text-blue-600 hover:underline disabled:opacity-50">
+                    {{ previewBusy() ? 'Loading...' : 'Preview Live' }}
+                  </button>
+                  <span class="text-gray-300">|</span>
+                  <button type="button" [disabled]="generatingDoc()" (click)="generateDocument()" class="text-xs font-semibold text-blue-600 hover:underline disabled:opacity-50">
+                    {{ generatingDoc() ? 'Generating...' : 'Regenerate' }}
+                  </button>
+                </div>
+              </div>
+
+              @if (documents().length > 0) {
+                <div class="space-y-2">
+                  @for (doc of documents(); track doc.document_id) {
+                    <div class="border border-gray-200 rounded-lg p-3 bg-white hover:bg-gray-50 transition">
+                      <div class="flex items-center justify-between mb-2">
+                        <div class="min-w-0 flex-1">
+                          <p class="font-semibold text-gray-900 truncate" [title]="doc.file_name">{{ doc.file_name }}</p>
+                          <p class="text-[11px] text-gray-400">{{ formatDate(doc.generated_at) }} · {{ formatBytes(doc.file_size) }}</p>
+                        </div>
+                        @if (approvalBadge(doc.approval_status); as badge) {
+                          <span [class]="'px-2 py-0.5 text-[10px] font-bold rounded-full ' + badge.class">{{ badge.label }}</span>
                         }
-                        @case ('textarea') {
-                          <textarea
-                            [id]="'edit-' + field.key"
-                            [name]="field.key"
-                            [(ngModel)]="editFormData[field.key]"
-                            rows="3"
-                            class="w-full px-3 py-2 border rounded-lg text-sm text-gray-800 border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            [placeholder]="field.placeholder || field.label"></textarea>
-                        }
-                        @case ('radio') {
-                          <div class="flex flex-col gap-2">
-                            @for (opt of field.options || []; track opt) {
-                              <label class="flex items-center gap-2">
-                                <input type="radio" [name]="field.key" [value]="opt"
-                                  [checked]="editFormData[field.key] === opt"
-                                  (change)="editFormData[field.key] = opt"
-                                  class="w-4 h-4 accent-[#F97316]" />
-                                <span class="text-sm text-gray-700">{{ opt }}</span>
-                              </label>
-                            }
-                          </div>
-                        }
-                        @case ('checkbox') {
-                          <div class="flex flex-col gap-2">
-                            @for (opt of field.options || []; track opt) {
-                              <label class="flex items-center gap-2">
-                                <input type="checkbox" [value]="opt"
-                                  [checked]="isCheckboxChecked(field.key, opt)"
-                                  (change)="toggleCheckbox(field.key, opt, $event)"
-                                  class="w-4 h-4 accent-[#F97316]" />
-                                <span class="text-sm text-gray-700">{{ opt }}</span>
-                              </label>
-                            }
-                          </div>
-                        }
-                        @default {
-                          <input
-                            [id]="'edit-' + field.key"
-                            [type]="field.type"
-                            [name]="field.key"
-                            [(ngModel)]="editFormData[field.key]"
-                            class="w-full px-3 py-2 border rounded-lg text-sm text-gray-800 border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            [placeholder]="field.placeholder || field.label" />
-                        }
+                      </div>
+
+                      @if (doc.generation_warnings && doc.generation_warnings.length > 0) {
+                        <div class="mb-2 rounded bg-amber-50 border border-amber-200 px-2 py-1">
+                          @for (warn of doc.generation_warnings; track warn) {
+                            <p class="text-[11px] text-amber-700 font-medium">• {{ warn }}</p>
+                          }
+                        </div>
                       }
-                      @if (field.helperText) {
-                        <p class="mt-1 text-xs text-gray-500">{{ field.helperText }}</p>
-                      }
-                      @if (editErrors[field.key]) {
-                        <p class="mt-1 text-xs text-red-500">{{ editErrors[field.key] }}</p>
-                      }
+
+                      <div class="flex items-center gap-3 border-t border-gray-100 pt-2 text-xs">
+                        <button type="button" (click)="previewDocument(doc)" class="text-blue-600 font-semibold hover:underline">Preview</button>
+                        <button type="button" (click)="downloadDocument(doc)" [disabled]="doc.approval_status !== 'approved'" class="text-blue-600 font-semibold hover:underline disabled:opacity-40 flex-wrap">Download</button>
+                        <button type="button" (click)="printDocument(doc)" [disabled]="doc.approval_status !== 'approved'" class="text-blue-600 font-semibold hover:underline disabled:opacity-40">Print</button>
+                        
+                        @if (doc.approval_status === 'pending') {
+                          <span class="text-gray-300">|</span>
+                          <button type="button" (click)="reviewDocument(doc, 'approved')" class="text-green-600 font-bold hover:underline">Approve</button>
+                          <button type="button" (click)="reviewDocument(doc, 'returned')" class="text-amber-600 font-bold hover:underline">Return</button>
+                          <button type="button" (click)="reviewDocument(doc, 'rejected')" class="text-red-600 font-bold hover:underline">Reject</button>
+                        }
+                      </div>
                     </div>
                   }
                 </div>
               } @else {
-                <p class="text-sm text-gray-400">This service has no configurable application form fields.</p>
+                <p class="text-xs text-gray-500 bg-gray-50 border border-dashed rounded-lg p-4 text-center">
+                  No documents generated yet. Click "Preview Live" to generate one.
+                </p>
               }
 
-              <div>
-                <label class="block text-xs font-medium text-gray-600 mb-1">Correction Notes (optional)</label>
-                <textarea
-                  [(ngModel)]="editReason"
-                  rows="2"
-                  class="w-full px-3 py-2 border rounded-lg text-sm text-gray-800 border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Why was this data corrected?"></textarea>
-              </div>
-
-              @if (editErrors['form']) {
-                <p class="text-xs text-red-500">{{ editErrors['form'] }}</p>
+              <!-- Status History -->
+              <h4 class="mt-6 mb-3 text-xs font-bold text-gray-700 uppercase tracking-wide">Status History Logs</h4>
+              @if (request.history && request.history.length > 0) {
+                <ol class="border-l-2 border-gray-200 space-y-3 pl-4">
+                  @for (entry of request.history; track entry.history_id) {
+                    <li class="text-xs">
+                      <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                        <span class="font-semibold text-gray-900">{{ entry.status_name }}</span>
+                        <span class="text-[11px] text-gray-400">{{ formatDate(entry.changed_at) }}</span>
+                      </div>
+                      <p class="ml-4 text-xs text-gray-500 font-medium">{{ entry.changed_by_name ? entry.changed_by_name : 'System' }}{{ entry.remarks ? ' — ' + entry.remarks : '' }}</p>
+                    </li>
+                  }
+                </ol>
+              } @else {
+                <p class="text-xs text-gray-500">No status history recorded.</p>
               }
-
-              <div class="flex justify-end gap-2 pt-3 border-t border-gray-200">
-                <button
-                  type="button"
-                  (click)="closeEditForm()"
-                  class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  [disabled]="savingEdit()"
-                  (click)="saveEditForm()"
-                  class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50">
-                  {{ savingEdit() ? 'Saving...' : 'Save & Regenerate' }}
-                </button>
-              </div>
-            </div>
-          }
-
-          <h4 class="mt-6 mb-3 text-sm font-semibold text-gray-700 uppercase tracking-wide">Status History</h4>
-          @if (request.history && request.history.length > 0) {
-            <ol class="border-l-2 border-gray-200 space-y-3 pl-4">
-              @for (entry of request.history; track entry.history_id) {
-                <li class="text-sm">
-                  <div class="flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-                    <span class="font-medium text-gray-900">{{ entry.status_name }}</span>
-                    <span class="text-gray-400">{{ formatDate(entry.changed_at) }}</span>
-                  </div>
-                  <p class="ml-4 text-gray-500">{{ entry.changed_by_name ? entry.changed_by_name : 'System' }}{{ entry.remarks ? ' — ' + entry.remarks : '' }}</p>
-                </li>
-              }
-            </ol>
-          } @else {
-            <p class="text-sm text-gray-500">No status history recorded.</p>
-          }
+          </div>
         }
       </app-modal>
 
@@ -466,6 +393,7 @@ interface RequestDetail extends DocumentRequest {
 })
 export class RequestsComponent implements OnInit, OnDestroy {
   requests = signal<DocumentRequest[]>([]);
+  services = signal<Service[]>([]);
   loading = signal(true);
   search = signal('');
   page = signal(1);
@@ -474,6 +402,10 @@ export class RequestsComponent implements OnInit, OnDestroy {
   sortColumn = signal('request_id');
   sortDirection = signal<'ASC' | 'DESC'>('DESC');
   statusFilter = signal('');
+  serviceFilter = signal('');
+  datePreset = signal('');
+  dateFrom = signal('');
+  dateTo = signal('');
 
   showForm = signal(false);
   saving = signal(false);
@@ -481,28 +413,21 @@ export class RequestsComponent implements OnInit, OnDestroy {
   selectedRequest = signal<RequestDetail | null>(null);
   selectedRow = signal<DocumentRequest | null>(null);
   documents = signal<GeneratedDocument[]>([]);
+  generatingDoc = signal(false);
   previewBusy = signal(false);
   docError = signal('');
   docNotice = signal('');
 
-  // --- Edit Document ---
-  editingDocument = signal(false);
-  editFormData: Record<string, any> = {};
-  editPurpose = '';
-  editRemarks = '';
-  editReason = '';
-  editErrors: Record<string, string> = {};
-  savingEdit = signal(false);
-
-  GUEST_IDENTITY_FIELDS: FormField[] = [
-    { key: 'full_name', label: 'Full Name', type: 'text', required: true },
-    { key: 'birth_date', label: 'Birth Date', type: 'date', required: false },
-    { key: 'address', label: 'Address', type: 'textarea', required: false },
-    { key: 'contact_number', label: 'Contact Number', type: 'tel', required: false },
-    { key: 'email', label: 'Email', type: 'email', required: false }
+  stepperSteps = [
+    { id: 1, label: 'Submitted' },
+    { id: 4, label: 'Under Review' },
+    { id: 5, label: 'Processing' },
+    { id: 6, label: 'Ready' },
+    { id: 7, label: 'Released' }
   ];
 
   private sseSubscription: any = null;
+  private pendingRequestId: number | null = null;
 
   columns: TableColumn[] = [
     { key: 'request_number', label: 'Request #', sortable: true },
@@ -533,6 +458,7 @@ export class RequestsComponent implements OnInit, OnDestroy {
 
   constructor(
     private requestService: RequestService,
+    private serviceService: ServiceService,
     private documentService: DocumentService,
     private notificationService: NotificationService,
     private route: ActivatedRoute,
@@ -540,14 +466,19 @@ export class RequestsComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
+    this.loadServices();
     this.route.queryParams.subscribe(params => {
       if (params['requestId']) {
-        const requestId = parseInt(params['requestId']);
-        const request = this.requests().find(r => r.request_id === requestId);
+        this.pendingRequestId = parseInt(params['requestId']);
+        const request = this.requests().find(r => r.request_id === this.pendingRequestId);
         if (request) {
           this.viewDetails(request);
         }
         this.router.navigate([], { queryParams: { requestId: null }, queryParamsHandling: 'merge' });
+      }
+      if (params['new'] === '1') {
+        this.showForm.set(true);
+        this.router.navigate([], { queryParams: { new: null }, queryParamsHandling: 'merge' });
       }
     });
     this.loadRequests();
@@ -558,10 +489,35 @@ export class RequestsComponent implements OnInit, OnDestroy {
     this.disconnectFromRequestUpdates();
   }
 
+  isStepActive(currentStatusId: number, stepId: number): boolean {
+    const statusStepsMap: Record<number, number[]> = {
+      1: [1],
+      2: [1],
+      3: [1],
+      4: [1, 4],
+      5: [1, 4, 5],
+      6: [1, 4, 5, 6],
+      7: [1, 4, 5, 6, 7],
+      8: [],
+      9: []
+    };
+    return (statusStepsMap[currentStatusId] || []).includes(stepId);
+  }
+
+
   private connectToRequestUpdates() {
     this.sseSubscription = this.notificationService.sse$.subscribe(event => {
       if (event?.type?.startsWith('request-')) {
         this.loadRequests();
+        const current = this.selectedRequest();
+        if (current && (event.data?.requestId === current.request_id || event.data?.request_id === current.request_id)) {
+          this.requestService.getById(current.request_id).subscribe({
+            next: (res) => {
+              this.selectedRequest.set(res.data as RequestDetail);
+              this.loadDocuments(current.request_id);
+            }
+          });
+        }
       }
     });
   }
@@ -573,11 +529,22 @@ export class RequestsComponent implements OnInit, OnDestroy {
     }
   }
 
+  loadServices() {
+    this.serviceService.getAll({ limit: 100 }).subscribe({
+      next: (res) => {
+        this.services.set(res.data || []);
+      }
+    });
+  }
+
   loadRequests() {
     this.loading.set(true);
     this.requestService.getAll({
-      search: this.search(),
-      statusId: this.statusFilter() || undefined,
+      search: this.search() || undefined,
+      statusId: this.statusFilter() ? parseInt(this.statusFilter()) : undefined,
+      serviceId: this.serviceFilter() ? parseInt(this.serviceFilter()) : undefined,
+      dateFrom: this.dateFrom() || undefined,
+      dateTo: this.dateTo() || undefined,
       page: this.page(),
       limit: this.limit,
       sortBy: this.sortColumn(),
@@ -587,6 +554,14 @@ export class RequestsComponent implements OnInit, OnDestroy {
         this.requests.set(res.data);
         this.total.set(res.pagination.total);
         this.loading.set(false);
+        if (this.pendingRequestId !== null) {
+          const pending = this.pendingRequestId;
+          this.pendingRequestId = null;
+          const request = res.data.find(r => r.request_id === pending);
+          if (request) {
+            this.viewDetails(request);
+          }
+        }
       },
       error: () => this.loading.set(false)
     });
@@ -604,6 +579,89 @@ export class RequestsComponent implements OnInit, OnDestroy {
     this.loadRequests();
   }
 
+  onServiceFilter(serviceId: string) {
+    this.serviceFilter.set(serviceId);
+    this.page.set(1);
+    this.loadRequests();
+  }
+
+  onDatePresetChange(preset: string) {
+    this.datePreset.set(preset);
+    this.page.set(1);
+    const now = new Date();
+
+    if (preset === 'today') {
+      const d = this.formatDateIso(now);
+      this.dateFrom.set(d);
+      this.dateTo.set(d);
+    } else if (preset === 'yesterday') {
+      const yest = new Date(now);
+      yest.setDate(yest.getDate() - 1);
+      const d = this.formatDateIso(yest);
+      this.dateFrom.set(d);
+      this.dateTo.set(d);
+    } else if (preset === 'last7days') {
+      const past7 = new Date(now);
+      past7.setDate(past7.getDate() - 6);
+      this.dateFrom.set(this.formatDateIso(past7));
+      this.dateTo.set(this.formatDateIso(now));
+    } else if (preset === 'thisMonth') {
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+      this.dateFrom.set(this.formatDateIso(firstDay));
+      this.dateTo.set(this.formatDateIso(now));
+    } else if (preset === 'custom') {
+      if (!this.dateFrom()) this.dateFrom.set(this.formatDateIso(now));
+      if (!this.dateTo()) this.dateTo.set(this.formatDateIso(now));
+    } else {
+      this.dateFrom.set('');
+      this.dateTo.set('');
+    }
+    this.loadRequests();
+  }
+
+  onCustomDateChange(type: 'from' | 'to', value: string) {
+    if (type === 'from') this.dateFrom.set(value);
+    if (type === 'to') this.dateTo.set(value);
+    this.page.set(1);
+    this.loadRequests();
+  }
+
+  private formatDateIso(d: Date): string {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  formatSubmissionDate(dateStr: string): string {
+    if (!dateStr) return '-';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  formatSubmissionTime(dateStr: string): string {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  }
+
+  hasActiveFilters(): boolean {
+    return !!(this.search() || this.statusFilter() || this.serviceFilter() || this.datePreset() || this.dateFrom() || this.dateTo());
+  }
+
+  resetFilters() {
+    this.search.set('');
+    this.statusFilter.set('');
+    this.serviceFilter.set('');
+    this.datePreset.set('');
+    this.dateFrom.set('');
+    this.dateTo.set('');
+    this.page.set(1);
+    this.loadRequests();
+  }
+
   onSort(column: string) {
     if (this.sortColumn() === column) {
       this.sortDirection.set(this.sortDirection() === 'ASC' ? 'DESC' : 'ASC');
@@ -616,6 +674,12 @@ export class RequestsComponent implements OnInit, OnDestroy {
 
   onPageChange(page: number) {
     this.page.set(page);
+    this.loadRequests();
+  }
+
+  onLimitChange(limit: number) {
+    this.limit = limit;
+    this.page.set(1);
     this.loadRequests();
   }
 
@@ -639,7 +703,16 @@ export class RequestsComponent implements OnInit, OnDestroy {
     if (!statusId || statusId === request.status_id) return;
 
     this.requestService.changeStatus(request.request_id, statusId).subscribe({
-      next: () => this.loadRequests(),
+      next: () => {
+        // Fetch updated details immediately so stepper highlights the new step in real-time
+        this.requestService.getById(request.request_id).subscribe({
+          next: (res) => {
+            this.selectedRequest.set(res.data as RequestDetail);
+            this.loadRequests();
+            this.loadDocuments(request.request_id);
+          }
+        });
+      },
       error: (err) => {
         alert(err.error?.message || 'Failed to update status.');
         this.loadRequests();
@@ -684,7 +757,7 @@ export class RequestsComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.documents.set(res.data || []);
         if (this.documents().length === 0 && !this.canGenerateDocument()) {
-          this.docNotice.set(' (not available for current status)');
+          this.docNotice.set('No document generated yet. It becomes available once the request is Under Review.');
         }
       },
       error: () => {
@@ -695,7 +768,29 @@ export class RequestsComponent implements OnInit, OnDestroy {
 
   canGenerateDocument(): boolean {
     const statusId = this.selectedRequest()?.status_id;
-    return statusId === 1 || statusId === 4 || statusId === 5 || statusId === 6 || statusId === 7;
+    return statusId === 4 || statusId === 5 || statusId === 6 || statusId === 7;
+  }
+
+  generateDocument() {
+    const request = this.selectedRequest();
+    if (!request) return;
+    if (!this.canGenerateDocument()) {
+      this.docError.set('Only approved requests (Under Review and onwards) can generate official documents.');
+      return;
+    }
+    this.generatingDoc.set(true);
+    this.docError.set('');
+    this.documentService.generate(request.request_id).subscribe({
+      next: () => {
+        this.generatingDoc.set(false);
+        this.loadDocuments(request.request_id);
+      },
+      error: (err) => {
+        this.generatingDoc.set(false);
+        this.docError.set(err.error?.message || 'Failed to generate document.');
+        this.loadDocuments(request.request_id);
+      }
+    });
   }
 
   openDocument(doc: GeneratedDocument) {
@@ -748,17 +843,14 @@ export class RequestsComponent implements OnInit, OnDestroy {
   previewDocument(doc: GeneratedDocument) {
     const request = this.selectedRequest();
     if (!request) return;
-    this.previewBusy.set(true);
-    this.docError.set('');
+    this.previewTitle = doc.file_name;
+    this.previewBlob = null;
+    this.showPreview.set(true);
     this.documentService.fetchBlob(request.request_id, doc.document_id).subscribe({
       next: (blob) => {
-        this.previewTitle = doc.file_name;
         this.previewBlob = blob;
-        this.showPreview.set(true);
-        this.previewBusy.set(false);
       },
       error: () => {
-        this.previewBusy.set(false);
         this.docError.set('Could not load the document for preview.');
       }
     });
@@ -780,12 +872,13 @@ export class RequestsComponent implements OnInit, OnDestroy {
     this.docError.set('');
     const docs = this.documents();
     if (docs.length > 0) {
+      this.previewBusy.set(false);
       this.previewDocument(docs[docs.length - 1]);
       return;
     }
     if (!this.canGenerateDocument()) {
       this.previewBusy.set(false);
-      this.docError.set('A document can only be generated for submitted or under review requests.');
+      this.docError.set('A document can only be generated once the request is Under Review.');
       return;
     }
     this.documentService.generate(request.request_id).subscribe({
@@ -811,123 +904,14 @@ export class RequestsComponent implements OnInit, OnDestroy {
     });
   }
 
-  // --- Edit Document (replace Regenerate Document) ---
-  // Lets staff correct typos / wrong info in the resident's submitted
-  // application form data and immediately regenerate + preview the document.
-  canEditDocument(): boolean {
-    const statusId = this.selectedRequest()?.status_id;
-    return statusId === 1 || statusId === 4;
-  }
-
-  editFormFields(): FormField[] {
-    const request = this.selectedRequest();
-    if (!request) return [];
-    const formFields = request.service_snapshot?.form_fields || [];
-    return request.resident_id === null
-      ? [...this.GUEST_IDENTITY_FIELDS, ...formFields]
-      : formFields;
-  }
-
-  openEditForm() {
-    const request = this.selectedRequest();
-    if (!request) return;
-    if (!this.canEditDocument()) {
-      this.docError.set('A document can only be edited while the request is Submitted or Under Review.');
-      return;
-    }
-    // Deep-clone the form_data so we never mutate the original request record
-    // until the admin saves.
-    this.editFormData = JSON.parse(JSON.stringify(request.form_data || {}));
-    this.editPurpose = request.purpose || '';
-    this.editRemarks = request.remarks || '';
-    this.editReason = '';
-    this.editErrors = {};
-    this.savingEdit.set(false);
-    this.editingDocument.set(true);
-    this.docError.set('');
-  }
-
-  closeEditForm() {
-    this.editingDocument.set(false);
-    this.editFormData = {};
-    this.editPurpose = '';
-    this.editRemarks = '';
-    this.editReason = '';
-    this.editErrors = {};
-  }
-
-  isCheckboxChecked(key: string, value: string): boolean {
-    const arr = this.editFormData[key];
-    return Array.isArray(arr) && arr.includes(value);
-  }
-
-  toggleCheckbox(key: string, value: string, event: any) {
-    const arr: string[] = Array.isArray(this.editFormData[key]) ? [...this.editFormData[key]] : [];
-    if (event?.target?.checked) {
-      if (!arr.includes(value)) arr.push(value);
-    } else {
-      const idx = arr.indexOf(value);
-      if (idx > -1) arr.splice(idx, 1);
-    }
-    this.editFormData[key] = arr;
-  }
-
-  saveEditForm() {
-    const request = this.selectedRequest();
-    if (!request) return;
-    this.editErrors = {};
-
-    // Validate required form fields
-    for (const field of this.editFormFields()) {
-      if (field.required && !this.editFormData[field.key]) {
-        this.editErrors[field.key] = `${field.label} is required.`;
-      }
-    }
-    if (Object.keys(this.editErrors).length > 0) {
-      return;
-    }
-
-    this.savingEdit.set(true);
-    this.docError.set('');
-    this.requestService.update(request.request_id, {
-      serviceId: request.service_id,
-      purpose: this.editPurpose || undefined,
-      remarks: this.editRemarks || undefined,
-      reason: this.editReason || undefined,
-      formData: this.editFormData
-    }).subscribe({
-      next: () => {
-        this.savingEdit.set(false);
-        this.editingDocument.set(false);
-        this.editFormData = {};
-        // Reload the request details and documents so the Admin Panel
-        // reflects the corrected data and the regenerated document.
-        this.requestService.getById(request.request_id).subscribe({
-          next: (res) => {
-            this.selectedRequest.set(res.data as RequestDetail);
-            this.loadDocuments(request.request_id);
-            // Preview the updated document immediately.
-            setTimeout(() => this.previewRequestDocument(), 300);
-          },
-          error: () => {
-            this.loadDocuments(request.request_id);
-            setTimeout(() => this.previewRequestDocument(), 300);
-          }
-        });
-      },
-      error: (err) => {
-        this.savingEdit.set(false);
-        this.editErrors['form'] = err.error?.message || 'Failed to save corrections.';
-      }
-    });
-  }
-
   approvalBadge(status: string): { class: string; label: string } | null {
     switch (status) {
       case 'approved':
         return { class: 'inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold text-green-700 bg-green-100', label: 'Approved' };
       case 'rejected':
         return { class: 'inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold text-red-700 bg-red-100', label: 'Rejected' };
+      case 'returned':
+        return { class: 'inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold text-amber-700 bg-amber-100', label: 'Returned' };
       case 'pending':
         return { class: 'inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold text-gray-700 bg-gray-100', label: 'Pending Review' };
       default:
@@ -935,7 +919,7 @@ export class RequestsComponent implements OnInit, OnDestroy {
     }
   }
 
-  reviewDocument(doc: GeneratedDocument, status: 'approved' | 'rejected') {
+  reviewDocument(doc: GeneratedDocument, status: 'approved' | 'rejected' | 'returned') {
     const request = this.selectedRequest();
     if (!request) return;
 
@@ -954,8 +938,6 @@ export class RequestsComponent implements OnInit, OnDestroy {
       }
     });
   }
-
-
 
   formatBytes(bytes: number | null | undefined): string {
     if (!bytes) return '0 B';

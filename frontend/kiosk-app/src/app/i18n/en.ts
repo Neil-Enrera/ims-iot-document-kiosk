@@ -385,6 +385,8 @@ export const en: TranslationDictionary = {
   'profile.contactNumber': 'Contact Number',
   'profile.email': 'Email',
   'profile.address': 'Address',
+  'profile.showDetails': 'Show Details',
+  'profile.hideDetails': 'Hide Details',
 
   'profile.rfid.title': 'RFID Information',
   'profile.rfid.cardStatus': 'Card Status',

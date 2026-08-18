@@ -33,12 +33,17 @@ import { ServiceFormComponent } from './service-form.component';
           [loading]="loading()"
           trackBy="service_id"
           emptyMessage="No services found"
-          [cellTemplates]="{ is_active: activeCell }"
+          [cellTemplates]="{ service_name: nameCell, is_active: activeCell }"
           [rowActionsTemplate]="rowActions"
           (onRowClick)="openEditForm($event)">
+          <ng-template #nameCell let-row="row">
+            <span class="text-sm font-semibold text-slate-900">
+              {{ row.service_name }}
+            </span>
+          </ng-template>
           <ng-template #activeCell let-value>
             <span
-              [class]="value ? 'inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold text-green-700 bg-green-100' : 'inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold text-gray-600 bg-gray-200'">
+              [class]="value ? 'inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200' : 'inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-500 border border-slate-200'">
               {{ value ? 'Active' : 'Inactive' }}
             </span>
           </ng-template>
@@ -47,21 +52,23 @@ import { ServiceFormComponent } from './service-form.component';
               <button
                 type="button"
                 (click)="openEditForm(service); $event.stopPropagation()"
-                class="text-blue-600 hover:underline text-sm">Edit</button>
+                class="text-orange-600 hover:text-orange-800 font-semibold text-sm transition">Edit</button>
               <button
                 type="button"
                 (click)="openDeleteConfirm(service); $event.stopPropagation()"
-                class="text-red-600 hover:underline text-sm">Delete</button>
+                class="text-rose-600 hover:text-rose-800 font-semibold text-sm transition">Delete</button>
             </div>
           </ng-template>
         </app-table>
 
-        @if (total() > limit) {
+        @if (total() > 0) {
           <app-pagination
             [total]="total()"
             [currentPage]="page()"
             [limit]="limit"
-            (onPageChange)="onPageChange($event)" />
+            itemLabel="services"
+            (onPageChange)="onPageChange($event)"
+            (onLimitChange)="onLimitChange($event)" />
         }
       </app-card>
 
@@ -125,6 +132,7 @@ export class ServicesComponent implements OnInit {
 
   onSearch(value: string) { this.search.set(value); this.page.set(1); this.loadServices(); }
   onPageChange(page: number) { this.page.set(page); this.loadServices(); }
+  onLimitChange(limit: number) { this.limit = limit; this.page.set(1); this.loadServices(); }
 
   openCreateForm() {
     this.editingService.set(null);

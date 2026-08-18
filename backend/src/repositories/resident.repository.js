@@ -1,17 +1,17 @@
 const pool = require('../config/database');
 
 const findAll = async ({ search, status, barangayId, page, limit, sortBy, sortOrder }) => {
-  let query = 'SELECT r.*, b.barangay_name FROM residents r JOIN barangays b ON r.barangay_id = b.barangay_id';
-  let countQuery = 'SELECT COUNT(*) AS total FROM residents r';
+  let query = 'SELECT r.*, b.barangay_name, rc.card_uid, rc.status AS rfid_card_status FROM residents r JOIN barangays b ON r.barangay_id = b.barangay_id LEFT JOIN rfid_cards rc ON rc.resident_id = r.resident_id AND rc.status = "ACTIVE"';
+  let countQuery = 'SELECT COUNT(DISTINCT r.resident_id) AS total FROM residents r LEFT JOIN rfid_cards rc ON rc.resident_id = r.resident_id AND rc.status = "ACTIVE"';
   const conditions = [];
   const params = [];
   const countParams = [];
 
   if (search) {
-    conditions.push('(r.resident_code LIKE ? OR r.first_name LIKE ? OR r.last_name LIKE ? OR r.contact_number LIKE ? OR r.address_line LIKE ?)');
+    conditions.push('(r.resident_code LIKE ? OR r.first_name LIKE ? OR r.last_name LIKE ? OR r.contact_number LIKE ? OR r.address_line LIKE ? OR rc.card_uid LIKE ?)');
     const term = `%${search}%`;
-    params.push(term, term, term, term, term);
-    countParams.push(term, term, term, term, term);
+    params.push(term, term, term, term, term, term);
+    countParams.push(term, term, term, term, term, term);
   }
 
   if (status) {
