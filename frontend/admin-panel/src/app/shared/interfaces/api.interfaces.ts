@@ -19,6 +19,13 @@ export interface LoginResponse {
   user: User;
 }
 
+export interface LoginInitiateResponse {
+  email: string;
+  maskedEmail: string;
+  tempToken: string;
+  expiresMinutes: number;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   message: string;
@@ -70,13 +77,20 @@ export interface Resident {
 }
 
 export interface RfidCard {
-  rfid_card_id: number;
+  rfid_card_id?: number | null;
   resident_id: number;
-  card_uid: string;
-  status: string;
-  issued_date: string | null;
-  expiration_date: string | null;
-  created_at: string;
+  resident_code?: string;
+  first_name?: string;
+  middle_name?: string | null;
+  last_name?: string;
+  suffix?: string | null;
+  card_uid?: string | null;
+  status?: string | null;
+  card_status?: string | null;
+  registration_status?: string;
+  issued_date?: string | null;
+  expiration_date?: string | null;
+  created_at?: string;
   resident_name?: string;
 }
 

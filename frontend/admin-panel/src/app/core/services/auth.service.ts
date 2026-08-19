@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { isPlatformBrowser } from '@angular/common';
 import { tap, catchError, of } from 'rxjs';
-import { User, LoginResponse, ApiResponse } from '../../shared/interfaces/api.interfaces';
+import { User, LoginResponse, LoginInitiateResponse, ApiResponse } from '../../shared/interfaces/api.interfaces';
 import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
@@ -54,16 +54,24 @@ export class AuthService {
       });
   }
 
-  login(username: string, password: string) {
-    return this.http.post<ApiResponse<LoginResponse>>(`${this.API_URL}/auth/login`, { username, password })
+  login(email: string, password: string) {
+    return this.http.post<ApiResponse<LoginInitiateResponse>>(`${this.API_URL}/auth/login`, { email, password });
+  }
+
+  verifyLoginOtp(email: string, code: string, tempToken: string) {
+    return this.http.post<ApiResponse<LoginResponse>>(`${this.API_URL}/auth/verify-otp`, { email, code, tempToken })
       .pipe(
         tap(res => {
-          if (res.success) {
+          if (res.success && res.data) {
             if (this.isBrowser) localStorage.setItem('token', res.data.accessToken);
             this.currentUser.set(res.data.user);
           }
         })
       );
+  }
+
+  resendLoginOtp(email: string, tempToken: string) {
+    return this.http.post<ApiResponse<LoginInitiateResponse>>(`${this.API_URL}/auth/resend-otp`, { email, tempToken });
   }
 
   logout() {
@@ -75,5 +83,17 @@ export class AuthService {
   getToken(): string | null {
     if (!this.isBrowser) return null;
     return localStorage.getItem('token');
+  }
+
+  forgotPassword(email: string) {
+    return this.http.post<ApiResponse<void>>(`${this.API_URL}/auth/forgot-password`, { email });
+  }
+
+  verifyResetCode(email: string, code: string) {
+    return this.http.post<ApiResponse<{ resetToken: string }>>(`${this.API_URL}/auth/verify-reset-code`, { email, code });
+  }
+
+  resetPassword(email: string, resetToken: string, newPassword: string) {
+    return this.http.post<ApiResponse<void>>(`${this.API_URL}/auth/reset-password`, { email, resetToken, newPassword });
   }
 }
