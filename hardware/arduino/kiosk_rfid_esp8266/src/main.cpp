@@ -114,6 +114,7 @@ void setup() {
     // RFID Setup
     SPI.begin();
     rfid.PCD_Init();
+    rfid.PCD_SetAntennaGain(MFRC522::RxGain_max); // Maximum antenna sensitivity (48dB)
 
     // Banner
     Serial.println();
