@@ -9,7 +9,7 @@ const createValidation = [
 
 const updateValidation = [
   param('id').isInt({ min: 1 }).withMessage('Invalid request ID.'),
-  body('serviceId').isInt({ min: 1 }).withMessage('Service ID is required.'),
+  body('serviceId').optional().isInt({ min: 1 }).withMessage('Invalid service ID.'),
   body('purpose').optional().trim(),
   body('remarks').optional().trim(),
   body('formData').optional().isObject().withMessage('Form data must be an object.')

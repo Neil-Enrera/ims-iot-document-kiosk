@@ -3,9 +3,9 @@ const { successResponse, errorResponse, createdResponse, paginatedResponse } = r
 
 const getAll = async (req, res) => {
   try {
-    const { search, status, page, limit, sortBy, sortOrder } = req.query;
+    const { search, status, residentId, resident_id, page, limit, sortBy, sortOrder } = req.query;
     const result = await rfidService.getAllCards({
-      search, status, page: parseInt(page) || 1, limit: parseInt(limit) || 20, sortBy, sortOrder
+      search, status, residentId: residentId || resident_id, page: parseInt(page) || 1, limit: parseInt(limit) || 20, sortBy, sortOrder
     });
     if (!result.success) return errorResponse(res, 400, result.message);
     return paginatedResponse(res, result.message, result.data.cards, result.data.total, result.data.page, result.data.limit);

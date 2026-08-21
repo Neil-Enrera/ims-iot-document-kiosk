@@ -1,8 +1,8 @@
 const rfidRepository = require('../repositories/rfid.repository');
 const residentRepository = require('../repositories/resident.repository');
 
-const getAllCards = async ({ search, status, page = 1, limit = 20, sortBy = 'rfid_card_id', sortOrder = 'ASC' }) => {
-  const result = await rfidRepository.findAll({ search, status, page, limit, sortBy, sortOrder });
+const getAllCards = async ({ search, status, residentId, resident_id, page = 1, limit = 20, sortBy = 'rfid_card_id', sortOrder = 'ASC' }) => {
+  const result = await rfidRepository.findAll({ search, status, residentId, resident_id, page, limit, sortBy, sortOrder });
   return { success: true, message: 'RFID cards retrieved successfully.', data: result };
 };
 

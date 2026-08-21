@@ -6,9 +6,9 @@ import { RouterOutlet } from '@angular/router';
   standalone: true,
   imports: [RouterOutlet],
   template: `
-    <div class="min-h-screen flex items-center justify-center bg-gray-100">
+    <main class="min-h-screen w-full bg-slate-50">
       <router-outlet />
-    </div>
+    </main>
   `
 })
 export class PublicLayoutComponent {}

@@ -1,11 +1,75 @@
 const pool = require('../config/database');
 
-const findAll = async ({ search, status, page, limit, sortBy, sortOrder }) => {
-  let query = 'SELECT rc.*, r.first_name, r.last_name, r.resident_code FROM rfid_cards rc JOIN residents r ON rc.resident_id = r.resident_id';
-  let countQuery = 'SELECT COUNT(*) AS total FROM rfid_cards rc';
+const findAll = async ({ search, status, residentId, resident_id, page = 1, limit = 20, sortBy, sortOrder }) => {
+  const targetResidentId = residentId || resident_id;
+
+  let query;
+  let countQuery;
   const conditions = [];
   const params = [];
   const countParams = [];
+
+  if (targetResidentId) {
+    query = 'SELECT rc.*, r.first_name, r.middle_name, r.last_name, r.suffix, r.resident_code FROM rfid_cards rc JOIN residents r ON rc.resident_id = r.resident_id';
+    countQuery = 'SELECT COUNT(*) AS total FROM rfid_cards rc JOIN residents r ON rc.resident_id = r.resident_id';
+    conditions.push('rc.resident_id = ?');
+    params.push(targetResidentId);
+    countParams.push(targetResidentId);
+  } else {
+    query = `
+      SELECT 
+        r.resident_id,
+        r.resident_code,
+        r.first_name,
+        r.middle_name,
+        r.last_name,
+        r.suffix,
+        r.contact_number,
+        r.status AS resident_status,
+        rc.rfid_card_id,
+        rc.card_uid,
+        rc.status AS card_status,
+        rc.status AS status,
+        rc.issued_date,
+        rc.expiration_date,
+        rc.created_at,
+        CASE 
+          WHEN rc.card_uid IS NOT NULL AND UPPER(rc.status) = 'ACTIVE' THEN 'Registered' 
+          ELSE 'Not Registered' 
+        END AS registration_status
+      FROM residents r
+      LEFT JOIN (
+        SELECT rc1.*
+        FROM rfid_cards rc1
+        INNER JOIN (
+          SELECT resident_id, 
+                 COALESCE(
+                   MAX(CASE WHEN UPPER(status) = 'ACTIVE' THEN rfid_card_id END),
+                   MAX(rfid_card_id)
+                 ) AS best_id
+          FROM rfid_cards
+          GROUP BY resident_id
+        ) rc_best ON rc1.rfid_card_id = rc_best.best_id
+      ) rc ON rc.resident_id = r.resident_id
+    `;
+    countQuery = `
+      SELECT COUNT(*) AS total
+      FROM residents r
+      LEFT JOIN (
+        SELECT rc1.*
+        FROM rfid_cards rc1
+        INNER JOIN (
+          SELECT resident_id, 
+                 COALESCE(
+                   MAX(CASE WHEN UPPER(status) = 'ACTIVE' THEN rfid_card_id END),
+                   MAX(rfid_card_id)
+                 ) AS best_id
+          FROM rfid_cards
+          GROUP BY resident_id
+        ) rc_best ON rc1.rfid_card_id = rc_best.best_id
+      ) rc ON rc.resident_id = r.resident_id
+    `;
+  }
 
   if (search) {
     conditions.push('(rc.card_uid LIKE ? OR r.first_name LIKE ? OR r.last_name LIKE ? OR r.resident_code LIKE ?)');
@@ -15,9 +79,22 @@ const findAll = async ({ search, status, page, limit, sortBy, sortOrder }) => {
   }
 
   if (status) {
-    conditions.push('rc.status = ?');
-    params.push(status);
-    countParams.push(status);
+    const s = status.toUpperCase();
+    if (s === 'REGISTERED') {
+      conditions.push("rc.card_uid IS NOT NULL AND UPPER(rc.status) = 'ACTIVE'");
+    } else if (s === 'NOT_REGISTERED' || s === 'NOT REGISTERED') {
+      conditions.push("(rc.card_uid IS NULL OR UPPER(rc.status) != 'ACTIVE')");
+    } else if (s === 'ACTIVE') {
+      conditions.push("UPPER(rc.status) = 'ACTIVE'");
+    } else if (s === 'SUSPENDED') {
+      conditions.push("UPPER(rc.status) = 'SUSPENDED'");
+    } else if (s === 'REVOKED' || s === 'CANCELLED') {
+      conditions.push("UPPER(rc.status) IN ('REVOKED', 'CANCELLED')");
+    } else if (s !== 'ALL' && s !== '') {
+      conditions.push('rc.status = ?');
+      params.push(status);
+      countParams.push(status);
+    }
   }
 
   if (conditions.length > 0) {
@@ -26,10 +103,24 @@ const findAll = async ({ search, status, page, limit, sortBy, sortOrder }) => {
     countQuery += whereClause;
   }
 
-  const validSortColumns = ['rfid_card_id', 'card_uid', 'status', 'issued_date', 'created_at'];
-  const column = validSortColumns.includes(sortBy) ? `rc.${sortBy}` : 'rc.rfid_card_id';
-  const order = sortOrder === 'DESC' ? 'DESC' : 'ASC';
-  query += ` ORDER BY ${column} ${order}`;
+  const validSortMap = {
+    'resident_name': 'r.last_name',
+    'resident_code': 'r.resident_code',
+    'card_uid': 'rc.card_uid',
+    'status': 'rc.status',
+    'registration_status': "CASE WHEN rc.card_uid IS NOT NULL AND UPPER(rc.status) = 'ACTIVE' THEN 0 ELSE 1 END",
+    'issued_date': 'rc.issued_date',
+    'rfid_card_id': 'rc.rfid_card_id'
+  };
+
+  if (sortBy && validSortMap[sortBy]) {
+    const column = validSortMap[sortBy];
+    const order = sortOrder === 'DESC' ? 'DESC' : 'ASC';
+    query += ` ORDER BY ${column} ${order}`;
+  } else {
+    // Default: Show Registered residents first, then sort by last name, first name
+    query += ` ORDER BY CASE WHEN rc.card_uid IS NOT NULL AND UPPER(rc.status) = 'ACTIVE' THEN 0 ELSE 1 END, r.last_name ASC, r.first_name ASC`;
+  }
 
   const offset = (page - 1) * limit;
   query += ' LIMIT ? OFFSET ?';
@@ -38,7 +129,20 @@ const findAll = async ({ search, status, page, limit, sortBy, sortOrder }) => {
   const [rows] = await pool.query(query, params);
   const [countResult] = await pool.query(countQuery, countParams);
 
-  return { cards: rows, total: countResult[0].total, page, limit };
+  const cards = rows.map(row => {
+    const parts = [
+      row.last_name ? `${row.last_name},` : '',
+      row.first_name,
+      row.middle_name ? `${row.middle_name.charAt(0)}.` : '',
+      row.suffix
+    ].filter(Boolean);
+    return {
+      ...row,
+      resident_name: parts.join(' ') || '-'
+    };
+  });
+
+  return { cards, total: countResult[0].total, page, limit };
 };
 
 const findById = async (rfidCardId) => {

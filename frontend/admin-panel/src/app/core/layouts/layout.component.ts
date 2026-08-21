@@ -84,8 +84,8 @@ interface NavItem {
         <!-- Logout -->
         <div class="p-3 border-t border-slate-100 flex-shrink-0">
           <button
-            (click)="auth.logout()"
-            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-red-50 hover:text-red-600 transition"
+            (click)="promptLogout()"
+            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-red-50 hover:text-red-600 transition cursor-pointer"
           >
             <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
@@ -145,8 +145,8 @@ interface NavItem {
                     <p class="text-xs text-slate-500 mt-0.5">{{ auth.currentUser()?.role_name }}</p>
                   </div>
                   <button
-                    (click)="auth.logout()"
-                    class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition"
+                    (click)="promptLogout()"
+                    class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition cursor-pointer"
                   >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
@@ -234,8 +234,8 @@ interface NavItem {
           </nav>
           <div class="p-3 border-t border-slate-100 flex-shrink-0">
             <button
-              (click)="auth.logout()"
-              class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-red-50 hover:text-red-600 transition"
+              (click)="promptLogout()"
+              class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-red-50 hover:text-red-600 transition cursor-pointer"
             >
               <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
@@ -246,17 +246,66 @@ interface NavItem {
         </aside>
       </div>
     }
+
+    <!-- Logout Confirmation Modal -->
+    @if (showLogoutModal()) {
+      <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 animate-fadeIn">
+        <div class="w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-slate-200 p-6 text-center">
+          <div class="w-14 h-14 rounded-full bg-red-50 text-red-600 border border-red-200 mx-auto mb-4 flex items-center justify-center">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-slate-900">Logout</h3>
+          <p class="text-sm text-slate-600 mt-1.5 leading-relaxed">
+            Are you sure you want to log out?
+          </p>
+          <div class="mt-6 flex items-center gap-3">
+            <button
+              type="button"
+              (click)="cancelLogout()"
+              class="flex-1 py-2.5 px-4 rounded-xl border border-slate-300 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              (click)="confirmLogout()"
+              class="flex-1 py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold text-sm shadow-sm transition cursor-pointer"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      </div>
+    }
   `
 })
 export class LayoutComponent implements OnInit, OnDestroy {
   sidebarOpen = signal(false);
   profileOpen = signal(false);
+  showLogoutModal = signal(false);
   private notificationSub: any;
   private sseSub: any;
   private isBrowser: boolean;
 
   constructor(public auth: AuthService, public notifService: NotificationService, private toast: ToastService, @Inject(PLATFORM_ID) platformId: Object) {
     this.isBrowser = isPlatformBrowser(platformId);
+  }
+
+  promptLogout() {
+    this.profileOpen.set(false);
+    this.sidebarOpen.set(false);
+    this.showLogoutModal.set(true);
+  }
+
+  cancelLogout() {
+    this.showLogoutModal.set(false);
+  }
+
+  confirmLogout() {
+    this.showLogoutModal.set(false);
+    this.auth.logout();
   }
 
   get navItems(): NavItem[] {

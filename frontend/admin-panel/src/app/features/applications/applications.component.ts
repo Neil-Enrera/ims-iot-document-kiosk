@@ -427,7 +427,7 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
   search = signal('');
   statusFilter = signal('');
   page = signal(1);
-  limit = 20;
+  limit = 10;
   total = signal(0);
   sortColumn = signal('application_id');
   sortDirection = signal<'ASC' | 'DESC'>('DESC');

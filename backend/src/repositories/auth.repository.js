@@ -2,7 +2,7 @@ const pool = require('../config/database');
 
 const findByUsername = async (username) => {
   const [rows] = await pool.query(
-    'SELECT u.*, r.role_name FROM users u JOIN user_roles r ON u.role_id = r.role_id WHERE u.username = ?',
+    'SELECT u.*, r.role_name FROM users u JOIN user_roles r ON u.role_id = r.role_id WHERE LOWER(u.username) = LOWER(?)',
     [username]
   );
   return rows[0] || null;

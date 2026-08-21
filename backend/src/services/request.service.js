@@ -83,7 +83,11 @@ const updateRequest = async (requestId, body, userId) => {
     return { success: false, message: 'Cannot modify a released or cancelled request.' };
   }
 
-  const finalFormData = formData;
+  const targetServiceId = serviceId || request.service_id;
+  const targetPurpose = purpose !== undefined ? purpose : request.purpose;
+  const targetRemarks = remarks !== undefined ? remarks : request.remarks;
+  let finalFormData = formData !== undefined ? formData : request.form_data;
+
   if (finalFormData && request.resident_id === null) {
     const currentGuest = request.form_data?._guest || {};
     finalFormData._guest = {
@@ -96,7 +100,12 @@ const updateRequest = async (requestId, body, userId) => {
     };
   }
 
-  await requestRepository.update(requestId, { serviceId, purpose, remarks, formData: finalFormData });
+  await requestRepository.update(requestId, {
+    serviceId: targetServiceId,
+    purpose: targetPurpose,
+    remarks: targetRemarks,
+    formData: finalFormData
+  });
 
   // Re-generate document if one was already generated
   const hasDoc = await documentService.hasGeneratedDocument(requestId);

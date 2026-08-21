@@ -9,12 +9,29 @@ const errorHandler = require('./middleware/error.middleware');
 
 const app = express();
 
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  process.env.KIOSK_URL,
+  'http://localhost:4200',
+  'http://localhost:4201',
+  'http://127.0.0.1:4200',
+  'http://127.0.0.1:4201',
+  'http://192.168.100.102:4200',
+  'http://192.168.100.102:4201',
+  'http://192.168.100.102:3000'
+].filter(Boolean);
+
 app.use(helmet());
 app.use(cors({ 
-  origin: [
-    process.env.FRONTEND_URL || 'http://localhost:4200',
-    process.env.KIOSK_URL || 'http://localhost:4201'
-  ]
+  origin: (origin, callback) => {
+    // Allow requests with no origin (e.g. mobile apps, curl, server-to-server)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1 || origin.startsWith('http://192.168.')) {
+      return callback(null, true);
+    }
+    return callback(null, true); // Permissive CORS for local LAN development
+  },
+  credentials: true
 }));
 
 // Serve uploaded files (photos, signatures, documents) with cross-origin headers

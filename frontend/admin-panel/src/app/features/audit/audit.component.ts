@@ -63,7 +63,7 @@ export class AuditComponent implements OnInit {
   loading = signal(true);
   search = signal('');
   page = signal(1);
-  limit = 20;
+  limit = 10;
   total = signal(0);
 
   columns: TableColumn[] = [

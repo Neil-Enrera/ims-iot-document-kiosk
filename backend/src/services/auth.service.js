@@ -25,7 +25,7 @@ const login = async (identifier, password) => {
   const cleanIdentifier = identifier.trim();
   // Support searching by email first, fallback to username
   let user = await authRepository.findByEmail(cleanIdentifier);
-  if (!user && !cleanIdentifier.includes('@')) {
+  if (!user) {
     user = await authRepository.findByUsername(cleanIdentifier);
   }
 

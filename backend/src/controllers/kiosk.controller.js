@@ -84,6 +84,7 @@ const createRequest = async (req, res) => {
 
     const data = result.data;
     const first = data.requests?.[0] || {};
+    broadcastStatusDisplayUpdate().catch(() => {});
     return successResponse(res, data.duplicate ? 'Request already submitted.' : 'Request submitted successfully.', {
       transaction_id: data.transaction_id,
       transaction_number: data.transaction_number,
@@ -253,13 +254,14 @@ const verifyRfid = async (req, res) => {
 };
 
 // Public status display board (no auth required)
-// Returns only request numbers grouped by board column for resident privacy.
+// Returns request numbers and details grouped by board column for public display.
 const fetchStatusDisplayData = async () => {
   const [rows] = await pool.query(
-    `SELECT rq.request_number, rq.request_id, rs.status_name
+    `SELECT rq.request_number, rq.request_id, rs.status_name, s.service_name, rq.request_date
      FROM requests rq
      JOIN request_statuses rs ON rq.status_id = rs.status_id
-     WHERE rs.status_name IN ('Under Review', 'Document Processing', 'Ready for Release')
+     LEFT JOIN services s ON rq.service_id = s.service_id
+     WHERE rs.status_name IN ('Submitted', 'Waiting for Requirements', 'Requirements Received', 'Under Review', 'Document Processing', 'Ready for Release', 'Resubmitted')
        AND NOT (rs.status_name = 'Ready for Release' AND rq.expires_at IS NOT NULL AND rq.expires_at < NOW())
      ORDER BY rq.request_id ASC`
   );
@@ -267,11 +269,25 @@ const fetchStatusDisplayData = async () => {
   return {
     updatedAt: new Date().toISOString(),
     underReview: rows
-      .filter(r => r.status_name === 'Under Review' || r.status_name === 'Document Processing')
-      .map(r => r.request_number),
+      .filter(r => r.status_name !== 'Ready for Release' && r.status_name !== 'Released' && r.status_name !== 'Rejected' && r.status_name !== 'Cancelled')
+      .map(r => ({
+        request_id: r.request_id,
+        request_number: r.request_number,
+        document_name: r.service_name || 'Document Request',
+        service_name: r.service_name || 'Document Request',
+        status_name: r.status_name,
+        request_date: r.request_date
+      })),
     readyForRelease: rows
       .filter(r => r.status_name === 'Ready for Release')
-      .map(r => r.request_number)
+      .map(r => ({
+        request_id: r.request_id,
+        request_number: r.request_number,
+        document_name: r.service_name || 'Document Request',
+        service_name: r.service_name || 'Document Request',
+        status_name: r.status_name,
+        request_date: r.request_date
+      }))
   };
 };
 
@@ -290,6 +306,18 @@ const getStatusDisplay = async (req, res) => {
 // REST endpoint themselves, so the board stays live with no client requests.
 const statusDisplayClients = new Set();
 const STATUS_DISPLAY_PUSH_MS = 5000;
+
+const broadcastStatusDisplayUpdate = async () => {
+  if (statusDisplayClients.size === 0) return;
+  try {
+    const data = await fetchStatusDisplayData();
+    for (const client of statusDisplayClients) {
+      client.write(`data: ${JSON.stringify(data)}\n\n`);
+    }
+  } catch (error) {
+    console.error('Status display broadcast error:', error);
+  }
+};
 
 const getStatusDisplayStream = async (req, res) => {
   res.set({
@@ -343,4 +371,17 @@ const getHardwareStatus = async (req, res) => {
   }
 };
 
-module.exports = { searchResidents, getResident, getServices, createRequest, createBarangayIdApplication, previewBarangayId, previewRequestDocument, verifyRfid, getStatusDisplay, getStatusDisplayStream, getHardwareStatus };
+module.exports = {
+  searchResidents,
+  getResident,
+  getServices,
+  createRequest,
+  createBarangayIdApplication,
+  previewBarangayId,
+  previewRequestDocument,
+  verifyRfid,
+  getStatusDisplay,
+  getStatusDisplayStream,
+  broadcastStatusDisplayUpdate,
+  getHardwareStatus
+};

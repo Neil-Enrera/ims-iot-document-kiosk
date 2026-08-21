@@ -37,6 +37,11 @@ import { Resident } from '../../shared/interfaces/api.interfaces';
 })
 export class RfidFormComponent implements OnInit {
   @Input() loading = false;
+  @Input() set initialResidentId(id: number | null | undefined) {
+    if (id) {
+      this.form.residentId = id.toString();
+    }
+  }
   @Output() onSave = new EventEmitter<any>();
   @Output() onCancel = new EventEmitter<void>();
 

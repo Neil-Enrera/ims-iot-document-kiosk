@@ -49,7 +49,11 @@ const findAll = async ({ search, status, barangayId, page, limit, sortBy, sortOr
 
 const findById = async (residentId) => {
   const [rows] = await pool.query(
-    'SELECT r.*, b.barangay_name FROM residents r JOIN barangays b ON r.barangay_id = b.barangay_id WHERE r.resident_id = ?',
+    `SELECT r.*, b.barangay_name, rc.card_uid, rc.status AS rfid_card_status, rc.issued_date AS rfid_issued_date, rc.expiration_date AS rfid_expiration_date
+     FROM residents r 
+     JOIN barangays b ON r.barangay_id = b.barangay_id 
+     LEFT JOIN rfid_cards rc ON rc.resident_id = r.resident_id AND rc.status = 'ACTIVE'
+     WHERE r.resident_id = ?`,
     [residentId]
   );
   return rows[0] || null;

@@ -2,6 +2,7 @@ const requestService = require('../services/request.service');
 const auditRepository = require('../repositories/audit.repository');
 const { successResponse, errorResponse, createdResponse, paginatedResponse } = require('../utils/apiResponse');
 const sseManager = require('../services/notification-sse');
+const { broadcastStatusDisplayUpdate } = require('./kiosk.controller');
 
 const getAll = async (req, res) => {
   try {
@@ -42,6 +43,7 @@ const create = async (req, res) => {
     if (req.user) {
       auditRepository.log({ userId: req.user.userId, action: 'Created request', module: 'Requests', ipAddress: req.ip });
     }
+    broadcastStatusDisplayUpdate().catch(() => {});
     return createdResponse(res, result.message, result.data);
   } catch {
     return errorResponse(res, 500, 'Internal server error.');
@@ -53,6 +55,7 @@ const update = async (req, res) => {
     const result = await requestService.updateRequest(req.params.id, req.body, req.user.userId);
     if (!result.success) return errorResponse(res, 400, result.message);
     sseManager.broadcastEvent('request-updated', { requestId: parseInt(req.params.id), data: result.data });
+    broadcastStatusDisplayUpdate().catch(() => {});
     return successResponse(res, result.message, result.data);
   } catch {
     return errorResponse(res, 500, 'Internal server error.');
@@ -65,6 +68,7 @@ const approve = async (req, res) => {
     if (!result.success) return errorResponse(res, 400, result.message);
     auditRepository.log({ userId: req.user.userId, action: `Approved request #${req.params.id}`, module: 'Requests', ipAddress: req.ip });
     sseManager.broadcastEvent('request-approved', { requestId: parseInt(req.params.id), data: result.data });
+    broadcastStatusDisplayUpdate().catch(() => {});
     return successResponse(res, result.message, result.data);
   } catch {
     return errorResponse(res, 500, 'Internal server error.');
@@ -77,6 +81,7 @@ const reject = async (req, res) => {
     if (!result.success) return errorResponse(res, 400, result.message);
     auditRepository.log({ userId: req.user.userId, action: `Rejected request #${req.params.id}`, module: 'Requests', ipAddress: req.ip });
     sseManager.broadcastEvent('request-rejected', { requestId: parseInt(req.params.id), data: result.data });
+    broadcastStatusDisplayUpdate().catch(() => {});
     return successResponse(res, result.message, result.data);
   } catch {
     return errorResponse(res, 500, 'Internal server error.');
@@ -89,6 +94,7 @@ const cancel = async (req, res) => {
     if (!result.success) return errorResponse(res, 400, result.message);
     auditRepository.log({ userId: req.user.userId, action: `Cancelled request #${req.params.id}`, module: 'Requests', ipAddress: req.ip });
     sseManager.broadcastEvent('request-cancelled', { requestId: parseInt(req.params.id), data: result.data });
+    broadcastStatusDisplayUpdate().catch(() => {});
     return successResponse(res, result.message, result.data);
   } catch {
     return errorResponse(res, 500, 'Internal server error.');
@@ -101,6 +107,7 @@ const changeStatus = async (req, res) => {
     if (!result.success) return errorResponse(res, 400, result.message);
     auditRepository.log({ userId: req.user.userId, action: `Changed status of request #${req.params.id} to ${result.data.status_name}`, module: 'Requests', ipAddress: req.ip });
     sseManager.broadcastEvent('request-status-changed', { requestId: parseInt(req.params.id), data: result.data });
+    broadcastStatusDisplayUpdate().catch(() => {});
     return successResponse(res, result.message, result.data);
   } catch {
     return errorResponse(res, 500, 'Internal server error.');
@@ -113,6 +120,7 @@ const release = async (req, res) => {
     if (!result.success) return errorResponse(res, 400, result.message);
     auditRepository.log({ userId: req.user.userId, action: `Released request #${req.params.id}`, module: 'Requests', ipAddress: req.ip });
     sseManager.broadcastEvent('request-released', { requestId: parseInt(req.params.id), data: result.data });
+    broadcastStatusDisplayUpdate().catch(() => {});
     return successResponse(res, result.message, result.data);
   } catch {
     return errorResponse(res, 500, 'Internal server error.');

@@ -1,9 +1,10 @@
 import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { RequestService, DocumentService, ServiceService } from '../../shared/services';
 import { NotificationService } from '../notifications/notification.service';
-import { DocumentRequest, RequestStatusHistory, GeneratedDocument, FormField, Service } from '../../shared/interfaces/api.interfaces';
+import { DocumentRequest, RequestStatusHistory, GeneratedDocument, Service } from '../../shared/interfaces/api.interfaces';
 import { TableComponent, TableColumn } from '../../shared/components/table.component';
 import { CardComponent } from '../../shared/components/card.component';
 import { InputComponent } from '../../shared/components/input.component';
@@ -17,23 +18,51 @@ interface RequestDetail extends DocumentRequest {
   history?: RequestStatusHistory[];
 }
 
+interface FormFieldEntry {
+  key: string;
+  label: string;
+  value: string;
+}
+
+interface FormGroupSection {
+  title: string;
+  fields: FormFieldEntry[];
+}
+
+interface StatusOption {
+  value: number;
+  label: string;
+}
+
 @Component({
   selector: 'app-requests',
   standalone: true,
-  imports: [TableComponent, CardComponent, InputComponent, PaginationComponent, ButtonComponent, ModalComponent, RequestFormComponent, DocumentPreviewModalComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    TableComponent,
+    CardComponent,
+    InputComponent,
+    PaginationComponent,
+    ButtonComponent,
+    ModalComponent,
+    RequestFormComponent,
+    DocumentPreviewModalComponent
+  ],
   template: `
     <div>
+      <!-- Header -->
       <div class="flex justify-between items-center mb-6">
         <div>
-          <h1 class="text-2xl font-bold text-gray-800">Document Requests</h1>
-          <p class="text-sm text-slate-500 mt-1">Track, process, and release resident document service requests.</p>
+          <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Document Requests</h1>
+          <p class="text-sm text-slate-500 mt-1">Monitor, review, and process resident document service requests through the official workflow.</p>
         </div>
         <app-button variant="primary" (onClick)="showForm.set(true)">+ New Request</app-button>
       </div>
 
       <app-card>
+        <!-- Filter Bar -->
         <div class="mb-4 flex flex-col gap-3">
-          <!-- Main Filter Bar -->
           <div class="flex flex-wrap items-center gap-3">
             <!-- Search Input -->
             <div class="flex-1 min-w-[220px]">
@@ -45,7 +74,7 @@ interface RequestDetail extends DocumentRequest {
               <select
                 [value]="serviceFilter()"
                 (change)="onServiceFilter($any($event.target).value)"
-                class="w-full h-10 px-3 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 cursor-pointer shadow-xs">
+                class="w-full h-10 px-3 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 cursor-pointer shadow-xs">
                 <option value="">All Services</option>
                 @for (svc of services(); track svc.service_id) {
                   <option [value]="svc.service_id">{{ svc.service_name }}</option>
@@ -58,7 +87,7 @@ interface RequestDetail extends DocumentRequest {
               <select
                 [value]="datePreset()"
                 (change)="onDatePresetChange($any($event.target).value)"
-                class="w-full h-10 px-3 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 cursor-pointer shadow-xs">
+                class="w-full h-10 px-3 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 cursor-pointer shadow-xs">
                 <option value="">All Dates</option>
                 <option value="today">Today</option>
                 <option value="yesterday">Yesterday</option>
@@ -68,12 +97,12 @@ interface RequestDetail extends DocumentRequest {
               </select>
             </div>
 
-            <!-- Status Filter -->
+            <!-- All Statuses Filter -->
             <div class="w-48 sm:w-52">
               <select
                 [value]="statusFilter()"
                 (change)="onStatusFilter($any($event.target).value)"
-                class="w-full h-10 px-3 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 cursor-pointer shadow-xs">
+                class="w-full h-10 px-3 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 cursor-pointer shadow-xs">
                 @for (opt of filterOptions; track opt.value) {
                   <option [value]="opt.value">{{ opt.label }}</option>
                 }
@@ -85,7 +114,7 @@ interface RequestDetail extends DocumentRequest {
               <button
                 type="button"
                 (click)="resetFilters()"
-                class="h-10 px-3 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 text-xs font-semibold flex items-center gap-1.5 transition shadow-xs">
+                class="h-10 px-3 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-semibold flex items-center gap-1.5 transition shadow-xs cursor-pointer">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
@@ -94,17 +123,17 @@ interface RequestDetail extends DocumentRequest {
             }
           </div>
 
-          <!-- Custom Date Range Sub-row (revealed when 'custom' is picked) -->
+          <!-- Custom Date Range Sub-row -->
           @if (datePreset() === 'custom') {
-            <div class="flex flex-wrap items-center gap-3 p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
-              <span class="text-xs font-bold text-slate-600 uppercase tracking-wide">Custom Date:</span>
+            <div class="flex flex-wrap items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+              <span class="text-xs font-bold text-slate-700 uppercase tracking-wide">Custom Range:</span>
               <div class="flex items-center gap-2">
                 <label class="text-xs text-slate-500">From:</label>
                 <input
                   type="date"
                   [value]="dateFrom()"
                   (change)="onCustomDateChange('from', $any($event.target).value)"
-                  class="h-8 px-2.5 border border-gray-300 rounded-lg text-xs text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 shadow-xs"
+                  class="h-8 px-2.5 border border-slate-200 rounded-lg text-xs text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 shadow-xs"
                 />
               </div>
               <div class="flex items-center gap-2">
@@ -113,13 +142,14 @@ interface RequestDetail extends DocumentRequest {
                   type="date"
                   [value]="dateTo()"
                   (change)="onCustomDateChange('to', $any($event.target).value)"
-                  class="h-8 px-2.5 border border-gray-300 rounded-lg text-xs text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 shadow-xs"
+                  class="h-8 px-2.5 border border-slate-200 rounded-lg text-xs text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 shadow-xs"
                 />
               </div>
             </div>
           }
         </div>
 
+        <!-- Read-only Table with Clickable Rows -->
         <app-table
           [columns]="columns"
           [data]="requests()"
@@ -127,30 +157,41 @@ interface RequestDetail extends DocumentRequest {
           [sortColumn]="sortColumn()"
           [sortDirection]="sortDirection()"
           trackBy="request_id"
-          emptyMessage="No requests found"
+          emptyMessage="No document requests found"
           [cellTemplates]="{
             request_number: reqNumCell,
             resident_name: residentCell,
+            service_name: serviceCell,
             request_date: dateCell,
             status_name: statusCell,
-            expires_at: expiryCell
+            expires_at: expiryCell,
+            remarks: notesCell
           }"
           [selectedRow]="selectedRow()"
           (onSort)="onSort($event)"
-          (onRowClick)="onRowClick($event)">
-
+          (onRowClick)="onRowClick($event)"
+        >
+          <!-- Request # -->
           <ng-template #reqNumCell let-row="row">
-            <span class="text-sm font-semibold text-slate-900">
+            <span class="text-sm font-semibold text-slate-900 font-mono">
               {{ row.request_number }}
             </span>
           </ng-template>
 
+          <!-- Resident -->
           <ng-template #residentCell let-row="row">
-            <span class="text-sm font-semibold text-slate-900">
-              {{ row.resident_name }}
-            </span>
+            <div class="leading-tight">
+              <span class="text-sm font-semibold text-slate-900">{{ row.resident_name }}</span>
+              <p class="text-[11px] text-slate-400 font-mono mt-0.5">{{ row.resident_code || 'Guest' }}</p>
+            </div>
           </ng-template>
 
+          <!-- Service -->
+          <ng-template #serviceCell let-row="row">
+            <span class="text-sm font-semibold text-slate-800">{{ row.service_name }}</span>
+          </ng-template>
+
+          <!-- Date Submitted -->
           <ng-template #dateCell let-row="row">
             <div class="leading-tight">
               <p class="text-sm font-medium text-slate-800">{{ formatSubmissionDate(row.request_date) }}</p>
@@ -158,33 +199,36 @@ interface RequestDetail extends DocumentRequest {
             </div>
           </ng-template>
 
-          <ng-template #statusCell let-status let-row="row">
-            <select
-              [value]="row.status_id"
-              [disabled]="row.status_id === 7 || row.status_id === 8 || row.status_id === 9"
-              (click)="$event.stopPropagation()"
-              (change)="onStatusChange($any($event.target).value, row); $event.stopPropagation()"
-              class="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 bg-white cursor-pointer shadow-xs">
-              @for (opt of statusOptions; track opt.value) {
-                <option [value]="opt.value">{{ opt.label }}</option>
-              }
-            </select>
+          <!-- Status (Read-Only Badge) -->
+          <ng-template #statusCell let-row="row">
+            <span [class]="'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ' + getStatusBadgeClass(row.status_id)">
+              <span class="w-1.5 h-1.5 rounded-full" [class]="getStatusDotClass(row.status_id)"></span>
+              {{ row.status_name }}
+            </span>
           </ng-template>
 
-          <ng-template #expiryCell let-value let-row="row">
+          <!-- Claim Expiry -->
+          <ng-template #expiryCell let-row="row">
             @if (row.is_expired) {
-              <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold text-red-800 bg-red-50 border border-red-200">Expired</span>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold text-red-800 bg-red-50 border border-red-200">Expired</span>
             } @else if (row.expires_at) {
-              <span
-                [class]="expiryBadgeClass(row.expires_at)">
+              <span [class]="expiryBadgeClass(row.expires_at)">
                 {{ daysRemaining(row.expires_at) }}d left
               </span>
             } @else {
               <span class="text-slate-400 font-medium">-</span>
             }
           </ng-template>
+
+          <!-- Notes -->
+          <ng-template #notesCell let-row="row">
+            <span class="text-xs text-slate-600 truncate max-w-[180px] block" [title]="row.remarks || '-'">
+              {{ row.remarks || '-' }}
+            </span>
+          </ng-template>
         </app-table>
 
+        <!-- Pagination -->
         @if (total() > 0) {
           <app-pagination
             [total]="total()"
@@ -205,179 +249,687 @@ interface RequestDetail extends DocumentRequest {
         />
       </app-modal>
 
-      <!-- Request Details Modal -->
-      <app-modal [open]="showDetails()" [title]="selectedRequest()?.request_number || 'Request Details'" (onClose)="closeDetails()" containerClass="max-w-xl">
+      <!-- ================= REQUEST DETAILS & WORKFLOW CONTROL CENTER MODAL ================= -->
+      <app-modal
+        [open]="showDetails()"
+        [title]="selectedRequest()?.request_number || 'Request Details'"
+        (onClose)="closeDetails()"
+        containerClass="max-w-3xl"
+      >
         @if (selectedRequest(); as request) {
-          <div class="space-y-4">
-              <!-- Stepper Header -->
-              <div class="flex items-center justify-between mb-4 border-b border-gray-100 pb-3">
+          <div class="space-y-6">
+
+            <!-- Terminal State Alert Banner (If Rejected or Cancelled) -->
+            @if (request.status_id === 8) {
+              <div class="p-4 rounded-2xl bg-rose-50 border border-rose-200 flex items-start gap-3">
+                <div class="w-8 h-8 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center shrink-0 mt-0.5">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                  </svg>
+                </div>
+                <div class="flex-1">
+                  <h4 class="text-sm font-bold text-rose-900">Request Rejected</h4>
+                  <p class="text-xs text-rose-700 mt-0.5">
+                    This request was rejected. {{ request.remarks ? 'Reason: ' + request.remarks : '' }}
+                  </p>
+                </div>
+              </div>
+            } @else if (request.status_id === 9) {
+              <div class="p-4 rounded-2xl bg-slate-100 border border-slate-200 flex items-start gap-3">
+                <div class="w-8 h-8 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center shrink-0 mt-0.5">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                  </svg>
+                </div>
+                <div class="flex-1">
+                  <h4 class="text-sm font-bold text-slate-900">Request Cancelled</h4>
+                  <p class="text-xs text-slate-600 mt-0.5">
+                    This request was cancelled. {{ request.remarks ? 'Reason: ' + request.remarks : '' }}
+                  </p>
+                </div>
+              </div>
+            }
+
+            <!-- Complete 7-Step Workflow Progress Indicator -->
+            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5">
+              <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-3">Workflow Progress</p>
+              <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
                 @for (step of stepperSteps; track step.id) {
-                  <div class="flex items-center gap-1.5">
-                    <span [class]="'w-5 h-5 flex items-center justify-center rounded-full text-[10px] font-bold ' + (isStepActive(request.status_id, step.id) ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500')">
-                      {{ step.id }}
-                    </span>
-                    <span [class]="'text-[10px] font-semibold hidden md:inline ' + (isStepActive(request.status_id, step.id) ? 'text-blue-600' : 'text-gray-400')">
+                  <div
+                    [class]="'p-2.5 rounded-xl border flex flex-col items-center text-center transition ' + getStepperItemClass(request.status_id, step.id)">
+                    <div class="flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold mb-1" [class]="getStepperBadgeClass(request.status_id, step.id)">
+                      @if (isStepPassed(request.status_id, step.id)) {
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      } @else {
+                        {{ step.id }}
+                      }
+                    </div>
+                    <span class="text-[11px] font-bold leading-tight line-clamp-2">
                       {{ step.label }}
                     </span>
                   </div>
-                  @if (step.id < 7) {
-                    <div [class]="'h-0.5 flex-1 border-t ' + (request.status_id >= 4 && step.id === 1 ? 'border-blue-600' : request.status_id >= 5 && step.id === 4 ? 'border-blue-600' : request.status_id >= 6 && step.id === 5 ? 'border-blue-600' : request.status_id === 7 && step.id === 6 ? 'border-blue-600' : 'border-gray-200')"></div>
-                  }
                 }
               </div>
+            </div>
 
-              <!-- Metadata Description List -->
-              <dl class="grid grid-cols-3 gap-y-2 gap-x-4 text-sm bg-gray-50 p-3 rounded-lg border border-gray-100">
-                <dt class="text-gray-500 font-medium">Request #</dt>
-                <dd class="col-span-2 font-bold text-gray-900">{{ request.request_number }}</dd>
+            <!-- Organized 2-Column Request Information -->
+            <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs">
+              <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide mb-4 flex items-center gap-2">
+                <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Request Information
+              </h4>
 
-                <dt class="text-gray-500 font-medium">Resident</dt>
-                <dd class="col-span-2 text-gray-900 font-medium">{{ request.resident_name }} <span class="text-gray-400">({{ request.resident_code || 'Guest' }})</span></dd>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-6 text-sm">
+                <div>
+                  <p class="text-xs font-semibold text-slate-500">Request #</p>
+                  <p class="text-sm font-bold text-slate-900 font-mono mt-0.5">{{ request.request_number }}</p>
+                </div>
 
-                <dt class="text-gray-500 font-medium">Service</dt>
-                <dd class="col-span-2 text-gray-900 font-medium">{{ request.service_name }}</dd>
+                <div>
+                  <p class="text-xs font-semibold text-slate-500">Service Requested</p>
+                  <p class="text-sm font-bold text-slate-900 mt-0.5">{{ request.service_name }}</p>
+                </div>
 
-                <dt class="text-gray-500 font-medium">Submitted</dt>
-                <dd class="col-span-2 text-gray-900">{{ formatDate(request.request_date) }}</dd>
+                <div>
+                  <p class="text-xs font-semibold text-slate-500">Resident Name</p>
+                  <p class="text-sm font-bold text-slate-900 mt-0.5">
+                    {{ request.resident_name }}
+                    <span class="text-xs font-normal text-slate-500">({{ request.resident_code || 'Guest' }})</span>
+                  </p>
+                </div>
 
-                <dt class="text-gray-500 font-medium">Status</dt>
-                <dd class="col-span-2 text-gray-900 font-semibold">{{ request.status_name }}</dd>
+                <div>
+                  <p class="text-xs font-semibold text-slate-500">Resident ID</p>
+                  <p class="text-sm font-bold text-slate-900 font-mono mt-0.5">{{ request.resident_code || 'GUEST-UNREGISTERED' }}</p>
+                </div>
+
+                <div>
+                  <p class="text-xs font-semibold text-slate-500">Date Submitted</p>
+                  <p class="text-sm font-semibold text-slate-800 mt-0.5">{{ formatDate(request.request_date) }}</p>
+                </div>
+
+                <div>
+                  <p class="text-xs font-semibold text-slate-500">Current Status</p>
+                  <div class="mt-1">
+                    <span [class]="'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ' + getStatusBadgeClass(request.status_id)">
+                      <span class="w-1.5 h-1.5 rounded-full" [class]="getStatusDotClass(request.status_id)"></span>
+                      {{ request.status_name }}
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <p class="text-xs font-semibold text-slate-500">Purpose</p>
+                  <p class="text-sm font-semibold text-slate-800 mt-0.5">{{ request.purpose || '-' }}</p>
+                </div>
+
+                <div>
+                  <p class="text-xs font-semibold text-slate-500">Notes / Remarks</p>
+                  <p class="text-sm font-medium text-slate-700 mt-0.5">{{ request.remarks || '-' }}</p>
+                </div>
 
                 @if (request.expires_at) {
-                  <dt class="text-gray-500 font-medium">Claim Expiry</dt>
-                  <dd class="col-span-2">
-                    @if (request.is_expired) {
-                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold text-red-700 bg-red-100">Expired</span>
-                    } @else {
-                      <span class="text-gray-900 font-medium">{{ formatDate(request.expires_at) }} ({{ daysRemaining(request.expires_at) }}d left)</span>
-                    }
-                  </dd>
+                  <div>
+                    <p class="text-xs font-semibold text-slate-500">Claim Expiry</p>
+                    <p class="text-sm font-semibold text-slate-800 mt-0.5">
+                      {{ formatDate(request.expires_at) }}
+                      <span class="text-xs font-normal text-amber-700">({{ daysRemaining(request.expires_at) }}d left)</span>
+                    </p>
+                  </div>
                 }
-                
-                <dt class="text-gray-500 font-medium">Purpose</dt>
-                <dd class="col-span-2 text-gray-900">{{ request.purpose || '-' }}</dd>
+              </div>
+            </div>
 
-                <dt class="text-gray-500 font-medium">Notes</dt>
-                <dd class="col-span-2 text-gray-900">{{ request.remarks || '-' }}</dd>
-              </dl>
+            <!-- ================= WORKFLOW QUICK ACTIONS (DROPDOWN + CONFIRMATION) ================= -->
+            <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs">
+              <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                </svg>
+                Workflow Quick Actions
+              </h4>
 
-              <!-- Stepper workflow actions -->
-              <div class="border-t border-gray-100 pt-4 mt-2">
-                <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Workflow Quick Actions</h4>
-                <div class="flex flex-wrap gap-2">
-                  @if (request.status_id === 1) {
-                    <app-button variant="primary" size="sm" (onClick)="onStatusChange('4', request)">Review Request</app-button>
-                    <app-button variant="danger" size="sm" (onClick)="onStatusChange('8', request)">Reject</app-button>
-                  }
-                  @if (request.status_id === 2 || request.status_id === 3 || request.status_id === 4) {
-                    <app-button variant="success" size="sm" (onClick)="onStatusChange('5', request)">Approve & Start Processing</app-button>
-                    <app-button variant="danger" size="sm" (onClick)="onStatusChange('8', request)">Reject</app-button>
-                  }
-                  @if (request.status_id === 5) {
-                    <app-button variant="primary" size="sm" (onClick)="onStatusChange('6', request)">Complete & Mark Ready for Release</app-button>
-                  }
-                  @if (request.status_id === 6) {
-                    <app-button variant="success" size="sm" (onClick)="onStatusChange('7', request)">Release to Resident</app-button>
-                  }
-                  @if (request.status_id < 7 && request.status_id !== 8 && request.status_id !== 9) {
-                    <app-button variant="secondary" size="sm" (onClick)="onStatusChange('9', request)">Cancel Request</app-button>
+              <!-- Display Current Status Separately -->
+              <div class="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-xl mb-4 text-xs">
+                <span class="text-slate-600 font-semibold">Current Status:</span>
+                <span [class]="'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ' + getStatusBadgeClass(request.status_id)">
+                  <span class="w-1.5 h-1.5 rounded-full" [class]="getStatusDotClass(request.status_id)"></span>
+                  {{ request.status_name }}
+                </span>
+              </div>
+
+              <!-- Available forward transitions -->
+              @if (request.status_id < 7 && request.status_id !== 8 && request.status_id !== 9) {
+                <div class="space-y-4">
+                  <div>
+                    <label for="next-status-select" class="block text-xs font-bold text-slate-700 mb-1.5">
+                      Next Action / Status:
+                    </label>
+                    <select
+                      id="next-status-select"
+                      [value]="selectedNextStatus() || ''"
+                      (change)="onNextStatusChange($any($event.target).value)"
+                      class="w-full h-11 px-3.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 cursor-pointer shadow-xs"
+                    >
+                      @for (opt of getNextStatusOptions(request.status_id); track opt.value) {
+                        <option [value]="opt.value">{{ opt.label }}</option>
+                      }
+                    </select>
+                  </div>
+
+                  <!-- Action Buttons -->
+                  <div class="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-slate-100">
+                    <button
+                      type="button"
+                      [disabled]="!selectedNextStatus() || actionLoading()"
+                      (click)="openStatusConfirmDialog(request)"
+                      class="py-2.5 px-5 rounded-xl bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-bold text-xs shadow-sm transition flex items-center gap-2 cursor-pointer"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                      </svg>
+                      Update Status
+                    </button>
+
+                    <!-- Separate Destructive Actions -->
+                    <div class="flex items-center gap-2">
+                      <button
+                        type="button"
+                        (click)="openRejectDialog(request)"
+                        class="py-2.5 px-3.5 rounded-xl border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold text-xs transition cursor-pointer"
+                      >
+                        Reject Request
+                      </button>
+                      <button
+                        type="button"
+                        (click)="openCancelDialog(request)"
+                        class="py-2.5 px-3.5 rounded-xl border border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200 font-bold text-xs transition cursor-pointer"
+                      >
+                        Cancel Request
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              } @else if (request.status_id === 7) {
+                <!-- Completed State -->
+                <div class="w-full py-3 px-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
+                  <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>Request completed and document officially released to resident. No further workflow action needed.</span>
+                </div>
+              } @else {
+                <!-- Terminal State -->
+                <p class="text-xs text-slate-500 italic">This request is closed and cannot be moved to another status.</p>
+              }
+            </div>
+
+            <!-- Grouped Submitted Form Data -->
+            @if (request.form_data && hasFormData(request.form_data)) {
+              <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs">
+                <div class="flex items-center justify-between mb-4">
+                  <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2">
+                    <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Submitted Form Data
+                  </h4>
+                  <button
+                    type="button"
+                    (click)="showJsonModal.set(true)"
+                    class="text-xs font-semibold text-orange-600 hover:text-orange-700 hover:underline cursor-pointer flex items-center gap-1">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+                    </svg>
+                    Preview JSON
+                  </button>
+                </div>
+
+                <div class="space-y-4">
+                  @for (section of getGroupedFormData(request.form_data); track section.title) {
+                    @if (section.fields.length > 0) {
+                      <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+                        <p class="text-xs font-bold text-slate-800 mb-2.5 pb-1 border-b border-slate-200">
+                          {{ section.title }}
+                        </p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                          @for (field of section.fields; track field.key) {
+                            <div class="flex flex-col sm:flex-row sm:justify-between py-1 border-b border-slate-100 last:border-0">
+                              <span class="font-medium text-slate-500">{{ field.label }}:</span>
+                              <span class="font-bold text-slate-900 sm:text-right">{{ field.value }}</span>
+                            </div>
+                          }
+                        </div>
+                      </div>
+                    }
                   }
                 </div>
               </div>
+            }
 
-              <!-- Form Data Preview -->
-              @if (request.form_data && hasFormData(request.form_data)) {
-                <div class="flex items-center justify-between mt-4 mb-2">
-                  <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wide">Submitted Form Data</h4>
-                  <button type="button" (click)="previewRequestData(request)" class="text-xs font-semibold text-blue-600 hover:underline">Preview Json</button>
-                </div>
-                <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm space-y-1.5">
-                  @for (entry of formDataEntries(request.form_data); track entry.key) {
-                    <div class="mb-1.5 flex justify-between border-b border-gray-100 pb-1 last:border-0 last:pb-0">
-                      <span class="font-medium text-gray-500">{{ formatFieldLabel(entry.key) }}:</span>
-                      <span class="font-semibold text-gray-800 text-right">{{ entry.value }}</span>
-                    </div>
-                  }
-                </div>
-              }
-
-              <!-- Generated Documents Section -->
-              <div class="flex items-center justify-between mt-4 mb-2">
-                <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wide">Document Artifacts</h4>
+            <!-- Document Artifacts (Templates & Generation) -->
+            <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs">
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2">
+                  <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                  </svg>
+                  Document Artifacts
+                </h4>
                 <div class="flex items-center gap-2">
-                  <button type="button" [disabled]="previewBusy()" (click)="previewRequestDocument()" class="text-xs font-semibold text-blue-600 hover:underline disabled:opacity-50">
+                  <button
+                    type="button"
+                    [disabled]="previewBusy()"
+                    (click)="previewRequestDocument()"
+                    class="text-xs font-semibold text-orange-600 hover:text-orange-700 hover:underline disabled:opacity-50 cursor-pointer">
                     {{ previewBusy() ? 'Loading...' : 'Preview Live' }}
                   </button>
-                  <span class="text-gray-300">|</span>
-                  <button type="button" [disabled]="generatingDoc()" (click)="generateDocument()" class="text-xs font-semibold text-blue-600 hover:underline disabled:opacity-50">
-                    {{ generatingDoc() ? 'Generating...' : 'Regenerate' }}
+                  <span class="text-slate-300">|</span>
+                  <button
+                    type="button"
+                    [disabled]="editDocLoading()"
+                    (click)="openEditDocumentModal()"
+                    class="text-xs font-semibold text-orange-600 hover:text-orange-700 hover:underline disabled:opacity-50 cursor-pointer flex items-center gap-1">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    </svg>
+                    <span>Edit Document</span>
                   </button>
                 </div>
               </div>
+
+              @if (docError()) {
+                <div class="mb-3 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
+                  {{ docError() }}
+                </div>
+              }
 
               @if (documents().length > 0) {
                 <div class="space-y-2">
                   @for (doc of documents(); track doc.document_id) {
-                    <div class="border border-gray-200 rounded-lg p-3 bg-white hover:bg-gray-50 transition">
+                    <div class="border border-slate-200 rounded-xl p-3.5 bg-slate-50 hover:bg-white transition">
                       <div class="flex items-center justify-between mb-2">
                         <div class="min-w-0 flex-1">
-                          <p class="font-semibold text-gray-900 truncate" [title]="doc.file_name">{{ doc.file_name }}</p>
-                          <p class="text-[11px] text-gray-400">{{ formatDate(doc.generated_at) }} · {{ formatBytes(doc.file_size) }}</p>
+                          <p class="font-bold text-slate-900 truncate text-xs" [title]="doc.file_name">{{ doc.file_name }}</p>
+                          <p class="text-[11px] text-slate-400 mt-0.5">{{ formatDate(doc.generated_at) }} · {{ formatBytes(doc.file_size) }}</p>
                         </div>
                         @if (approvalBadge(doc.approval_status); as badge) {
-                          <span [class]="'px-2 py-0.5 text-[10px] font-bold rounded-full ' + badge.class">{{ badge.label }}</span>
+                          <span [class]="'px-2.5 py-0.5 text-[10px] font-bold rounded-full border ' + badge.class">{{ badge.label }}</span>
                         }
                       </div>
 
-                      @if (doc.generation_warnings && doc.generation_warnings.length > 0) {
-                        <div class="mb-2 rounded bg-amber-50 border border-amber-200 px-2 py-1">
-                          @for (warn of doc.generation_warnings; track warn) {
-                            <p class="text-[11px] text-amber-700 font-medium">• {{ warn }}</p>
-                          }
-                        </div>
-                      }
-
-                      <div class="flex items-center gap-3 border-t border-gray-100 pt-2 text-xs">
-                        <button type="button" (click)="previewDocument(doc)" class="text-blue-600 font-semibold hover:underline">Preview</button>
-                        <button type="button" (click)="downloadDocument(doc)" [disabled]="doc.approval_status !== 'approved'" class="text-blue-600 font-semibold hover:underline disabled:opacity-40 flex-wrap">Download</button>
-                        <button type="button" (click)="printDocument(doc)" [disabled]="doc.approval_status !== 'approved'" class="text-blue-600 font-semibold hover:underline disabled:opacity-40">Print</button>
+                      <div class="flex items-center gap-3 border-t border-slate-200 pt-2 text-xs">
+                        <button type="button" (click)="previewDocument(doc)" class="text-orange-600 font-bold hover:underline cursor-pointer">Preview</button>
+                        <button type="button" (click)="downloadDocument(doc)" [disabled]="doc.approval_status !== 'approved'" class="text-slate-700 font-semibold hover:underline disabled:opacity-40 cursor-pointer">Download</button>
+                        <button type="button" (click)="printDocument(doc)" [disabled]="doc.approval_status !== 'approved'" class="text-slate-700 font-semibold hover:underline disabled:opacity-40 cursor-pointer">Print</button>
                         
                         @if (doc.approval_status === 'pending') {
-                          <span class="text-gray-300">|</span>
-                          <button type="button" (click)="reviewDocument(doc, 'approved')" class="text-green-600 font-bold hover:underline">Approve</button>
-                          <button type="button" (click)="reviewDocument(doc, 'returned')" class="text-amber-600 font-bold hover:underline">Return</button>
-                          <button type="button" (click)="reviewDocument(doc, 'rejected')" class="text-red-600 font-bold hover:underline">Reject</button>
+                          <span class="text-slate-300">|</span>
+                          <button type="button" (click)="reviewDocument(doc, 'approved')" class="text-emerald-700 font-bold hover:underline cursor-pointer">Approve</button>
+                          <button type="button" (click)="reviewDocument(doc, 'rejected')" class="text-rose-700 font-bold hover:underline cursor-pointer">Reject</button>
                         }
                       </div>
                     </div>
                   }
                 </div>
               } @else {
-                <p class="text-xs text-gray-500 bg-gray-50 border border-dashed rounded-lg p-4 text-center">
+                <p class="text-xs text-slate-500 bg-slate-50 border border-dashed border-slate-200 rounded-xl p-4 text-center">
                   No documents generated yet. Click "Preview Live" to generate one.
                 </p>
               }
+            </div>
 
-              <!-- Status History -->
-              <h4 class="mt-6 mb-3 text-xs font-bold text-gray-700 uppercase tracking-wide">Status History Logs</h4>
+            <!-- Status History Logs -->
+            <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs">
+              <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Status History Logs
+              </h4>
               @if (request.history && request.history.length > 0) {
-                <ol class="border-l-2 border-gray-200 space-y-3 pl-4">
+                <ol class="border-l-2 border-orange-200 space-y-3.5 pl-4 ml-2">
                   @for (entry of request.history; track entry.history_id) {
-                    <li class="text-xs">
+                    <li class="text-xs relative">
+                      <span class="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-orange-600 ring-4 ring-white"></span>
                       <div class="flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-                        <span class="font-semibold text-gray-900">{{ entry.status_name }}</span>
-                        <span class="text-[11px] text-gray-400">{{ formatDate(entry.changed_at) }}</span>
+                        <span class="font-bold text-slate-900">{{ entry.status_name }}</span>
+                        <span class="text-[11px] text-slate-400 font-medium">{{ formatDate(entry.changed_at) }}</span>
                       </div>
-                      <p class="ml-4 text-xs text-gray-500 font-medium">{{ entry.changed_by_name ? entry.changed_by_name : 'System' }}{{ entry.remarks ? ' — ' + entry.remarks : '' }}</p>
+                      <p class="text-xs text-slate-600 mt-0.5">
+                        {{ entry.changed_by_name ? entry.changed_by_name : 'System' }}
+                        @if (entry.remarks) {
+                          <span class="text-slate-500 font-normal"> — {{ entry.remarks }}</span>
+                        }
+                      </p>
                     </li>
                   }
                 </ol>
               } @else {
-                <p class="text-xs text-gray-500">No status history recorded.</p>
+                <p class="text-xs text-slate-400">No status history recorded yet.</p>
               }
+            </div>
+
           </div>
         }
+      </app-modal>
+
+      <!-- ================= CONFIRM STATUS UPDATE MODAL ================= -->
+      <app-modal
+        [open]="showStatusConfirmModal()"
+        title="Confirm Status Update"
+        (onClose)="closeStatusConfirmDialog()"
+        containerClass="max-w-md"
+      >
+        <div class="text-center">
+          <div class="w-14 h-14 rounded-full bg-orange-50 text-orange-600 border border-orange-200 mx-auto mb-4 flex items-center justify-center">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-slate-900">Confirm Status Update</h3>
+          <p class="text-xs text-slate-600 mt-1">
+            Are you sure you want to update the workflow status for this request?
+          </p>
+
+          <div class="mt-4 p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-left space-y-2 text-xs">
+            <div class="flex justify-between">
+              <span class="text-slate-500 font-medium">Request Number:</span>
+              <span class="font-mono font-bold text-slate-900">{{ activeRequestForAction()?.request_number }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500 font-medium">Current Status:</span>
+              <span class="font-semibold text-slate-700">{{ activeRequestForAction()?.status_name }}</span>
+            </div>
+            <div class="flex justify-between border-t border-slate-200 pt-2">
+              <span class="text-slate-500 font-medium">Next Status:</span>
+              <span class="font-bold text-orange-600">{{ getStatusLabel(selectedNextStatus()) }}</span>
+            </div>
+          </div>
+        </div>
+
+        @if (actionError()) {
+          <div class="mt-3 p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
+            {{ actionError() }}
+          </div>
+        }
+
+        <div class="mt-6 flex items-center gap-3">
+          <button
+            type="button"
+            (click)="closeStatusConfirmDialog()"
+            class="flex-1 py-2.5 px-4 rounded-xl border border-slate-300 text-slate-700 font-semibold text-xs hover:bg-slate-50 transition cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            [disabled]="actionLoading()"
+            (click)="confirmStatusUpdate()"
+            class="flex-1 py-2.5 px-4 rounded-xl bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-bold text-xs shadow-sm transition cursor-pointer"
+          >
+            {{ actionLoading() ? 'Updating...' : 'Confirm Update' }}
+          </button>
+        </div>
+      </app-modal>
+
+      <!-- ================= REJECT REQUEST CONFIRMATION MODAL ================= -->
+      <app-modal
+        [open]="showRejectModal()"
+        title="Reject Request"
+        (onClose)="closeRejectDialog()"
+        containerClass="max-w-md"
+      >
+        <div class="text-center">
+          <div class="w-14 h-14 rounded-full bg-rose-50 text-rose-600 border border-rose-200 mx-auto mb-4 flex items-center justify-center">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-slate-900">Reject Request</h3>
+          <p class="text-xs text-slate-600 mt-1">
+            Are you sure you want to reject this request?
+          </p>
+          <div class="mt-2 inline-block px-3 py-1 bg-slate-100 rounded-lg text-xs font-mono font-bold text-slate-800">
+            {{ activeRequestForAction()?.request_number }}
+          </div>
+        </div>
+
+        <div class="mt-4 text-left">
+          <label class="block text-xs font-bold text-slate-800 mb-1.5">
+            Reason for Rejection <span class="text-rose-600">*</span>
+          </label>
+          <textarea
+            rows="3"
+            required
+            placeholder="Enter the reason for rejecting this document request (e.g. incomplete requirements, invalid resident record)..."
+            [value]="rejectionReason()"
+            (input)="rejectionReason.set($any($event.target).value)"
+            class="w-full p-3 rounded-xl border border-slate-200 text-slate-900 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 placeholder:text-slate-400 transition"
+          ></textarea>
+        </div>
+
+        @if (actionError()) {
+          <div class="mt-3 p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
+            {{ actionError() }}
+          </div>
+        }
+
+        <div class="mt-6 flex items-center gap-3">
+          <button
+            type="button"
+            (click)="closeRejectDialog()"
+            class="flex-1 py-2.5 px-4 rounded-xl border border-slate-300 text-slate-700 font-semibold text-xs hover:bg-slate-50 transition cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            [disabled]="!rejectionReason().trim() || actionLoading()"
+            (click)="confirmRejection()"
+            class="flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-bold text-xs shadow-sm transition cursor-pointer"
+          >
+            {{ actionLoading() ? 'Rejecting...' : 'Reject Request' }}
+          </button>
+        </div>
+      </app-modal>
+
+      <!-- ================= CANCEL REQUEST CONFIRMATION MODAL ================= -->
+      <app-modal
+        [open]="showCancelModal()"
+        title="Cancel Request"
+        (onClose)="closeCancelDialog()"
+        containerClass="max-w-md"
+      >
+        <div class="text-center">
+          <div class="w-14 h-14 rounded-full bg-slate-100 text-slate-600 border border-slate-200 mx-auto mb-4 flex items-center justify-center">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-slate-900">Cancel Request</h3>
+          <p class="text-xs text-slate-600 mt-1">
+            Are you sure you want to cancel this request?
+          </p>
+          <div class="mt-2 inline-block px-3 py-1 bg-slate-100 rounded-lg text-xs font-mono font-bold text-slate-800">
+            {{ activeRequestForAction()?.request_number }}
+          </div>
+        </div>
+
+        <div class="mt-4 text-left">
+          <label class="block text-xs font-bold text-slate-800 mb-1.5">
+            Cancellation Note (Optional)
+          </label>
+          <textarea
+            rows="2"
+            placeholder="Enter any notes regarding the cancellation..."
+            [value]="cancelReason()"
+            (input)="cancelReason.set($any($event.target).value)"
+            class="w-full p-3 rounded-xl border border-slate-200 text-slate-900 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 placeholder:text-slate-400 transition"
+          ></textarea>
+        </div>
+
+        <div class="mt-6 flex items-center gap-3">
+          <button
+            type="button"
+            (click)="closeCancelDialog()"
+            class="flex-1 py-2.5 px-4 rounded-xl border border-slate-300 text-slate-700 font-semibold text-xs hover:bg-slate-50 transition cursor-pointer"
+          >
+            No, Keep Request
+          </button>
+          <button
+            type="button"
+            [disabled]="actionLoading()"
+            (click)="confirmCancellation()"
+            class="flex-1 py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-900 disabled:opacity-50 text-white font-bold text-xs shadow-sm transition cursor-pointer"
+          >
+            {{ actionLoading() ? 'Cancelling...' : 'Yes, Cancel Request' }}
+          </button>
+        </div>
+      </app-modal>
+
+      <!-- ================= JSON PREVIEW MODAL ================= -->
+      <app-modal
+        [open]="showJsonModal()"
+        title="Raw Form JSON Data"
+        (onClose)="showJsonModal.set(false)"
+        containerClass="max-w-lg"
+      >
+        <div class="p-3 bg-slate-900 text-slate-100 rounded-xl font-mono text-xs overflow-x-auto max-h-96">
+          <pre>{{ selectedRequest()?.form_data | json }}</pre>
+        </div>
+        <div class="mt-4 flex justify-end">
+          <button
+            type="button"
+            (click)="showJsonModal.set(false)"
+            class="py-2 px-4 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold text-xs transition cursor-pointer"
+          >
+            Close
+          </button>
+        </div>
+      </app-modal>
+
+      <!-- ================= EDIT DOCUMENT MODAL ================= -->
+      <app-modal
+        [open]="showEditDocModal()"
+        title="Edit Document Information"
+        (onClose)="closeEditDocumentModal()"
+        containerClass="max-w-2xl"
+      >
+        <div class="space-y-4">
+          <!-- Header Banner / Info -->
+          <div class="p-3.5 bg-orange-50/80 border border-orange-200/80 rounded-2xl flex items-start gap-3">
+            <div class="w-8 h-8 rounded-xl bg-orange-100 text-orange-700 flex items-center justify-center shrink-0 mt-0.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+              </svg>
+            </div>
+            <div class="text-xs text-slate-700 leading-relaxed">
+              <p class="font-bold text-slate-900 mb-0.5">
+                {{ selectedRequest()?.request_number }} — {{ selectedRequest()?.service_name }}
+              </p>
+              <p class="text-slate-600">
+                Correct any resident typos or application details below. When you save, the changes are persisted to the request and the document artifact will immediately regenerate for preview.
+              </p>
+            </div>
+          </div>
+
+          @if (editDocError()) {
+            <div class="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-medium flex items-center gap-2">
+              <svg class="w-4 h-4 shrink-0 text-rose-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>{{ editDocError() }}</span>
+            </div>
+          }
+
+          <!-- Editable Fields Grid -->
+          <div class="space-y-3 max-h-[55vh] overflow-y-auto pr-1">
+            <!-- Purpose of Request -->
+            <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+              <label class="block text-xs font-bold text-slate-800 mb-1">Purpose of Request</label>
+              <input
+                type="text"
+                [value]="editPurpose()"
+                (input)="editPurpose.set($any($event.target).value)"
+                placeholder="e.g. Employment Application, Scholarship, Bank Requirement..."
+                class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 bg-white"
+              />
+            </div>
+
+            <!-- Dynamic Application / Resident Form Fields -->
+            @if (editFormFieldEntries().length > 0) {
+              <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                <p class="text-xs font-bold text-slate-800 pb-1 border-b border-slate-200 flex items-center justify-between">
+                  <span>Application Form Fields</span>
+                  <span class="text-[11px] font-normal text-slate-500">{{ editFormFieldEntries().length }} field(s)</span>
+                </p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  @for (entry of editFormFieldEntries(); track entry.key) {
+                    <div>
+                      <label class="block text-[11px] font-semibold text-slate-700 mb-1 truncate" [title]="entry.label">
+                        {{ entry.label }}
+                      </label>
+                      <input
+                        type="text"
+                        [value]="entry.value"
+                        (input)="updateEditFormField(entry.key, $any($event.target).value)"
+                        [placeholder]="entry.label"
+                        class="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 bg-white"
+                      />
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Staff Remarks / Notes -->
+            <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+              <label class="block text-xs font-bold text-slate-800 mb-1">Staff Notes / Remarks</label>
+              <textarea
+                rows="2"
+                [value]="editRemarks()"
+                (input)="editRemarks.set($any($event.target).value)"
+                placeholder="Optional internal remarks or corrections log..."
+                class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 bg-white"
+              ></textarea>
+            </div>
+          </div>
+
+          <!-- Modal Footer Actions -->
+          <div class="pt-3 border-t border-slate-200 flex items-center justify-end gap-2.5">
+            <button
+              type="button"
+              (click)="closeEditDocumentModal()"
+              class="py-2 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              [disabled]="editDocLoading()"
+              (click)="saveEditDocument()"
+              class="py-2 px-4.5 rounded-xl bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-bold text-xs shadow-sm transition cursor-pointer flex items-center gap-1.5"
+            >
+              @if (editDocLoading()) {
+                <svg class="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+                <span>Saving & Regenerating...</span>
+              } @else {
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>Save & Update Document</span>
+              }
+            </button>
+          </div>
+        </div>
       </app-modal>
 
       <!-- Document Preview Modal -->
@@ -397,7 +949,7 @@ export class RequestsComponent implements OnInit, OnDestroy {
   loading = signal(true);
   search = signal('');
   page = signal(1);
-  limit = 20;
+  limit = 10;
   total = signal(0);
   sortColumn = signal('request_id');
   sortDirection = signal<'ASC' | 'DESC'>('DESC');
@@ -418,11 +970,34 @@ export class RequestsComponent implements OnInit, OnDestroy {
   docError = signal('');
   docNotice = signal('');
 
+  // Edit Document Modal Signals
+  showEditDocModal = signal(false);
+  editDocLoading = signal(false);
+  editDocError = signal('');
+  editPurpose = signal('');
+  editRemarks = signal('');
+  editFormFieldEntries = signal<FormFieldEntry[]>([]);
+
+  // Workflow Dropdown & Confirmation Dialog Signals
+  selectedNextStatus = signal<number | null>(null);
+  showStatusConfirmModal = signal(false);
+  showRejectModal = signal(false);
+  showCancelModal = signal(false);
+  showJsonModal = signal(false);
+  rejectionReason = signal('');
+  cancelReason = signal('');
+  activeRequestForAction = signal<DocumentRequest | null>(null);
+  actionLoading = signal(false);
+  actionError = signal('');
+
+  // Complete 7-Step Workflow Order
   stepperSteps = [
     { id: 1, label: 'Submitted' },
+    { id: 2, label: 'Waiting for Requirements' },
+    { id: 3, label: 'Requirements Received' },
     { id: 4, label: 'Under Review' },
-    { id: 5, label: 'Processing' },
-    { id: 6, label: 'Ready' },
+    { id: 5, label: 'Document Processing' },
+    { id: 6, label: 'Ready for Release' },
     { id: 7, label: 'Released' }
   ];
 
@@ -489,21 +1064,117 @@ export class RequestsComponent implements OnInit, OnDestroy {
     this.disconnectFromRequestUpdates();
   }
 
-  isStepActive(currentStatusId: number, stepId: number): boolean {
-    const statusStepsMap: Record<number, number[]> = {
-      1: [1],
-      2: [1],
-      3: [1],
-      4: [1, 4],
-      5: [1, 4, 5],
-      6: [1, 4, 5, 6],
-      7: [1, 4, 5, 6, 7],
-      8: [],
-      9: []
-    };
-    return (statusStepsMap[currentStatusId] || []).includes(stepId);
+  // --- Stepper Styling Helpers ---
+  isStepPassed(currentStatusId: number, stepId: number): boolean {
+    if (currentStatusId === 8 || currentStatusId === 9) return false;
+    return currentStatusId > stepId;
   }
 
+  getStepperItemClass(currentStatusId: number, stepId: number): string {
+    if (currentStatusId === stepId) {
+      return 'bg-orange-50 border-orange-400 text-orange-700 shadow-2xs font-bold ring-2 ring-orange-500/20';
+    }
+    if (currentStatusId > stepId && currentStatusId !== 8 && currentStatusId !== 9) {
+      return 'bg-emerald-50/60 border-emerald-300 text-emerald-800';
+    }
+    return 'bg-white border-slate-200 text-slate-400 opacity-60';
+  }
+
+  getStepperBadgeClass(currentStatusId: number, stepId: number): string {
+    if (currentStatusId === stepId) {
+      return 'bg-orange-600 text-white';
+    }
+    if (currentStatusId > stepId && currentStatusId !== 8 && currentStatusId !== 9) {
+      return 'bg-emerald-600 text-white';
+    }
+    return 'bg-slate-200 text-slate-600';
+  }
+
+  // --- Status Badge Color Styling ---
+  getStatusBadgeClass(statusId: number): string {
+    switch (statusId) {
+      case 1: // Submitted
+        return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 2: // Waiting for Requirements
+        return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 3: // Requirements Received
+        return 'bg-sky-50 text-sky-700 border-sky-200';
+      case 4: // Under Review
+        return 'bg-orange-50 text-orange-700 border-orange-200';
+      case 5: // Document Processing
+        return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+      case 6: // Ready for Release
+        return 'bg-purple-50 text-purple-700 border-purple-200';
+      case 7: // Released
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 8: // Rejected
+        return 'bg-rose-50 text-rose-700 border-rose-200';
+      case 9: // Cancelled
+        return 'bg-slate-100 text-slate-700 border-slate-200';
+      default:
+        return 'bg-slate-50 text-slate-700 border-slate-200';
+    }
+  }
+
+  getStatusDotClass(statusId: number): string {
+    switch (statusId) {
+      case 1: return 'bg-blue-500';
+      case 2: return 'bg-amber-500';
+      case 3: return 'bg-sky-500';
+      case 4: return 'bg-orange-500';
+      case 5: return 'bg-indigo-500';
+      case 6: return 'bg-purple-500';
+      case 7: return 'bg-emerald-500';
+      case 8: return 'bg-rose-500';
+      case 9: return 'bg-slate-400';
+      default: return 'bg-slate-400';
+    }
+  }
+
+  getStatusLabel(statusId: number | null): string {
+    if (!statusId) return '-';
+    const opt = this.statusOptions.find(o => o.value === statusId);
+    return opt ? opt.label : `Status ${statusId}`;
+  }
+
+  // --- Strict Forward Workflow Options ---
+  // Workflow order: 1 Submitted -> 2 Waiting for Requirements -> 3 Requirements Received -> 4 Under Review -> 5 Document Processing -> 6 Ready for Release -> 7 Released
+  getNextStatusOptions(currentStatusId: number): StatusOption[] {
+    switch (currentStatusId) {
+      case 1: // Submitted
+        return [
+          { value: 4, label: 'Under Review (Start Review)' },
+          { value: 2, label: 'Waiting for Requirements (Request Requirements)' }
+        ];
+      case 2: // Waiting for Requirements
+        return [
+          { value: 3, label: 'Requirements Received (Mark Requirements Received)' }
+        ];
+      case 3: // Requirements Received
+        return [
+          { value: 4, label: 'Under Review (Start Review)' }
+        ];
+      case 4: // Under Review
+        return [
+          { value: 5, label: 'Document Processing (Start Processing)' }
+        ];
+      case 5: // Document Processing
+        return [
+          { value: 6, label: 'Ready for Release (Mark Ready for Release)' }
+        ];
+      case 6: // Ready for Release
+        return [
+          { value: 7, label: 'Released (Release Document)' }
+        ];
+      default:
+        return [];
+    }
+  }
+
+  onNextStatusChange(val: string) {
+    const num = parseInt(val, 10);
+    this.selectedNextStatus.set(num || null);
+  }
 
   private connectToRequestUpdates() {
     this.sseSubscription = this.notificationService.sse$.subscribe(event => {
@@ -513,7 +1184,9 @@ export class RequestsComponent implements OnInit, OnDestroy {
         if (current && (event.data?.requestId === current.request_id || event.data?.request_id === current.request_id)) {
           this.requestService.getById(current.request_id).subscribe({
             next: (res) => {
-              this.selectedRequest.set(res.data as RequestDetail);
+              const updated = res.data as RequestDetail;
+              this.selectedRequest.set(updated);
+              this.syncNextStatusDropdown(updated.status_id);
               this.loadDocuments(current.request_id);
             }
           });
@@ -698,24 +1371,146 @@ export class RequestsComponent implements OnInit, OnDestroy {
     });
   }
 
-  onStatusChange(value: string, request: DocumentRequest) {
-    const statusId = parseInt(value, 10);
-    if (!statusId || statusId === request.status_id) return;
+  private syncNextStatusDropdown(statusId: number) {
+    const opts = this.getNextStatusOptions(statusId);
+    if (opts.length > 0) {
+      this.selectedNextStatus.set(opts[0].value);
+    } else {
+      this.selectedNextStatus.set(null);
+    }
+  }
 
-    this.requestService.changeStatus(request.request_id, statusId).subscribe({
+  // --- Status Update Confirmation Handling ---
+  openStatusConfirmDialog(request: DocumentRequest) {
+    if (!this.selectedNextStatus()) return;
+    this.activeRequestForAction.set(request);
+    this.actionError.set('');
+    this.actionLoading.set(false);
+    this.showStatusConfirmModal.set(true);
+  }
+
+  closeStatusConfirmDialog() {
+    this.showStatusConfirmModal.set(false);
+    this.activeRequestForAction.set(null);
+    this.actionError.set('');
+  }
+
+  confirmStatusUpdate() {
+    const req = this.activeRequestForAction();
+    const nextStatus = this.selectedNextStatus();
+    if (!req || !nextStatus) return;
+
+    this.actionLoading.set(true);
+    this.actionError.set('');
+
+    const targetLabel = this.getStatusLabel(nextStatus);
+    this.requestService.changeStatus(req.request_id, nextStatus, `Updated to ${targetLabel}`).subscribe({
       next: () => {
-        // Fetch updated details immediately so stepper highlights the new step in real-time
-        this.requestService.getById(request.request_id).subscribe({
+        this.actionLoading.set(false);
+        this.closeStatusConfirmDialog();
+        this.requestService.getById(req.request_id).subscribe({
           next: (res) => {
-            this.selectedRequest.set(res.data as RequestDetail);
+            const updated = res.data as RequestDetail;
+            this.selectedRequest.set(updated);
+            this.syncNextStatusDropdown(updated.status_id);
             this.loadRequests();
-            this.loadDocuments(request.request_id);
+            this.loadDocuments(req.request_id);
           }
         });
       },
       error: (err) => {
-        alert(err.error?.message || 'Failed to update status.');
-        this.loadRequests();
+        this.actionLoading.set(false);
+        this.actionError.set(err.error?.message || 'Failed to update request status.');
+      }
+    });
+  }
+
+  // --- Rejection Dialog Handling ---
+  openRejectDialog(request: DocumentRequest) {
+    this.activeRequestForAction.set(request);
+    this.rejectionReason.set('');
+    this.actionError.set('');
+    this.actionLoading.set(false);
+    this.showRejectModal.set(true);
+  }
+
+  closeRejectDialog() {
+    this.showRejectModal.set(false);
+    this.activeRequestForAction.set(null);
+    this.rejectionReason.set('');
+    this.actionError.set('');
+  }
+
+  confirmRejection() {
+    const req = this.activeRequestForAction();
+    const reason = this.rejectionReason().trim();
+    if (!req || !reason) return;
+
+    this.actionLoading.set(true);
+    this.actionError.set('');
+
+    this.requestService.changeStatus(req.request_id, 8, `Rejection reason: ${reason}`).subscribe({
+      next: () => {
+        this.actionLoading.set(false);
+        this.closeRejectDialog();
+        this.requestService.getById(req.request_id).subscribe({
+          next: (res) => {
+            const updated = res.data as RequestDetail;
+            this.selectedRequest.set(updated);
+            this.syncNextStatusDropdown(updated.status_id);
+            this.loadRequests();
+            this.loadDocuments(req.request_id);
+          }
+        });
+      },
+      error: (err) => {
+        this.actionLoading.set(false);
+        this.actionError.set(err.error?.message || 'Failed to reject request.');
+      }
+    });
+  }
+
+  // --- Cancellation Dialog Handling ---
+  openCancelDialog(request: DocumentRequest) {
+    this.activeRequestForAction.set(request);
+    this.cancelReason.set('');
+    this.actionError.set('');
+    this.actionLoading.set(false);
+    this.showCancelModal.set(true);
+  }
+
+  closeCancelDialog() {
+    this.showCancelModal.set(false);
+    this.activeRequestForAction.set(null);
+    this.cancelReason.set('');
+    this.actionError.set('');
+  }
+
+  confirmCancellation() {
+    const req = this.activeRequestForAction();
+    if (!req) return;
+
+    this.actionLoading.set(true);
+    this.actionError.set('');
+    const remarks = this.cancelReason().trim() ? `Cancelled: ${this.cancelReason().trim()}` : 'Cancelled by staff';
+
+    this.requestService.changeStatus(req.request_id, 9, remarks).subscribe({
+      next: () => {
+        this.actionLoading.set(false);
+        this.closeCancelDialog();
+        this.requestService.getById(req.request_id).subscribe({
+          next: (res) => {
+            const updated = res.data as RequestDetail;
+            this.selectedRequest.set(updated);
+            this.syncNextStatusDropdown(updated.status_id);
+            this.loadRequests();
+            this.loadDocuments(req.request_id);
+          }
+        });
+      },
+      error: (err) => {
+        this.actionLoading.set(false);
+        this.actionError.set(err.error?.message || 'Failed to cancel request.');
       }
     });
   }
@@ -724,12 +1519,16 @@ export class RequestsComponent implements OnInit, OnDestroy {
     this.selectedRow.set(request);
     this.requestService.getById(request.request_id).subscribe({
       next: (res) => {
-        this.selectedRequest.set(res.data as RequestDetail);
+        const detail = res.data as RequestDetail;
+        this.selectedRequest.set(detail);
+        this.syncNextStatusDropdown(detail.status_id);
         this.showDetails.set(true);
         this.loadDocuments(request.request_id);
       },
       error: () => {
-        this.selectedRequest.set(request as RequestDetail);
+        const detail = request as RequestDetail;
+        this.selectedRequest.set(detail);
+        this.syncNextStatusDropdown(detail.status_id);
         this.showDetails.set(true);
         this.loadDocuments(request.request_id);
       }
@@ -744,6 +1543,7 @@ export class RequestsComponent implements OnInit, OnDestroy {
     this.showDetails.set(false);
     this.selectedRequest.set(null);
     this.selectedRow.set(null);
+    this.selectedNextStatus.set(null);
     this.documents.set([]);
     this.docError.set('');
     this.docNotice.set('');
@@ -769,6 +1569,113 @@ export class RequestsComponent implements OnInit, OnDestroy {
   canGenerateDocument(): boolean {
     const statusId = this.selectedRequest()?.status_id;
     return statusId === 4 || statusId === 5 || statusId === 6 || statusId === 7;
+  }
+
+  openEditDocumentModal() {
+    const request = this.selectedRequest();
+    if (!request) return;
+    this.editDocError.set('');
+    this.editDocLoading.set(false);
+    this.editPurpose.set(request.purpose || '');
+    this.editRemarks.set(request.remarks || '');
+
+    const formData = (request.form_data || {}) as Record<string, any>;
+    const entries: FormFieldEntry[] = [];
+
+    // Extract all dynamic keys from formData (excluding internal objects)
+    for (const [key, val] of Object.entries(formData)) {
+      if (key === '_guest' || key === 'purpose') continue;
+      entries.push({
+        key,
+        label: this.formatFieldLabel(key),
+        value: val === null || val === undefined ? '' : String(val)
+      });
+    }
+
+    // If this is a guest request and guest fields are in _guest, expose them
+    if (request.resident_id === null && formData['_guest'] && typeof formData['_guest'] === 'object') {
+      const guestObj = formData['_guest'] as Record<string, any>;
+      const guestKeys = ['full_name', 'birth_date', 'address', 'contact_number', 'email'];
+      for (const gk of guestKeys) {
+        if (!entries.some(e => e.key === gk) && guestObj[gk] !== undefined) {
+          entries.push({
+            key: gk,
+            label: this.formatFieldLabel(gk),
+            value: guestObj[gk] ? String(guestObj[gk]) : ''
+          });
+        }
+      }
+    }
+
+    this.editFormFieldEntries.set(entries);
+    this.showEditDocModal.set(true);
+  }
+
+  closeEditDocumentModal() {
+    this.showEditDocModal.set(false);
+    this.editDocError.set('');
+    this.editDocLoading.set(false);
+  }
+
+  updateEditFormField(key: string, value: string) {
+    this.editFormFieldEntries.update(entries =>
+      entries.map(e => e.key === key ? { ...e, value } : e)
+    );
+  }
+
+  saveEditDocument() {
+    const request = this.selectedRequest();
+    if (!request) return;
+
+    this.editDocLoading.set(true);
+    this.editDocError.set('');
+
+    const updatedFormData: Record<string, any> = { ...(request.form_data || {}) };
+    for (const entry of this.editFormFieldEntries()) {
+      updatedFormData[entry.key] = entry.value;
+    }
+    const purposeVal = this.editPurpose().trim();
+    if (purposeVal) {
+      updatedFormData['purpose'] = purposeVal;
+    }
+
+    this.requestService.update(request.request_id, {
+      serviceId: request.service_id,
+      purpose: purposeVal,
+      remarks: this.editRemarks().trim(),
+      formData: updatedFormData
+    }).subscribe({
+      next: () => {
+        // Trigger document generation to update the document artifact
+        this.documentService.generate(request.request_id).subscribe({
+          next: () => {
+            this.editDocLoading.set(false);
+            this.showEditDocModal.set(false);
+            this.docNotice.set('Document information updated and regenerated successfully.');
+            // Refresh request detail and document list
+            this.requestService.getById(request.request_id).subscribe({
+              next: (detailRes) => {
+                const updated = detailRes.data as RequestDetail;
+                this.selectedRequest.set(updated);
+                this.syncNextStatusDropdown(updated.status_id);
+                this.loadDocuments(request.request_id);
+                this.loadRequests();
+              }
+            });
+          },
+          error: () => {
+            this.editDocLoading.set(false);
+            this.showEditDocModal.set(false);
+            this.docNotice.set('Document information updated successfully.');
+            this.loadDocuments(request.request_id);
+          }
+        });
+      },
+      error: (err) => {
+        this.editDocLoading.set(false);
+        this.editDocError.set(err.error?.message || 'Failed to save document changes.');
+      }
+    });
   }
 
   generateDocument() {
@@ -799,8 +1706,7 @@ export class RequestsComponent implements OnInit, OnDestroy {
     this.documentService.fetchBlob(request.request_id, doc.document_id).subscribe({
       next: (blob) => {
         const url = URL.createObjectURL(blob);
-        const isPdf = doc.file_type === 'application/pdf';
-        window.open(url, isPdf ? '_blank' : '_blank');
+        window.open(url, '_blank');
       },
       error: () => {
         this.docError.set('Could not open the document.');
@@ -862,8 +1768,6 @@ export class RequestsComponent implements OnInit, OnDestroy {
     this.previewTitle = '';
   }
 
-  // Preview the populated official document BEFORE approving/rejecting.
-  // If no document exists yet, generate one on demand (idempotently) first.
   previewRequestDocument() {
     const request = this.selectedRequest();
     if (!request) return;
@@ -907,13 +1811,13 @@ export class RequestsComponent implements OnInit, OnDestroy {
   approvalBadge(status: string): { class: string; label: string } | null {
     switch (status) {
       case 'approved':
-        return { class: 'inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold text-green-700 bg-green-100', label: 'Approved' };
+        return { class: 'text-emerald-700 bg-emerald-50 border-emerald-200', label: 'Approved' };
       case 'rejected':
-        return { class: 'inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold text-red-700 bg-red-100', label: 'Rejected' };
+        return { class: 'text-rose-700 bg-rose-50 border-rose-200', label: 'Rejected' };
       case 'returned':
-        return { class: 'inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold text-amber-700 bg-amber-100', label: 'Returned' };
+        return { class: 'text-amber-700 bg-amber-50 border-amber-200', label: 'Returned' };
       case 'pending':
-        return { class: 'inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold text-gray-700 bg-gray-100', label: 'Pending Review' };
+        return { class: 'text-slate-700 bg-slate-100 border-slate-200', label: 'Pending Review' };
       default:
         return null;
     }
@@ -924,7 +1828,7 @@ export class RequestsComponent implements OnInit, OnDestroy {
     if (!request) return;
 
     const remarks = status === 'approved' ? '' : prompt(`Enter remarks for ${status}:`);
-    if (status !== 'approved' && remarks === null) return; // user cancelled
+    if (status !== 'approved' && remarks === null) return;
 
     this.reviewing.set(true);
     this.documentService.review(request.request_id, doc.document_id, status, remarks || '').subscribe({
@@ -961,24 +1865,73 @@ export class RequestsComponent implements OnInit, OnDestroy {
   }
 
   expiryBadgeClass(value: string): string {
-    const base = 'inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold';
+    const base = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border';
     return this.daysRemaining(value) <= 2
-      ? `${base} text-red-700 bg-red-100`
-      : `${base} text-amber-800 bg-amber-100`;
+      ? `${base} text-rose-800 bg-rose-50 border-rose-200`
+      : `${base} text-amber-800 bg-amber-50 border-amber-200`;
   }
 
-  // --- Request Form Data Preview ---
-  previewRequestData(request: DocumentRequest) {
-    // The form_data is already in the request object
-    // This could open a modal, but for now we show it inline
-    // Could be extended to a full modal if needed
+  // --- Grouped Form Data Helpers ---
+  hasFormData(formData: Record<string, unknown>): boolean {
+    return !!formData && Object.keys(formData).length > 0;
   }
 
-  formDataEntries(formData: Record<string, unknown>): { key: string; value: string }[] {
-    return Object.entries(formData).map(([key, value]) => ({
-      key,
-      value: value === null || value === undefined ? '-' : String(value)
-    }));
+  getGroupedFormData(formData: Record<string, unknown>): FormGroupSection[] {
+    if (!formData) return [];
+
+    const personalKeys = [
+      'full_name', 'first_name', 'middle_name', 'last_name', 'suffix',
+      'birth_date', 'birthdate', 'birth_place', 'gender', 'sex', 'civil_status',
+      'contact_number', 'contact', 'email', 'address_line', 'address',
+      'house_number', 'street', 'purok_zone', 'sitio', 'barangay',
+      'years_of_residency', 'blood_type', 'nationality', 'religion',
+      'emergency_contact_name', 'emergency_contact_number'
+    ];
+
+    const applicationKeys = [
+      'purpose', 'purpose_of_request', 'request_purpose',
+      'name_of_relative', 'beneficiary_name', 'relation_to_resident', 'relationship',
+      'business_name', 'business_type', 'business_address', 'nature_of_business',
+      'monthly_income', 'annual_income', 'occupation', 'owner_name',
+      'ctc_number', 'ctc_date_issued', 'ctc_place_issued', 'or_number',
+      'block', 'lot', 'subdivision', 'pole_type', 'office_address', 'requestor_name',
+      'household_members'
+    ];
+
+    const personalFields: FormFieldEntry[] = [];
+    const applicationFields: FormFieldEntry[] = [];
+    const otherFields: FormFieldEntry[] = [];
+
+    for (const [key, rawVal] of Object.entries(formData)) {
+      if (key === '_guest' || rawVal === undefined || rawVal === null || rawVal === '') continue;
+      const formattedEntry: FormFieldEntry = {
+        key,
+        label: this.formatFieldLabel(key),
+        value: typeof rawVal === 'object' ? JSON.stringify(rawVal) : String(rawVal)
+      };
+
+      const lowerKey = key.toLowerCase();
+      if (personalKeys.includes(lowerKey)) {
+        personalFields.push(formattedEntry);
+      } else if (applicationKeys.includes(lowerKey)) {
+        applicationFields.push(formattedEntry);
+      } else {
+        otherFields.push(formattedEntry);
+      }
+    }
+
+    const sections: FormGroupSection[] = [];
+    if (personalFields.length > 0) {
+      sections.push({ title: 'Personal Information', fields: personalFields });
+    }
+    if (applicationFields.length > 0) {
+      sections.push({ title: 'Application Information', fields: applicationFields });
+    }
+    if (otherFields.length > 0) {
+      sections.push({ title: 'Additional Information', fields: otherFields });
+    }
+
+    return sections;
   }
 
   formatFieldLabel(key: string): string {
@@ -990,37 +1943,54 @@ export class RequestsComponent implements OnInit, OnDestroy {
       suffix: 'Suffix',
       birth_date: 'Birth Date',
       birthdate: 'Birth Date',
+      birth_place: 'Birth Place',
       gender: 'Gender',
       sex: 'Gender',
       civil_status: 'Civil Status',
       address_line: 'Address',
       address: 'Address',
+      house_number: 'House #',
+      street: 'Street',
+      purok_zone: 'Purok / Zone',
+      sitio: 'Sitio',
+      barangay: 'Barangay',
       contact_number: 'Contact Number',
       contact: 'Contact Number',
       email: 'Email',
       resident_code: 'Resident Code',
       blood_type: 'Blood Type',
+      nationality: 'Nationality',
+      religion: 'Religion',
       emergency_contact_name: 'Emergency Contact Name',
-      emergency_contact_number: 'Emergency Contact Number',
-      purpose: 'Purpose',
+      emergency_contact_number: 'Emergency Contact #',
+      purpose: 'Purpose of Request',
+      purpose_of_request: 'Purpose of Request',
+      request_purpose: 'Purpose of Request',
       occupation: 'Occupation',
       business_name: 'Business Name',
       owner_name: 'Owner Name',
       business_address: 'Business Address',
       nature_of_business: 'Nature of Business',
+      business_type: 'Business Type',
       pole_type: 'Pole Type',
-      street: 'Street',
       office_address: 'Office Address',
       requestor_name: 'Requestor Name',
       years_of_residency: 'Years of Residency',
       monthly_income: 'Monthly Income',
+      annual_income: 'Annual Income',
       household_members: 'Household Members',
-      _guest: 'Guest Info'
+      beneficiary_name: 'Beneficiary / Relative Name',
+      name_of_relative: 'Name of Relative',
+      relation_to_resident: 'Relationship to Resident',
+      relationship: 'Relationship',
+      block: 'Block',
+      lot: 'Lot',
+      subdivision: 'Subdivision',
+      ctc_number: 'CTC #',
+      ctc_date_issued: 'CTC Date Issued',
+      ctc_place_issued: 'CTC Place Issued',
+      or_number: 'OR #'
     };
     return labelMap[key] || key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-  }
-
-  hasFormData(formData: Record<string, unknown>): boolean {
-    return formData && Object.keys(formData).length > 0;
   }
 }

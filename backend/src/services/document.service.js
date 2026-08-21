@@ -196,6 +196,8 @@ const generateDocument = async ({ requestId, userId }) => {
     generated.push(pdf);
   }
 
+  const validUserId = processedBy ? userId : null;
+
   for (const doc of generated) {
     const documentId = await documentRepository.create({
       requestId,
@@ -204,7 +206,7 @@ const generateDocument = async ({ requestId, userId }) => {
       filePath: doc.filePath,
       fileType: doc.fileType,
       fileSize: doc.fileSize,
-      generatedBy: userId,
+      generatedBy: validUserId,
       generationWarnings: warnings
     });
     doc.documentId = documentId;

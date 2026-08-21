@@ -193,43 +193,79 @@ import { ResidentFormComponent } from './resident-form.component';
               <!-- Tab 2: RFID Cards -->
               @if (activeTab() === 'rfid') {
                 <div class="space-y-4 mt-2">
-                  <!-- Register Card Form -->
-                  <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                    <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wide mb-3">Register New RFID Card</h4>
-                    <div class="flex items-end gap-3">
-                      <div class="flex-1">
-                        <label class="block text-xs text-gray-500 font-semibold mb-1">Tap a card on the RFID Scanner to scan automatically...</label>
-                        <input type="text" [(ngModel)]="newCardUid" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Card UID (e.g. 8A1B2C3D)" />
-                      </div>
-                      <app-button variant="primary" (onClick)="registerRfid(res)" [disabled]="!newCardUid.trim()">Register Card</app-button>
+                  <!-- Registered RFID Card Card -->
+                  <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-xs">
+                    <div class="flex items-center justify-between mb-3">
+                      <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2">
+                        <svg class="w-4 h-4 text-orange-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                          <rect x="3" y="6" width="18" height="12" rx="2"/>
+                          <path d="M7 9.5h8M7 12h8" stroke-linecap="round"/>
+                        </svg>
+                        <span>Registered RFID Card</span>
+                      </h4>
+                      @if (activeRfidCard(); as card) {
+                        <span [class]="'px-2.5 py-0.5 rounded-full text-xs font-bold border ' + (card.status === 'Active' || card.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-red-50 text-red-800 border-red-200')">
+                          {{ card.status }}
+                        </span>
+                      }
                     </div>
-                  </div>
 
-                  <!-- Registered Cards List -->
-                  <div>
-                    <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">Registered RFID Cards</h4>
-                    @if (residentRfidCards().length > 0) {
-                      <div class="space-y-2">
-                        @for (card of residentRfidCards(); track card.rfid_card_id) {
-                          <div class="flex items-center justify-between border rounded-lg p-3 bg-white hover:bg-gray-50 transition">
-                            <div>
-                              <p class="text-sm font-semibold text-gray-900">UID: {{ card.card_uid }}</p>
-                              <p class="text-[11px] text-gray-400">Registered: {{ card.created_at | date: 'medium' }}</p>
-                            </div>
-                            <div class="flex items-center gap-2">
-                              <span [class]="'px-2 py-0.5 rounded-full text-[10px] font-bold ' + (card.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800')">{{ card.status }}</span>
-                              @if (card.status === 'Active') {
-                                <button type="button" (click)="deactivateRfid(card.rfid_card_id, res)" class="text-xs text-red-600 font-semibold hover:underline">Deactivate</button>
-                              } @else {
-                                <button type="button" (click)="activateRfid(card.rfid_card_id, res)" class="text-xs text-green-600 font-semibold hover:underline">Activate</button>
-                              }
-                            </div>
+                    @if (activeRfidCard(); as card) {
+                      <div class="p-4 bg-orange-50/60 border border-orange-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div class="space-y-1">
+                          <div class="flex items-center gap-2">
+                            <span class="text-xs font-semibold text-slate-500">Card UID:</span>
+                            <span class="font-mono text-base font-extrabold text-slate-900 tracking-wider">{{ card.card_uid }}</span>
                           </div>
-                        }
+                          <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
+                            @if (card.issued_date || card.created_at) {
+                              <span>Issued: {{ (card.issued_date || card.created_at) | date: 'mediumDate' }}</span>
+                            }
+                            @if (card.expiration_date) {
+                              <span>Expires: {{ card.expiration_date | date: 'mediumDate' }}</span>
+                            }
+                          </div>
+                        </div>
+
+                        <div class="flex items-center gap-2 shrink-0">
+                          @if (card.rfid_card_id) {
+                            @if (card.status === 'Active' || card.status === 'ACTIVE') {
+                              <button type="button" (click)="deactivateRfid(card.rfid_card_id, res)" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-red-200 text-red-700 hover:bg-red-50 transition shadow-2xs">
+                                Deactivate
+                              </button>
+                            } @else {
+                              <button type="button" (click)="activateRfid(card.rfid_card_id, res)" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-50 transition shadow-2xs">
+                                Activate
+                              </button>
+                            }
+                          }
+                        </div>
                       </div>
                     } @else {
-                      <p class="text-xs text-gray-500 bg-gray-50 border border-dashed rounded-lg p-4 text-center">No RFID cards registered for this resident.</p>
+                      <div class="text-center py-7 px-4 bg-slate-50 border border-dashed border-slate-200 rounded-xl">
+                        <svg class="w-8 h-8 text-slate-400 mx-auto mb-2" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                          <rect x="3" y="6" width="18" height="12" rx="2"/>
+                          <path d="M7 9.5h8M7 12h8" stroke-linecap="round"/>
+                          <line x1="3" y1="3" x2="21" y2="21" stroke-width="2"/>
+                        </svg>
+                        <p class="text-sm font-bold text-slate-700">No RFID card registered</p>
+                        <p class="text-xs text-slate-500 mt-0.5">This resident currently has no active RFID card linked to their profile.</p>
+                      </div>
                     }
+                  </div>
+
+                  <!-- Register / Link Card Form -->
+                  <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                    <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2.5">Register / Replace RFID Card</h4>
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
+                      <div class="flex-1">
+                        <label class="block text-xs text-gray-500 font-semibold mb-1">Tap a card on the RFID Scanner or enter Card UID:</label>
+                        <input type="text" [(ngModel)]="newCardUid" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white" placeholder="Card UID (e.g. 04A1B2C3D4)" />
+                      </div>
+                      <app-button variant="primary" (onClick)="registerRfid(res)" [disabled]="!newCardUid.trim()">
+                        Register Card
+                      </app-button>
+                    </div>
                   </div>
                 </div>
               }
@@ -325,7 +361,7 @@ export class ResidentsComponent implements OnInit, OnDestroy {
   loading = signal(true);
   search = signal('');
   page = signal(1);
-  limit = 20;
+  limit = 10;
   total = signal(0);
   sortColumn = signal('resident_id');
   sortDirection = signal<'ASC' | 'DESC'>('DESC');
@@ -569,10 +605,34 @@ export class ResidentsComponent implements OnInit, OnDestroy {
     });
   }
 
+  activeRfidCard(): any {
+    const cards = this.residentRfidCards();
+    const active = cards.find(c => (c.status || '').toUpperCase() === 'ACTIVE');
+    if (active) return active;
+    if (cards.length > 0) return cards[0];
+    const res = this.selectedResident();
+    if (res?.card_uid) {
+      return {
+        card_uid: res.card_uid,
+        status: res.rfid_card_status || 'Active',
+        issued_date: res.rfid_issued_date || res.created_at,
+        expiration_date: res.rfid_expiration_date
+      };
+    }
+    return null;
+  }
+
   loadResidentRfid(res: Resident) {
-    this.rfidService.getAll({ search: res.resident_code }).subscribe({
+    this.rfidService.getAll({ residentId: res.resident_id, limit: 50 }).subscribe({
       next: (resData) => {
         this.residentRfidCards.set(resData.data || []);
+      },
+      error: () => {
+        this.rfidService.getAll({ search: res.resident_code }).subscribe({
+          next: (fallbackData) => {
+            this.residentRfidCards.set(fallbackData.data || []);
+          }
+        });
       }
     });
   }
