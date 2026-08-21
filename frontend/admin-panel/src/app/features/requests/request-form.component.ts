@@ -30,11 +30,11 @@ import { Resident, Service } from '../../shared/interfaces/api.interfaces';
           placeholder="Select service"
           [error]="errors['serviceId']"
         />
-        <app-input label="Purpose" [value]="form.purpose" (valueChange)="form.purpose = $event" placeholder="Purpose of request" />
+        <app-input label="Purpose" [value]="form.purpose" (valueChange)="form.purpose = $event" maxlength="255" placeholder="Purpose of request (max 255 chars)" />
       </div>
 
       @if (serverError) {
-        <p class="text-sm text-red-500">{{ serverError }}</p>
+        <p class="text-sm font-semibold text-red-600 bg-red-50 p-2.5 rounded-lg border border-red-200">{{ serverError }}</p>
       }
 
       <div class="flex justify-end gap-3 pt-4 border-t">
