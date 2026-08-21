@@ -285,7 +285,22 @@ export class KioskService {
     return this.http.post<any>(`${hardwareHttpUrl}/api/hardware/capture`, {});
   }
 
+  captureEsp32Cam(url?: string): Observable<Blob> {
+    const targetUrl = url || environment.esp32CamCaptureUrl || 'http://192.168.100.103/capture';
+    return this.http.get(targetUrl, { responseType: 'blob' });
+  }
+
+  blobToDataUrl(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
   reset() {
     // No-op: state is managed in the component
   }
 }
+

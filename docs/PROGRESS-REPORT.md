@@ -15,6 +15,10 @@
 
 > **Note:** TASK-BACKEND-012 (Payment API) and TASK-FRONTEND-011 (Payment UI) removed per DEC-008.
 > **Recent Updates (August 2026):**
+> - Integrated Low-Latency ESP32-CAM Live Stream & ID Photo Capture Flow (`ESP32CAM_Arduino.ino`, `kiosk.component.ts`, `kiosk.service.ts`, `environment.ts`, `environment.prod.ts`):
+>   - **Root Causes of Lag Identified**: Single-frame HTTP polling on `/preview` created TCP connection teardown overhead and choppy ~3 FPS; single frame buffering (`fb_count = 1`) blocked DMA capture; Wi-Fi sleep mode caused packet delivery jitter; and missing CORS headers prevented cross-origin retrieval.
+>   - **Hardware Firmware Enhancements**: Implemented persistent Multi-Part Motion JPEG (MJPEG) streaming (`/stream`) over a single HTTP connection yielding smooth 15–25 FPS with sub-80ms latency. Enabled double-buffered PSRAM DMA (`fb_count = 2`, `CAMERA_FB_IN_PSRAM`), disabled Wi-Fi modem sleep (`WiFi.setSleep(false)`), and added instantaneous snapshot capture endpoint (`/capture`) with full CORS support (`Access-Control-Allow-Origin: *`).
+>   - **Kiosk Application Integration**: Integrated native ESP32-CAM stream preview into the Barangay ID photo capture flow (`barangayStep === 'photo'`) and document request photo capture with live face-positioning guides, camera status indicators, and camera source switching (ESP32-CAM vs. local tablet camera). Direct snapshot capture seamlessly flows into signature capture, live Barangay ID card preview, and application submission.
 > - Fixed RFID Hardware Bridge, Auto-Detection & End-to-End Resident Verification (`kiosk-server/index.js`, `rfid-scan.service.ts`, `kiosk.component.ts`, `rfid.repository.js`):
 >   - **Root Causes Identified**: 
 >     1) `hardware/kiosk-server` only listened on WebSocket without USB Serial fallback for the NodeMCU/CH340 device on COM4 when Wi-Fi was disconnected or negotiating.

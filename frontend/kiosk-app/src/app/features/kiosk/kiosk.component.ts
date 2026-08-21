@@ -10,6 +10,7 @@ import { BarangayPreviewModalComponent } from './barangay-preview-modal.componen
 import { DocumentPreviewModalComponent } from './document-preview-modal.component';
 import { ResidentProfileComponent } from './resident-profile.component';
 import { TranslationService, KioskLanguage } from '../../i18n/translation.service';
+import { environment } from '../../../environments/environment';
 
 export type KioskMode = 'home' | 'rfid' | 'guest' | 'documents' | 'barangay';
 
@@ -1778,10 +1779,24 @@ export type BarangayStep =
                 <h2 class="text-3xl font-bold mb-6 text-center">{{ t('doc.photo.title') }}</h2>
                 @if (!capturedPhoto()) {
                   <div class="bg-black rounded-2xl overflow-hidden mb-6 relative aspect-video flex flex-col items-center justify-center text-white">
-                    <video #videoEl autoplay playsinline class="w-full aspect-video object-cover"></video>
+                    @if (cameraMode() === 'esp32') {
+                      <img #inlineEsp32StreamEl
+                           [src]="esp32StreamUrl()"
+                           (load)="onEsp32StreamLoad()"
+                           (error)="onEsp32StreamError()"
+                           crossorigin="anonymous"
+                           class="w-full aspect-video object-cover"
+                           alt="ESP32-CAM Live Preview" />
+                    } @else {
+                      <video #videoEl autoplay playsinline class="w-full aspect-video object-cover"></video>
+                    }
+                    <button (click)="switchCameraMode(cameraMode() === 'esp32' ? 'webcam' : 'esp32')"
+                            class="absolute top-3 right-3 z-10 bg-black/60 hover:bg-black/80 px-3 py-1.5 rounded-full text-xs font-semibold text-white">
+                      {{ cameraMode() === 'esp32' ? 'Tablet Cam' : 'ESP32-CAM' }}
+                    </button>
                   </div>
                   <div class="flex gap-4 justify-center">
-                    <app-button variant="primary" size="lg" [disabled]="submitting()" (onClick)="capturePhoto()">
+                    <app-button variant="primary" size="lg" [disabled]="!cameraReady() || submitting()" (onClick)="capturePhoto()">
                       @if (submitting()) { Capturing... } @else { {{ t('doc.form.takePhoto') }} }
                     </app-button>
                     <app-button variant="secondary" size="lg" (onClick)="skipPhoto()">{{ t('common.skip') }}</app-button>
@@ -3484,7 +3499,7 @@ export type BarangayStep =
                           <div class="relative aspect-[4/3] rounded-[14px] overflow-hidden bg-[#0F172A]">
                             @if (capturedPhoto()) {
                               <img [src]="capturedPhoto()" alt="Captured ID photo" class="absolute inset-0 w-full h-full object-cover" />
-                            } @else if (errorMessage() && !cameraReady()) {
+                            } @else if ((errorMessage() || esp32Error()) && !cameraReady()) {
                               <!-- Camera unavailable warning (compact) -->
                               <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center bg-[#0F172A]">
                                 <svg class="w-9 h-9 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
@@ -3493,19 +3508,36 @@ export type BarangayStep =
                                   <circle cx="12" cy="14" r="3"/>
                                 </svg>
                                 <p class="text-white text-base font-semibold">{{ t('bar.photo.unavailable') }}</p>
-                                <p class="text-white/70 text-[13px] sm:text-sm max-w-xs">{{ errorMessage() || t('bar.photo.unavailableDesc') }}</p>
-                                <button (click)="retryPhotoCamera()"
-                                        class="mt-1 flex items-center gap-2 min-h-[48px] px-6 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white font-semibold text-sm transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40">
-                                  <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v6h6M20 20v-6h-6M4 10a8 8 0 0 1 14-4M20 14a8 8 0 0 1-14 4"/>
-                                  </svg>
-                                  {{ t('bar.photo.tryAgain') }}
-                                </button>
+                                <p class="text-white/70 text-[13px] sm:text-sm max-w-xs">{{ esp32Error() ? 'ESP32-CAM is connecting or offline.' : (errorMessage() || t('bar.photo.unavailableDesc')) }}</p>
+                                <div class="flex gap-2.5 flex-wrap justify-center mt-1">
+                                  <button (click)="retryPhotoCamera()"
+                                          class="flex items-center gap-2 min-h-[44px] px-5 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white font-semibold text-sm transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                      <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v6h6M20 20v-6h-6M4 10a8 8 0 0 1 14-4M20 14a8 8 0 0 1-14 4"/>
+                                    </svg>
+                                    {{ t('bar.photo.tryAgain') }}
+                                  </button>
+                                  <button (click)="switchCameraMode(cameraMode() === 'esp32' ? 'webcam' : 'esp32')"
+                                          class="flex items-center gap-2 min-h-[44px] px-4 rounded-xl bg-white/20 hover:bg-white/30 text-white font-semibold text-sm transition-all duration-150">
+                                    {{ cameraMode() === 'esp32' ? 'Use Tablet Camera' : 'Use ESP32-CAM' }}
+                                  </button>
+                                </div>
                               </div>
                             } @else {
-                              <video #videoEl autoplay playsinline class="absolute inset-0 w-full h-full object-cover"></video>
- 
-                              <!-- Face-positioning guide (fades out when the camera is live) -->
+                              <!-- Camera element: ESP32-CAM MJPEG Stream or Video -->
+                              @if (cameraMode() === 'esp32') {
+                                <img #esp32StreamEl
+                                     [src]="esp32StreamUrl()"
+                                     (load)="onEsp32StreamLoad()"
+                                     (error)="onEsp32StreamError()"
+                                     crossorigin="anonymous"
+                                     class="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
+                                     alt="ESP32-CAM Live Preview" />
+                              } @else {
+                                <video #videoEl autoplay playsinline class="absolute inset-0 w-full h-full object-cover"></video>
+                              }
+
+                              <!-- Face-positioning guide (fades out slightly when the camera is live) -->
                               <div class="absolute inset-0 pointer-events-none transition-opacity duration-300" [class.opacity-40]="cameraReady()">
                                 <!-- Corner markers -->
                                 <div class="absolute inset-[18%]" aria-hidden="true">
@@ -3528,19 +3560,30 @@ export type BarangayStep =
                                   <span class="rounded-full bg-black/50 backdrop-blur-sm px-4 py-1.5 text-white text-[13px] font-medium">{{ t('bar.photo.positionGuide') }}</span>
                                 </div>
                               </div>
- 
-                              <!-- Camera status chip -->
-                              <div class="absolute left-3 top-3 flex items-center gap-2 rounded-full bg-black/50 backdrop-blur-sm px-3 py-1.5">
+
+                              <!-- Camera status chip & mode switch -->
+                              <div class="absolute left-3 top-3 flex items-center gap-2 rounded-full bg-black/60 backdrop-blur-sm px-3 py-1.5 z-20">
                                 <span class="h-2.5 w-2.5 rounded-full shrink-0"
                                       [class.bg-[#10B981]]="cameraReady()"
                                       [class.bg-[#FBBF24]]="!cameraReady()"></span>
                                 @if (cameraReady()) {
-                                  <span class="text-white text-[13px] font-semibold">{{ t('bar.photo.cameraReady') }}</span>
+                                  <span class="text-white text-[12px] font-semibold">{{ cameraMode() === 'esp32' ? 'ESP32-CAM (Live)' : t('bar.photo.cameraReady') }}</span>
+                                } @else {
+                                  <span class="text-white/80 text-[12px] font-semibold">Connecting...</span>
                                 }
                               </div>
+
+                              <!-- Switch Camera Mode (top-right chip) -->
+                              <button (click)="switchCameraMode(cameraMode() === 'esp32' ? 'webcam' : 'esp32')"
+                                      class="absolute right-3 top-3 z-20 flex items-center gap-1.5 rounded-full bg-black/60 backdrop-blur-sm hover:bg-black/80 px-3 py-1.5 text-white text-[11px] font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-[#F97316]">
+                                <svg class="w-3.5 h-3.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v6h6M20 20v-6h-6M4 10a8 8 0 0 1 14-4M20 14a8 8 0 0 1-14 4"/>
+                                </svg>
+                                {{ cameraMode() === 'esp32' ? 'Tablet Cam' : 'ESP32-CAM' }}
+                              </button>
                             }
                           </div>
- 
+
                           <!-- Actions -->
                           <div class="flex flex-col items-center justify-center gap-2.5 pt-3 sm:pt-3.5 pb-0.5">
                             @if (!capturedPhoto()) {
@@ -4710,6 +4753,9 @@ export class KioskComponent implements OnInit, OnDestroy {
     return this._inlineVideoEl;
   }
 
+  @ViewChild('esp32StreamEl') esp32StreamEl?: ElementRef<HTMLImageElement>;
+  @ViewChild('inlineEsp32StreamEl') inlineEsp32StreamEl?: ElementRef<HTMLImageElement>;
+
   mode = signal<KioskMode>('home');
 
   // RFID flow
@@ -4727,9 +4773,6 @@ export class KioskComponent implements OnInit, OnDestroy {
   resident = signal<Resident | null>(null);
   rfidCard = signal<RfidCardInfo | null>(null);
   services = signal<Service[]>([]);
-  // Multi-service selection: the resident can request more than one service in a
-  // single transaction. `selectedService` is the service currently being filled
-  // (index = serviceIndex) so the requirements/form/photo steps stay single-purpose.
   selectedServices = signal<Service[]>([]);
   serviceIndex = signal(0);
   selectedService = computed<Service | null>(() => this.selectedServices()[this.serviceIndex()] ?? null);
@@ -4746,7 +4789,14 @@ export class KioskComponent implements OnInit, OnDestroy {
   availableCameras = signal<MediaDeviceInfo[]>([]);
   currentCameraIndex = signal<number>(0);
   useIpCamera = signal(false);
-  ipCameraUrl = signal('http://localhost:4747/video'); // Default DroidCam loopback URL
+  ipCameraUrl = signal('http://localhost:4747/video');
+
+  // ESP32-CAM signals
+  cameraMode = signal<'esp32' | 'webcam'>('esp32');
+  esp32StreamUrl = signal<string>(environment.esp32CamStreamUrl || 'http://192.168.100.103/stream');
+  esp32CaptureUrl = signal<string>(environment.esp32CamCaptureUrl || 'http://192.168.100.103/capture');
+  esp32Error = signal<boolean>(false);
+
   formError = signal('');
   guestSubmitted = signal(false);
   barangaySubmitted = signal(false);
@@ -6257,6 +6307,15 @@ export class KioskComponent implements OnInit, OnDestroy {
   // ============================================================
 
   startCamera(target?: HTMLVideoElement) {
+    if (this.cameraMode() === 'esp32') {
+      const baseStreamUrl = environment.esp32CamStreamUrl || 'http://192.168.100.103/stream';
+      this.esp32StreamUrl.set(`${baseStreamUrl}?t=${Date.now()}`);
+      this.cameraReady.set(true);
+      this.esp32Error.set(false);
+      this.errorMessage.set('');
+      return;
+    }
+
     const el = target || this.videoEl?.nativeElement || this.inlineVideoEl?.nativeElement;
     if (this.stream) {
       if (el && el.srcObject !== this.stream) {
@@ -6287,77 +6346,18 @@ export class KioskComponent implements OnInit, OnDestroy {
         });
     };
 
-    // If not using external webcam, directly request the local tablet camera
-    if (!this.useIpCamera()) {
-      getStream({ video: { width: 640, height: 480, facingMode: 'user' } })
-        .then(() => {
-          return navigator.mediaDevices.enumerateDevices();
-        })
-        .then(devices => {
-          const videoDevices = devices.filter(device => device.kind === 'videoinput');
-          this.availableCameras.set(videoDevices);
-          const activeTrack = this.stream?.getVideoTracks()[0];
-          const settings = activeTrack ? activeTrack.getSettings() : null;
-          if (settings && settings.deviceId) {
-            const idx = videoDevices.findIndex(d => d.deviceId === settings.deviceId);
-            if (idx !== -1) this.currentCameraIndex.set(idx);
-          }
-        })
-        .catch((err) => {
-          console.error('Camera error:', err);
-          this.errorMessage.set(this.t('err.cameraDenied'));
-          this.cameraReady.set(false);
-        });
-      return;
-    }
-
-    // First start with default constraints to prompt for permission
-    getStream({ video: true })
+    getStream({ video: { width: 640, height: 480, facingMode: 'user' } })
       .then(() => {
-        // Once permission is granted, check for external/USB cameras
         return navigator.mediaDevices.enumerateDevices();
       })
       .then(devices => {
         const videoDevices = devices.filter(device => device.kind === 'videoinput');
-        console.log('[Camera] Available video devices:', videoDevices);
         this.availableCameras.set(videoDevices);
-
-        if (videoDevices.length <= 1) {
-          this.currentCameraIndex.set(0);
-          return;
-        }
-
-        // Look for device labels matching USB/External webcams
-        const usbDevice = videoDevices.find(d => {
-          const label = d.label.toLowerCase();
-          return label.includes('usb') || label.includes('external') || label.includes('uvc') || label.includes('otg') || label.includes('camera 2');
-        });
-
-        // Fallback: if more than 2 cameras exist (e.g. Front, Back, USB), the external webcam is usually the last one
-        const targetDevice = usbDevice || (videoDevices.length > 2 ? videoDevices[videoDevices.length - 1] : null);
-        const activeDevice = targetDevice || videoDevices[0];
-        const activeIndex = videoDevices.findIndex(d => d.deviceId === activeDevice.deviceId);
-        this.currentCameraIndex.set(activeIndex !== -1 ? activeIndex : 0);
-
-        if (targetDevice && this.stream) {
-          const currentTrack = this.stream.getVideoTracks()[0];
-          const currentSettings = currentTrack ? currentTrack.getSettings() : null;
-
-          if (currentSettings && currentSettings.deviceId !== targetDevice.deviceId) {
-            console.log('[Camera] Switching to USB/External webcam:', targetDevice.label);
-            // Stop current preview stream
-            this.stream.getTracks().forEach(t => t.stop());
-            this.stream = null;
-            // Start stream using the exact USB webcam deviceId
-            getStream({
-              video: {
-                deviceId: { exact: targetDevice.deviceId }
-              }
-            }).catch(err => {
-              console.error('[Camera] Failed to switch to USB camera, falling back:', err);
-              getStream({ video: true });
-            });
-          }
+        const activeTrack = this.stream?.getVideoTracks()[0];
+        const settings = activeTrack ? activeTrack.getSettings() : null;
+        if (settings && settings.deviceId) {
+          const idx = videoDevices.findIndex(d => d.deviceId === settings.deviceId);
+          if (idx !== -1) this.currentCameraIndex.set(idx);
         }
       })
       .catch((err) => {
@@ -6365,6 +6365,26 @@ export class KioskComponent implements OnInit, OnDestroy {
         this.errorMessage.set(this.t('err.cameraDenied'));
         this.cameraReady.set(false);
       });
+  }
+
+  onEsp32StreamLoad() {
+    this.cameraReady.set(true);
+    this.esp32Error.set(false);
+    this.errorMessage.set('');
+  }
+
+  onEsp32StreamError() {
+    console.warn('[ESP32-CAM] Stream error or camera offline');
+    this.esp32Error.set(true);
+    this.cameraReady.set(false);
+  }
+
+  switchCameraMode(mode: 'esp32' | 'webcam') {
+    this.stopCamera();
+    this.cameraMode.set(mode);
+    this.errorMessage.set('');
+    this.startCamera();
+    this.saveState();
   }
 
   switchCamera(target?: HTMLVideoElement) {
@@ -6417,6 +6437,7 @@ export class KioskComponent implements OnInit, OnDestroy {
   retryPhotoCamera() {
     this.errorMessage.set('');
     this.cameraReady.set(false);
+    this.esp32Error.set(false);
     setTimeout(() => this.startCamera(), 100);
   }
 
@@ -6425,7 +6446,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     canvas.width = el.videoWidth || el.naturalWidth || el.width || 640;
     canvas.height = el.videoHeight || el.naturalHeight || el.height || 480;
     canvas.getContext('2d')?.drawImage(el, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL('image/jpeg', 0.8);
+    return canvas.toDataURL('image/jpeg', 0.85);
   }
 
   toggleIpCamera() {
@@ -6441,6 +6462,38 @@ export class KioskComponent implements OnInit, OnDestroy {
   }
 
   capturePhoto() {
+    if (this.cameraMode() === 'esp32') {
+      this.submitting.set(true);
+      console.log('[ESP32-CAM] Requesting instant photo capture...');
+      this.kioskService.captureEsp32Cam(this.esp32CaptureUrl()).subscribe({
+        next: async (blob) => {
+          try {
+            const dataUrl = await this.kioskService.blobToDataUrl(blob);
+            this.capturedPhoto.set(dataUrl);
+          } catch {
+            const el = this.esp32StreamEl?.nativeElement || this.inlineEsp32StreamEl?.nativeElement;
+            if (el) {
+              this.capturedPhoto.set(this.drawFrame(el));
+            }
+          }
+          this.submitting.set(false);
+          this.saveState();
+        },
+        error: (err) => {
+          console.warn('[ESP32-CAM] Direct capture request failed, snapshotting from stream element:', err);
+          const el = this.esp32StreamEl?.nativeElement || this.inlineEsp32StreamEl?.nativeElement;
+          if (el) {
+            this.capturedPhoto.set(this.drawFrame(el));
+          } else {
+            this.errorMessage.set('Failed to capture photo from camera.');
+          }
+          this.submitting.set(false);
+          this.saveState();
+        }
+      });
+      return;
+    }
+
     if (this.useIpCamera()) {
       this.submitting.set(true);
       console.log('[Webcam] Triggering capture on Mini-PC/Laptop...');
@@ -6463,8 +6516,9 @@ export class KioskComponent implements OnInit, OnDestroy {
         }
       });
     } else {
-      if (!this.videoEl?.nativeElement) return;
-      this.capturedPhoto.set(this.drawFrame(this.videoEl.nativeElement));
+      const el = this.videoEl?.nativeElement || this.inlineVideoEl?.nativeElement;
+      if (!el) return;
+      this.capturedPhoto.set(this.drawFrame(el));
       this.stopCamera();
       this.saveState();
     }
@@ -6489,6 +6543,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     setTimeout(() => this.startCamera(), 100);
     this.saveState();
   }
+
 
   // ============================================================
   // DISPLAY HELPERS (resident or guest)
