@@ -121,6 +121,9 @@ void setup() {
     Serial.println(F("=================================="));
     Serial.println(F("IMS IoT Kiosk — ESP8266 RFID"));
     Serial.println(F("=================================="));
+    Serial.print(F("MFRC522 Reader Status: "));
+    rfid.PCD_DumpVersionToSerial();
+
 
     // Wi-Fi
     setupWiFi();
