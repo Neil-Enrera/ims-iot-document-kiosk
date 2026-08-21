@@ -703,7 +703,7 @@ export type BarangayStep =
                               </svg>
                             </div>
                             <input id="guest-fullName" type="text" name="fullName" [(ngModel)]="guestForm.fullName"
-                                   [placeholder]="t('doc.guestInfo.fullNamePh')" autocomplete="name"
+                                   [placeholder]="t('doc.guestInfo.fullNamePh')" autocomplete="name" maxlength="100"
                                    class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
                             @if (guestForm.fullName) {
                               <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
@@ -737,7 +737,7 @@ export type BarangayStep =
                               </svg>
                             </div>
                             <input id="guest-birthDate" type="date" name="birthDate" [(ngModel)]="guestForm.birthDate"
-                                   [placeholder]="t('doc.guestInfo.birthDatePh')"
+                                   [placeholder]="t('doc.guestInfo.birthDatePh')" [max]="todayDateString()"
                                    class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] font-medium text-[#0F172A] bg-transparent outline-none border-none" />
                             @if (guestForm.birthDate) {
                               <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
@@ -771,7 +771,7 @@ export type BarangayStep =
                               </svg>
                             </div>
                             <input id="guest-address" type="text" name="address" [(ngModel)]="guestForm.address"
-                                   [placeholder]="t('doc.guestInfo.addressPh')" autocomplete="street-address"
+                                   [placeholder]="t('doc.guestInfo.addressPh')" autocomplete="street-address" maxlength="255"
                                    class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] font-medium text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
                             @if (guestForm.address) {
                               <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
@@ -804,7 +804,7 @@ export type BarangayStep =
                               </svg>
                             </div>
                             <input id="guest-contactNumber" type="tel" name="contactNumber" [(ngModel)]="guestForm.contactNumber"
-                                   [placeholder]="t('doc.guestInfo.contactPh')" autocomplete="tel" inputmode="tel"
+                                   [placeholder]="t('doc.guestInfo.contactPh')" autocomplete="tel" inputmode="tel" maxlength="15"
                                    class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] font-medium text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
                             @if (guestForm.contactNumber) {
                               <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
@@ -837,7 +837,7 @@ export type BarangayStep =
                               </svg>
                             </div>
                             <input id="guest-email" type="email" name="email" [(ngModel)]="guestForm.email"
-                                   [placeholder]="t('doc.guestInfo.emailPh')" autocomplete="email" inputmode="email"
+                                   [placeholder]="t('doc.guestInfo.emailPh')" autocomplete="email" inputmode="email" maxlength="100"
                                    class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] font-medium text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
                             @if (guestForm.email) {
                               <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
@@ -1642,6 +1642,10 @@ export type BarangayStep =
                                       [(ngModel)]="formValues()[field.key]"
                                       (ngModelChange)="updateFormValue(field.key, $event)"
                                       [placeholder]="fieldPlaceholder(field)"
+                                      [attr.inputmode]="field.type === 'number' || field.type === 'tel' ? 'numeric' : (field.type === 'email' ? 'email' : null)"
+                                      [attr.maxlength]="field.validation?.maxLength || (field.type === 'tel' ? 15 : 255)"
+                                      [attr.min]="field.validation?.min !== undefined ? field.validation.min : null"
+                                      [attr.max]="field.validation?.max !== undefined ? field.validation.max : (field.type === 'date' && (field.key.toLowerCase().includes('birth') || field.label.toLowerCase().includes('birth')) ? todayDateString() : null)"
                                       class="flex-1 min-w-0 bg-transparent px-3.5 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] outline-none border-none" />
                                   </div>
                                 }
@@ -2763,7 +2767,7 @@ export type BarangayStep =
                               </svg>
                             </div>
                             <input id="barangay-firstName" type="text" name="firstName" [(ngModel)]="barangayForm.firstName"
-                                   [placeholder]="t('bar.form.firstNamePh')" autocomplete="given-name"
+                                   [placeholder]="t('bar.form.firstNamePh')" autocomplete="given-name" maxlength="50"
                                    class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
                             @if (barangayForm.firstName) {
                               <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
@@ -2796,7 +2800,7 @@ export type BarangayStep =
                               </svg>
                             </div>
                             <input id="barangay-middleName" type="text" name="middleName" [(ngModel)]="barangayForm.middleName"
-                                   [placeholder]="t('bar.form.middleNamePh')" autocomplete="additional-name"
+                                   [placeholder]="t('bar.form.middleNamePh')" autocomplete="additional-name" maxlength="50"
                                    class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
                             @if (barangayForm.middleName) {
                               <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
@@ -2822,7 +2826,7 @@ export type BarangayStep =
                               </svg>
                             </div>
                             <input id="barangay-lastName" type="text" name="lastName" [(ngModel)]="barangayForm.lastName"
-                                   [placeholder]="t('bar.form.lastNamePh')" autocomplete="family-name"
+                                   [placeholder]="t('bar.form.lastNamePh')" autocomplete="family-name" maxlength="50"
                                    class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
                             @if (barangayForm.lastName) {
                               <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
@@ -2855,7 +2859,7 @@ export type BarangayStep =
                               </svg>
                             </div>
                             <select id="barangay-suffix" [(ngModel)]="barangayForm.suffix"
-                                    class="appearance-none flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] bg-transparent outline-none border-none cursor-pointer"
+                                     class="appearance-none flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] bg-transparent outline-none border-none cursor-pointer"
                                     [class.text-[#94A3B8]]="!barangayForm.suffix">
                               <option value="">{{ t('bar.form.suffixNone') }}</option>
                               <option value="Jr.">Jr.</option>
@@ -2885,7 +2889,7 @@ export type BarangayStep =
                                 <path d="M8 3v4M16 3v4M3 10h18"/>
                               </svg>
                             </div>
-                            <input id="barangay-birthDate" type="date" name="birthDate" [(ngModel)]="barangayForm.birthDate"
+                            <input id="barangay-birthDate" type="date" name="birthDate" [(ngModel)]="barangayForm.birthDate" [max]="todayDateString()"
                                    class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] bg-transparent outline-none border-none" />
                             @if (barangayForm.birthDate) {
                               <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
@@ -2993,7 +2997,7 @@ export type BarangayStep =
                               </svg>
                             </div>
                             <input id="barangay-occupation" type="text" name="occupation" [(ngModel)]="barangayForm.occupation"
-                                   [placeholder]="t('bar.form.occupationPh')" autocomplete="organization-title"
+                                   [placeholder]="t('bar.form.occupationPh')" autocomplete="organization-title" maxlength="100"
                                    class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
                             @if (barangayForm.occupation) {
                               <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
@@ -3050,7 +3054,7 @@ export type BarangayStep =
                               </svg>
                             </div>
                             <input id="barangay-contactNumber" type="tel" name="contactNumber" [(ngModel)]="barangayForm.contactNumber"
-                                   [placeholder]="t('bar.form.contactPh')" autocomplete="tel" inputmode="tel"
+                                   [placeholder]="t('bar.form.contactPh')" autocomplete="tel" inputmode="tel" maxlength="15"
                                    class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
                             @if (barangayForm.contactNumber) {
                               <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
@@ -3084,7 +3088,7 @@ export type BarangayStep =
                               </svg>
                             </div>
                             <input id="barangay-addressLine" type="text" name="addressLine" [(ngModel)]="barangayForm.addressLine"
-                                   [placeholder]="t('bar.form.addressPh')" autocomplete="street-address"
+                                   [placeholder]="t('bar.form.addressPh')" autocomplete="street-address" maxlength="255"
                                    class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
                             @if (barangayForm.addressLine) {
                               <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
@@ -3117,7 +3121,7 @@ export type BarangayStep =
                               </svg>
                             </div>
                             <input id="barangay-email" type="email" name="email" [(ngModel)]="barangayForm.email"
-                                   [placeholder]="t('bar.form.emailPh')" autocomplete="email" inputmode="email"
+                                   [placeholder]="t('bar.form.emailPh')" autocomplete="email" inputmode="email" maxlength="100"
                                    class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
                             @if (barangayForm.email) {
                               <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
@@ -3144,7 +3148,7 @@ export type BarangayStep =
                               </svg>
                             </div>
                             <input id="barangay-emergencyContactName" type="text" name="emergencyContactName" [(ngModel)]="barangayForm.emergencyContactName"
-                                   [placeholder]="t('bar.form.emergencyNamePh')" autocomplete="name"
+                                   [placeholder]="t('bar.form.emergencyNamePh')" autocomplete="name" maxlength="100"
                                    class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
                             @if (barangayForm.emergencyContactName) {
                               <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
@@ -3177,7 +3181,7 @@ export type BarangayStep =
                               </svg>
                             </div>
                             <input id="barangay-emergencyContactNumber" type="tel" name="emergencyContactNumber" [(ngModel)]="barangayForm.emergencyContactNumber"
-                                   [placeholder]="t('bar.form.emergencyNumberPh')" autocomplete="tel" inputmode="tel"
+                                   [placeholder]="t('bar.form.emergencyNumberPh')" autocomplete="tel" inputmode="tel" maxlength="15"
                                    class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
                             @if (barangayForm.emergencyContactNumber) {
                               <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
@@ -5449,32 +5453,99 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.saveState();
   }
 
+  todayDateString(): string {
+    const d = new Date();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${d.getFullYear()}-${month}-${day}`;
+  }
+
   private validateField(field: FormField, value: unknown): string | null {
     const empty = this.isEmptyValue(value);
+    const label = this.fieldLabel(field) || field.label || field.key;
     if (empty) {
-      if (field.required) return this.t('err.required', { field: field.label });
+      if (field.required) return this.t('err.required', { field: label });
       return null;
     }
 
-    const v = field.validation;
-    if (!v) return null;
+    const v = field.validation || {};
+    const valStr = typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+    const valNum = Number(value);
 
-    if (typeof value === 'string' && !value.startsWith('data:')) {
-      const str = value.trim();
-      if (v.minLength && str.length < v.minLength) {
-        return this.t('err.minLength', { field: field.label, min: v.minLength });
+    // 1. Number / Age validations
+    const isNumberType = field.type === 'number';
+    const isAgeField = field.key.toLowerCase().includes('age') || label.toLowerCase().includes('age');
+    if (isNumberType || isAgeField) {
+      if (!/^-?\d+(\.\d+)?$/.test(valStr)) {
+        return this.t('err.numbersOnly', { field: label });
       }
-      if (v.maxLength && str.length > v.maxLength) {
-        return this.t('err.maxLength', { field: field.label, max: v.maxLength });
+      if (isNaN(valNum)) {
+        return this.t('err.numbersOnly', { field: label });
       }
-      if (v.pattern && !new RegExp(v.pattern).test(str)) {
-        return v.patternMessage || this.t('err.invalidFormat', { field: field.label });
+      if (v.min !== undefined && valNum < v.min) {
+        return this.t('err.minValue', { field: label, min: v.min });
+      }
+      if (v.max !== undefined && valNum > v.max) {
+        return this.t('err.maxValue', { field: label, max: v.max });
+      }
+      if (isAgeField) {
+        if (valNum < 0 || valNum > 125) {
+          return this.t('err.invalidAge', { field: label });
+        }
       }
     }
 
-    if (field.type === 'number' && typeof value === 'number') {
-      if (v.min !== undefined && value < v.min) return this.t('err.minValue', { field: field.label, min: v.min });
-      if (v.max !== undefined && value > v.max) return this.t('err.maxValue', { field: field.label, max: v.max });
+    // 2. Phone / Mobile validations
+    const isPhone = field.type === 'tel' || field.key.toLowerCase().includes('contact') || field.key.toLowerCase().includes('phone') || field.key.toLowerCase().includes('mobile');
+    if (isPhone) {
+      const cleanPhone = valStr.replace(/[\s\-()]/g, '');
+      if (!/^(09\d{9}|\+639\d{9}|\d{7,11})$/.test(cleanPhone)) {
+        return this.t('err.invalidPhone', { field: label });
+      }
+    }
+
+    // 3. Email validations
+    const isEmail = field.type === 'email' || field.key.toLowerCase().includes('email');
+    if (isEmail) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valStr)) {
+        return this.t('err.invalidEmail', { field: label });
+      }
+    }
+
+    // 4. Date / Birthday validations
+    const isDateField = field.type === 'date';
+    const isBirthDate = isDateField && (field.key.toLowerCase().includes('birth') || label.toLowerCase().includes('birth'));
+    if (isDateField) {
+      const parsedDate = new Date(valStr);
+      if (isNaN(parsedDate.getTime())) {
+        return this.t('err.invalidDate', { field: label });
+      }
+      if (isBirthDate) {
+        const today = new Date();
+        today.setHours(23, 59, 59, 999);
+        if (parsedDate > today) {
+          return this.t('err.futureDate', { field: label });
+        }
+        const minYear = new Date().getFullYear() - 125;
+        if (parsedDate.getFullYear() < minYear) {
+          return this.t('err.invalidDate', { field: label });
+        }
+      }
+    }
+
+    // 5. String length & pattern validations
+    if (typeof value === 'string' && !value.startsWith('data:')) {
+      const defaultMax = field.type === 'textarea' ? 500 : 255;
+      const effectiveMax = v.maxLength || defaultMax;
+      if (valStr.length > effectiveMax) {
+        return this.t('err.maxLength', { field: label, max: effectiveMax });
+      }
+      if (v.minLength && valStr.length < v.minLength) {
+        return this.t('err.minLength', { field: label, min: v.minLength });
+      }
+      if (v.pattern && !new RegExp(v.pattern).test(valStr)) {
+        return v.patternMessage || this.t('err.invalidFormat', { field: label });
+      }
     }
 
     return null;
@@ -5485,18 +5556,36 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.guestSubmitted.set(true);
     this.formError.set('');
     const g = this.guestForm;
-    if (!g.fullName.trim()) {
+    const cleanPhone = g.contactNumber.trim().replace(/[\s\-()]/g, '');
+
+    if (!g.fullName.trim() || g.fullName.trim().length < 2) {
+      this.formError.set(this.t('err.invalidName', { field: this.t('bar.form.fullName') || 'Full Name' }));
       return;
     }
     if (!g.birthDate) {
+      this.formError.set(this.t('err.guest.birthDate'));
       return;
     }
-    if (!g.address.trim()) {
+    const birth = new Date(g.birthDate);
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    if (isNaN(birth.getTime()) || birth > today || birth.getFullYear() < (today.getFullYear() - 125)) {
+      this.formError.set(this.t('err.futureDate', { field: this.t('bar.form.birthDate') || 'Birth Date' }));
       return;
     }
-    if (!g.contactNumber.trim()) {
+    if (!g.address.trim() || g.address.trim().length < 5) {
+      this.formError.set(this.t('err.guest.address'));
       return;
     }
+    if (!cleanPhone || !/^(09\d{9}|\+639\d{9}|\d{7,11})$/.test(cleanPhone)) {
+      this.formError.set(this.t('err.invalidPhone', { field: this.t('bar.form.contact') || 'Contact Number' }));
+      return;
+    }
+    if (g.email && g.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(g.email.trim())) {
+      this.formError.set(this.t('err.invalidEmail', { field: 'Email' }));
+      return;
+    }
+
     this.errorMessage.set('');
     this.loadServices();
     this.currentStep.set('services');
@@ -5509,13 +5598,22 @@ export class KioskComponent implements OnInit, OnDestroy {
     const g = this.guestForm;
     switch (key) {
       case 'fullName':
-        return !g.fullName.trim();
-      case 'birthDate':
-        return !g.birthDate;
+        return !g.fullName.trim() || g.fullName.trim().length < 2 || g.fullName.length > 100;
+      case 'birthDate': {
+        if (!g.birthDate) return true;
+        const d = new Date(g.birthDate);
+        const today = new Date();
+        today.setHours(23, 59, 59, 999);
+        return isNaN(d.getTime()) || d > today || d.getFullYear() < (today.getFullYear() - 125);
+      }
       case 'address':
-        return !g.address.trim();
-      case 'contactNumber':
-        return !g.contactNumber.trim();
+        return !g.address.trim() || g.address.trim().length < 5 || g.address.length > 255;
+      case 'contactNumber': {
+        const clean = g.contactNumber.trim().replace(/[\s\-()]/g, '');
+        return !clean || !/^(09\d{9}|\+639\d{9}|\d{7,11})$/.test(clean);
+      }
+      case 'email':
+        return !!(g.email && g.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(g.email.trim()));
       default:
         return false;
     }
@@ -5526,23 +5624,38 @@ export class KioskComponent implements OnInit, OnDestroy {
     const f = this.barangayForm;
     switch (key) {
       case 'firstName':
-        return !f.firstName.trim();
+        return !f.firstName.trim() || f.firstName.trim().length < 2 || f.firstName.length > 50;
       case 'lastName':
-        return !f.lastName.trim();
-      case 'birthDate':
-        return !f.birthDate;
+        return !f.lastName.trim() || f.lastName.trim().length < 2 || f.lastName.length > 50;
+      case 'middleName':
+        return f.middleName.length > 50;
+      case 'suffix':
+        return f.suffix.length > 20;
+      case 'birthDate': {
+        if (!f.birthDate) return true;
+        const d = new Date(f.birthDate);
+        const today = new Date();
+        today.setHours(23, 59, 59, 999);
+        return isNaN(d.getTime()) || d > today || d.getFullYear() < (today.getFullYear() - 125);
+      }
       case 'gender':
         return !f.gender;
       case 'civilStatus':
         return !f.civilStatus;
       case 'addressLine':
-        return !f.addressLine.trim();
-      case 'contactNumber':
-        return !f.contactNumber.trim();
+        return !f.addressLine.trim() || f.addressLine.trim().length < 5 || f.addressLine.length > 255;
+      case 'contactNumber': {
+        const clean = f.contactNumber.trim().replace(/[\s\-()]/g, '');
+        return !clean || !/^(09\d{9}|\+639\d{9}|\d{7,11})$/.test(clean);
+      }
+      case 'email':
+        return !!(f.email && f.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim()));
       case 'emergencyContactName':
-        return !f.emergencyContactName.trim();
-      case 'emergencyContactNumber':
-        return !f.emergencyContactNumber.trim();
+        return !f.emergencyContactName.trim() || f.emergencyContactName.length > 100;
+      case 'emergencyContactNumber': {
+        const clean = f.emergencyContactNumber.trim().replace(/[\s\-()]/g, '');
+        return !clean || !/^(09\d{9}|\+639\d{9}|\d{7,11})$/.test(clean);
+      }
       default:
         return false;
     }
@@ -5562,16 +5675,26 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.barangaySubmitted.set(true);
     this.formError.set('');
     const f = this.barangayForm;
-    if (!f.firstName.trim()) {
+    const cleanPhone = f.contactNumber.trim().replace(/[\s\-()]/g, '');
+    const cleanEmPhone = f.emergencyContactNumber.trim().replace(/[\s\-()]/g, '');
+
+    if (!f.firstName.trim() || f.firstName.trim().length < 2) {
       this.formError.set(this.t('err.bar.firstName'));
       return;
     }
-    if (!f.lastName.trim()) {
+    if (!f.lastName.trim() || f.lastName.trim().length < 2) {
       this.formError.set(this.t('err.bar.lastName'));
       return;
     }
     if (!f.birthDate) {
       this.formError.set(this.t('err.bar.birthDate'));
+      return;
+    }
+    const birth = new Date(f.birthDate);
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    if (isNaN(birth.getTime()) || birth > today || birth.getFullYear() < (today.getFullYear() - 125)) {
+      this.formError.set(this.t('err.futureDate', { field: this.t('bar.form.birthDate') || 'Birth Date' }));
       return;
     }
     if (!f.gender) {
@@ -5582,22 +5705,27 @@ export class KioskComponent implements OnInit, OnDestroy {
       this.formError.set(this.t('err.bar.civilStatus'));
       return;
     }
-    if (!f.addressLine.trim()) {
+    if (!f.addressLine.trim() || f.addressLine.trim().length < 5) {
       this.formError.set(this.t('err.bar.address'));
       return;
     }
-    if (!f.contactNumber.trim()) {
-      this.formError.set(this.t('err.bar.contact'));
+    if (!cleanPhone || !/^(09\d{9}|\+639\d{9}|\d{7,11})$/.test(cleanPhone)) {
+      this.formError.set(this.t('err.invalidPhone', { field: this.t('bar.form.contact') || 'Contact Number' }));
+      return;
+    }
+    if (f.email && f.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim())) {
+      this.formError.set(this.t('err.invalidEmail', { field: this.t('bar.form.email') || 'Email' }));
       return;
     }
     if (!f.emergencyContactName.trim()) {
       this.formError.set(this.t('err.bar.emergencyName'));
       return;
     }
-    if (!f.emergencyContactNumber.trim()) {
-      this.formError.set(this.t('err.bar.emergencyNumber'));
+    if (!cleanEmPhone || !/^(09\d{9}|\+639\d{9}|\d{7,11})$/.test(cleanEmPhone)) {
+      this.formError.set(this.t('err.invalidPhone', { field: this.t('bar.form.emergencyNumber') || 'Emergency Contact Number' }));
       return;
     }
+
     this.errorMessage.set('');
     this.barangayStep.set('photo');
     this.resetIdleTimer();

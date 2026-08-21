@@ -57,6 +57,143 @@ const evaluateResidentPolicy = (service, activeRequests, latestRequest) => {
   return { allowed: true };
 };
 
+// Validate dynamic form data against service form_fields schema
+const validateServiceFormData = (formFields, formData = {}, serviceName = 'Service') => {
+  const fields = Array.isArray(formFields) ? formFields : [];
+  const errors = [];
+  const data = formData || {};
+
+  for (const field of fields) {
+    const rawVal = data[field.key];
+    const empty = rawVal === undefined || rawVal === null || String(rawVal).trim() === '';
+
+    if (empty) {
+      if (field.required) {
+        errors.push(`${field.label || field.key} is required.`);
+      }
+      continue;
+    }
+
+    const valStr = String(rawVal).trim();
+    const valNum = Number(rawVal);
+    const v = field.validation || {};
+
+    // 1. Number / Age validations
+    const isNumberType = field.type === 'number';
+    const isAgeField = field.key.toLowerCase().includes('age') || (field.label && field.label.toLowerCase().includes('age'));
+    if (isNumberType || isAgeField) {
+      if (!/^-?\d+(\.\d+)?$/.test(valStr)) {
+        errors.push(`${field.label || field.key} must be a valid number.`);
+        continue;
+      }
+      if (v.min !== undefined && valNum < v.min) {
+        errors.push(`${field.label || field.key} must be at least ${v.min}.`);
+      }
+      if (v.max !== undefined && valNum > v.max) {
+        errors.push(`${field.label || field.key} must not exceed ${v.max}.`);
+      }
+      if (isAgeField) {
+        if (valNum < 0 || valNum > 125) {
+          errors.push(`${field.label || field.key} must be between 0 and 125.`);
+        }
+      }
+    }
+
+    // 2. Phone / Mobile validations
+    const isPhone = field.type === 'tel' || field.key.toLowerCase().includes('contact') || field.key.toLowerCase().includes('phone') || field.key.toLowerCase().includes('mobile');
+    if (isPhone) {
+      const cleanPhone = valStr.replace(/[\s\-()]/g, '');
+      if (!/^(09\d{9}|\+639\d{9}|\d{7,11})$/.test(cleanPhone)) {
+        errors.push(`${field.label || field.key} must be a valid contact number (e.g. 09123456789).`);
+      }
+    }
+
+    // 3. Email validations
+    const isEmail = field.type === 'email' || field.key.toLowerCase().includes('email');
+    if (isEmail) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valStr)) {
+        errors.push(`${field.label || field.key} must be a valid email address.`);
+      }
+    }
+
+    // 4. Date / Birthday validations
+    const isDateField = field.type === 'date';
+    const isBirthDate = isDateField && (field.key.toLowerCase().includes('birth') || (field.label && field.label.toLowerCase().includes('birth')));
+    if (isDateField) {
+      const parsedDate = new Date(valStr);
+      if (isNaN(parsedDate.getTime())) {
+        errors.push(`${field.label || field.key} must be a valid date.`);
+      } else if (isBirthDate) {
+        const today = new Date();
+        today.setHours(23, 59, 59, 999);
+        if (parsedDate > today) {
+          errors.push(`${field.label || field.key} cannot be a future date.`);
+        }
+        const minYear = new Date().getFullYear() - 125;
+        if (parsedDate.getFullYear() < minYear) {
+          errors.push(`${field.label || field.key} is not a valid birth date.`);
+        }
+      }
+    }
+
+    // 5. String length & pattern validations
+    if (typeof rawVal === 'string' && !rawVal.startsWith('data:')) {
+      const defaultMax = field.type === 'textarea' ? 500 : 255;
+      const effectiveMax = v.maxLength || defaultMax;
+      if (valStr.length > effectiveMax) {
+        errors.push(`${field.label || field.key} must not exceed ${effectiveMax} characters.`);
+      }
+      if (v.minLength && valStr.length < v.minLength) {
+        errors.push(`${field.label || field.key} must be at least ${v.minLength} characters.`);
+      }
+      if (v.pattern) {
+        try {
+          const reg = new RegExp(v.pattern);
+          if (!reg.test(valStr)) {
+            errors.push(v.patternMessage || `${field.label || field.key} has an invalid format.`);
+          }
+        } catch {
+          // ignore invalid pattern
+        }
+      }
+    }
+  }
+
+  return errors;
+};
+
+const validateGuestInput = (guest) => {
+  if (!guest) return [];
+  const errors = [];
+  const fullName = String(guest.full_name || guest.fullName || '').trim();
+  const birthDate = guest.birth_date || guest.birthDate;
+  const contactNumber = String(guest.contact_number || guest.contactNumber || '').trim().replace(/[\s\-()]/g, '');
+  const email = guest.email ? String(guest.email).trim() : '';
+
+  if (!fullName || fullName.length < 2) {
+    errors.push('Guest full name must be at least 2 characters.');
+  }
+  if (fullName.length > 100) {
+    errors.push('Guest full name must not exceed 100 characters.');
+  }
+  if (birthDate) {
+    const d = new Date(birthDate);
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    if (isNaN(d.getTime()) || d > today || d.getFullYear() < (today.getFullYear() - 125)) {
+      errors.push('Guest birth date must be a valid past date.');
+    }
+  }
+  if (contactNumber && !/^(09\d{9}|\+639\d{9}|\d{7,11})$/.test(contactNumber)) {
+    errors.push('Guest contact number must be a valid 11-digit mobile number (e.g. 09123456789).');
+  }
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errors.push('Guest email must be a valid email address.');
+  }
+
+  return errors;
+};
+
 // Temporary identity captured for a guest session. Stored on the transaction
 // (and mirrored into each request's form_data `_guest`) for possible-duplicate
 // matching later. Identity is best-effort; never treated as a hard guarantee.
@@ -146,6 +283,19 @@ const submitTransaction = async (input) => {
     return { success: false, code: 'GUEST_NAME_REQUIRED', message: 'Guest full name is required.' };
   }
 
+  // Validate guest input if guest session
+  if (guest) {
+    const guestErrors = validateGuestInput(guest);
+    if (guestErrors.length > 0) {
+      return {
+        success: false,
+        code: 'GUEST_VALIDATION_ERROR',
+        message: guestErrors[0],
+        errors: guestErrors
+      };
+    }
+  }
+
   // ---- Resolve services + policy checks (BEFORE writing anything) ----
   const serviceIds = [...new Set(services.map(s => s.service_id))];
   const serviceRows = await transactionRepository.findServicesByIds(serviceIds);
@@ -155,6 +305,17 @@ const submitTransaction = async (input) => {
     const service = serviceById.get(s.service_id);
     if (!service) return { success: false, code: 'SERVICE_NOT_FOUND', message: `Service (${s.service_id}) not found.` };
     if (!service.is_active) return { success: false, code: 'SERVICE_INACTIVE', message: `${service.service_name} is not available.` };
+
+    // Validate dynamic form data for this service
+    const formErrors = validateServiceFormData(service.form_fields, s.form_data || s.formData, service.service_name);
+    if (formErrors.length > 0) {
+      return {
+        success: false,
+        code: 'VALIDATION_ERROR',
+        message: formErrors[0],
+        errors: formErrors
+      };
+    }
   }
 
   if (services.length > 1) {

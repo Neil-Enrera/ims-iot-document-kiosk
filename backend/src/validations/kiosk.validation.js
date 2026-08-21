@@ -1,20 +1,43 @@
 const { body, param } = require('express-validator');
 
 const barangayIdApplicationValidation = [
-  body('firstName').trim().notEmpty().withMessage('First name is required.'),
-  body('middleName').optional().trim(),
-  body('lastName').trim().notEmpty().withMessage('Last name is required.'),
-  body('suffix').optional().trim(),
-  body('birthDate').optional({ values: 'null' }).isISO8601().withMessage('Invalid date format.'),
+  body('firstName').trim().notEmpty().withMessage('First name is required.').isLength({ min: 2, max: 50 }).withMessage('First name must be between 2 and 50 characters.'),
+  body('middleName').optional().trim().isLength({ max: 50 }).withMessage('Middle name must not exceed 50 characters.'),
+  body('lastName').trim().notEmpty().withMessage('Last name is required.').isLength({ min: 2, max: 50 }).withMessage('Last name must be between 2 and 50 characters.'),
+  body('suffix').optional().trim().isLength({ max: 20 }).withMessage('Suffix must not exceed 20 characters.'),
+  body('birthDate').optional({ values: 'null' }).isISO8601().withMessage('Invalid birth date format.').custom(val => {
+    if (!val) return true;
+    const d = new Date(val);
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    if (isNaN(d.getTime()) || d > today || d.getFullYear() < (today.getFullYear() - 125)) {
+      throw new Error('Birth date must be a valid past date.');
+    }
+    return true;
+  }),
   body('gender').optional().isIn(['Male', 'Female', 'Other']).withMessage('Gender must be Male, Female, or Other.'),
   body('civilStatus').optional().isIn(['Single', 'Married', 'Widowed', 'Separated', 'Divorced']).withMessage('Invalid civil status.'),
-  body('occupation').optional().trim(),
-  body('bloodType').optional().trim(),
-  body('addressLine').trim().notEmpty().withMessage('Address is required.'),
-  body('contactNumber').optional().trim(),
-  body('email').optional().isEmail().withMessage('Invalid email format.'),
-  body('emergencyContactName').optional().trim(),
-  body('emergencyContactNumber').optional().trim(),
+  body('occupation').optional().trim().isLength({ max: 100 }).withMessage('Occupation must not exceed 100 characters.'),
+  body('bloodType').optional().trim().isLength({ max: 10 }).withMessage('Blood type must not exceed 10 characters.'),
+  body('addressLine').trim().notEmpty().withMessage('Address is required.').isLength({ min: 5, max: 255 }).withMessage('Address must be between 5 and 255 characters.'),
+  body('contactNumber').optional().trim().custom(val => {
+    if (!val) return true;
+    const clean = String(val).replace(/[\s\-()]/g, '');
+    if (!/^(09\d{9}|\+639\d{9}|\d{7,11})$/.test(clean)) {
+      throw new Error('Contact number must be a valid 11-digit mobile number (e.g. 09123456789).');
+    }
+    return true;
+  }),
+  body('email').optional({ values: 'falsy' }).trim().isEmail().withMessage('Invalid email format.').isLength({ max: 100 }).withMessage('Email must not exceed 100 characters.'),
+  body('emergencyContactName').optional().trim().isLength({ max: 100 }).withMessage('Emergency contact name must not exceed 100 characters.'),
+  body('emergencyContactNumber').optional().trim().custom(val => {
+    if (!val) return true;
+    const clean = String(val).replace(/[\s\-()]/g, '');
+    if (!/^(09\d{9}|\+639\d{9}|\d{7,11})$/.test(clean)) {
+      throw new Error('Emergency contact number must be a valid 11-digit mobile number (e.g. 09123456789).');
+    }
+    return true;
+  }),
   body('photo').optional().isString().withMessage('Invalid photo format.'),
   body('signature').optional().isString().withMessage('Invalid signature format.'),
   body('formData').optional().isObject().withMessage('Invalid form data.')
