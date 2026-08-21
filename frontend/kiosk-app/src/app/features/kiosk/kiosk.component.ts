@@ -702,7 +702,11 @@ export type BarangayStep =
                                 <path d="M4 20c0-3.6 3.6-5 8-5s8 1.4 8 5" stroke-linecap="round"/>
                               </svg>
                             </div>
-                            <input id="guest-fullName" type="text" name="fullName" [(ngModel)]="guestForm.fullName"
+                            <input id="guest-fullName" type="text" name="fullName"
+                                   [value]="guestForm.fullName || ''"
+                                   (keydown)="filterNameKeyDown($event)"
+                                   (input)="onGuestNameInput($event)"
+                                   (paste)="onGuestNamePaste($event)"
                                    [placeholder]="t('doc.guestInfo.fullNamePh')" autocomplete="name" maxlength="100"
                                    class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
                             @if (guestForm.fullName) {
@@ -803,8 +807,12 @@ export type BarangayStep =
                                 <path d="M6.5 5h3l1.6 4-2 1.2a11 11 0 005.7 5.7l1.2-2 4 1.6v3a1.5 1.5 0 01-1.6 1.5A15.5 15.5 0 015 6.6 1.5 1.5 0 016.5 5z" stroke-linejoin="round"/>
                               </svg>
                             </div>
-                            <input id="guest-contactNumber" type="tel" name="contactNumber" [(ngModel)]="guestForm.contactNumber"
-                                   [placeholder]="t('doc.guestInfo.contactPh')" autocomplete="tel" inputmode="tel" maxlength="15"
+                            <input id="guest-contactNumber" type="tel" name="contactNumber"
+                                   [value]="guestForm.contactNumber || ''"
+                                   (keydown)="filterNumberKeyDown($event)"
+                                   (input)="onGuestPhoneInput($event)"
+                                   (paste)="onGuestPhonePaste($event)"
+                                   [placeholder]="t('doc.guestInfo.contactPh')" autocomplete="tel" inputmode="numeric" maxlength="11"
                                    class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] font-medium text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
                             @if (guestForm.contactNumber) {
                               <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
@@ -1530,6 +1538,7 @@ export type BarangayStep =
                                     [(ngModel)]="formValues()[field.key]"
                                     (ngModelChange)="updateFormValue(field.key, $event)"
                                     [placeholder]="fieldPlaceholder(field)"
+                                    [attr.maxlength]="fieldMaxLength(field)"
                                     rows="3"
                                     class="w-full rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm px-3.5 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/15 transition-all duration-150 resize-none"
                                     [class.border-[#DC2626]]="formErrors()[field.key]"></textarea>
@@ -1637,13 +1646,15 @@ export type BarangayStep =
                                        [class.border-[#DC2626]]="formErrors()[field.key]">
                                     <input
                                       [id]="'doc-form-' + field.key"
-                                      [type]="field.type"
+                                      [type]="isFieldPhone(field) ? 'tel' : (isFieldNumber(field) ? 'text' : field.type)"
                                       [name]="field.key"
-                                      [(ngModel)]="formValues()[field.key]"
-                                      (ngModelChange)="updateFormValue(field.key, $event)"
+                                      [value]="formValues()[field.key] || ''"
+                                      (keydown)="onDynamicFieldKeyDown(field, $event)"
+                                      (input)="onDynamicFieldInput(field, $event)"
+                                      (paste)="onDynamicFieldPaste(field, $event)"
                                       [placeholder]="fieldPlaceholder(field)"
-                                      [attr.inputmode]="field.type === 'number' || field.type === 'tel' ? 'numeric' : (field.type === 'email' ? 'email' : null)"
-                                      [attr.maxlength]="field.validation?.maxLength || (field.type === 'tel' ? 15 : 255)"
+                                      [attr.inputmode]="fieldInputMode(field)"
+                                      [attr.maxlength]="fieldMaxLength(field)"
                                       [attr.min]="field.validation?.min !== undefined ? field.validation.min : null"
                                       [attr.max]="field.validation?.max !== undefined ? field.validation.max : (field.type === 'date' && (field.key.toLowerCase().includes('birth') || field.label.toLowerCase().includes('birth')) ? todayDateString() : null)"
                                       class="flex-1 min-w-0 bg-transparent px-3.5 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] outline-none border-none" />
@@ -2766,7 +2777,11 @@ export type BarangayStep =
                                 <path d="M4 20c0-3.6 3.6-5 8-5s8 1.4 8 5" stroke-linecap="round"/>
                               </svg>
                             </div>
-                            <input id="barangay-firstName" type="text" name="firstName" [(ngModel)]="barangayForm.firstName"
+                            <input id="barangay-firstName" type="text" name="firstName"
+                                   [value]="barangayForm.firstName || ''"
+                                   (keydown)="filterNameKeyDown($event)"
+                                   (input)="onBarangayNameInput('firstName', $event)"
+                                   (paste)="onBarangayNamePaste('firstName', $event)"
                                    [placeholder]="t('bar.form.firstNamePh')" autocomplete="given-name" maxlength="50"
                                    class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
                             @if (barangayForm.firstName) {
@@ -2799,7 +2814,11 @@ export type BarangayStep =
                                 <path d="M4 20c0-3.6 3.6-5 8-5s8 1.4 8 5" stroke-linecap="round"/>
                               </svg>
                             </div>
-                            <input id="barangay-middleName" type="text" name="middleName" [(ngModel)]="barangayForm.middleName"
+                            <input id="barangay-middleName" type="text" name="middleName"
+                                   [value]="barangayForm.middleName || ''"
+                                   (keydown)="filterNameKeyDown($event)"
+                                   (input)="onBarangayNameInput('middleName', $event)"
+                                   (paste)="onBarangayNamePaste('middleName', $event)"
                                    [placeholder]="t('bar.form.middleNamePh')" autocomplete="additional-name" maxlength="50"
                                    class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
                             @if (barangayForm.middleName) {
@@ -2825,7 +2844,11 @@ export type BarangayStep =
                                 <path d="M4 20c0-3.6 3.6-5 8-5s8 1.4 8 5" stroke-linecap="round"/>
                               </svg>
                             </div>
-                            <input id="barangay-lastName" type="text" name="lastName" [(ngModel)]="barangayForm.lastName"
+                            <input id="barangay-lastName" type="text" name="lastName"
+                                   [value]="barangayForm.lastName || ''"
+                                   (keydown)="filterNameKeyDown($event)"
+                                   (input)="onBarangayNameInput('lastName', $event)"
+                                   (paste)="onBarangayNamePaste('lastName', $event)"
                                    [placeholder]="t('bar.form.lastNamePh')" autocomplete="family-name" maxlength="50"
                                    class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
                             @if (barangayForm.lastName) {
@@ -3053,8 +3076,12 @@ export type BarangayStep =
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 4h4l2 5-2.5 1.5a12 12 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/>
                               </svg>
                             </div>
-                            <input id="barangay-contactNumber" type="tel" name="contactNumber" [(ngModel)]="barangayForm.contactNumber"
-                                   [placeholder]="t('bar.form.contactPh')" autocomplete="tel" inputmode="tel" maxlength="15"
+                            <input id="barangay-contactNumber" type="tel" name="contactNumber"
+                                   [value]="barangayForm.contactNumber || ''"
+                                   (keydown)="filterNumberKeyDown($event)"
+                                   (input)="onBarangayPhoneInput('contactNumber', $event)"
+                                   (paste)="onBarangayPhonePaste('contactNumber', $event)"
+                                   [placeholder]="t('bar.form.contactPh')" autocomplete="tel" inputmode="numeric" maxlength="11"
                                    class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
                             @if (barangayForm.contactNumber) {
                               <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
@@ -3147,7 +3174,11 @@ export type BarangayStep =
                                 <path d="M17 3l1.5 1.5L21 3M17 6.5l1.5 1.5L21 6.5" stroke-linecap="round"/>
                               </svg>
                             </div>
-                            <input id="barangay-emergencyContactName" type="text" name="emergencyContactName" [(ngModel)]="barangayForm.emergencyContactName"
+                            <input id="barangay-emergencyContactName" type="text" name="emergencyContactName"
+                                   [value]="barangayForm.emergencyContactName || ''"
+                                   (keydown)="filterNameKeyDown($event)"
+                                   (input)="onBarangayNameInput('emergencyContactName', $event)"
+                                   (paste)="onBarangayNamePaste('emergencyContactName', $event)"
                                    [placeholder]="t('bar.form.emergencyNamePh')" autocomplete="name" maxlength="100"
                                    class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
                             @if (barangayForm.emergencyContactName) {
@@ -3180,8 +3211,12 @@ export type BarangayStep =
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 4h4l2 5-2.5 1.5a12 12 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/>
                               </svg>
                             </div>
-                            <input id="barangay-emergencyContactNumber" type="tel" name="emergencyContactNumber" [(ngModel)]="barangayForm.emergencyContactNumber"
-                                   [placeholder]="t('bar.form.emergencyNumberPh')" autocomplete="tel" inputmode="tel" maxlength="15"
+                            <input id="barangay-emergencyContactNumber" type="tel" name="emergencyContactNumber"
+                                   [value]="barangayForm.emergencyContactNumber || ''"
+                                   (keydown)="filterNumberKeyDown($event)"
+                                   (input)="onBarangayPhoneInput('emergencyContactNumber', $event)"
+                                   (paste)="onBarangayPhonePaste('emergencyContactNumber', $event)"
+                                   [placeholder]="t('bar.form.emergencyNumberPh')" autocomplete="tel" inputmode="numeric" maxlength="11"
                                    class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
                             @if (barangayForm.emergencyContactNumber) {
                               <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
@@ -5460,6 +5495,201 @@ export class KioskComponent implements OnInit, OnDestroy {
     return `${d.getFullYear()}-${month}-${day}`;
   }
 
+  // ============================================================
+  // INPUT SANITIZATION & FILTERING HELPERS (Physical & Touchscreen)
+  // ============================================================
+
+  filterNumberKeyDown(event: KeyboardEvent) {
+    if (
+      ['Backspace', 'Tab', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'Enter'].includes(event.key) ||
+      event.ctrlKey || event.metaKey
+    ) {
+      return;
+    }
+    if (!/^\d$/.test(event.key)) {
+      event.preventDefault();
+    }
+  }
+
+  filterNameKeyDown(event: KeyboardEvent) {
+    if (
+      ['Backspace', 'Tab', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'Enter'].includes(event.key) ||
+      event.ctrlKey || event.metaKey
+    ) {
+      return;
+    }
+    if (!/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']$/.test(event.key)) {
+      event.preventDefault();
+    }
+  }
+
+  sanitizePhone(val: string): string {
+    if (!val) return '';
+    return val.replace(/\D/g, '').slice(0, 11);
+  }
+
+  sanitizeDigits(val: string, maxLen?: number): string {
+    if (!val) return '';
+    const digits = val.replace(/\D/g, '');
+    return maxLen ? digits.slice(0, maxLen) : digits;
+  }
+
+  sanitizeName(val: string, maxLen = 100): string {
+    if (!val) return '';
+    return val.replace(/[^a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']/g, '').slice(0, maxLen);
+  }
+
+  onGuestNameInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const clean = this.sanitizeName(input.value, 100);
+    input.value = clean;
+    this.guestForm.fullName = clean;
+  }
+
+  onGuestNamePaste(event: ClipboardEvent) {
+    event.preventDefault();
+    const text = event.clipboardData?.getData('text') || '';
+    const clean = this.sanitizeName(text, 100);
+    const input = event.target as HTMLInputElement;
+    input.value = clean;
+    this.guestForm.fullName = clean;
+  }
+
+  onGuestPhoneInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const clean = this.sanitizePhone(input.value);
+    input.value = clean;
+    this.guestForm.contactNumber = clean;
+  }
+
+  onGuestPhonePaste(event: ClipboardEvent) {
+    event.preventDefault();
+    const text = event.clipboardData?.getData('text') || '';
+    const clean = this.sanitizePhone(text);
+    const input = event.target as HTMLInputElement;
+    input.value = clean;
+    this.guestForm.contactNumber = clean;
+  }
+
+  onBarangayNameInput(key: 'firstName' | 'middleName' | 'lastName' | 'emergencyContactName', event: Event) {
+    const input = event.target as HTMLInputElement;
+    const maxLen = key === 'emergencyContactName' ? 100 : 50;
+    const clean = this.sanitizeName(input.value, maxLen);
+    input.value = clean;
+    this.barangayForm[key] = clean;
+  }
+
+  onBarangayNamePaste(key: 'firstName' | 'middleName' | 'lastName' | 'emergencyContactName', event: ClipboardEvent) {
+    event.preventDefault();
+    const text = event.clipboardData?.getData('text') || '';
+    const maxLen = key === 'emergencyContactName' ? 100 : 50;
+    const clean = this.sanitizeName(text, maxLen);
+    const input = event.target as HTMLInputElement;
+    input.value = clean;
+    this.barangayForm[key] = clean;
+  }
+
+  onBarangayPhoneInput(key: 'contactNumber' | 'emergencyContactNumber', event: Event) {
+    const input = event.target as HTMLInputElement;
+    const clean = this.sanitizePhone(input.value);
+    input.value = clean;
+    this.barangayForm[key] = clean;
+  }
+
+  onBarangayPhonePaste(key: 'contactNumber' | 'emergencyContactNumber', event: ClipboardEvent) {
+    event.preventDefault();
+    const text = event.clipboardData?.getData('text') || '';
+    const clean = this.sanitizePhone(text);
+    const input = event.target as HTMLInputElement;
+    input.value = clean;
+    this.barangayForm[key] = clean;
+  }
+
+  isFieldPhone(field: FormField): boolean {
+    const key = (field.key || '').toLowerCase();
+    const label = (field.label || '').toLowerCase();
+    return field.type === 'tel' || key.includes('contact') || key.includes('phone') || key.includes('mobile') || label.includes('contact') || label.includes('phone') || label.includes('mobile');
+  }
+
+  isFieldNumber(field: FormField): boolean {
+    return field.type === 'number';
+  }
+
+  isFieldName(field: FormField): boolean {
+    const key = (field.key || '').toLowerCase();
+    const label = (field.label || '').toLowerCase();
+    if (key.includes('email') || key.includes('address') || key.includes('file') || key.includes('date') || this.isFieldPhone(field)) return false;
+    return key.includes('name') || label.includes('name') || key.includes('relative') || label.includes('relative') || key.includes('person') || label.includes('person');
+  }
+
+  fieldInputMode(field: FormField): string | null {
+    if (this.isFieldPhone(field) || this.isFieldNumber(field)) return 'numeric';
+    if (field.type === 'email' || field.key.toLowerCase().includes('email')) return 'email';
+    return null;
+  }
+
+  fieldMaxLength(field: FormField): number {
+    if (field.validation?.maxLength) return field.validation.maxLength;
+    if (this.isFieldPhone(field)) return 11;
+    if (this.isFieldNumber(field)) {
+      return (field.key.toLowerCase().includes('age') || (field.label && field.label.toLowerCase().includes('age'))) ? 3 : 15;
+    }
+    if (this.isFieldName(field)) return 100;
+    if (field.type === 'textarea') return 500;
+    return 255;
+  }
+
+  onDynamicFieldKeyDown(field: FormField, event: KeyboardEvent) {
+    if (this.isFieldPhone(field) || this.isFieldNumber(field)) {
+      this.filterNumberKeyDown(event);
+    } else if (this.isFieldName(field)) {
+      this.filterNameKeyDown(event);
+    }
+  }
+
+  onDynamicFieldInput(field: FormField, event: Event) {
+    const input = event.target as HTMLInputElement;
+    let val = input.value;
+    if (this.isFieldPhone(field)) {
+      val = this.sanitizePhone(val);
+      input.value = val;
+    } else if (this.isFieldNumber(field)) {
+      const maxLen = this.fieldMaxLength(field);
+      val = this.sanitizeDigits(val, maxLen);
+      input.value = val;
+    } else if (this.isFieldName(field)) {
+      const maxLen = this.fieldMaxLength(field);
+      val = this.sanitizeName(val, maxLen);
+      input.value = val;
+    }
+    this.updateFormValue(field.key, val);
+  }
+
+  onDynamicFieldPaste(field: FormField, event: ClipboardEvent) {
+    const text = event.clipboardData?.getData('text') || '';
+    if (this.isFieldPhone(field)) {
+      event.preventDefault();
+      const clean = this.sanitizePhone(text);
+      const input = event.target as HTMLInputElement;
+      input.value = clean;
+      this.updateFormValue(field.key, clean);
+    } else if (this.isFieldNumber(field)) {
+      event.preventDefault();
+      const maxLen = this.fieldMaxLength(field);
+      const clean = this.sanitizeDigits(text, maxLen);
+      const input = event.target as HTMLInputElement;
+      input.value = clean;
+      this.updateFormValue(field.key, clean);
+    } else if (this.isFieldName(field)) {
+      event.preventDefault();
+      const maxLen = this.fieldMaxLength(field);
+      const clean = this.sanitizeName(text, maxLen);
+      const input = event.target as HTMLInputElement;
+      input.value = clean;
+      this.updateFormValue(field.key, clean);
+    }
+  }
+
   private validateField(field: FormField, value: unknown): string | null {
     const empty = this.isEmptyValue(value);
     const label = this.fieldLabel(field) || field.label || field.key;
@@ -5473,7 +5703,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     const valNum = Number(value);
 
     // 1. Number / Age validations
-    const isNumberType = field.type === 'number';
+    const isNumberType = this.isFieldNumber(field);
     const isAgeField = field.key.toLowerCase().includes('age') || label.toLowerCase().includes('age');
     if (isNumberType || isAgeField) {
       if (!/^-?\d+(\.\d+)?$/.test(valStr)) {
@@ -5496,7 +5726,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     }
 
     // 2. Phone / Mobile validations
-    const isPhone = field.type === 'tel' || field.key.toLowerCase().includes('contact') || field.key.toLowerCase().includes('phone') || field.key.toLowerCase().includes('mobile');
+    const isPhone = this.isFieldPhone(field);
     if (isPhone) {
       const cleanPhone = valStr.replace(/[\s\-()]/g, '');
       if (!/^(09\d{9}|\+639\d{9}|\d{7,11})$/.test(cleanPhone)) {
@@ -5504,7 +5734,13 @@ export class KioskComponent implements OnInit, OnDestroy {
       }
     }
 
-    // 3. Email validations
+    // 3. Name validations
+    const isName = this.isFieldName(field);
+    if (isName && !/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(valStr)) {
+      return this.t('err.invalidName', { field: label });
+    }
+
+    // 4. Email validations
     const isEmail = field.type === 'email' || field.key.toLowerCase().includes('email');
     if (isEmail) {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valStr)) {
@@ -5512,7 +5748,7 @@ export class KioskComponent implements OnInit, OnDestroy {
       }
     }
 
-    // 4. Date / Birthday validations
+    // 5. Date / Birthday validations
     const isDateField = field.type === 'date';
     const isBirthDate = isDateField && (field.key.toLowerCase().includes('birth') || label.toLowerCase().includes('birth'));
     if (isDateField) {
@@ -5533,10 +5769,10 @@ export class KioskComponent implements OnInit, OnDestroy {
       }
     }
 
-    // 5. String length & pattern validations
+    // 6. String length & pattern validations
     if (typeof value === 'string' && !value.startsWith('data:')) {
       const defaultMax = field.type === 'textarea' ? 500 : 255;
-      const effectiveMax = v.maxLength || defaultMax;
+      const effectiveMax = v.maxLength || (this.isFieldPhone(field) ? 11 : defaultMax);
       if (valStr.length > effectiveMax) {
         return this.t('err.maxLength', { field: label, max: effectiveMax });
       }
@@ -5558,7 +5794,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     const g = this.guestForm;
     const cleanPhone = g.contactNumber.trim().replace(/[\s\-()]/g, '');
 
-    if (!g.fullName.trim() || g.fullName.trim().length < 2) {
+    if (!g.fullName.trim() || g.fullName.trim().length < 2 || !/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(g.fullName.trim())) {
       this.formError.set(this.t('err.invalidName', { field: this.t('bar.form.fullName') || 'Full Name' }));
       return;
     }
@@ -5598,7 +5834,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     const g = this.guestForm;
     switch (key) {
       case 'fullName':
-        return !g.fullName.trim() || g.fullName.trim().length < 2 || g.fullName.length > 100;
+        return !g.fullName.trim() || g.fullName.trim().length < 2 || g.fullName.length > 100 || !/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(g.fullName.trim());
       case 'birthDate': {
         if (!g.birthDate) return true;
         const d = new Date(g.birthDate);
@@ -5624,11 +5860,11 @@ export class KioskComponent implements OnInit, OnDestroy {
     const f = this.barangayForm;
     switch (key) {
       case 'firstName':
-        return !f.firstName.trim() || f.firstName.trim().length < 2 || f.firstName.length > 50;
+        return !f.firstName.trim() || f.firstName.trim().length < 2 || f.firstName.length > 50 || !/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(f.firstName.trim());
       case 'lastName':
-        return !f.lastName.trim() || f.lastName.trim().length < 2 || f.lastName.length > 50;
+        return !f.lastName.trim() || f.lastName.trim().length < 2 || f.lastName.length > 50 || !/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(f.lastName.trim());
       case 'middleName':
-        return f.middleName.length > 50;
+        return f.middleName.length > 50 || !!(f.middleName.trim() && !/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(f.middleName.trim()));
       case 'suffix':
         return f.suffix.length > 20;
       case 'birthDate': {
@@ -5651,7 +5887,7 @@ export class KioskComponent implements OnInit, OnDestroy {
       case 'email':
         return !!(f.email && f.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim()));
       case 'emergencyContactName':
-        return !f.emergencyContactName.trim() || f.emergencyContactName.length > 100;
+        return !f.emergencyContactName.trim() || f.emergencyContactName.length > 100 || !/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(f.emergencyContactName.trim());
       case 'emergencyContactNumber': {
         const clean = f.emergencyContactNumber.trim().replace(/[\s\-()]/g, '');
         return !clean || !/^(09\d{9}|\+639\d{9}|\d{7,11})$/.test(clean);
@@ -5678,12 +5914,16 @@ export class KioskComponent implements OnInit, OnDestroy {
     const cleanPhone = f.contactNumber.trim().replace(/[\s\-()]/g, '');
     const cleanEmPhone = f.emergencyContactNumber.trim().replace(/[\s\-()]/g, '');
 
-    if (!f.firstName.trim() || f.firstName.trim().length < 2) {
-      this.formError.set(this.t('err.bar.firstName'));
+    if (!f.firstName.trim() || f.firstName.trim().length < 2 || !/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(f.firstName.trim())) {
+      this.formError.set(this.t('err.invalidName', { field: this.t('bar.form.firstName') || 'First Name' }));
       return;
     }
-    if (!f.lastName.trim() || f.lastName.trim().length < 2) {
-      this.formError.set(this.t('err.bar.lastName'));
+    if (f.middleName && f.middleName.trim() && !/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(f.middleName.trim())) {
+      this.formError.set(this.t('err.invalidName', { field: this.t('bar.form.middleName') || 'Middle Name' }));
+      return;
+    }
+    if (!f.lastName.trim() || f.lastName.trim().length < 2 || !/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(f.lastName.trim())) {
+      this.formError.set(this.t('err.invalidName', { field: this.t('bar.form.lastName') || 'Last Name' }));
       return;
     }
     if (!f.birthDate) {
@@ -5717,8 +5957,8 @@ export class KioskComponent implements OnInit, OnDestroy {
       this.formError.set(this.t('err.invalidEmail', { field: this.t('bar.form.email') || 'Email' }));
       return;
     }
-    if (!f.emergencyContactName.trim()) {
-      this.formError.set(this.t('err.bar.emergencyName'));
+    if (!f.emergencyContactName.trim() || !/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(f.emergencyContactName.trim())) {
+      this.formError.set(this.t('err.invalidName', { field: this.t('bar.form.emergencyName') || 'Emergency Contact Name' }));
       return;
     }
     if (!cleanEmPhone || !/^(09\d{9}|\+639\d{9}|\d{7,11})$/.test(cleanEmPhone)) {

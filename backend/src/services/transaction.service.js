@@ -100,15 +100,23 @@ const validateServiceFormData = (formFields, formData = {}, serviceName = 'Servi
     }
 
     // 2. Phone / Mobile validations
-    const isPhone = field.type === 'tel' || field.key.toLowerCase().includes('contact') || field.key.toLowerCase().includes('phone') || field.key.toLowerCase().includes('mobile');
+    const isPhone = field.type === 'tel' || field.key.toLowerCase().includes('contact') || field.key.toLowerCase().includes('phone') || field.key.toLowerCase().includes('mobile') || (field.label && (field.label.toLowerCase().includes('contact') || field.label.toLowerCase().includes('phone') || field.label.toLowerCase().includes('mobile')));
     if (isPhone) {
       const cleanPhone = valStr.replace(/[\s\-()]/g, '');
-      if (!/^(09\d{9}|\+639\d{9}|\d{7,11})$/.test(cleanPhone)) {
-        errors.push(`${field.label || field.key} must be a valid contact number (e.g. 09123456789).`);
+      if (!/^(09\d{9}|\+639\d{9})$/.test(cleanPhone)) {
+        errors.push(`${field.label || field.key} must be a valid 11-digit contact number (e.g. 09123456789).`);
       }
     }
 
-    // 3. Email validations
+    // 3. Name validations
+    const isName = !isPhone && !field.key.toLowerCase().includes('email') && !field.key.toLowerCase().includes('address') && (field.key.toLowerCase().includes('name') || field.key.toLowerCase().includes('relative') || (field.label && (field.label.toLowerCase().includes('name') || field.label.toLowerCase().includes('relative'))));
+    if (isName) {
+      if (!/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(valStr)) {
+        errors.push(`${field.label || field.key} must contain letters only.`);
+      }
+    }
+
+    // 4. Email validations
     const isEmail = field.type === 'email' || field.key.toLowerCase().includes('email');
     if (isEmail) {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valStr)) {
@@ -116,7 +124,7 @@ const validateServiceFormData = (formFields, formData = {}, serviceName = 'Servi
       }
     }
 
-    // 4. Date / Birthday validations
+    // 5. Date / Birthday validations
     const isDateField = field.type === 'date';
     const isBirthDate = isDateField && (field.key.toLowerCase().includes('birth') || (field.label && field.label.toLowerCase().includes('birth')));
     if (isDateField) {
@@ -136,9 +144,9 @@ const validateServiceFormData = (formFields, formData = {}, serviceName = 'Servi
       }
     }
 
-    // 5. String length & pattern validations
+    // 6. String length & pattern validations
     if (typeof rawVal === 'string' && !rawVal.startsWith('data:')) {
-      const defaultMax = field.type === 'textarea' ? 500 : 255;
+      const defaultMax = field.type === 'textarea' ? 500 : (isPhone ? 11 : (isName ? 100 : 255));
       const effectiveMax = v.maxLength || defaultMax;
       if (valStr.length > effectiveMax) {
         errors.push(`${field.label || field.key} must not exceed ${effectiveMax} characters.`);
@@ -172,6 +180,8 @@ const validateGuestInput = (guest) => {
 
   if (!fullName || fullName.length < 2) {
     errors.push('Guest full name must be at least 2 characters.');
+  } else if (!/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(fullName)) {
+    errors.push('Guest full name must contain letters only.');
   }
   if (fullName.length > 100) {
     errors.push('Guest full name must not exceed 100 characters.');
@@ -184,7 +194,7 @@ const validateGuestInput = (guest) => {
       errors.push('Guest birth date must be a valid past date.');
     }
   }
-  if (contactNumber && !/^(09\d{9}|\+639\d{9}|\d{7,11})$/.test(contactNumber)) {
+  if (contactNumber && !/^(09\d{9}|\+639\d{9})$/.test(contactNumber)) {
     errors.push('Guest contact number must be a valid 11-digit mobile number (e.g. 09123456789).');
   }
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
