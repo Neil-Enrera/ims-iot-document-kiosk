@@ -4876,6 +4876,7 @@ export class KioskComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.restoreState();
     this.resetIdleTimer();
+    this.rfidScanService.connect();
     this.rfidScanSub = this.rfidScanService.scans().subscribe(event => this.handleRfidScan(event.uid));
     this.rfidConnectionSub = this.rfidScanService.connection().subscribe(connected => {
       this.rfidConnected.set(connected);
@@ -4918,12 +4919,8 @@ export class KioskComponent implements OnInit, OnDestroy {
       this.translations.setLanguage(savedState.language);
     }
 
-    // Reconnect RFID if we were in RFID mode
-    if (savedState.mode === 'rfid' && savedState.rfidStep === 'scan') {
-      this.rfidScanService.connect();
-    }
-
-
+    // Reconnect RFID if we were in RFID mode or Home mode
+    this.rfidScanService.connect();
 
     // Restart camera if we were in a photo step
     if ((savedState.mode === 'documents' && savedState.currentStep === 'photo') ||
@@ -5020,7 +5017,6 @@ export class KioskComponent implements OnInit, OnDestroy {
   continueWithout() {
     this.stopCamera();
     this.errorMessage.set('');
-    this.rfidScanService.disconnect();
     this.mode.set('guest');
     this.resetIdleTimer();
     this.saveState();
@@ -5077,13 +5073,25 @@ export class KioskComponent implements OnInit, OnDestroy {
   // ============================================================
 
   private handleRfidScan(uid: string) {
-    if (this.mode() !== 'rfid' || this.rfidStep() !== 'scan') return;
+    const currentMode = this.mode();
+    // Allow scan on home, rfid (scan/error), or resident profile screen
+    if (currentMode !== 'home' && currentMode !== 'rfid' && !(currentMode === 'documents' && this.currentStep() === 'welcome')) {
+      return;
+    }
+
+    console.log('[Kiosk Component] Processing RFID card tap with UID:', uid);
+    this.errorMessage.set('');
+    this.rfidError.set('');
+    this.mode.set('rfid');
+    this.rfidStep.set('scan');
     this.rfidDetected.set(true);
-    this.rfidScanService.disconnect();
+
     this.kioskService.verifyRfid(uid).subscribe({
       next: (result: any) => {
         const data = result?.data;
         if (data?.recognized && data.resident) {
+          console.log('[Kiosk Component] Resident recognized successfully:', data.resident.first_name, data.resident.last_name);
+          this.rfidDetected.set(false);
           this.rfidStep.set('search');
           this.resident.set(data.resident);
           this.rfidCard.set(data?.rfid || null);
@@ -5093,18 +5101,24 @@ export class KioskComponent implements OnInit, OnDestroy {
           this.cdr.detectChanges();
           this.saveState();
         } else {
+          console.warn('[Kiosk Component] RFID card not recognized:', result);
           this.rfidDetected.set(false);
-          this.rfidError.set(this.t('err.rfid.notRecognized'));
+          this.rfidError.set(data?.message || this.t('err.rfid.notRecognized'));
+          this.mode.set('rfid');
           this.rfidStep.set('error');
           this.resetIdleTimer();
+          this.cdr.detectChanges();
           this.saveState();
         }
       },
-      error: () => {
+      error: (err) => {
+        console.error('[Kiosk Component] Error verifying RFID card:', err);
         this.rfidDetected.set(false);
         this.rfidError.set(this.t('err.rfid.readFailed'));
+        this.mode.set('rfid');
         this.rfidStep.set('error');
         this.resetIdleTimer();
+        this.cdr.detectChanges();
         this.saveState();
       }
     });
@@ -6521,7 +6535,6 @@ export class KioskComponent implements OnInit, OnDestroy {
         return;
       }
       // From scan back to Home
-      this.rfidScanService.disconnect();
       this.mode.set('home');
       this.saveState();
       return;
@@ -6725,7 +6738,6 @@ export class KioskComponent implements OnInit, OnDestroy {
   finish() {
     this.kioskService.reset();
     this.stopCamera();
-    this.rfidScanService.disconnect();
     this.mode.set('home');
     this.currentStep.set('welcome');
     this.barangayStep.set('requirements');

@@ -169,7 +169,8 @@ const findByUid = async (cardUid) => {
             r.emergency_contact_name, r.emergency_contact_number,
             r.photo AS resident_photo, r.status AS resident_status, r.barangay_id AS resident_barangay_id
      FROM rfid_cards rc JOIN residents r ON rc.resident_id = r.resident_id 
-     WHERE UPPER(REPLACE(REPLACE(REPLACE(rc.card_uid, ':', ''), ' ', ''), '-', '')) IN (?, ?)`,
+     WHERE UPPER(REPLACE(REPLACE(REPLACE(rc.card_uid, ':', ''), ' ', ''), '-', '')) IN (?, ?)
+     ORDER BY (CASE WHEN UPPER(rc.status) = 'ACTIVE' THEN 1 ELSE 2 END), rc.rfid_card_id DESC`,
     [cleanUid, reversedUid]
   );
   return rows[0] || null;

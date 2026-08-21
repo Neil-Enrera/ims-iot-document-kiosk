@@ -15,6 +15,18 @@
 
 > **Note:** TASK-BACKEND-012 (Payment API) and TASK-FRONTEND-011 (Payment UI) removed per DEC-008.
 > **Recent Updates (August 2026):**
+> - Fixed RFID Hardware Bridge, Auto-Detection & End-to-End Resident Verification (`kiosk-server/index.js`, `rfid-scan.service.ts`, `kiosk.component.ts`, `rfid.repository.js`):
+>   - **Root Causes Identified**: 
+>     1) `hardware/kiosk-server` only listened on WebSocket without USB Serial fallback for the NodeMCU/CH340 device on COM4 when Wi-Fi was disconnected or negotiating.
+>     2) `RfidScanService` only connected on demand when clicking `startRfid()` and disconnected on page/home transitions, causing cards tapped on the landing screen to be ignored.
+>     3) `handleRfidScan` strictly guarded against scans outside `mode === 'rfid'`, blocking initial card taps on the Home screen.
+>     4) `findByUid` in backend did not prioritize ACTIVE cards over superseded cancelled records.
+>   - **Fixes Implemented**:
+>     - Upgraded `hardware/kiosk-server` with dual communication (concurrent USB Serial on COM4 via `serialport` + WebSocket `/ws?type=arduino`), guaranteeing real-time card capture regardless of network status.
+>     - Updated `RfidScanService` with dynamic host resolution (`ws://${window.location.hostname}:3001`) and continuous connection lifecycle.
+>     - Updated `kiosk.component.ts` to allow instant card taps from the Home screen or Scan screen, automatically verifying with `/api/v1/kiosk/rfid/verify`, loading the resident record, and displaying the Resident Profile welcome page.
+>     - Updated `rfid.repository.js` `findByUid` to prioritize active registered cards.
+>   - **Verification**: Verified with automated E2E integration test `test-rfid-e2e-flow.js` (Card tap `1AEEC635` → Bridge → Backend API → Resident Neil Andrei Enrera profile displayed). Built both applications with 0 errors.
 > - Enhanced Admin Panel Forms Validation & Real-Time Filtering (`input.component.ts`, `resident-form.component.ts`, `user-form.component.ts`, `request-form.component.ts`, `resident.validation.js`, `user.validation.js`):
 >   - Upgraded shared `InputComponent` in Admin Panel with real-time keystroke filtering (`filterType="name"`, `filterType="phone"`, `filterType="numeric"`), `(keydown)` character interception, `(input)`/`(paste)` sanitizers, `maxlength`, `max` date constraints, and accessible error message banners.
 >   - Updated Resident Form (`resident-form.component.ts`) and backend (`resident.validation.js`): Enforced letters-only filtering and validation on `firstName`, `middleName`, `lastName`, `nationality`, and `emergencyContactName` (`/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/`), 11-digit mobile format on contact numbers (`/^(09\d{9}|\+639\d{9})$/`), valid past dates on `birthDate`, and character length limits across all resident address and demographic fields.
