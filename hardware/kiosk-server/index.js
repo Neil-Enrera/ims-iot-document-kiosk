@@ -188,7 +188,8 @@ async function initSerialConnection() {
     serialPortInstance = new SerialPort({
       path: targetPort.path,
       baudRate: 115200,
-      autoOpen: false
+      autoOpen: false,
+      hupcl: false
     });
 
     serialParser = serialPortInstance.pipe(new ReadlineParser({ delimiter: '\r\n' }));
@@ -199,6 +200,11 @@ async function initSerialConnection() {
         scheduleSerialReconnect();
         return;
       }
+
+      // Explicitly clear DTR and RTS so ESP8266 auto-reset circuit remains in normal run mode
+      serialPortInstance.set({ dtr: false, rts: false }, (setErr) => {
+        if (setErr) console.warn('[Serial] Warning clearing DTR/RTS:', setErr.message);
+      });
 
       console.log(`[Serial] Connected to ESP8266 on ${targetPort.path}`);
       arduinoState.connected = true;
@@ -215,6 +221,7 @@ async function initSerialConnection() {
       const trimmed = line.trim();
       if (!trimmed) return;
 
+      console.log('[Serial COM4]:', trimmed);
       arduinoState.lastHeartbeat = Date.now();
 
       // Check for "Card UID: <UID>"
@@ -223,6 +230,7 @@ async function initSerialConnection() {
         processRfidScan(match[1], 'serial');
         return;
       }
+
 
       // Check for JSON: {"type":"rfid_scan","uid":"..."}
       if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
