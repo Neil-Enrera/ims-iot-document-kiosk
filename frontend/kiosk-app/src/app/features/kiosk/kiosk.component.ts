@@ -5092,10 +5092,32 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.capturedPhoto.set(null);
     this.capturedSignature.set(null);
     this.resetBarangayForm();
+    if (this.resident()) {
+      this.populateBarangayFromResident(this.resident()!);
+    }
     this.mode.set('barangay');
     this.barangayStep.set('requirements');
     this.resetIdleTimer();
     this.saveState();
+  }
+
+  private populateBarangayFromResident(r: Resident) {
+    this.barangayForm = {
+      firstName: r.first_name || '',
+      middleName: r.middle_name || '',
+      lastName: r.last_name || '',
+      suffix: r.suffix || '',
+      birthDate: r.birth_date ? r.birth_date.split('T')[0] : '',
+      gender: r.gender || '',
+      civilStatus: r.civil_status || '',
+      occupation: r.occupation || '',
+      bloodType: r.blood_type || '',
+      addressLine: r.address_line || '',
+      contactNumber: r.contact_number || '',
+      email: r.email || '',
+      emergencyContactName: r.emergency_contact_name || '',
+      emergencyContactNumber: r.emergency_contact_number || ''
+    };
   }
 
   private resetBarangayForm() {
@@ -5124,14 +5146,34 @@ export class KioskComponent implements OnInit, OnDestroy {
 
   private handleRfidScan(uid: string) {
     const currentMode = this.mode();
+    console.log('[Kiosk Component] Processing RFID card tap with UID:', uid, 'in mode:', currentMode);
+    this.errorMessage.set('');
+    this.rfidError.set('');
+
+    // If currently on Barangay ID flow, auto-fill resident info
+    if (currentMode === 'barangay') {
+      this.kioskService.verifyRfid(uid).subscribe({
+        next: (result: any) => {
+          const data = result?.data;
+          if (data?.recognized && data.resident) {
+            console.log('[Kiosk Component] Auto-filling Barangay ID form with resident details:', data.resident.first_name);
+            this.resident.set(data.resident);
+            this.rfidCard.set(data?.rfid || null);
+            this.populateBarangayFromResident(data.resident);
+            this.cdr.detectChanges();
+            this.saveState();
+          }
+        }
+      });
+      return;
+    }
+
     // Allow scan on home, rfid (scan/error), or resident profile screen
     if (currentMode !== 'home' && currentMode !== 'rfid' && !(currentMode === 'documents' && this.currentStep() === 'welcome')) {
       return;
     }
 
     console.log('[Kiosk Component] Processing RFID card tap with UID:', uid);
-    this.errorMessage.set('');
-    this.rfidError.set('');
     this.mode.set('rfid');
     this.rfidStep.set('scan');
     this.rfidDetected.set(true);
@@ -5161,10 +5203,10 @@ export class KioskComponent implements OnInit, OnDestroy {
           this.saveState();
         }
       },
-      error: (err) => {
-        console.error('[Kiosk Component] Error verifying RFID card:', err);
+      error: (err: any) => {
+        console.error('[Kiosk Component] RFID verification request failed:', err);
         this.rfidDetected.set(false);
-        this.rfidError.set(this.t('err.rfid.readFailed'));
+        this.rfidError.set(err?.error?.message || this.t('err.rfid.serverError'));
         this.mode.set('rfid');
         this.rfidStep.set('error');
         this.resetIdleTimer();

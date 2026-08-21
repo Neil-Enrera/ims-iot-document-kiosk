@@ -363,6 +363,15 @@ app.get('/api/hardware/status', async (req, res) => {
   });
 });
 
+// Manual/Test RFID Scan endpoint
+app.post('/api/hardware/scan', (req, res) => {
+  const { uid } = req.body;
+  if (!uid) return res.status(400).json({ error: 'UID required' });
+  processRfidScan(uid, 'api_test');
+  res.json({ success: true, uid });
+});
+
+
 // Webcam capture endpoint
 app.post('/api/hardware/capture', (req, res) => {
   console.log('[Webcam] Capture request received from tablet');
