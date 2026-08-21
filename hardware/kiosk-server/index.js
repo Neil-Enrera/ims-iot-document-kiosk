@@ -173,11 +173,11 @@ async function initSerialConnection() {
   try {
     const ports = await SerialPort.list();
     // Prioritize CH340 / USB-Serial / COM4
-    const targetPort = ports.find(p =>
-      p.path === 'COM4' ||
-      (p.friendlyName && /CH340|USB-Serial|Arduino|NodeMCU/i.test(p.friendlyName)) ||
-      (p.manufacturer && /wch|arduino/i.test(p.manufacturer))
-    ) || (ports.length > 0 ? ports[0] : null);
+    const targetPort = ports.find(p => p.path === 'COM4') ||
+      ports.find(p => p.path !== 'COM3' && (
+        (p.friendlyName && /CH340|USB-Serial|Arduino|NodeMCU/i.test(p.friendlyName)) ||
+        (p.manufacturer && /wch|arduino/i.test(p.manufacturer))
+      ));
 
     if (!targetPort) {
       scheduleSerialReconnect();

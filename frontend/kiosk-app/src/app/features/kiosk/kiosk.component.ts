@@ -6443,10 +6443,16 @@ export class KioskComponent implements OnInit, OnDestroy {
 
   private drawFrame(el: any): string {
     const canvas = document.createElement('canvas');
-    canvas.width = el.videoWidth || el.naturalWidth || el.width || 640;
-    canvas.height = el.videoHeight || el.naturalHeight || el.height || 480;
-    canvas.getContext('2d')?.drawImage(el, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL('image/jpeg', 0.85);
+    const width = el.videoWidth || el.naturalWidth || el.clientWidth || el.width || 640;
+    const height = el.videoHeight || el.naturalHeight || el.clientHeight || el.height || 480;
+    canvas.width = width > 0 ? width : 640;
+    canvas.height = height > 0 ? height : 480;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.drawImage(el, 0, 0, canvas.width, canvas.height);
+      return canvas.toDataURL('image/jpeg', 0.9);
+    }
+    return '';
   }
 
   toggleIpCamera() {
@@ -6464,29 +6470,32 @@ export class KioskComponent implements OnInit, OnDestroy {
   capturePhoto() {
     if (this.cameraMode() === 'esp32') {
       this.submitting.set(true);
-      console.log('[ESP32-CAM] Requesting instant photo capture...');
-      this.kioskService.captureEsp32Cam(this.esp32CaptureUrl()).subscribe({
+      console.log('[ESP32-CAM] Taking photo: releasing stream socket and requesting high-res capture...');
+
+      // Step 1: Temporarily pause stream element so the ESP32 socket is freed
+      this.esp32StreamUrl.set('');
+
+      // Step 2: Request fresh photo snapshot from /capture
+      const targetCaptureUrl = `${this.esp32CaptureUrl()}?t=${Date.now()}`;
+      this.kioskService.captureEsp32Cam(targetCaptureUrl).subscribe({
         next: async (blob) => {
           try {
             const dataUrl = await this.kioskService.blobToDataUrl(blob);
+            console.log('[ESP32-CAM] Photo captured successfully! Size:', blob.size, 'bytes');
             this.capturedPhoto.set(dataUrl);
-          } catch {
-            const el = this.esp32StreamEl?.nativeElement || this.inlineEsp32StreamEl?.nativeElement;
-            if (el) {
-              this.capturedPhoto.set(this.drawFrame(el));
-            }
+            this.errorMessage.set('');
+          } catch (conversionErr) {
+            console.error('[ESP32-CAM] Failed to convert blob to data URL:', conversionErr);
+            this.errorMessage.set('Failed to process captured image.');
           }
           this.submitting.set(false);
           this.saveState();
         },
         error: (err) => {
-          console.warn('[ESP32-CAM] Direct capture request failed, snapshotting from stream element:', err);
-          const el = this.esp32StreamEl?.nativeElement || this.inlineEsp32StreamEl?.nativeElement;
-          if (el) {
-            this.capturedPhoto.set(this.drawFrame(el));
-          } else {
-            this.errorMessage.set('Failed to capture photo from camera.');
-          }
+          console.error('[ESP32-CAM] Direct capture request failed:', err);
+          this.errorMessage.set('Could not capture image from ESP32-CAM. Please try again.');
+          // Restore stream on error
+          this.esp32StreamUrl.set(`${environment.esp32CamStreamUrl || 'http://192.168.100.200/stream'}?t=${Date.now()}`);
           this.submitting.set(false);
           this.saveState();
         }
@@ -6540,7 +6549,13 @@ export class KioskComponent implements OnInit, OnDestroy {
 
   retakePhoto() {
     this.capturedPhoto.set(null);
-    setTimeout(() => this.startCamera(), 100);
+    this.errorMessage.set('');
+    if (this.cameraMode() === 'esp32') {
+      this.esp32StreamUrl.set(`${environment.esp32CamStreamUrl || 'http://192.168.100.200/stream'}?t=${Date.now()}`);
+      this.cameraReady.set(true);
+    } else {
+      setTimeout(() => this.startCamera(), 100);
+    }
     this.saveState();
   }
 
