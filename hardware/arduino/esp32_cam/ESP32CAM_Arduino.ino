@@ -6,8 +6,8 @@
 // Wi-Fi Configuration
 // ========================================
 
-const char* ssid = "HUAWEI-2.4G-n82P";
-const char* password = "j2JFAcy4";
+const char* ssid = "HUAWEI-2.4G-N3w7;
+const char* password = "GarateBulacan2020";
 
 // Wi-Fi reconnection settings
 const unsigned long WIFI_RECONNECT_INTERVAL = 5000; // 5 seconds

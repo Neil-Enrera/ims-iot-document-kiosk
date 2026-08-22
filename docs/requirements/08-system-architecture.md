@@ -521,7 +521,6 @@ The system should adhere to the following principles:
 | Authentication                                 |
 | Resident Module                                |
 | Request Module                                 |
-| Payment Module                                 |
 | Approval Module                                |
 | Release Module                                 |
 +------------------------------------------------+
@@ -533,8 +532,7 @@ The system should adhere to the following principles:
 | MySQL                                          |
 | Residents                                      |
 | Requests                                       |
-| Services                                       |
-| Payments                                       |
+| Services                                       |                                       
 | Audit Logs                                     |
 +------------------------------------------------+
                      |
