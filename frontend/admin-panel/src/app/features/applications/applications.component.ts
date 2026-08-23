@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, signal, ViewChild, ElementRef, AfterViewChecked } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { renderAsync } from 'docx-preview';
 import { Observable, of } from 'rxjs';
 import { NotificationService } from '../notifications/notification.service';
@@ -26,7 +26,7 @@ type ApplicationRow = BarangayIdApplication & { full_name: string };
   imports: [
     TableComponent, CardComponent, InputComponent, PaginationComponent,
     ButtonComponent, ModalComponent, ConfirmDialogComponent, DocumentPreviewModalComponent,
-    DatePipe, ServiceFormComponent
+    DatePipe, ServiceFormComponent, RouterLink
   ],
   template: `
     <div>
@@ -348,6 +348,17 @@ type ApplicationRow = BarangayIdApplication & { full_name: string };
                         <button type="button" (click)="previewIdCard(app)" class="text-blue-600 hover:text-blue-800 text-xs font-bold">Preview</button>
                         <a [href]="idCardUrl(app)" target="_blank" class="text-blue-600 hover:text-blue-800 text-xs font-bold">Download</a>
                       </div>
+                    </div>
+                  }
+                  @if (app.resident_id) {
+                    <div class="flex items-center justify-between pt-2 border-t border-green-200">
+                      <p class="text-xs text-slate-600">Physical RFID card registration:</p>
+                      <a [routerLink]="['/rfid']" [queryParams]="{ new: '1', residentId: app.resident_id }" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-600 hover:bg-orange-700 active:scale-[0.98] text-white text-xs font-semibold shadow-xs transition-all">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                          <rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 9.5h8M7 12h8" stroke-linecap="round"/>
+                        </svg>
+                        Assign RFID Card
+                      </a>
                     </div>
                   }
                 </div>

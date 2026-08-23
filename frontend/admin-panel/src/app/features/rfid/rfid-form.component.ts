@@ -53,7 +53,7 @@ export class RfidFormComponent implements OnInit {
   constructor(private residentService: ResidentService) {}
 
   ngOnInit() {
-    this.residentService.getAll({ limit: 100 }).subscribe({
+    this.residentService.getAll({ limit: 500, sortBy: 'resident_id', sortOrder: 'DESC' }).subscribe({
       next: (res) => {
         this.residentOptions = res.data.map(r => ({
           value: r.resident_id.toString(),

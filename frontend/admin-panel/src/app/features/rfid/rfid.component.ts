@@ -238,8 +238,9 @@ export class RfidComponent implements OnInit {
   ngOnInit() {
     this.route.queryParams.subscribe(params => {
       if (params['new'] === '1') {
-        this.openRegisterModal();
-        this.router.navigate([], { queryParams: { new: null }, queryParamsHandling: 'merge' });
+        const resId = params['residentId'] ? parseInt(params['residentId'], 10) : undefined;
+        this.openRegisterModal(resId);
+        this.router.navigate([], { queryParams: { new: null, residentId: null }, queryParamsHandling: 'merge' });
       }
     });
     this.loadCards();
