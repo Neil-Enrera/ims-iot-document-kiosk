@@ -21,7 +21,7 @@ import { RfidFormComponent } from './rfid-form.component';
       <!-- Page Header -->
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
-          <h1 class="text-2xl font-bold text-gray-800">RFID Cards & Resident Registration</h1>
+          <h1 class="text-2xl font-bold text-gray-800">RFID Card Registration</h1>
           <p class="text-sm text-slate-500 mt-1">Manage RFID card assignments and track registered vs. unregistered residents.</p>
         </div>
         <app-button variant="primary" (onClick)="openRegisterModal()">+ Register Card</app-button>

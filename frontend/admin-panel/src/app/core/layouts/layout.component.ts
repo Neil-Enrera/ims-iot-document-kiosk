@@ -312,10 +312,10 @@ export class LayoutComponent implements OnInit, OnDestroy {
     const items: NavItem[] = [
       { label: 'Dashboard', route: '/dashboard', icon: 'dashboard' },
       { label: 'Residents', route: '/residents', icon: 'residents' },
-      { label: 'Requests', route: '/requests', icon: 'requests' },
-      { label: 'Barangay ID Apps', route: '/applications', icon: 'applications' },
+      { label: 'Document Requests', route: '/requests', icon: 'requests' },
+      { label: 'Barangay ID Requests', route: '/applications', icon: 'applications' },
       { label: 'Services', route: '/services', icon: 'services' },
-      { label: 'RFID Cards', route: '/rfid', icon: 'rfid' }
+      { label: 'RFID Card Registration', route: '/rfid', icon: 'rfid' }
     ];
     if (this.auth.isAdmin()) {
       items.push(

@@ -33,7 +33,7 @@ type ApplicationRow = BarangayIdApplication & { full_name: string };
       <!-- Header -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Barangay ID Applications</h1>
+          <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Barangay ID Requests</h1>
           <p class="text-sm text-slate-500 mt-1">Review and process Barangay ID applications submitted through the kiosk.</p>
         </div>
         <button
