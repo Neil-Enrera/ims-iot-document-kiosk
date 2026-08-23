@@ -5692,9 +5692,17 @@ export class KioskComponent implements OnInit, OnDestroy {
   }
 
   isFieldPhone(field: FormField): boolean {
+    if (field.type === 'tel') return true;
     const key = (field.key || '').toLowerCase();
     const label = (field.label || '').toLowerCase();
-    return field.type === 'tel' || key.includes('contact') || key.includes('phone') || key.includes('mobile') || label.includes('contact') || label.includes('phone') || label.includes('mobile');
+    // If it's a person/name/relative field without "number/phone/mobile", it's a name, not a phone
+    if ((key.includes('person') || label.includes('person') || key.includes('name') || label.includes('name')) &&
+        !(key.includes('number') || label.includes('number') || key.includes('phone') || label.includes('phone') || key.includes('mobile') || label.includes('mobile') || key.includes('num') || label.includes('num'))) {
+      return false;
+    }
+    return key.includes('phone') || key.includes('mobile') || label.includes('phone') || label.includes('mobile') ||
+           key.includes('contact_number') || key.includes('contactnumber') || label.includes('contact number') ||
+           key.includes('tel') || label.includes('tel');
   }
 
   isFieldNumber(field: FormField): boolean {
@@ -5704,7 +5712,7 @@ export class KioskComponent implements OnInit, OnDestroy {
   isFieldName(field: FormField): boolean {
     const key = (field.key || '').toLowerCase();
     const label = (field.label || '').toLowerCase();
-    if (key.includes('email') || key.includes('address') || key.includes('file') || key.includes('date') || this.isFieldPhone(field)) return false;
+    if (key.includes('email') || key.includes('address') || key.includes('file') || key.includes('date') || key.includes('number') || label.includes('number') || key.includes('phone') || label.includes('phone') || key.includes('mobile') || label.includes('mobile')) return false;
     return key.includes('name') || label.includes('name') || key.includes('relative') || label.includes('relative') || key.includes('person') || label.includes('person');
   }
 
