@@ -4748,8 +4748,8 @@ export class KioskComponent implements OnInit, OnDestroy {
 
   // ESP32-CAM signals
   cameraMode = signal<'esp32' | 'webcam'>('esp32');
-  esp32StreamUrl = signal<string>(environment.esp32CamStreamUrl || 'http://192.168.100.103/stream');
-  esp32CaptureUrl = signal<string>(environment.esp32CamCaptureUrl || 'http://192.168.100.103/capture');
+  esp32StreamUrl = signal<string>(environment.esp32CamStreamUrl || 'http://192.168.100.200/stream');
+  esp32CaptureUrl = signal<string>(environment.esp32CamCaptureUrl || 'http://192.168.100.200/capture');
   esp32Error = signal<boolean>(false);
 
   formError = signal('');
@@ -6388,7 +6388,7 @@ export class KioskComponent implements OnInit, OnDestroy {
 
   startCamera(target?: HTMLVideoElement) {
     if (this.cameraMode() === 'esp32') {
-      const baseStreamUrl = environment.esp32CamStreamUrl || 'http://192.168.100.103/stream';
+      const baseStreamUrl = environment.esp32CamStreamUrl || 'http://192.168.100.200/stream';
       this.esp32StreamUrl.set(`${baseStreamUrl}?t=${Date.now()}`);
       this.cameraReady.set(true);
       this.esp32Error.set(false);
@@ -6454,6 +6454,9 @@ export class KioskComponent implements OnInit, OnDestroy {
   }
 
   onEsp32StreamError() {
+    if (!this.esp32StreamUrl() || this.submitting() || this.capturedPhoto()) {
+      return;
+    }
     console.warn('[ESP32-CAM] Stream error or camera offline');
     this.esp32Error.set(true);
     this.cameraReady.set(false);
@@ -6550,32 +6553,29 @@ export class KioskComponent implements OnInit, OnDestroy {
   capturePhoto() {
     if (this.cameraMode() === 'esp32') {
       this.submitting.set(true);
-      console.log('[ESP32-CAM] Taking photo: releasing stream socket and requesting high-res capture...');
+      console.log('[ESP32-CAM] Taking photo: requesting capture snapshot...');
 
-      // Step 1: Temporarily pause stream element so the ESP32 socket is freed
-      this.esp32StreamUrl.set('');
-
-      // Step 2: Request fresh photo snapshot from /capture
+      // First attempt: direct snapshot from ESP32-CAM /capture endpoint
       const targetCaptureUrl = `${this.esp32CaptureUrl()}?t=${Date.now()}`;
       this.kioskService.captureEsp32Cam(targetCaptureUrl).subscribe({
         next: async (blob) => {
           try {
+            if (!blob || blob.size === 0) throw new Error('Empty blob received from /capture');
             const dataUrl = await this.kioskService.blobToDataUrl(blob);
             console.log('[ESP32-CAM] Photo captured successfully! Size:', blob.size, 'bytes');
             this.capturedPhoto.set(dataUrl);
             this.errorMessage.set('');
+            this.esp32StreamUrl.set(''); // Free socket once photo is set
           } catch (conversionErr) {
-            console.error('[ESP32-CAM] Failed to convert blob to data URL:', conversionErr);
-            this.errorMessage.set('Failed to process captured image.');
+            console.warn('[ESP32-CAM] Blob conversion failed, falling back to stream frame:', conversionErr);
+            this.fallbackCaptureFromStreamElement();
           }
           this.submitting.set(false);
           this.saveState();
         },
         error: (err) => {
-          console.error('[ESP32-CAM] Direct capture request failed:', err);
-          this.errorMessage.set('Could not capture image from ESP32-CAM. Please try again.');
-          // Restore stream on error
-          this.esp32StreamUrl.set(`${environment.esp32CamStreamUrl || 'http://192.168.100.200/stream'}?t=${Date.now()}`);
+          console.warn('[ESP32-CAM] Direct /capture endpoint unreachable, falling back to live stream frame:', err);
+          this.fallbackCaptureFromStreamElement();
           this.submitting.set(false);
           this.saveState();
         }
@@ -6611,6 +6611,25 @@ export class KioskComponent implements OnInit, OnDestroy {
       this.stopCamera();
       this.saveState();
     }
+  }
+
+  private fallbackCaptureFromStreamElement() {
+    const el = this.esp32StreamEl?.nativeElement || this.inlineEsp32StreamEl?.nativeElement;
+    if (el) {
+      try {
+        const frameData = this.drawFrame(el);
+        if (frameData && frameData.length > 100) {
+          console.log('[ESP32-CAM] Captured photo from live stream canvas frame');
+          this.capturedPhoto.set(frameData);
+          this.errorMessage.set('');
+          this.esp32StreamUrl.set('');
+          return;
+        }
+      } catch (canvasErr) {
+        console.error('[ESP32-CAM] Canvas fallback capture error:', canvasErr);
+      }
+    }
+    this.errorMessage.set(this.t('err.cameraDenied') || 'Could not capture image from ESP32-CAM. Please try again.');
   }
 
   skipPhoto() {
