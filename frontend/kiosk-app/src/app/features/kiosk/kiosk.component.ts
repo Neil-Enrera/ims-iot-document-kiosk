@@ -2776,482 +2776,454 @@ export type BarangayStep =
 
                     <!-- Form card -->
                     <div class="bg-white border border-[#E5E7EB] rounded-[20px] shadow-[0_2px_14px_rgba(15,23,42,0.07)] px-5 sm:px-7 py-5 sm:py-6">
+                      @if (barangayService()?.form_fields && barangayService()!.form_fields!.length > 0) {
+                        <div class="flex flex-wrap gap-x-5 gap-y-4 sm:gap-y-5">
+                          @for (field of barangayService()!.form_fields!; track field.key) {
+                            <div [class]="formGridClass(field)">
+                              <label [attr.for]="'bar-form-' + field.key" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
+                                {{ fieldLabel(field) }} @if (field.required) { <span class="text-[#F97316]">*</span> }
+                              </label>
 
-                      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-x-4 gap-y-4 sm:gap-y-5">
+                              @switch (field.type) {
+                                @case ('select') {
+                                  <div class="relative flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
+                                       [class.border-[#DC2626]]="formErrors()[field.key]">
+                                    <select
+                                      [id]="'bar-form-' + field.key"
+                                      [name]="field.key"
+                                      [(ngModel)]="formValues()[field.key]"
+                                      (ngModelChange)="updateFormValue(field.key, $event)"
+                                      class="appearance-none flex-1 min-w-0 bg-transparent px-3.5 sm:px-4 py-3 text-[15px] sm:text-[17px] outline-none border-none cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                                      [class.text-[#0F172A]]="!!formValues()[field.key]"
+                                      [class.text-[#94A3B8]]="!formValues()[field.key]">
+                                      <option value="">{{ t('doc.form.select') }}</option>
+                                      @for (opt of field.options || []; track opt) {
+                                        <option [value]="opt">{{ opt }}</option>
+                                      }
+                                    </select>
+                                    <div class="pointer-events-none absolute right-3 text-[#64748B]" aria-hidden="true">
+                                      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/>
+                                      </svg>
+                                    </div>
+                                  </div>
+                                }
+                                @case ('textarea') {
+                                  <textarea
+                                    [id]="'bar-form-' + field.key"
+                                    [name]="field.key"
+                                    [(ngModel)]="formValues()[field.key]"
+                                    (ngModelChange)="updateFormValue(field.key, $event)"
+                                    [placeholder]="fieldPlaceholder(field)"
+                                    [attr.maxlength]="fieldMaxLength(field)"
+                                    rows="3"
+                                    class="w-full rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm px-3.5 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#F97316] focus:ring-4 focus:ring-[#F97316]/15 transition-all duration-150 resize-none"
+                                    [class.border-[#DC2626]]="formErrors()[field.key]"></textarea>
+                                }
+                                @case ('radio') {
+                                  <div class="flex flex-col gap-2">
+                                    @for (opt of field.options || []; track opt) {
+                                      <label class="flex items-center gap-3 rounded-xl border-2 border-[#E5E7EB] bg-white px-4 py-3 cursor-pointer transition-colors duration-150 hover:border-[#F97316]/40 mb-0"
+                                             [class.border-[#F97316]]="formValues()[field.key] === opt"
+                                             [class.bg-[#FFF7ED]]="formValues()[field.key] === opt">
+                                        <input type="radio" [name]="field.key" [value]="opt"
+                                               [checked]="formValues()[field.key] === opt"
+                                               (change)="updateFormValue(field.key, opt)"
+                                               class="w-5 h-5 accent-[#F97316] shrink-0" />
+                                        <span class="text-[15px] sm:text-base font-medium text-[#0F172A]">{{ opt }}</span>
+                                      </label>
+                                    }
+                                  </div>
+                                }
+                                @case ('checkbox') {
+                                  <div class="flex flex-col gap-2">
+                                    @for (opt of field.options || []; track opt) {
+                                      <label class="flex items-center gap-3 rounded-xl border-2 border-[#E5E7EB] bg-white px-4 py-3 cursor-pointer transition-colors duration-150 hover:border-[#F97316]/40 mb-0"
+                                             [class.border-[#F97316]]="isCheckboxChecked(field, opt)"
+                                             [class.bg-[#FFF7ED]]="isCheckboxChecked(field, opt)">
+                                        <input type="checkbox" [value]="opt"
+                                               [checked]="isCheckboxChecked(field, opt)"
+                                               (change)="toggleCheckboxOption(field, opt, $event)"
+                                               class="w-5 h-5 accent-[#F97316] shrink-0" />
+                                        <span class="text-[15px] sm:text-base font-medium text-[#0F172A]">{{ opt }}</span>
+                                      </label>
+                                    }
+                                  </div>
+                                }
+                                @default {
+                                  <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
+                                       [class.border-[#DC2626]]="formErrors()[field.key]">
+                                    <input
+                                      [id]="'bar-form-' + field.key"
+                                      [type]="isFieldPhone(field) ? 'tel' : (isFieldNumber(field) ? 'text' : field.type)"
+                                      [name]="field.key"
+                                      [value]="formValues()[field.key] || ''"
+                                      (keydown)="onDynamicFieldKeyDown(field, $event)"
+                                      (input)="onDynamicFieldInput(field, $event)"
+                                      (paste)="onDynamicFieldPaste(field, $event)"
+                                      [placeholder]="fieldPlaceholder(field)"
+                                      [attr.inputmode]="fieldInputMode(field)"
+                                      [attr.maxlength]="fieldMaxLength(field)"
+                                      [attr.min]="field.validation?.min !== undefined ? field.validation.min : null"
+                                      [attr.max]="field.validation?.max !== undefined ? field.validation.max : (field.type === 'date' && (field.key.toLowerCase().includes('birth') || field.label.toLowerCase().includes('birth')) ? todayDateString() : null)"
+                                      class="flex-1 min-w-0 bg-transparent px-3.5 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] outline-none border-none" />
+                                    @if (formValues()[field.key]) {
+                                      <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                        </svg>
+                                      </div>
+                                    }
+                                  </div>
+                                }
+                              }
 
-                        <!-- First Name -->
-                        <div>
-                          <label for="barangay-firstName" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
-                            {{ t('bar.form.firstName') }} <span class="text-[#F97316]">*</span>
-                          </label>
-                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
-                               [class.border-[#DC2626]]="barangayInvalid('firstName')">
-                            <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
-                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                                <circle cx="12" cy="8" r="4"/>
-                                <path d="M4 20c0-3.6 3.6-5 8-5s8 1.4 8 5" stroke-linecap="round"/>
-                              </svg>
+                              @if (formErrors()[field.key]) {
+                                <p class="mt-2 flex items-center gap-1.5 text-base font-medium text-[#B91C1C]">
+                                  <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                    <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
+                                  </svg>
+                                  {{ formErrors()[field.key] }}
+                                </p>
+                              }
                             </div>
-                            <input id="barangay-firstName" type="text" name="firstName"
-                                   [value]="barangayForm.firstName || ''"
-                                   (keydown)="filterNameKeyDown($event)"
-                                   (input)="onBarangayNameInput('firstName', $event)"
-                                   (paste)="onBarangayNamePaste('firstName', $event)"
-                                   [placeholder]="t('bar.form.firstNamePh')" autocomplete="given-name" maxlength="50"
-                                   class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
-                            @if (barangayForm.firstName) {
-                              <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-                                </svg>
-                              </div>
-                            }
-                          </div>
-                          @if (barangayInvalid('firstName')) {
-                            <p class="mt-2 flex items-center gap-1.5 text-base font-medium text-[#B91C1C]">
-                              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                                <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
-                              </svg>
-                              {{ t('err.bar.firstName') }}
-                            </p>
                           }
                         </div>
+                      } @else {
+                        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-x-4 gap-y-4 sm:gap-y-5">
 
-                        <!-- Middle Name -->
-                        <div>
-                          <label for="barangay-middleName" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
-                            {{ t('bar.form.middleName') }}
-                          </label>
-                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden">
-                            <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
-                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                                <circle cx="12" cy="8" r="4"/>
-                                <path d="M4 20c0-3.6 3.6-5 8-5s8 1.4 8 5" stroke-linecap="round"/>
-                              </svg>
-                            </div>
-                            <input id="barangay-middleName" type="text" name="middleName"
-                                   [value]="barangayForm.middleName || ''"
-                                   (keydown)="filterNameKeyDown($event)"
-                                   (input)="onBarangayNameInput('middleName', $event)"
-                                   (paste)="onBarangayNamePaste('middleName', $event)"
-                                   [placeholder]="t('bar.form.middleNamePh')" autocomplete="additional-name" maxlength="50"
-                                   class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
-                            @if (barangayForm.middleName) {
-                              <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                          <!-- First Name -->
+                          <div>
+                            <label for="barangay-firstName" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
+                              {{ t('bar.form.firstName') }} <span class="text-[#F97316]">*</span>
+                            </label>
+                            <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
+                                 [class.border-[#DC2626]]="barangayInvalid('firstName')">
+                              <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                                <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                  <circle cx="12" cy="8" r="4"/>
+                                  <path d="M4 20c0-3.6 3.6-5 8-5s8 1.4 8 5" stroke-linecap="round"/>
                                 </svg>
                               </div>
+                              <input id="barangay-firstName" type="text" name="firstName"
+                                     [value]="barangayForm.firstName || ''"
+                                     (keydown)="filterNameKeyDown($event)"
+                                     (input)="onBarangayNameInput('firstName', $event)"
+                                     (paste)="onBarangayNamePaste('firstName', $event)"
+                                     [placeholder]="t('bar.form.firstNamePh')" autocomplete="given-name" maxlength="50"
+                                     class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
+                              @if (barangayForm.firstName) {
+                                <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
+                                  <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                  </svg>
+                                </div>
+                              }
+                            </div>
+                            @if (barangayInvalid('firstName')) {
+                              <p class="mt-2 flex items-center gap-1.5 text-base font-medium text-[#B91C1C]">
+                                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                  <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
+                                </svg>
+                                {{ t('err.bar.firstName') }}
+                              </p>
                             }
                           </div>
-                        </div>
 
-                        <!-- Last Name -->
-                        <div>
-                          <label for="barangay-lastName" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
-                            {{ t('bar.form.lastName') }} <span class="text-[#F97316]">*</span>
-                          </label>
-                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
-                               [class.border-[#DC2626]]="barangayInvalid('lastName')">
-                            <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
-                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                                <circle cx="12" cy="8" r="4"/>
-                                <path d="M4 20c0-3.6 3.6-5 8-5s8 1.4 8 5" stroke-linecap="round"/>
-                              </svg>
-                            </div>
-                            <input id="barangay-lastName" type="text" name="lastName"
-                                   [value]="barangayForm.lastName || ''"
-                                   (keydown)="filterNameKeyDown($event)"
-                                   (input)="onBarangayNameInput('lastName', $event)"
-                                   (paste)="onBarangayNamePaste('lastName', $event)"
-                                   [placeholder]="t('bar.form.lastNamePh')" autocomplete="family-name" maxlength="50"
-                                   class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
-                            @if (barangayForm.lastName) {
-                              <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                          <!-- Middle Name -->
+                          <div>
+                            <label for="barangay-middleName" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
+                              {{ t('bar.form.middleName') }}
+                            </label>
+                            <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden">
+                              <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                                <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                  <circle cx="12" cy="8" r="4"/>
+                                  <path d="M4 20c0-3.6 3.6-5 8-5s8 1.4 8 5" stroke-linecap="round"/>
                                 </svg>
                               </div>
-                            }
-                          </div>
-                          @if (barangayInvalid('lastName')) {
-                            <p class="mt-2 flex items-center gap-1.5 text-base font-medium text-[#B91C1C]">
-                              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                                <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
-                              </svg>
-                              {{ t('err.bar.lastName') }}
-                            </p>
-                          }
-                        </div>
-
-                        <!-- Suffix -->
-                        <div>
-                          <label for="barangay-suffix" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
-                            {{ t('bar.form.suffix') }}
-                          </label>
-                          <div class="relative flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden">
-                            <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
-                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                                <circle cx="12" cy="8" r="4"/>
-                                <path d="M4 20c0-3.6 3.6-5 8-5s8 1.4 8 5" stroke-linecap="round"/>
-                              </svg>
-                            </div>
-                            <select id="barangay-suffix" [(ngModel)]="barangayForm.suffix"
-                                     class="appearance-none flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] bg-transparent outline-none border-none cursor-pointer"
-                                    [class.text-[#94A3B8]]="!barangayForm.suffix">
-                              <option value="">{{ t('bar.form.suffixNone') }}</option>
-                              <option value="Jr.">Jr.</option>
-                              <option value="Sr.">Sr.</option>
-                              <option value="II">II</option>
-                              <option value="III">III</option>
-                              <option value="IV">IV</option>
-                            </select>
-                            <div class="pointer-events-none absolute right-3 text-[#64748B]" aria-hidden="true">
-                              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/>
-                              </svg>
+                              <input id="barangay-middleName" type="text" name="middleName"
+                                     [value]="barangayForm.middleName || ''"
+                                     (keydown)="filterNameKeyDown($event)"
+                                     (input)="onBarangayNameInput('middleName', $event)"
+                                     (paste)="onBarangayNamePaste('middleName', $event)"
+                                     [placeholder]="t('bar.form.middleNamePh')" autocomplete="additional-name" maxlength="50"
+                                     class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
+                              @if (barangayForm.middleName) {
+                                <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
+                                  <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                  </svg>
+                                </div>
+                              }
                             </div>
                           </div>
-                        </div>
 
-                        <!-- Birth Date -->
-                        <div>
-                          <label for="barangay-birthDate" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
-                            {{ t('bar.form.birthDate') }} <span class="text-[#F97316]">*</span>
-                          </label>
-                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
-                               [class.border-[#DC2626]]="barangayInvalid('birthDate')">
-                            <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
-                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                                <rect x="3" y="5" width="18" height="16" rx="2"/>
-                                <path d="M8 3v4M16 3v4M3 10h18"/>
-                              </svg>
-                            </div>
-                            <input id="barangay-birthDate" type="date" name="birthDate" [(ngModel)]="barangayForm.birthDate" [max]="todayDateString()"
-                                   class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] bg-transparent outline-none border-none" />
-                            @if (barangayForm.birthDate) {
-                              <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                          <!-- Last Name -->
+                          <div>
+                            <label for="barangay-lastName" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
+                              {{ t('bar.form.lastName') }} <span class="text-[#F97316]">*</span>
+                            </label>
+                            <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
+                                 [class.border-[#DC2626]]="barangayInvalid('lastName')">
+                              <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                                <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                  <circle cx="12" cy="8" r="4"/>
+                                  <path d="M4 20c0-3.6 3.6-5 8-5s8 1.4 8 5" stroke-linecap="round"/>
                                 </svg>
                               </div>
+                              <input id="barangay-lastName" type="text" name="lastName"
+                                     [value]="barangayForm.lastName || ''"
+                                     (keydown)="filterNameKeyDown($event)"
+                                     (input)="onBarangayNameInput('lastName', $event)"
+                                     (paste)="onBarangayNamePaste('lastName', $event)"
+                                     [placeholder]="t('bar.form.lastNamePh')" autocomplete="family-name" maxlength="50"
+                                     class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
+                              @if (barangayForm.lastName) {
+                                <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
+                                  <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                  </svg>
+                                </div>
+                              }
+                            </div>
+                            @if (barangayInvalid('lastName')) {
+                              <p class="mt-2 flex items-center gap-1.5 text-base font-medium text-[#B91C1C]">
+                                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                  <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
+                                </svg>
+                                {{ t('err.bar.lastName') }}
+                              </p>
                             }
                           </div>
-                          @if (barangayInvalid('birthDate')) {
-                            <p class="mt-2 flex items-center gap-1.5 text-base font-medium text-[#B91C1C]">
-                              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                                <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
-                              </svg>
-                              {{ t('err.bar.birthDate') }}
-                            </p>
-                          }
-                        </div>
 
-                        <!-- Sex -->
-                        <div>
-                          <label for="barangay-gender" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
-                            {{ t('bar.form.sex') }} <span class="text-[#F97316]">*</span>
-                          </label>
-                          <div class="relative flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
-                               [class.border-[#DC2626]]="barangayInvalid('gender')">
-                            <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
-                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                                <circle cx="12" cy="9" r="3.5"/>
-                                <path d="M5 20c0-3.6 3.6-5 8-5s8 1.4 8 5" stroke-linecap="round"/>
-                              </svg>
-                            </div>
-                            <select id="barangay-gender" name="gender" [(ngModel)]="barangayForm.gender"
-                                    class="appearance-none flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] bg-transparent outline-none border-none cursor-pointer"
-                                    [class.text-[#94A3B8]]="!barangayForm.gender">
-                              <option value="">{{ t('bar.form.select') }}</option>
-                              <option value="Male">{{ t('bar.form.sexMale') }}</option>
-                              <option value="Female">{{ t('bar.form.sexFem') }}</option>
-                              <option value="Other">{{ t('bar.form.sexOther') }}</option>
-                            </select>
-                            <div class="pointer-events-none absolute right-3 text-[#64748B]" aria-hidden="true">
-                              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/>
-                              </svg>
-                            </div>
-                          </div>
-                          @if (barangayInvalid('gender')) {
-                            <p class="mt-2 flex items-center gap-1.5 text-base font-medium text-[#B91C1C]">
-                              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                                <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
-                              </svg>
-                              {{ t('err.bar.sex') }}
-                            </p>
-                          }
-                        </div>
-
-                        <!-- Civil Status -->
-                        <div>
-                          <label for="barangay-civilStatus" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
-                            {{ t('bar.form.civilStatus') }} <span class="text-[#F97316]">*</span>
-                          </label>
-                          <div class="relative flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
-                               [class.border-[#DC2626]]="barangayInvalid('civilStatus')">
-                            <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
-                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M4.6 6.5a4.5 4.5 0 0 1 6.4 0l1 1 1-1a4.5 4.5 0 1 1 6.4 6.4L12 21l-7.4-8.1a4.5 4.5 0 0 1 0-6.4Z"/>
-                              </svg>
-                            </div>
-                            <select id="barangay-civilStatus" name="civilStatus" [(ngModel)]="barangayForm.civilStatus"
-                                    class="appearance-none flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] bg-transparent outline-none border-none cursor-pointer"
-                                    [class.text-[#94A3B8]]="!barangayForm.civilStatus">
-                              <option value="">{{ t('bar.form.select') }}</option>
-                              <option value="Single">{{ t('bar.form.civilSingle') }}</option>
-                              <option value="Married">{{ t('bar.form.civilMarried') }}</option>
-                              <option value="Widowed">{{ t('bar.form.civilWidowed') }}</option>
-                              <option value="Separated">{{ t('bar.form.civilSeparated') }}</option>
-                              <option value="Divorced">{{ t('bar.form.civilDivorced') }}</option>
-                            </select>
-                            <div class="pointer-events-none absolute right-3 text-[#64748B]" aria-hidden="true">
-                              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/>
-                              </svg>
-                            </div>
-                          </div>
-                          @if (barangayInvalid('civilStatus')) {
-                            <p class="mt-2 flex items-center gap-1.5 text-base font-medium text-[#B91C1C]">
-                              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                                <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
-                              </svg>
-                              {{ t('err.bar.civilStatus') }}
-                            </p>
-                          }
-                        </div>
-
-                        <!-- Occupation -->
-                        <div>
-                          <label for="barangay-occupation" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
-                            {{ t('bar.form.occupation') }}
-                          </label>
-                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden">
-                            <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
-                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                                <rect x="3" y="7" width="18" height="13" rx="2"/>
-                                <path d="M9 7V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1M3 12h18" stroke-linecap="round"/>
-                              </svg>
-                            </div>
-                            <input id="barangay-occupation" type="text" name="occupation" [(ngModel)]="barangayForm.occupation"
-                                   [placeholder]="t('bar.form.occupationPh')" autocomplete="organization-title" maxlength="100"
-                                   class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
-                            @if (barangayForm.occupation) {
-                              <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                          <!-- Suffix -->
+                          <div>
+                            <label for="barangay-suffix" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
+                              {{ t('bar.form.suffix') }}
+                            </label>
+                            <div class="relative flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden">
+                              <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                                <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                  <circle cx="12" cy="8" r="4"/>
+                                  <path d="M4 20c0-3.6 3.6-5 8-5s8 1.4 8 5" stroke-linecap="round"/>
                                 </svg>
                               </div>
-                            }
-                          </div>
-                        </div>
-
-                        <!-- Blood Type -->
-                        <div>
-                          <label for="barangay-bloodType" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
-                            {{ t('bar.form.bloodType') }}
-                          </label>
-                          <div class="relative flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden">
-                            <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
-                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                                <path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11Z" stroke-linejoin="round"/>
-                              </svg>
-                            </div>
-                            <select id="barangay-bloodType" name="bloodType" [(ngModel)]="barangayForm.bloodType"
-                                    class="appearance-none flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] bg-transparent outline-none border-none cursor-pointer"
-                                    [class.text-[#94A3B8]]="!barangayForm.bloodType">
-                              <option value="">{{ t('bar.form.bloodUnknown') }}</option>
-                              <option value="A+">A+</option>
-                              <option value="A-">A-</option>
-                              <option value="B+">B+</option>
-                              <option value="B-">B-</option>
-                              <option value="AB+">AB+</option>
-                              <option value="AB-">AB-</option>
-                              <option value="O+">O+</option>
-                              <option value="O-">O-</option>
-                            </select>
-                            <div class="pointer-events-none absolute right-3 text-[#64748B]" aria-hidden="true">
-                              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/>
-                              </svg>
-                            </div>
-                          </div>
-                        </div>
-
-                        <!-- Contact Number -->
-                        <div>
-                          <label for="barangay-contactNumber" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
-                            {{ t('bar.form.contact') }} <span class="text-[#F97316]">*</span>
-                          </label>
-                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
-                               [class.border-[#DC2626]]="barangayInvalid('contactNumber')">
-                            <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
-                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 4h4l2 5-2.5 1.5a12 12 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/>
-                              </svg>
-                            </div>
-                            <input id="barangay-contactNumber" type="tel" name="contactNumber"
-                                   [value]="barangayForm.contactNumber || ''"
-                                   (keydown)="filterNumberKeyDown($event)"
-                                   (input)="onBarangayPhoneInput('contactNumber', $event)"
-                                   (paste)="onBarangayPhonePaste('contactNumber', $event)"
-                                   [placeholder]="t('bar.form.contactPh')" autocomplete="tel" inputmode="numeric" maxlength="11"
-                                   class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
-                            @if (barangayForm.contactNumber) {
-                              <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                              <select id="barangay-suffix" name="suffix" [(ngModel)]="barangayForm.suffix"
+                                      class="appearance-none flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] bg-transparent outline-none border-none cursor-pointer"
+                                      [class.text-[#94A3B8]]="!barangayForm.suffix">
+                                <option value="">{{ t('bar.form.suffixNone') }}</option>
+                                <option value="Jr.">Jr.</option>
+                                <option value="Sr.">Sr.</option>
+                                <option value="II">II</option>
+                                <option value="III">III</option>
+                                <option value="IV">IV</option>
+                                <option value="V">V</option>
+                              </select>
+                              <div class="pointer-events-none absolute right-3 text-[#64748B]" aria-hidden="true">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/>
                                 </svg>
                               </div>
-                            }
-                          </div>
-                          @if (barangayInvalid('contactNumber')) {
-                            <p class="mt-2 flex items-center gap-1.5 text-base font-medium text-[#B91C1C]">
-                              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                                <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
-                              </svg>
-                              {{ t('err.bar.contact') }}
-                            </p>
-                          }
-                        </div>
-
-                        <!-- Address -->
-                        <div class="xl:col-span-2">
-                          <label for="barangay-addressLine" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
-                            {{ t('bar.form.address') }} <span class="text-[#F97316]">*</span>
-                          </label>
-                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
-                               [class.border-[#DC2626]]="barangayInvalid('addressLine')">
-                            <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
-                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                                <path d="M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11Z" stroke-linejoin="round"/>
-                                <circle cx="12" cy="10" r="2.5"/>
-                              </svg>
                             </div>
-                            <input id="barangay-addressLine" type="text" name="addressLine" [(ngModel)]="barangayForm.addressLine"
-                                   [placeholder]="t('bar.form.addressPh')" autocomplete="street-address" maxlength="255"
-                                   class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
-                            @if (barangayForm.addressLine) {
-                              <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                          </div>
+
+                          <!-- Birth Date -->
+                          <div>
+                            <label for="barangay-birthDate" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
+                              {{ t('bar.form.birthDate') }} <span class="text-[#F97316]">*</span>
+                            </label>
+                            <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
+                                 [class.border-[#DC2626]]="barangayInvalid('birthDate')">
+                              <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                                <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                  <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18" stroke-linecap="round"/>
                                 </svg>
                               </div>
+                              <input id="barangay-birthDate" type="date" name="birthDate" [(ngModel)]="barangayForm.birthDate" [max]="todayDateString()"
+                                     class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] bg-transparent outline-none border-none" />
+                              @if (barangayForm.birthDate) {
+                                <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
+                                  <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                  </svg>
+                                </div>
+                              }
+                            </div>
+                            @if (barangayInvalid('birthDate')) {
+                              <p class="mt-2 flex items-center gap-1.5 text-base font-medium text-[#B91C1C]">
+                                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                  <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
+                                </svg>
+                                {{ t('err.bar.birthDate') }}
+                              </p>
                             }
                           </div>
-                          @if (barangayInvalid('addressLine')) {
-                            <p class="mt-2 flex items-center gap-1.5 text-base font-medium text-[#B91C1C]">
-                              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                                <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
-                              </svg>
-                              {{ t('err.bar.address') }}
-                            </p>
-                          }
-                        </div>
 
-                        <!-- Email -->
-                        <div class="xl:col-span-2">
-                          <label for="barangay-email" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
-                            {{ t('bar.form.email') }}
-                          </label>
-                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden">
-                            <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
-                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                                <rect x="3" y="5" width="18" height="14" rx="2"/>
-                                <path d="m3 7 9 6 9-6" stroke-linecap="round" stroke-linejoin="round"/>
-                              </svg>
-                            </div>
-                            <input id="barangay-email" type="email" name="email" [(ngModel)]="barangayForm.email"
-                                   [placeholder]="t('bar.form.emailPh')" autocomplete="email" inputmode="email" maxlength="100"
-                                   class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
-                            @if (barangayForm.email) {
-                              <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                          <!-- Place of Birth -->
+                          <div>
+                            <label for="barangay-birthPlace" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
+                              {{ t('bar.form.birthPlace') }}
+                            </label>
+                            <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden">
+                              <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                                <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
                                 </svg>
                               </div>
-                            }
-                          </div>
-                        </div>
-
-                        <!-- Emergency Contact Person -->
-                        <div class="xl:col-span-2">
-                          <label for="barangay-emergencyContactName" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
-                            {{ t('bar.form.emergencyName') }} <span class="text-[#F97316]">*</span>
-                          </label>
-                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
-                               [class.border-[#DC2626]]="barangayInvalid('emergencyContactName')">
-                            <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
-                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                                <circle cx="12" cy="8" r="4"/>
-                                <path d="M4 20c0-3.6 3.6-5 8-5s8 1.4 8 5" stroke-linecap="round"/>
-                                <path d="M17 3l1.5 1.5L21 3M17 6.5l1.5 1.5L21 6.5" stroke-linecap="round"/>
-                              </svg>
+                              <input id="barangay-birthPlace" type="text" name="birthPlace" [(ngModel)]="barangayForm.birthPlace"
+                                     [placeholder]="t('bar.form.birthPlacePh')" maxlength="150"
+                                     class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
+                              @if (barangayForm.birthPlace) {
+                                <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
+                                  <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                  </svg>
+                                </div>
+                              }
                             </div>
-                            <input id="barangay-emergencyContactName" type="text" name="emergencyContactName"
-                                   [value]="barangayForm.emergencyContactName || ''"
-                                   (keydown)="filterNameKeyDown($event)"
-                                   (input)="onBarangayNameInput('emergencyContactName', $event)"
-                                   (paste)="onBarangayNamePaste('emergencyContactName', $event)"
-                                   [placeholder]="t('bar.form.emergencyNamePh')" autocomplete="name" maxlength="100"
-                                   class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
-                            @if (barangayForm.emergencyContactName) {
-                              <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                          </div>
+
+                          <!-- Contact Number -->
+                          <div>
+                            <label for="barangay-contactNumber" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
+                              {{ t('bar.form.contact') }} <span class="text-[#F97316]">*</span>
+                            </label>
+                            <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
+                                 [class.border-[#DC2626]]="barangayInvalid('contactNumber')">
+                              <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                                <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 4h4l2 5-2.5 1.5a12 12 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/>
                                 </svg>
                               </div>
+                              <input id="barangay-contactNumber" type="tel" name="contactNumber"
+                                     [value]="barangayForm.contactNumber || ''"
+                                     (keydown)="filterNumberKeyDown($event)"
+                                     (input)="onBarangayPhoneInput('contactNumber', $event)"
+                                     (paste)="onBarangayPhonePaste('contactNumber', $event)"
+                                     [placeholder]="t('bar.form.contactPh')" autocomplete="tel" inputmode="numeric" maxlength="11"
+                                     class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
+                              @if (barangayForm.contactNumber) {
+                                <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
+                                  <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                  </svg>
+                                </div>
+                              }
+                            </div>
+                            @if (barangayInvalid('contactNumber')) {
+                              <p class="mt-2 flex items-center gap-1.5 text-base font-medium text-[#B91C1C]">
+                                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                  <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
+                                </svg>
+                                {{ t('err.bar.contact') }}
+                              </p>
                             }
                           </div>
-                          @if (barangayInvalid('emergencyContactName')) {
-                            <p class="mt-2 flex items-center gap-1.5 text-base font-medium text-[#B91C1C]">
-                              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                                <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
-                              </svg>
-                              {{ t('err.bar.emergencyName') }}
-                            </p>
-                          }
-                        </div>
 
-                        <!-- Emergency Contact Number -->
-                        <div class="xl:col-span-2">
-                          <label for="barangay-emergencyContactNumber" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
-                            {{ t('bar.form.emergencyNumber') }} <span class="text-[#F97316]">*</span>
-                          </label>
-                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
-                               [class.border-[#DC2626]]="barangayInvalid('emergencyContactNumber')">
-                            <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
-                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 4h4l2 5-2.5 1.5a12 12 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/>
-                              </svg>
-                            </div>
-                            <input id="barangay-emergencyContactNumber" type="tel" name="emergencyContactNumber"
-                                   [value]="barangayForm.emergencyContactNumber || ''"
-                                   (keydown)="filterNumberKeyDown($event)"
-                                   (input)="onBarangayPhoneInput('emergencyContactNumber', $event)"
-                                   (paste)="onBarangayPhonePaste('emergencyContactNumber', $event)"
-                                   [placeholder]="t('bar.form.emergencyNumberPh')" autocomplete="tel" inputmode="numeric" maxlength="11"
-                                   class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
-                            @if (barangayForm.emergencyContactNumber) {
-                              <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                          <!-- Address -->
+                          <div class="xl:col-span-2">
+                            <label for="barangay-addressLine" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
+                              {{ t('bar.form.address') }} <span class="text-[#F97316]">*</span>
+                            </label>
+                            <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
+                                 [class.border-[#DC2626]]="barangayInvalid('addressLine')">
+                              <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                                <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                  <path d="M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11Z" stroke-linejoin="round"/>
+                                  <circle cx="12" cy="10" r="2.5"/>
                                 </svg>
                               </div>
+                              <input id="barangay-addressLine" type="text" name="addressLine" [(ngModel)]="barangayForm.addressLine"
+                                     [placeholder]="t('bar.form.addressPh')" autocomplete="street-address" maxlength="255"
+                                     class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
+                              @if (barangayForm.addressLine) {
+                                <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
+                                  <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                  </svg>
+                                </div>
+                              }
+                            </div>
+                            @if (barangayInvalid('addressLine')) {
+                              <p class="mt-2 flex items-center gap-1.5 text-base font-medium text-[#B91C1C]">
+                                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                  <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
+                                </svg>
+                                {{ t('err.bar.address') }}
+                              </p>
                             }
                           </div>
-                          @if (barangayInvalid('emergencyContactNumber')) {
-                            <p class="mt-2 flex items-center gap-1.5 text-base font-medium text-[#B91C1C]">
-                              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                                <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
-                              </svg>
-                              {{ t('err.bar.emergencyNumber') }}
-                            </p>
-                          }
-                        </div>
 
-                      </div>
+                          <!-- Emergency Contact Person -->
+                          <div class="xl:col-span-2">
+                            <label for="barangay-emergencyContactName" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
+                              {{ t('bar.form.emergencyName') }}
+                            </label>
+                            <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden">
+                              <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                                <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                  <circle cx="12" cy="8" r="4"/>
+                                  <path d="M4 20c0-3.6 3.6-5 8-5s8 1.4 8 5" stroke-linecap="round"/>
+                                  <path d="M17 3l1.5 1.5L21 3M17 6.5l1.5 1.5L21 6.5" stroke-linecap="round"/>
+                                </svg>
+                              </div>
+                              <input id="barangay-emergencyContactName" type="text" name="emergencyContactName"
+                                     [value]="barangayForm.emergencyContactName || ''"
+                                     (keydown)="filterNameKeyDown($event)"
+                                     (input)="onBarangayNameInput('emergencyContactName', $event)"
+                                     (paste)="onBarangayNamePaste('emergencyContactName', $event)"
+                                     [placeholder]="t('bar.form.emergencyNamePh')" autocomplete="name" maxlength="100"
+                                     class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
+                              @if (barangayForm.emergencyContactName) {
+                                <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
+                                  <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                  </svg>
+                                </div>
+                              }
+                            </div>
+                          </div>
+
+                          <!-- Emergency Contact Number -->
+                          <div class="xl:col-span-2">
+                            <label for="barangay-emergencyContactNumber" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
+                              {{ t('bar.form.emergencyNumber') }}
+                            </label>
+                            <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden">
+                              <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                                <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 4h4l2 5-2.5 1.5a12 12 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/>
+                                </svg>
+                              </div>
+                              <input id="barangay-emergencyContactNumber" type="tel" name="emergencyContactNumber"
+                                     [value]="barangayForm.emergencyContactNumber || ''"
+                                     (keydown)="filterNumberKeyDown($event)"
+                                     (input)="onBarangayPhoneInput('emergencyContactNumber', $event)"
+                                     (paste)="onBarangayPhonePaste('emergencyContactNumber', $event)"
+                                     [placeholder]="t('bar.form.emergencyNumberPh')" autocomplete="tel" inputmode="numeric" maxlength="11"
+                                     class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
+                              @if (barangayForm.emergencyContactNumber) {
+                                <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
+                                  <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                  </svg>
+                                </div>
+                              }
+                            </div>
+                            @if (barangayInvalid('emergencyContactNumber')) {
+                              <p class="mt-2 flex items-center gap-1.5 text-base font-medium text-[#B91C1C]">
+                                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                  <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
+                                </svg>
+                                {{ t('err.bar.emergencyNumber') }}
+                              </p>
+                            }
+                          </div>
+
+                        </div>
+                      }
 
                       @if (formError()) {
                         <div class="mt-5 sm:mt-6 flex items-start gap-3 rounded-xl border-2 border-[#DC2626] bg-[#FEF2F2] px-4 py-3.5" role="alert">
@@ -4116,149 +4088,132 @@ export type BarangayStep =
                             }
                           </div>
 
-                          <!-- Personal information -->
-                          <div class="mt-2">
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-0 border-t border-[#F1F5F9] py-3.5">
-                              <div class="flex items-start gap-3 pr-2 min-w-0">
-                                <span class="shrink-0 w-9 h-9 rounded-xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
-                                  <svg class="w-[18px] h-[18px] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                                    <circle cx="12" cy="8" r="3.5"/><path stroke-linecap="round" d="M5 20c0-3.8 3.1-6 7-6s7 2.2 7 6"/>
-                                  </svg>
-                                </span>
-                                <div class="min-w-0">
-                                  <p class="text-[13px] sm:text-sm font-medium text-[#64748B]">{{ t('bar.review.fullName') }}</p>
-                                  <p class="text-[15px] sm:text-base font-semibold text-[#0F172A] break-words mt-0.5">{{ residentFullName() || '—' }}</p>
-                                </div>
-                              </div>
-                              <div class="flex items-start gap-3 sm:border-l sm:border-[#F1F5F9] sm:pl-6 mt-3.5 sm:mt-0 pr-2 min-w-0">
-                                <span class="shrink-0 w-9 h-9 rounded-xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
-                                  <svg class="w-[18px] h-[18px] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                                    <rect x="3" y="5" width="18" height="16" rx="2"/><path stroke-linecap="round" d="M8 3v4M16 3v4M3 10h18"/>
-                                  </svg>
-                                </span>
-                                <div class="min-w-0">
-                                  <p class="text-[13px] sm:text-sm font-medium text-[#64748B]">{{ t('bar.review.birthDate') }}</p>
-                                  <p class="text-[15px] sm:text-base font-semibold text-[#0F172A] break-words mt-0.5">{{ barangayForm.birthDate || '—' }}</p>
-                                </div>
+                          @if (barangayService()?.form_fields && barangayService()!.form_fields!.length > 0) {
+                            <div class="mt-2">
+                              <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-0">
+                                @for (field of barangayService()!.form_fields!; track field.key; let idx = $index) {
+                                  <div class="flex items-start gap-3 pr-2 min-w-0 border-t border-[#F1F5F9] py-3.5"
+                                       [class.sm:border-l]="idx % 2 === 1"
+                                       [class.sm:border-[#F1F5F9]]="idx % 2 === 1"
+                                       [class.sm:pl-6]="idx % 2 === 1">
+                                    <span class="shrink-0 w-9 h-9 rounded-xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
+                                      <svg class="w-[18px] h-[18px] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                      </svg>
+                                    </span>
+                                    <div class="min-w-0">
+                                      <p class="text-[13px] sm:text-sm font-medium text-[#64748B]">{{ fieldLabel(field) }}</p>
+                                      <p class="text-[15px] sm:text-base font-semibold text-[#0F172A] break-words mt-0.5">{{ displayFormValue(field, formValues()[field.key]) }}</p>
+                                    </div>
+                                  </div>
+                                }
                               </div>
                             </div>
+                          } @else {
+                            <div class="mt-2">
+                              <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-0 border-t border-[#F1F5F9] py-3.5">
+                                <div class="flex items-start gap-3 pr-2 min-w-0">
+                                  <span class="shrink-0 w-9 h-9 rounded-xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
+                                    <svg class="w-[18px] h-[18px] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                      <circle cx="12" cy="8" r="3.5"/><path stroke-linecap="round" d="M5 20c0-3.8 3.1-6 7-6s7 2.2 7 6"/>
+                                    </svg>
+                                  </span>
+                                  <div class="min-w-0">
+                                    <p class="text-[13px] sm:text-sm font-medium text-[#64748B]">{{ t('bar.review.fullName') }}</p>
+                                    <p class="text-[15px] sm:text-base font-semibold text-[#0F172A] break-words mt-0.5">{{ residentFullName() || '—' }}</p>
+                                  </div>
+                                </div>
+                                <div class="flex items-start gap-3 sm:border-l sm:border-[#F1F5F9] sm:pl-6 mt-3.5 sm:mt-0 pr-2 min-w-0">
+                                  <span class="shrink-0 w-9 h-9 rounded-xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
+                                    <svg class="w-[18px] h-[18px] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                      <rect x="3" y="5" width="18" height="16" rx="2"/><path stroke-linecap="round" d="M8 3v4M16 3v4M3 10h18"/>
+                                    </svg>
+                                  </span>
+                                  <div class="min-w-0">
+                                    <p class="text-[13px] sm:text-sm font-medium text-[#64748B]">{{ t('bar.review.birthDate') }}</p>
+                                    <p class="text-[15px] sm:text-base font-semibold text-[#0F172A] break-words mt-0.5">{{ barangayForm.birthDate || '—' }}</p>
+                                  </div>
+                                </div>
+                              </div>
 
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-0 border-t border-[#F1F5F9] py-3.5">
-                              <div class="flex items-start gap-3 pr-2 min-w-0">
-                                <span class="shrink-0 w-9 h-9 rounded-xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
-                                  <svg class="w-[18px] h-[18px] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                                    <circle cx="12" cy="12" r="4"/><path stroke-linecap="round" d="M12 2v6M12 16v6"/>
-                                  </svg>
-                                </span>
-                                <div class="min-w-0">
-                                  <p class="text-[13px] sm:text-sm font-medium text-[#64748B]">{{ t('bar.review.sex') }}</p>
-                                  <p class="text-[15px] sm:text-base font-semibold text-[#0F172A] break-words mt-0.5">{{ barangayForm.gender || '—' }}</p>
+                              <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-0 border-t border-[#F1F5F9] py-3.5">
+                                <div class="flex items-start gap-3 pr-2 min-w-0">
+                                  <span class="shrink-0 w-9 h-9 rounded-xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
+                                    <svg class="w-[18px] h-[18px] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                      <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    </svg>
+                                  </span>
+                                  <div class="min-w-0">
+                                    <p class="text-[13px] sm:text-sm font-medium text-[#64748B]">{{ t('bar.review.birthPlace') }}</p>
+                                    <p class="text-[15px] sm:text-base font-semibold text-[#0F172A] break-words mt-0.5">{{ barangayForm.birthPlace || '—' }}</p>
+                                  </div>
+                                </div>
+                                <div class="flex items-start gap-3 sm:border-l sm:border-[#F1F5F9] sm:pl-6 mt-3.5 sm:mt-0 pr-2 min-w-0">
+                                  <span class="shrink-0 w-9 h-9 rounded-xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
+                                    <svg class="w-[18px] h-[18px] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                      <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                                    </svg>
+                                  </span>
+                                  <div class="min-w-0">
+                                    <p class="text-[13px] sm:text-sm font-medium text-[#64748B]">{{ t('bar.form.address') }}</p>
+                                    <p class="text-[15px] sm:text-base font-semibold text-[#0F172A] break-words mt-0.5">{{ barangayForm.addressLine || '—' }}</p>
+                                  </div>
                                 </div>
                               </div>
-                              <div class="flex items-start gap-3 sm:border-l sm:border-[#F1F5F9] sm:pl-6 mt-3.5 sm:mt-0 pr-2 min-w-0">
-                                <span class="shrink-0 w-9 h-9 rounded-xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
-                                  <svg class="w-[18px] h-[18px] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" d="M17 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path stroke-linecap="round" d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
-                                  </svg>
-                                </span>
-                                <div class="min-w-0">
-                                  <p class="text-[13px] sm:text-sm font-medium text-[#64748B]">{{ t('bar.review.civilStatus') }}</p>
-                                  <p class="text-[15px] sm:text-base font-semibold text-[#0F172A] break-words mt-0.5">{{ barangayForm.civilStatus || '—' }}</p>
-                                </div>
-                              </div>
-                            </div>
 
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-0 border-t border-[#F1F5F9] py-3.5">
-                              <div class="flex items-start gap-3 pr-2 min-w-0">
-                                <span class="shrink-0 w-9 h-9 rounded-xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
-                                  <svg class="w-[18px] h-[18px] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 2.7S6.5 8.6 6.5 13a5.5 5.5 0 0 0 11 0C17.5 8.6 12 2.7 12 2.7z"/>
-                                  </svg>
-                                </span>
-                                <div class="min-w-0">
-                                  <p class="text-[13px] sm:text-sm font-medium text-[#64748B]">{{ t('bar.review.bloodType') }}</p>
-                                  <p class="text-[15px] sm:text-base font-semibold text-[#0F172A] break-words mt-0.5">{{ barangayForm.bloodType || t('bar.form.bloodUnknown') }}</p>
+                              <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-0 border-t border-[#F1F5F9] py-3.5">
+                                <div class="flex items-start gap-3 pr-2 min-w-0">
+                                  <span class="shrink-0 w-9 h-9 rounded-xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
+                                    <svg class="w-[18px] h-[18px] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                      <path stroke-linecap="round" stroke-linejoin="round" d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.08 4.18 2 2 0 0 1 4.06 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.8a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.84.57 2.8.7A2 2 0 0 1 22 16.92z"/>
+                                    </svg>
+                                  </span>
+                                  <div class="min-w-0">
+                                    <p class="text-[13px] sm:text-sm font-medium text-[#64748B]">{{ t('bar.review.contact') }}</p>
+                                    <p class="text-[15px] sm:text-base font-semibold text-[#0F172A] break-words mt-0.5">{{ barangayForm.contactNumber || '—' }}</p>
+                                  </div>
+                                </div>
+                                <div class="flex items-start gap-3 sm:border-l sm:border-[#F1F5F9] sm:pl-6 mt-3.5 sm:mt-0 pr-2 min-w-0">
+                                  <span class="shrink-0 w-9 h-9 rounded-xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
+                                    <svg class="w-[18px] h-[18px] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                      <rect x="2" y="4" width="20" height="16" rx="2"/><path stroke-linecap="round" stroke-linejoin="round" d="M22 6l-10 7L2 6"/>
+                                    </svg>
+                                  </span>
+                                  <div class="min-w-0">
+                                    <p class="text-[13px] sm:text-sm font-medium text-[#64748B]">{{ t('bar.review.email') }}</p>
+                                    <p class="text-[15px] sm:text-base font-semibold text-[#0F172A] break-all mt-0.5">{{ barangayForm.email || '—' }}</p>
+                                  </div>
                                 </div>
                               </div>
-                              <div class="flex items-start gap-3 sm:border-l sm:border-[#F1F5F9] sm:pl-6 mt-3.5 sm:mt-0 pr-2 min-w-0">
-                                <span class="shrink-0 w-9 h-9 rounded-xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
-                                  <svg class="w-[18px] h-[18px] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                                    <rect x="2" y="7" width="20" height="14" rx="2"/><path stroke-linecap="round" d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
-                                  </svg>
-                                </span>
-                                <div class="min-w-0">
-                                  <p class="text-[13px] sm:text-sm font-medium text-[#64748B]">{{ t('bar.review.occupation') }}</p>
-                                  <p class="text-[15px] sm:text-base font-semibold text-[#0F172A] break-words mt-0.5">{{ barangayForm.occupation || '—' }}</p>
-                                </div>
-                              </div>
-                            </div>
 
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-0 border-t border-[#F1F5F9] py-3.5">
-                              <div class="flex items-start gap-3 pr-2 min-w-0">
-                                <span class="shrink-0 w-9 h-9 rounded-xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
-                                  <svg class="w-[18px] h-[18px] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.08 4.18 2 2 0 0 1 4.06 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.8a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.84.57 2.8.7A2 2 0 0 1 22 16.92z"/>
-                                  </svg>
-                                </span>
-                                <div class="min-w-0">
-                                  <p class="text-[13px] sm:text-sm font-medium text-[#64748B]">{{ t('bar.review.contact') }}</p>
-                                  <p class="text-[15px] sm:text-base font-semibold text-[#0F172A] break-words mt-0.5">{{ barangayForm.contactNumber || '—' }}</p>
+                              <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-0 border-t border-[#F1F5F9] py-3.5">
+                                <div class="flex items-start gap-3 pr-2 min-w-0">
+                                  <span class="shrink-0 w-9 h-9 rounded-xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
+                                    <svg class="w-[18px] h-[18px] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                      <path stroke-linecap="round" d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path stroke-linecap="round" stroke-linejoin="round" d="M16 11l2 2 4-4"/>
+                                    </svg>
+                                  </span>
+                                  <div class="min-w-0">
+                                    <p class="text-[13px] sm:text-sm font-medium text-[#64748B]">{{ t('bar.review.emergencyPerson') }}</p>
+                                    <p class="text-[15px] sm:text-base font-semibold text-[#0F172A] break-words mt-0.5">{{ barangayForm.emergencyContactName || '—' }}</p>
+                                  </div>
                                 </div>
-                              </div>
-                              <div class="flex items-start gap-3 sm:border-l sm:border-[#F1F5F9] sm:pl-6 mt-3.5 sm:mt-0 pr-2 min-w-0">
-                                <span class="shrink-0 w-9 h-9 rounded-xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
-                                  <svg class="w-[18px] h-[18px] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                                    <rect x="2" y="4" width="20" height="16" rx="2"/><path stroke-linecap="round" stroke-linejoin="round" d="M22 6l-10 7L2 6"/>
-                                  </svg>
-                                </span>
-                                <div class="min-w-0">
-                                  <p class="text-[13px] sm:text-sm font-medium text-[#64748B]">{{ t('bar.review.email') }}</p>
-                                  <p class="text-[15px] sm:text-base font-semibold text-[#0F172A] break-all mt-0.5">{{ barangayForm.email || '—' }}</p>
-                                </div>
-                              </div>
-                            </div>
-
-                            <!-- Address (full width) -->
-                            <div class="border-t border-[#F1F5F9] py-3.5">
-                              <div class="flex items-start gap-3 min-w-0">
-                                <span class="shrink-0 w-9 h-9 rounded-xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
-                                  <svg class="w-[18px] h-[18px] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
-                                  </svg>
-                                </span>
-                                <div class="min-w-0">
-                                  <p class="text-[13px] sm:text-sm font-medium text-[#64748B]">{{ t('bar.review.address') }}</p>
-                                  <p class="text-[15px] sm:text-base font-semibold text-[#0F172A] break-words mt-0.5">{{ barangayForm.addressLine || '—' }}</p>
+                                <div class="flex items-start gap-3 sm:border-l sm:border-[#F1F5F9] sm:pl-6 mt-3.5 sm:mt-0 pr-2 min-w-0">
+                                  <span class="shrink-0 w-9 h-9 rounded-xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
+                                    <svg class="w-[18px] h-[18px] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                      <path stroke-linecap="round" stroke-linejoin="round" d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.08 4.18 2 2 0 0 1 4.06 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.8a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.84.57 2.8.7A2 2 0 0 1 22 16.92z"/>
+                                      <path stroke-linecap="round" d="M14.05 2a9 9 0 0 1 8 7.94M14.05 6a5 5 0 0 1 4 3.9"/>
+                                    </svg>
+                                  </span>
+                                  <div class="min-w-0">
+                                    <p class="text-[13px] sm:text-sm font-medium text-[#64748B]">{{ t('bar.review.emergencyNumber') }}</p>
+                                    <p class="text-[15px] sm:text-base font-semibold text-[#0F172A] break-words mt-0.5">{{ barangayForm.emergencyContactNumber || '—' }}</p>
+                                  </div>
                                 </div>
                               </div>
                             </div>
-
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-0 border-t border-[#F1F5F9] py-3.5">
-                              <div class="flex items-start gap-3 pr-2 min-w-0">
-                                <span class="shrink-0 w-9 h-9 rounded-xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
-                                  <svg class="w-[18px] h-[18px] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path stroke-linecap="round" stroke-linejoin="round" d="M16 11l2 2 4-4"/>
-                                  </svg>
-                                </span>
-                                <div class="min-w-0">
-                                  <p class="text-[13px] sm:text-sm font-medium text-[#64748B]">{{ t('bar.review.emergencyPerson') }}</p>
-                                  <p class="text-[15px] sm:text-base font-semibold text-[#0F172A] break-words mt-0.5">{{ barangayForm.emergencyContactName || '—' }}</p>
-                                </div>
-                              </div>
-                              <div class="flex items-start gap-3 sm:border-l sm:border-[#F1F5F9] sm:pl-6 mt-3.5 sm:mt-0 pr-2 min-w-0">
-                                <span class="shrink-0 w-9 h-9 rounded-xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
-                                  <svg class="w-[18px] h-[18px] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.08 4.18 2 2 0 0 1 4.06 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.8a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.84.57 2.8.7A2 2 0 0 1 22 16.92z"/>
-                                    <path stroke-linecap="round" d="M14.05 2a9 9 0 0 1 8 7.94M14.05 6a5 5 0 0 1 4 3.9"/>
-                                  </svg>
-                                </span>
-                                <div class="min-w-0">
-                                  <p class="text-[13px] sm:text-sm font-medium text-[#64748B]">{{ t('bar.review.emergencyNumber') }}</p>
-                                  <p class="text-[15px] sm:text-base font-semibold text-[#0F172A] break-words mt-0.5">{{ barangayForm.emergencyContactNumber || '—' }}</p>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
+                          }
                         </section>
                       </div>
 
@@ -4894,6 +4849,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     lastName: '',
     suffix: '',
     birthDate: '',
+    birthPlace: '',
     gender: '',
     civilStatus: '',
     occupation: '',
@@ -4959,7 +4915,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.inlinePhotos.set(savedState.inlinePhotos);
     this.activePhotoField.set(savedState.activePhotoField);
     this.guestForm = savedState.guestForm;
-    this.barangayForm = savedState.barangayForm;
+    this.barangayForm = { ...this.barangayForm, ...savedState.barangayForm };
     this.submissionKey = savedState.submissionKey;
 
 
@@ -5108,6 +5064,7 @@ export class KioskComponent implements OnInit, OnDestroy {
       lastName: r.last_name || '',
       suffix: r.suffix || '',
       birthDate: r.birth_date ? r.birth_date.split('T')[0] : '',
+      birthPlace: r.birth_place || '',
       gender: r.gender || '',
       civilStatus: r.civil_status || '',
       occupation: r.occupation || '',
@@ -5118,6 +5075,28 @@ export class KioskComponent implements OnInit, OnDestroy {
       emergencyContactName: r.emergency_contact_name || '',
       emergencyContactNumber: r.emergency_contact_number || ''
     };
+
+    // Pre-populate dynamic form fields matching resident keys
+    const currentValues = { ...this.formValues() };
+    const fields = this.barangayService()?.form_fields || [];
+    for (const f of fields) {
+      if (currentValues[f.key] !== undefined && currentValues[f.key] !== '') continue;
+      const keyLower = f.key.toLowerCase().replace(/[\s_-]/g, '');
+      if (keyLower === 'firstname' || keyLower === 'fname') currentValues[f.key] = r.first_name || '';
+      else if (keyLower === 'middlename' || keyLower === 'mname') currentValues[f.key] = r.middle_name || '';
+      else if (keyLower === 'lastname' || keyLower === 'lname' || keyLower === 'surname') currentValues[f.key] = r.last_name || '';
+      else if (keyLower === 'suffix') currentValues[f.key] = r.suffix || '';
+      else if (keyLower === 'birthdate' || keyLower === 'dob' || keyLower === 'dateofbirth') currentValues[f.key] = r.birth_date ? r.birth_date.split('T')[0] : '';
+      else if (keyLower === 'birthplace' || keyLower === 'pob' || keyLower === 'placeofbirth') currentValues[f.key] = r.birth_place || '';
+      else if (keyLower === 'gender' || keyLower === 'sex') currentValues[f.key] = r.gender || '';
+      else if (keyLower === 'civilstatus') currentValues[f.key] = r.civil_status || '';
+      else if (keyLower === 'address' || keyLower === 'addressline') currentValues[f.key] = r.address_line || '';
+      else if (keyLower === 'contactnumber' || keyLower === 'contact' || keyLower === 'phone' || keyLower === 'mobilenumber') currentValues[f.key] = r.contact_number || '';
+      else if (keyLower === 'email') currentValues[f.key] = r.email || '';
+      else if (keyLower === 'emergencycontactname' || keyLower === 'emergencyname') currentValues[f.key] = r.emergency_contact_name || '';
+      else if (keyLower === 'emergencycontactnumber' || keyLower === 'emergencynumber') currentValues[f.key] = r.emergency_contact_number || '';
+    }
+    this.formValues.set(currentValues);
   }
 
   private resetBarangayForm() {
@@ -5128,6 +5107,7 @@ export class KioskComponent implements OnInit, OnDestroy {
       lastName: '',
       suffix: '',
       birthDate: '',
+      birthPlace: '',
       gender: '',
       civilStatus: '',
       occupation: '',
@@ -6016,60 +5996,65 @@ export class KioskComponent implements OnInit, OnDestroy {
   validateBarangayForm() {
     this.barangaySubmitted.set(true);
     this.formError.set('');
-    const f = this.barangayForm;
-    const cleanPhone = f.contactNumber.trim().replace(/[\s\-()]/g, '');
-    const cleanEmPhone = f.emergencyContactNumber.trim().replace(/[\s\-()]/g, '');
 
-    if (!f.firstName.trim() || f.firstName.trim().length < 2 || !/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(f.firstName.trim())) {
-      this.formError.set(this.t('err.invalidName', { field: this.t('bar.form.firstName') || 'First Name' }));
-      return;
-    }
-    if (f.middleName && f.middleName.trim() && !/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(f.middleName.trim())) {
-      this.formError.set(this.t('err.invalidName', { field: this.t('bar.form.middleName') || 'Middle Name' }));
-      return;
-    }
-    if (!f.lastName.trim() || f.lastName.trim().length < 2 || !/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(f.lastName.trim())) {
-      this.formError.set(this.t('err.invalidName', { field: this.t('bar.form.lastName') || 'Last Name' }));
-      return;
-    }
-    if (!f.birthDate) {
-      this.formError.set(this.t('err.bar.birthDate'));
-      return;
-    }
-    const birth = new Date(f.birthDate);
-    const today = new Date();
-    today.setHours(23, 59, 59, 999);
-    if (isNaN(birth.getTime()) || birth > today || birth.getFullYear() < (today.getFullYear() - 125)) {
-      this.formError.set(this.t('err.futureDate', { field: this.t('bar.form.birthDate') || 'Birth Date' }));
-      return;
-    }
-    if (!f.gender) {
-      this.formError.set(this.t('err.bar.sex'));
-      return;
-    }
-    if (!f.civilStatus) {
-      this.formError.set(this.t('err.bar.civilStatus'));
-      return;
-    }
-    if (!f.addressLine.trim() || f.addressLine.trim().length < 5) {
-      this.formError.set(this.t('err.bar.address'));
-      return;
-    }
-    if (!cleanPhone || !/^(09\d{9}|\+639\d{9}|\d{7,11})$/.test(cleanPhone)) {
-      this.formError.set(this.t('err.invalidPhone', { field: this.t('bar.form.contact') || 'Contact Number' }));
-      return;
-    }
-    if (f.email && f.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim())) {
-      this.formError.set(this.t('err.invalidEmail', { field: this.t('bar.form.email') || 'Email' }));
-      return;
-    }
-    if (!f.emergencyContactName.trim() || !/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(f.emergencyContactName.trim())) {
-      this.formError.set(this.t('err.invalidName', { field: this.t('bar.form.emergencyName') || 'Emergency Contact Name' }));
-      return;
-    }
-    if (!cleanEmPhone || !/^(09\d{9}|\+639\d{9}|\d{7,11})$/.test(cleanEmPhone)) {
-      this.formError.set(this.t('err.invalidPhone', { field: this.t('bar.form.emergencyNumber') || 'Emergency Contact Number' }));
-      return;
+    const fields = this.barangayService()?.form_fields;
+    if (fields && fields.length > 0) {
+      let hasErrors = false;
+      const newErrors: Record<string, string> = {};
+      for (const field of fields) {
+        const val = this.formValues()[field.key];
+        const message = this.validateField(field, val);
+        if (message) {
+          newErrors[field.key] = message;
+          hasErrors = true;
+        }
+      }
+      this.formErrors.set(newErrors);
+      if (hasErrors) {
+        const firstKey = Object.keys(newErrors)[0];
+        this.formError.set(newErrors[firstKey] || 'Please complete all required fields.');
+        return;
+      }
+    } else {
+      const f = this.barangayForm;
+      const cleanPhone = f.contactNumber.trim().replace(/[\s\-()]/g, '');
+      const cleanEmPhone = f.emergencyContactNumber.trim().replace(/[\s\-()]/g, '');
+
+      if (!f.firstName.trim() || f.firstName.trim().length < 2 || !/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(f.firstName.trim())) {
+        this.formError.set(this.t('err.invalidName', { field: this.t('bar.form.firstName') || 'First Name' }));
+        return;
+      }
+      if (f.middleName && f.middleName.trim() && !/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(f.middleName.trim())) {
+        this.formError.set(this.t('err.invalidName', { field: this.t('bar.form.middleName') || 'Middle Name' }));
+        return;
+      }
+      if (!f.lastName.trim() || f.lastName.trim().length < 2 || !/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(f.lastName.trim())) {
+        this.formError.set(this.t('err.invalidName', { field: this.t('bar.form.lastName') || 'Last Name' }));
+        return;
+      }
+      if (!f.birthDate) {
+        this.formError.set(this.t('err.bar.birthDate'));
+        return;
+      }
+      const birth = new Date(f.birthDate);
+      const today = new Date();
+      today.setHours(23, 59, 59, 999);
+      if (isNaN(birth.getTime()) || birth > today || birth.getFullYear() < (today.getFullYear() - 125)) {
+        this.formError.set(this.t('err.futureDate', { field: this.t('bar.form.birthDate') || 'Birth Date' }));
+        return;
+      }
+      if (!f.addressLine.trim() || f.addressLine.trim().length < 5) {
+        this.formError.set(this.t('err.bar.address'));
+        return;
+      }
+      if (!cleanPhone || !/^(09\d{9}|\+639\d{9}|\d{7,11})$/.test(cleanPhone)) {
+        this.formError.set(this.t('err.invalidPhone', { field: this.t('bar.form.contact') || 'Contact Number' }));
+        return;
+      }
+      if (f.email && f.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim())) {
+        this.formError.set(this.t('err.invalidEmail', { field: this.t('bar.form.email') || 'Email' }));
+        return;
+      }
     }
 
     this.errorMessage.set('');
@@ -6093,26 +6078,29 @@ export class KioskComponent implements OnInit, OnDestroy {
   }
 
   residentFullName(): string {
-    const f = this.barangayForm;
-    const name = [f.firstName, f.middleName, f.lastName].filter(part => part.trim()).join(' ').trim();
-    return f.suffix && f.suffix.trim() ? `${name} ${f.suffix.trim()}` : name;
+    const vals = this.formValues();
+    const fName = String(vals['first_name'] || vals['firstName'] || this.barangayForm.firstName || '').trim();
+    const mName = String(vals['middle_name'] || vals['middleName'] || this.barangayForm.middleName || '').trim();
+    const lName = String(vals['last_name'] || vals['lastName'] || this.barangayForm.lastName || '').trim();
+    const sffx = String(vals['suffix'] || this.barangayForm.suffix || '').trim();
+    const name = [fName, mName, lName].filter(part => part).join(' ').trim();
+    return sffx && sffx !== 'None' ? `${name} ${sffx}` : name;
   }
 
   isBarangayReady(): boolean {
+    if (!this.capturedPhoto() || !this.capturedSignature()) return false;
+    const fields = this.barangayService()?.form_fields;
+    if (fields && fields.length > 0) {
+      for (const f of fields) {
+        if (f.required) {
+          const val = this.formValues()[f.key];
+          if (this.isEmptyValue(val)) return false;
+        }
+      }
+      return true;
+    }
     const f = this.barangayForm;
-    return !!(
-      f.firstName.trim() &&
-      f.lastName.trim() &&
-      f.birthDate &&
-      f.gender &&
-      f.civilStatus &&
-      f.addressLine.trim() &&
-      f.contactNumber.trim() &&
-      f.emergencyContactName.trim() &&
-      f.emergencyContactNumber.trim() &&
-      this.capturedPhoto() &&
-      this.capturedSignature()
-    );
+    return !!(f.firstName.trim() && f.lastName.trim() && f.addressLine.trim());
   }
 
   submitBarangay() {
@@ -6131,38 +6119,50 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.submitting.set(true);
     this.errorMessage.set('');
 
+    const dynamicValues = { ...this.formValues() };
+    const firstName = String(dynamicValues['first_name'] || dynamicValues['firstName'] || this.barangayForm.firstName || '').trim();
+    const middleName = String(dynamicValues['middle_name'] || dynamicValues['middleName'] || this.barangayForm.middleName || '').trim() || null;
+    const lastName = String(dynamicValues['last_name'] || dynamicValues['lastName'] || this.barangayForm.lastName || '').trim();
+    const suffix = String(dynamicValues['suffix'] || this.barangayForm.suffix || '').trim() || null;
+    const birthDate = String(dynamicValues['birth_date'] || dynamicValues['birthDate'] || this.barangayForm.birthDate || '').trim() || null;
+    const birthPlace = String(dynamicValues['birth_place'] || dynamicValues['birthPlace'] || dynamicValues['place_of_birth'] || dynamicValues['placeOfBirth'] || this.barangayForm.birthPlace || '').trim() || null;
+    const addressLine = String(dynamicValues['address_line'] || dynamicValues['addressLine'] || dynamicValues['address'] || this.barangayForm.addressLine || '').trim();
+    const contactNumber = String(dynamicValues['contact_number'] || dynamicValues['contactNumber'] || this.barangayForm.contactNumber || '').trim() || null;
+    const email = String(dynamicValues['email'] || this.barangayForm.email || '').trim() || null;
+    const emergencyContactName = String(dynamicValues['emergency_contact_name'] || dynamicValues['emergencyContactName'] || this.barangayForm.emergencyContactName || '').trim() || null;
+    const emergencyContactNumber = String(dynamicValues['emergency_contact_number'] || dynamicValues['emergencyContactNumber'] || this.barangayForm.emergencyContactNumber || '').trim() || null;
+
     const formData = {
-      first_name: this.barangayForm.firstName.trim(),
-      middle_name: this.barangayForm.middleName.trim() || null,
-      last_name: this.barangayForm.lastName.trim(),
-      suffix: this.barangayForm.suffix || null,
-      birth_date: this.barangayForm.birthDate || null,
-      gender: this.barangayForm.gender || null,
-      civil_status: this.barangayForm.civilStatus || null,
-      occupation: this.barangayForm.occupation.trim() || null,
-      blood_type: this.barangayForm.bloodType || null,
-      address_line: this.barangayForm.addressLine.trim(),
-      contact_number: this.barangayForm.contactNumber.trim() || null,
-      email: this.barangayForm.email.trim() || null,
-      emergency_contact_name: this.barangayForm.emergencyContactName.trim(),
-      emergency_contact_number: this.barangayForm.emergencyContactNumber.trim()
+      ...dynamicValues,
+      first_name: firstName,
+      middle_name: middleName,
+      last_name: lastName,
+      suffix: suffix,
+      birth_date: birthDate,
+      birth_place: birthPlace,
+      address_line: addressLine,
+      contact_number: contactNumber,
+      email: email,
+      emergency_contact_name: emergencyContactName,
+      emergency_contact_number: emergencyContactNumber
     };
 
     this.kioskService.createBarangayId({
-      firstName: this.barangayForm.firstName.trim(),
-      middleName: this.barangayForm.middleName.trim() || undefined,
-      lastName: this.barangayForm.lastName.trim(),
-      suffix: this.barangayForm.suffix || undefined,
-      birthDate: this.barangayForm.birthDate || undefined,
-      gender: this.barangayForm.gender || undefined,
-      civilStatus: this.barangayForm.civilStatus || undefined,
-      occupation: this.barangayForm.occupation.trim() || undefined,
-      bloodType: this.barangayForm.bloodType || undefined,
-      addressLine: this.barangayForm.addressLine.trim(),
-      contactNumber: this.barangayForm.contactNumber.trim() || undefined,
-      email: this.barangayForm.email.trim() || undefined,
-      emergencyContactName: this.barangayForm.emergencyContactName.trim(),
-      emergencyContactNumber: this.barangayForm.emergencyContactNumber.trim(),
+      firstName,
+      middleName: middleName || undefined,
+      lastName,
+      suffix: suffix || undefined,
+      birthDate: birthDate || undefined,
+      birthPlace: birthPlace || undefined,
+      gender: String(dynamicValues['gender'] || dynamicValues['sex'] || this.barangayForm.gender || '').trim() || undefined,
+      civilStatus: String(dynamicValues['civil_status'] || dynamicValues['civilStatus'] || this.barangayForm.civilStatus || '').trim() || undefined,
+      occupation: String(dynamicValues['occupation'] || this.barangayForm.occupation || '').trim() || undefined,
+      bloodType: String(dynamicValues['blood_type'] || dynamicValues['bloodType'] || this.barangayForm.bloodType || '').trim() || undefined,
+      addressLine,
+      contactNumber: contactNumber || undefined,
+      email: email || undefined,
+      emergencyContactName: emergencyContactName || undefined,
+      emergencyContactNumber: emergencyContactNumber || undefined,
       photo: this.capturedPhoto() || undefined,
       signature: this.capturedSignature() || undefined,
       form_data: formData
@@ -6191,23 +6191,53 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.previewing.set(true);
     this.previewBlob.set(null);
 
+    const dynamicValues = { ...this.formValues() };
+    const firstName = String(dynamicValues['first_name'] || dynamicValues['firstName'] || this.barangayForm.firstName || '').trim();
+    const middleName = String(dynamicValues['middle_name'] || dynamicValues['middleName'] || this.barangayForm.middleName || '').trim() || undefined;
+    const lastName = String(dynamicValues['last_name'] || dynamicValues['lastName'] || this.barangayForm.lastName || '').trim();
+    const suffix = String(dynamicValues['suffix'] || this.barangayForm.suffix || '').trim() || undefined;
+    const birthDate = String(dynamicValues['birth_date'] || dynamicValues['birthDate'] || this.barangayForm.birthDate || '').trim() || undefined;
+    const birthPlace = String(dynamicValues['birth_place'] || dynamicValues['birthPlace'] || dynamicValues['place_of_birth'] || dynamicValues['placeOfBirth'] || this.barangayForm.birthPlace || '').trim() || undefined;
+    const addressLine = String(dynamicValues['address_line'] || dynamicValues['addressLine'] || dynamicValues['address'] || this.barangayForm.addressLine || '').trim();
+    const contactNumber = String(dynamicValues['contact_number'] || dynamicValues['contactNumber'] || this.barangayForm.contactNumber || '').trim() || undefined;
+    const email = String(dynamicValues['email'] || this.barangayForm.email || '').trim() || undefined;
+    const emergencyContactName = String(dynamicValues['emergency_contact_name'] || dynamicValues['emergencyContactName'] || this.barangayForm.emergencyContactName || '').trim() || undefined;
+    const emergencyContactNumber = String(dynamicValues['emergency_contact_number'] || dynamicValues['emergencyContactNumber'] || this.barangayForm.emergencyContactNumber || '').trim() || undefined;
+
+    const formData = {
+      ...dynamicValues,
+      first_name: firstName,
+      middle_name: middleName || null,
+      last_name: lastName,
+      suffix: suffix || null,
+      birth_date: birthDate || null,
+      birth_place: birthPlace || null,
+      address_line: addressLine,
+      contact_number: contactNumber || null,
+      email: email || null,
+      emergency_contact_name: emergencyContactName || null,
+      emergency_contact_number: emergencyContactNumber || null
+    };
+
     this.kioskService.previewBarangayId({
-      firstName: this.barangayForm.firstName.trim(),
-      middleName: this.barangayForm.middleName.trim() || undefined,
-      lastName: this.barangayForm.lastName.trim(),
-      suffix: this.barangayForm.suffix || undefined,
-      birthDate: this.barangayForm.birthDate || undefined,
-      gender: this.barangayForm.gender || undefined,
-      civilStatus: this.barangayForm.civilStatus || undefined,
-      occupation: this.barangayForm.occupation.trim() || undefined,
-      bloodType: this.barangayForm.bloodType || undefined,
-      addressLine: this.barangayForm.addressLine.trim(),
-      contactNumber: this.barangayForm.contactNumber.trim() || undefined,
-      email: this.barangayForm.email.trim() || undefined,
-      emergencyContactName: this.barangayForm.emergencyContactName.trim(),
-      emergencyContactNumber: this.barangayForm.emergencyContactNumber.trim(),
+      firstName,
+      middleName,
+      lastName,
+      suffix,
+      birthDate,
+      birthPlace,
+      gender: String(dynamicValues['gender'] || dynamicValues['sex'] || this.barangayForm.gender || '').trim() || undefined,
+      civilStatus: String(dynamicValues['civil_status'] || dynamicValues['civilStatus'] || this.barangayForm.civilStatus || '').trim() || undefined,
+      occupation: String(dynamicValues['occupation'] || this.barangayForm.occupation || '').trim() || undefined,
+      bloodType: String(dynamicValues['blood_type'] || dynamicValues['bloodType'] || this.barangayForm.bloodType || '').trim() || undefined,
+      addressLine,
+      contactNumber,
+      email,
+      emergencyContactName,
+      emergencyContactNumber,
       photo: this.capturedPhoto() || undefined,
-      signature: this.capturedSignature() || undefined
+      signature: this.capturedSignature() || undefined,
+      formData
     }).subscribe({
       next: (blob) => {
         this.previewing.set(false);

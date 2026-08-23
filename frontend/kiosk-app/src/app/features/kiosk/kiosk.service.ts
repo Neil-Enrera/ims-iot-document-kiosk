@@ -11,6 +11,7 @@ export interface Resident {
   last_name: string;
   suffix: string | null;
   birth_date: string | null;
+  birth_place?: string | null;
   gender: string | null;
   civil_status: string | null;
   blood_type: string | null;
@@ -228,6 +229,7 @@ export class KioskService {
     lastName: string;
     suffix?: string;
     birthDate?: string;
+    birthPlace?: string;
     gender?: string;
     civilStatus?: string;
     occupation?: string;
@@ -250,6 +252,7 @@ export class KioskService {
     lastName: string;
     suffix?: string;
     birthDate?: string;
+    birthPlace?: string;
     gender?: string;
     civilStatus?: string;
     occupation?: string;

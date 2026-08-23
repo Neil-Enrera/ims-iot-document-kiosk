@@ -34,6 +34,7 @@ export interface KioskState {
     lastName: string;
     suffix: string;
     birthDate: string;
+    birthPlace?: string;
     gender: string;
     civilStatus: string;
     occupation: string;

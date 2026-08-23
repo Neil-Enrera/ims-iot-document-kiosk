@@ -187,23 +187,7 @@ import { TranslationService, KioskLanguage } from '../../i18n/translation.servic
                   </div>
                 </div>
 
-                <!-- Field 2: Occupation -->
-                <div class="flex items-start gap-3">
-                  <div class="w-8 h-8 rounded-lg bg-[#FFF7ED] text-[#F97316] flex items-center justify-center shrink-0 mt-0.5">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                      <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/>
-                    </svg>
-                  </div>
-                  <div class="min-w-0">
-                    <p class="text-xs font-semibold text-[#64748B] uppercase tracking-wide">{{ t('profile.occupation') }}</p>
-                    <p class="text-sm sm:text-base font-bold text-[#0F172A] mt-0.5">
-                      {{ mask(fallback(resident?.occupation)) }}
-                    </p>
-                  </div>
-                </div>
-
-                <!-- Field 3: Sex -->
+                <!-- Field 2: Sex -->
                 <div class="flex items-start gap-3">
                   <div class="w-8 h-8 rounded-lg bg-[#FFF7ED] text-[#F97316] flex items-center justify-center shrink-0 mt-0.5">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -217,6 +201,21 @@ import { TranslationService, KioskLanguage } from '../../i18n/translation.servic
                     <p class="text-xs font-semibold text-[#64748B] uppercase tracking-wide">{{ t('profile.sex') }}</p>
                     <p class="text-sm sm:text-base font-bold text-[#0F172A] mt-0.5">
                       {{ mask(fallback(resident?.gender)) }}
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Field 3: Civil Status -->
+                <div class="flex items-start gap-3">
+                  <div class="w-8 h-8 rounded-lg bg-[#FFF7ED] text-[#F97316] flex items-center justify-center shrink-0 mt-0.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                    </svg>
+                  </div>
+                  <div class="min-w-0">
+                    <p class="text-xs font-semibold text-[#64748B] uppercase tracking-wide">{{ t('profile.civilStatus') }}</p>
+                    <p class="text-sm sm:text-base font-bold text-[#0F172A] mt-0.5">
+                      {{ mask(fallback(resident?.civil_status)) }}
                     </p>
                   </div>
                 </div>
@@ -236,22 +235,7 @@ import { TranslationService, KioskLanguage } from '../../i18n/translation.servic
                   </div>
                 </div>
 
-                <!-- Field 5: Civil Status -->
-                <div class="flex items-start gap-3">
-                  <div class="w-8 h-8 rounded-lg bg-[#FFF7ED] text-[#F97316] flex items-center justify-center shrink-0 mt-0.5">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
-                    </svg>
-                  </div>
-                  <div class="min-w-0">
-                    <p class="text-xs font-semibold text-[#64748B] uppercase tracking-wide">{{ t('profile.civilStatus') }}</p>
-                    <p class="text-sm sm:text-base font-bold text-[#0F172A] mt-0.5">
-                      {{ mask(fallback(resident?.civil_status)) }}
-                    </p>
-                  </div>
-                </div>
-
-                <!-- Field 6: Email -->
+                <!-- Field 5: Email -->
                 <div class="flex items-start gap-3">
                   <div class="w-8 h-8 rounded-lg bg-[#FFF7ED] text-[#F97316] flex items-center justify-center shrink-0 mt-0.5">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -266,22 +250,7 @@ import { TranslationService, KioskLanguage } from '../../i18n/translation.servic
                   </div>
                 </div>
 
-                <!-- Field 7: Blood Type -->
-                <div class="flex items-start gap-3">
-                  <div class="w-8 h-8 rounded-lg bg-[#FFF7ED] text-[#F97316] flex items-center justify-center shrink-0 mt-0.5">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z"/>
-                    </svg>
-                  </div>
-                  <div class="min-w-0">
-                    <p class="text-xs font-semibold text-[#64748B] uppercase tracking-wide">{{ t('profile.bloodType') }}</p>
-                    <p class="text-sm sm:text-base font-bold text-[#0F172A] mt-0.5">
-                      {{ mask(fallback(resident?.blood_type)) }}
-                    </p>
-                  </div>
-                </div>
-
-                <!-- Field 8: Address -->
+                <!-- Field 6: Address -->
                 <div class="flex items-start gap-3">
                   <div class="w-8 h-8 rounded-lg bg-[#FFF7ED] text-[#F97316] flex items-center justify-center shrink-0 mt-0.5">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">

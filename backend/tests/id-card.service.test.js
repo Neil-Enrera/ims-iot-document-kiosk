@@ -111,7 +111,7 @@ describe('ID card draft preview rendering (before approval)', () => {
 
   // Copy the barangay's real configured ID-card template so docxtemplater
   // renders a genuinely valid OOXML file (hand-built zips are rejected).
-  const sourceTemplate = path.join(uploadsTemplates, 'da4927dcbc4b31935f47f59b7e9cbd73.docx');
+  const sourceTemplate = path.join(uploadsTemplates, '12ee12af1cc360b6b94a60acaa182ac8.docx');
   const writeTaggedTemplate = () => {
     fs.copyFileSync(sourceTemplate, templatePath);
   };
@@ -160,7 +160,7 @@ describe('ID card draft preview rendering (before approval)', () => {
     assert.ok(xml.includes('Maria'), 'first_name should render from the application');
     assert.ok(xml.includes('Santos'), 'middle_name should render from the application');
     assert.ok(xml.includes('Dela Cruz'), 'surname should render from the application');
-    assert.ok(xml.includes('Single'), 'civil_status should render from the application');
+    assert.ok(xml.includes('1995') || xml.includes('June'), 'birth_date should render from the application');
   });
 
   it('does not assign an id_number or expiry when rendering the draft', async () => {
@@ -188,7 +188,7 @@ describe('ID card photo embedding (valid relay + inline drawing)', () => {
     try { fs.unlinkSync(templatePath); } catch { /* noop */ }
   });
 
-  const sourceTemplate = path.join(uploadsTemplates, 'da4927dcbc4b31935f47f59b7e9cbd73.docx');
+  const sourceTemplate = path.join(uploadsTemplates, '12ee12af1cc360b6b94a60acaa182ac8.docx');
 
   // A synthetic 320x240 PNG header (same construction as the size-detection test).
   const photoBuffer = (() => {

@@ -27,6 +27,8 @@ const barangayIdApplicationValidation = [
     }
     return true;
   }),
+  body('placeOfBirth').optional().trim().isLength({ max: 150 }).withMessage('Place of birth must not exceed 150 characters.'),
+  body('birthPlace').optional().trim().isLength({ max: 150 }).withMessage('Place of birth must not exceed 150 characters.'),
   body('gender').optional().isIn(['Male', 'Female', 'Other']).withMessage('Gender must be Male, Female, or Other.'),
   body('civilStatus').optional().isIn(['Single', 'Married', 'Widowed', 'Separated', 'Divorced']).withMessage('Invalid civil status.'),
   body('occupation').optional().trim().isLength({ max: 100 }).withMessage('Occupation must not exceed 100 characters.'),

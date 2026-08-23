@@ -1,7 +1,7 @@
 /**
  * Middleware: restrictStatusDisplayToLan
  * Ensures that requests to the Status Display API originate from the authorized
- * Barangay LAN IP address (e.g. 192.168.100.245:4201) and blocks direct
+ * Barangay LAN IP address (e.g. 192.168.100.102:4201) and blocks direct
  * requests coming from unauthorized local/loopback origins.
  */
 const restrictStatusDisplayToLan = (req, res, next) => {
@@ -12,7 +12,7 @@ const restrictStatusDisplayToLan = (req, res, next) => {
     return res.status(403).json({
       success: false,
       error: 'FORBIDDEN_ORIGIN',
-      message: 'Access Restricted: The Status Display board is only accessible via the authorized Barangay LAN address (http://192.168.100.245:4201/status-display).'
+      message: 'Access Restricted: The Status Display board is only accessible via the authorized Barangay LAN address (http://192.168.100.102:4201/status-display).'
     });
   }
 
