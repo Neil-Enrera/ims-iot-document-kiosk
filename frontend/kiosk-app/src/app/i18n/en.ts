@@ -273,6 +273,8 @@ export const en: TranslationDictionary = {
   'bar.photo.unavailable': 'Camera Unavailable',
   'bar.photo.unavailableDesc': 'Please check that the camera is connected and powered on, or switch to the alternative camera.',
   'bar.photo.tryAgain': 'Try Again',
+  'bar.photo.blurryError': 'The captured photo is blurry or unclear. Please face the camera and hold still, then retake your photo.',
+  'bar.photo.darkError': 'The captured photo is too dark. Please ensure good lighting and retake your photo.',
   'bar.signature.title': 'Digital Signature',
   'bar.signature.desc': 'Sign using your finger or a stylus.',
   'bar.signature.required': 'Please provide your signature before continuing.',

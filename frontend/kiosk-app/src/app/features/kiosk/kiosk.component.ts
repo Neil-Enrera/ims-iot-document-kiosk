@@ -1957,7 +1957,15 @@ export type BarangayStep =
                   </div>
                 } @else {
                   <div class="text-center">
-                    <img [src]="capturedPhoto()" class="w-64 h-64 rounded-2xl mx-auto mb-6 object-cover border-4 border-white" />
+                    <img [src]="capturedPhoto()" class="w-64 h-64 rounded-2xl mx-auto mb-4 object-cover border-4 border-white shadow-md" />
+                    @if (photoQualityError()) {
+                      <div class="w-full max-w-sm mx-auto mb-4 p-3 rounded-xl bg-amber-50 border-2 border-amber-300 flex items-center gap-2.5 text-amber-900 shadow-sm text-left">
+                        <svg class="w-5 h-5 text-amber-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+                        </svg>
+                        <p class="text-xs font-semibold leading-snug">{{ photoQualityError() }}</p>
+                      </div>
+                    }
                     <div class="flex gap-4 justify-center">
                       <app-button variant="primary" size="lg" (onClick)="confirmPhoto()">{{ t('doc.photo.useThis') }}</app-button>
                       <app-button variant="secondary" size="lg" (onClick)="retakePhoto()">{{ t('common.retake') }}</app-button>
@@ -3700,6 +3708,14 @@ export type BarangayStep =
                                 <p class="text-[13px] sm:text-sm text-[#64748B]">{{ t('bar.photo.waiting') }}</p>
                               }
                             } @else {
+                              @if (photoQualityError()) {
+                                <div class="w-full max-w-[440px] mx-auto mb-2 p-3 rounded-xl bg-amber-50 border-2 border-amber-300 flex items-center gap-2.5 text-amber-900 shadow-sm text-left animate-shake">
+                                  <svg class="w-5 h-5 text-amber-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+                                  </svg>
+                                  <p class="text-xs sm:text-sm font-semibold leading-snug">{{ photoQualityError() }}</p>
+                                </div>
+                              }
                               <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
                                 <button (click)="confirmBarangayPhoto()"
                                         class="flex items-center justify-center gap-2.5 min-h-[56px] min-w-[200px] px-7 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white text-base sm:text-lg font-semibold shadow-[0_4px_14px_rgba(249,115,22,0.35)] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40">
@@ -4868,6 +4884,8 @@ export class KioskComponent implements OnInit, OnDestroy {
   kioskSettings = signal<Record<string, string>>({});
   showBarangayDobError = signal<boolean>(false);
   showGuestDobError = signal<boolean>(false);
+  photoQualityError = signal<string>('');
+  private photoQualityErrorTimer: any;
   private barangayDobErrorTimer: any;
   private guestDobErrorTimer: any;
   private formErrorTimer: any;
@@ -6459,7 +6477,136 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.saveState();
   }
 
-  confirmBarangayPhoto() {
+  triggerPhotoQualityError(msg: string, durationMs: number = 4000) {
+    if (this.photoQualityErrorTimer) {
+      clearTimeout(this.photoQualityErrorTimer);
+      this.photoQualityErrorTimer = null;
+    }
+    this.photoQualityError.set(msg);
+    if (durationMs > 0) {
+      this.photoQualityErrorTimer = setTimeout(() => {
+        this.photoQualityError.set('');
+        this.photoQualityErrorTimer = null;
+      }, durationMs);
+    }
+  }
+
+  private analyzeImageQuality(dataUrl: string): Promise<{ valid: boolean; reason?: 'blurry' | 'dark' | 'bright' | 'empty'; score?: number; luminance?: number }> {
+    return new Promise((resolve) => {
+      if (!dataUrl || !dataUrl.startsWith('data:image')) {
+        resolve({ valid: false, reason: 'empty' });
+        return;
+      }
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        try {
+          const analysisWidth = 320;
+          const analysisHeight = Math.max(1, Math.round((img.naturalHeight || img.height || 240) * (analysisWidth / (img.naturalWidth || img.width || 320))));
+          const canvas = document.createElement('canvas');
+          canvas.width = analysisWidth;
+          canvas.height = analysisHeight;
+          const ctx = canvas.getContext('2d', { willReadFrequently: true });
+          if (!ctx) {
+            resolve({ valid: true });
+            return;
+          }
+          ctx.drawImage(img, 0, 0, analysisWidth, analysisHeight);
+          const imgData = ctx.getImageData(0, 0, analysisWidth, analysisHeight);
+          const data = imgData.data;
+          const totalPixels = analysisWidth * analysisHeight;
+
+          // 1. Grayscale & Mean Luminance (0.299R + 0.587G + 0.114B)
+          let totalLuminance = 0;
+          const gray = new Float32Array(totalPixels);
+          for (let i = 0; i < totalPixels; i++) {
+            const r = data[i * 4];
+            const g = data[i * 4 + 1];
+            const b = data[i * 4 + 2];
+            const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+            gray[i] = lum;
+            totalLuminance += lum;
+          }
+          const avgLuminance = totalLuminance / totalPixels;
+
+          // Check severe underexposure / pitch black (e.g. lens blocked)
+          if (avgLuminance < 18) {
+            resolve({ valid: false, reason: 'dark', luminance: avgLuminance });
+            return;
+          }
+
+          // 2. 3x3 Discrete Laplacian Kernel edge variance on central 80% region
+          let lapSum = 0;
+          let count = 0;
+          const minX = Math.floor(analysisWidth * 0.1);
+          const maxX = Math.floor(analysisWidth * 0.9);
+          const minY = Math.floor(analysisHeight * 0.1);
+          const maxY = Math.floor(analysisHeight * 0.9);
+
+          const lapValues = new Float32Array((maxX - minX) * (maxY - minY));
+          for (let y = minY; y < maxY; y++) {
+            const yOffset = y * analysisWidth;
+            for (let x = minX; x < maxX; x++) {
+              const lap = 
+                gray[yOffset - analysisWidth + x] +
+                gray[yOffset + analysisWidth + x] +
+                gray[yOffset + x - 1] +
+                gray[yOffset + x + 1] -
+                4 * gray[yOffset + x];
+
+              lapValues[count] = lap;
+              lapSum += lap;
+              count++;
+            }
+          }
+
+          if (count === 0) {
+            resolve({ valid: true });
+            return;
+          }
+
+          const lapMean = lapSum / count;
+          let varSum = 0;
+          for (let i = 0; i < count; i++) {
+            const diff = lapValues[i] - lapMean;
+            varSum += diff * diff;
+          }
+          const variance = varSum / count;
+
+          // Calibrated blur threshold (clear photo variance is typically > 50-100; blurry < 30)
+          if (variance < 32) {
+            resolve({ valid: false, reason: 'blurry', score: variance, luminance: avgLuminance });
+          } else {
+            resolve({ valid: true, score: variance, luminance: avgLuminance });
+          }
+        } catch (e) {
+          console.warn('Image quality analysis fallback:', e);
+          resolve({ valid: true });
+        }
+      };
+      img.onerror = () => resolve({ valid: false, reason: 'empty' });
+      img.src = dataUrl;
+    });
+  }
+
+  async confirmBarangayPhoto() {
+    const photo = this.capturedPhoto();
+    if (!photo) {
+      this.triggerPhotoQualityError(this.t('bar.photo.unavailableDesc'));
+      return;
+    }
+
+    const check = await this.analyzeImageQuality(photo);
+    if (!check.valid) {
+      if (check.reason === 'dark') {
+        this.triggerPhotoQualityError(this.t('bar.photo.darkError'));
+      } else {
+        this.triggerPhotoQualityError(this.t('bar.photo.blurryError'));
+      }
+      return;
+    }
+
+    this.photoQualityError.set('');
     this.barangayStep.set('signature');
     this.resetIdleTimer();
     this.saveState();
@@ -7128,7 +7275,24 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.advanceOrReview();
   }
 
-  confirmPhoto() {
+  async confirmPhoto() {
+    const photo = this.capturedPhoto();
+    if (!photo) {
+      this.triggerPhotoQualityError(this.t('bar.photo.unavailableDesc'));
+      return;
+    }
+
+    const check = await this.analyzeImageQuality(photo);
+    if (!check.valid) {
+      if (check.reason === 'dark') {
+        this.triggerPhotoQualityError(this.t('bar.photo.darkError'));
+      } else {
+        this.triggerPhotoQualityError(this.t('bar.photo.blurryError'));
+      }
+      return;
+    }
+
+    this.photoQualityError.set('');
     this.stashActivePhoto();
     this.clearDocPreview();
     this.advanceOrReview();
@@ -7137,6 +7301,11 @@ export class KioskComponent implements OnInit, OnDestroy {
   retakePhoto() {
     this.capturedPhoto.set(null);
     this.errorMessage.set('');
+    this.photoQualityError.set('');
+    if (this.photoQualityErrorTimer) {
+      clearTimeout(this.photoQualityErrorTimer);
+      this.photoQualityErrorTimer = null;
+    }
     if (this.cameraMode() === 'esp32') {
       this.esp32StreamUrl.set(`${environment.esp32CamStreamUrl || 'http://192.168.100.200/stream'}?t=${Date.now()}`);
       this.cameraReady.set(true);

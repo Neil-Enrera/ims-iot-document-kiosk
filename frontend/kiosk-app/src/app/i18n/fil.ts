@@ -243,6 +243,8 @@ export const fil: TranslationDictionary = {
   'bar.photo.cameraReady': 'Handa ang Camera',
   'bar.photo.waiting': 'Naghihintay sa iyong pagpindot ng Kunin ang Larawan.',
   'bar.photo.tryAgain': 'Subukang Muli',
+  'bar.photo.blurryError': 'Malabo ang kuha ng larawan. Mangyaring humarap sa camera, manatiling nakapirmi, at kumuha muli.',
+  'bar.photo.darkError': 'Masyadong madilim ang kuha ng larawan. Mangyaring kumuha muli sa mas maliwanag na puwesto.',
   'bar.photo.positionGuide': 'Ilagay ang iyong mukha sa loob ng frame.',
   'bar.photo.unavailable': 'Hindi Magamit ang Camera',
   'bar.photo.unavailableDesc': 'Hindi pinayagan ang camera o hindi ito konektado. Maaari kang magpatuloy nang walang larawan.',
