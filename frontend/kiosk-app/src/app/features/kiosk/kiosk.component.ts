@@ -4729,6 +4729,12 @@ export class KioskComponent implements OnInit, OnDestroy {
   requestNumbers = signal<string[]>([]);
   barangayService = signal<Service | null>(null);
   kioskSettings = signal<Record<string, string>>({});
+  showBarangayDobError = signal<boolean>(false);
+  showGuestDobError = signal<boolean>(false);
+  private barangayDobErrorTimer: any;
+  private guestDobErrorTimer: any;
+  private formErrorTimer: any;
+  private formErrorsTimer: any;
   capturedPhoto = signal<string | null>(null);
   capturedSignature = signal<string | null>(null);
   requestNumber = signal('');
@@ -5000,6 +5006,37 @@ export class KioskComponent implements OnInit, OnDestroy {
       },
       error: (err) => console.warn('Could not load kiosk settings:', err)
     });
+  }
+
+  triggerBarangayDobError(durationMs = 3000) {
+    this.showBarangayDobError.set(true);
+    clearTimeout(this.barangayDobErrorTimer);
+    this.barangayDobErrorTimer = setTimeout(() => {
+      this.showBarangayDobError.set(false);
+      this.formErrors.update(e => {
+        const next = { ...e };
+        Object.keys(next).forEach(k => {
+          if (k.toLowerCase().includes('birth') || k.toLowerCase().includes('dob')) delete next[k];
+        });
+        return next;
+      });
+    }, durationMs);
+  }
+
+  triggerGuestDobError(durationMs = 3000) {
+    this.showGuestDobError.set(true);
+    clearTimeout(this.guestDobErrorTimer);
+    this.guestDobErrorTimer = setTimeout(() => {
+      this.showGuestDobError.set(false);
+    }, durationMs);
+  }
+
+  triggerFormError(msg: string, durationMs = 3000) {
+    this.formError.set(msg);
+    clearTimeout(this.formErrorTimer);
+    this.formErrorTimer = setTimeout(() => {
+      this.formError.set('');
+    }, durationMs);
   }
 
   // ============================================================
@@ -6102,28 +6139,30 @@ export class KioskComponent implements OnInit, OnDestroy {
     const cleanPhone = g.contactNumber.trim().replace(/[\s\-()]/g, '');
 
     if (!g.fullName.trim() || g.fullName.trim().length < 2 || !/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(g.fullName.trim())) {
-      this.formError.set(this.t('err.invalidName', { field: this.t('bar.form.fullName') || 'Full Name' }));
+      this.triggerFormError(this.t('err.invalidName', { field: this.t('bar.form.fullName') || 'Full Name' }), 3000);
       return;
     }
     if (!g.birthDate) {
-      this.formError.set(this.t('err.guest.birthDate'));
+      this.triggerFormError(this.t('err.guest.birthDate') || 'Please select a valid Date of Birth.', 3000);
+      this.triggerGuestDobError(3000);
       return;
     }
     const dobError = this.validateBirthDateValue(g.birthDate, this.t('doc.guestInfo.birthDate') || 'Date of Birth');
     if (dobError) {
-      this.formError.set(dobError);
+      this.triggerFormError(dobError, 3000);
+      this.triggerGuestDobError(3000);
       return;
     }
     if (!g.address.trim() || g.address.trim().length < 5) {
-      this.formError.set(this.t('err.guest.address'));
+      this.triggerFormError(this.t('err.guest.address'), 3000);
       return;
     }
     if (!cleanPhone || !/^(09\d{9}|\+639\d{9}|\d{7,11})$/.test(cleanPhone)) {
-      this.formError.set(this.t('err.invalidPhone', { field: this.t('bar.form.contact') || 'Contact Number' }));
+      this.triggerFormError(this.t('err.invalidPhone', { field: this.t('bar.form.contact') || 'Contact Number' }), 3000);
       return;
     }
     if (g.email && g.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(g.email.trim())) {
-      this.formError.set(this.t('err.invalidEmail', { field: 'Email' }));
+      this.triggerFormError(this.t('err.invalidEmail', { field: 'Email' }), 3000);
       return;
     }
 
@@ -6139,6 +6178,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     const g = this.guestForm;
     switch (key) {
       case 'birthDate': {
+        if (!this.showGuestDobError()) return false;
         if (!g.birthDate) return true;
         const age = this.calculateAge(g.birthDate);
         return age === null || age < 1 || age > 125;
@@ -6164,6 +6204,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     const minAge = this.getBarangayIdMinAge();
     switch (key) {
       case 'birthDate': {
+        if (!this.showBarangayDobError()) return false;
         if (!f.birthDate) return true;
         const age = this.calculateAge(f.birthDate);
         return age === null || age < minAge || age > 125;
@@ -6228,7 +6269,8 @@ export class KioskComponent implements OnInit, OnDestroy {
       this.formErrors.set(newErrors);
       if (hasErrors) {
         const firstKey = Object.keys(newErrors)[0];
-        this.formError.set(newErrors[firstKey] || 'Please complete all required fields.');
+        this.triggerFormError(newErrors[firstKey] || 'Please complete all required fields.', 3000);
+        this.triggerBarangayDobError(3000);
         return;
       }
     } else {
@@ -6237,36 +6279,38 @@ export class KioskComponent implements OnInit, OnDestroy {
       const cleanEmPhone = f.emergencyContactNumber.trim().replace(/[\s\-()]/g, '');
 
       if (!f.firstName.trim() || f.firstName.trim().length < 2 || !/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(f.firstName.trim())) {
-        this.formError.set(this.t('err.invalidName', { field: this.t('bar.form.firstName') || 'First Name' }));
+        this.triggerFormError(this.t('err.invalidName', { field: this.t('bar.form.firstName') || 'First Name' }), 3000);
         return;
       }
       if (f.middleName && f.middleName.trim() && !/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(f.middleName.trim())) {
-        this.formError.set(this.t('err.invalidName', { field: this.t('bar.form.middleName') || 'Middle Name' }));
+        this.triggerFormError(this.t('err.invalidName', { field: this.t('bar.form.middleName') || 'Middle Name' }), 3000);
         return;
       }
       if (!f.lastName.trim() || f.lastName.trim().length < 2 || !/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(f.lastName.trim())) {
-        this.formError.set(this.t('err.invalidName', { field: this.t('bar.form.lastName') || 'Last Name' }));
+        this.triggerFormError(this.t('err.invalidName', { field: this.t('bar.form.lastName') || 'Last Name' }), 3000);
         return;
       }
       if (!f.birthDate) {
-        this.formError.set(this.t('err.bar.birthDate'));
+        this.triggerFormError(this.t('err.bar.birthDate') || 'Please select a valid Date of Birth.', 3000);
+        this.triggerBarangayDobError(3000);
         return;
       }
       const dobError = this.validateBirthDateValue(f.birthDate, this.t('bar.form.birthDate') || 'Birth Date');
       if (dobError) {
-        this.formError.set(dobError);
+        this.triggerFormError(dobError, 3000);
+        this.triggerBarangayDobError(3000);
         return;
       }
       if (!f.addressLine.trim() || f.addressLine.trim().length < 5) {
-        this.formError.set(this.t('err.bar.address'));
+        this.triggerFormError(this.t('err.bar.address'), 3000);
         return;
       }
       if (!cleanPhone || !/^(09\d{9}|\+639\d{9}|\d{7,11})$/.test(cleanPhone)) {
-        this.formError.set(this.t('err.invalidPhone', { field: this.t('bar.form.contact') || 'Contact Number' }));
+        this.triggerFormError(this.t('err.invalidPhone', { field: this.t('bar.form.contact') || 'Contact Number' }), 3000);
         return;
       }
       if (f.email && f.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim())) {
-        this.formError.set(this.t('err.invalidEmail', { field: this.t('bar.form.email') || 'Email' }));
+        this.triggerFormError(this.t('err.invalidEmail', { field: this.t('bar.form.email') || 'Email' }), 3000);
         return;
       }
     }
