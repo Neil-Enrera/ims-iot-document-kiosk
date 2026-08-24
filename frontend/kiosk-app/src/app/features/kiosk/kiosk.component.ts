@@ -862,7 +862,8 @@ export type BarangayStep =
                       <!-- Form actions -->
                       <div class="flex items-center justify-center mt-5 sm:mt-6">
                         <button (click)="validateGuestForm()"
-                                class="flex items-center justify-center gap-2.5 min-h-[56px] min-w-[200px] sm:min-w-[220px] px-6 sm:px-8 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white text-lg font-bold shadow-[0_4px_14px_rgba(249,115,22,0.35)] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40">
+                                [disabled]="isGuestDobInvalid()"
+                                class="flex items-center justify-center gap-2.5 min-h-[56px] min-w-[200px] sm:min-w-[220px] px-6 sm:px-8 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white text-lg font-bold shadow-[0_4px_14px_rgba(249,115,22,0.35)] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:active:scale-100">
                           {{ t('common.continue') }}
                           <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
@@ -3238,7 +3239,8 @@ export type BarangayStep =
                     <!-- Continue button (single primary action, centered) -->
                     <div class="flex items-center justify-center mt-5 sm:mt-6">
                       <button (click)="validateBarangayForm()"
-                              class="flex items-center justify-center gap-2 min-h-[56px] min-w-[220px] sm:min-w-[240px] px-7 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white text-base sm:text-lg font-bold shadow-[0_4px_14px_rgba(249,115,22,0.35)] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40">
+                              [disabled]="isBarangayFormDobInvalid()"
+                              class="flex items-center justify-center gap-2 min-h-[56px] min-w-[220px] sm:min-w-[240px] px-7 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white text-base sm:text-lg font-bold shadow-[0_4px_14px_rgba(249,115,22,0.35)] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:active:scale-100">
                         {{ t('common.continue') }}
                         <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
                           <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
@@ -5720,6 +5722,36 @@ export class KioskComponent implements OnInit, OnDestroy {
     return err || 'Please select a valid Date of Birth.';
   }
 
+  isBarangayFormDobInvalid(): boolean {
+    const fields = this.barangayService()?.form_fields;
+    if (fields && fields.length > 0) {
+      const dobField = fields.find(f => this.isBirthDateField(f));
+      if (dobField) {
+        const val = this.formValues()[dobField.key];
+        if (val) {
+          const age = this.calculateAge(val as string);
+          if (age === null || age < 1 || age > 125) return true;
+        }
+      }
+    } else {
+      const f = this.barangayForm;
+      if (f.birthDate) {
+        const age = this.calculateAge(f.birthDate);
+        if (age === null || age < 1 || age > 125) return true;
+      }
+    }
+    return false;
+  }
+
+  isGuestDobInvalid(): boolean {
+    const g = this.guestForm;
+    if (g.birthDate) {
+      const age = this.calculateAge(g.birthDate);
+      if (age === null || age < 1 || age > 125) return true;
+    }
+    return false;
+  }
+
   // ============================================================
   // INPUT SANITIZATION & FILTERING HELPERS (Physical & Touchscreen)
   // ============================================================
@@ -6055,16 +6087,22 @@ export class KioskComponent implements OnInit, OnDestroy {
   }
 
   guestInvalid(key: string): boolean {
-    if (!this.guestSubmitted()) return false;
     const g = this.guestForm;
+    switch (key) {
+      case 'birthDate': {
+        if (g.birthDate) {
+          const age = this.calculateAge(g.birthDate);
+          return age === null || age < 1 || age > 125;
+        }
+        return this.guestSubmitted() && !g.birthDate;
+      }
+      default:
+        if (!this.guestSubmitted()) return false;
+        break;
+    }
     switch (key) {
       case 'fullName':
         return !g.fullName.trim() || g.fullName.trim().length < 2 || g.fullName.length > 100 || !/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(g.fullName.trim());
-      case 'birthDate': {
-        if (!g.birthDate) return true;
-        const age = this.calculateAge(g.birthDate);
-        return age === null || age < 1 || age > 125;
-      }
       case 'address':
         return !g.address.trim() || g.address.trim().length < 5 || g.address.length > 255;
       case 'contactNumber': {
@@ -6079,8 +6117,19 @@ export class KioskComponent implements OnInit, OnDestroy {
   }
 
   barangayInvalid(key: string): boolean {
-    if (!this.barangaySubmitted()) return false;
     const f = this.barangayForm;
+    switch (key) {
+      case 'birthDate': {
+        if (f.birthDate) {
+          const age = this.calculateAge(f.birthDate);
+          return age === null || age < 1 || age > 125;
+        }
+        return this.barangaySubmitted() && !f.birthDate;
+      }
+      default:
+        if (!this.barangaySubmitted()) return false;
+        break;
+    }
     switch (key) {
       case 'firstName':
         return !f.firstName.trim() || f.firstName.trim().length < 2 || f.firstName.length > 50 || !/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(f.firstName.trim());
@@ -6090,11 +6139,6 @@ export class KioskComponent implements OnInit, OnDestroy {
         return f.middleName.length > 50 || !!(f.middleName.trim() && !/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(f.middleName.trim()));
       case 'suffix':
         return f.suffix.length > 20;
-      case 'birthDate': {
-        if (!f.birthDate) return true;
-        const age = this.calculateAge(f.birthDate);
-        return age === null || age < 1 || age > 125;
-      }
       case 'gender':
         return !f.gender;
       case 'civilStatus':
