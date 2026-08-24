@@ -15,6 +15,12 @@
 
 > **Note:** TASK-BACKEND-012 (Payment API) and TASK-FRONTEND-011 (Payment UI) removed per DEC-008.
 > **Recent Updates (August 2026):**
+> - **Comprehensive Date of Birth Validation, Dynamic Age Calculation & Service Minimum Age Enforcement** (`kiosk.component.ts`, `transaction.service.js`, `kiosk.validation.js`, `resident.validation.js`, `en.ts`, `fil.ts`):
+>   - **Past Date Enforcement**: Enforced strict past-date validation across all Kiosk forms (Guest registration, Barangay ID application, dynamic service forms) and backend APIs. Today's date (e.g. August 24, 2026 when current date is August 24, 2026) and future dates are rejected with clear error messages.
+>   - **Touchscreen Date Limits**: Set the maximum date attribute (`max`) on all birthdate `<input type="date">` elements to yesterday (`YYYY-MM-DD`), preventing users from selecting invalid dates on touchscreen/desktop calendars.
+>   - **Dynamic Age Computation & Real-Time Sync**: Implemented real-time dynamic age calculation that displays an age badge (e.g. `Age: 25 yrs old` / `Edad: 25 taon`) right next to the Date of Birth input and automatically syncs with any `age` field in active service schemas.
+>   - **Service Minimum Age Enforcement**: Enforced service-specific age restrictions across both frontend and backend (e.g. *Senior Citizen Certificate* requiring age $\ge$ 60, *Solo Parent* requiring $\ge$ 18, *First-Time Job Seeker* requiring $\ge$ 15).
+>   - **Bilingual Validation Messaging**: Added comprehensive validation messages in both English (`en.ts`) and Filipino (`fil.ts`).
 > - **Configurable Barangay ID Application Form & Dynamic Mapping Pipeline** (`kiosk.component.ts`, `id-card.service.js`, `kiosk.validation.js`, `kiosk.service.ts`):
 >   - **Admin-Configurable Form Fields**: Unified the Barangay ID application form with the platform's flexible form builder system. Admins can configure custom fields, required flags, validation patterns, and document placeholder mappings from the Admin Panel (`services` ID: 66).
 >   - **Dynamic Kiosk Rendering & Fallback**: Kiosk dynamically renders the configured form fields (`select`, `textarea`, `radio`, `checkbox`, `date`, `tel`, `text`), pre-populates matching fields from resident data on RFID scan, performs live dynamic field validation, and renders all fields dynamically in the review summary screen before submission and live ID card preview.

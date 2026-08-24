@@ -22,10 +22,17 @@ const createValidation = [
   body('birthDate').optional({ values: 'null' }).isISO8601().withMessage('Invalid date format.').custom(val => {
     if (!val) return true;
     const d = new Date(val);
+    if (isNaN(d.getTime())) {
+      throw new Error('Invalid date format.');
+    }
     const today = new Date();
-    today.setHours(23, 59, 59, 999);
-    if (isNaN(d.getTime()) || d > today || d.getFullYear() < (today.getFullYear() - 125)) {
-      throw new Error('Birth date must be a valid past date.');
+    today.setHours(0, 0, 0, 0);
+    if (d >= today) {
+      throw new Error('Birth date must be a past date (cannot be today or in the future).');
+    }
+    const minYear = today.getFullYear() - 125;
+    if (d.getFullYear() < minYear) {
+      throw new Error('Birth date must be a valid date within the last 125 years.');
     }
     return true;
   }),
@@ -90,10 +97,17 @@ const updateValidation = [
   body('birthDate').optional({ values: 'null' }).isISO8601().withMessage('Invalid date format.').custom(val => {
     if (!val) return true;
     const d = new Date(val);
+    if (isNaN(d.getTime())) {
+      throw new Error('Invalid date format.');
+    }
     const today = new Date();
-    today.setHours(23, 59, 59, 999);
-    if (isNaN(d.getTime()) || d > today || d.getFullYear() < (today.getFullYear() - 125)) {
-      throw new Error('Birth date must be a valid past date.');
+    today.setHours(0, 0, 0, 0);
+    if (d >= today) {
+      throw new Error('Birth date must be a past date (cannot be today or in the future).');
+    }
+    const minYear = today.getFullYear() - 125;
+    if (d.getFullYear() < minYear) {
+      throw new Error('Birth date must be a valid date within the last 125 years.');
     }
     return true;
   }),

@@ -57,6 +57,19 @@ const evaluateResidentPolicy = (service, activeRequests, latestRequest) => {
   return { allowed: true };
 };
 
+const calculateAgeHelper = (birthDate) => {
+  if (!birthDate) return null;
+  const d = new Date(birthDate);
+  if (isNaN(d.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - d.getFullYear();
+  const m = today.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < d.getDate())) {
+    age--;
+  }
+  return age >= 0 ? age : null;
+};
+
 // Validate dynamic form data against service form_fields schema
 const validateServiceFormData = (formFields, formData = {}, serviceName = 'Service') => {
   const fields = Array.isArray(formFields) ? formFields : [];
@@ -96,6 +109,12 @@ const validateServiceFormData = (formFields, formData = {}, serviceName = 'Servi
         if (valNum < 0 || valNum > 125) {
           errors.push(`${field.label || field.key} must be between 0 and 125.`);
         }
+        if (/senior/i.test(serviceName) && valNum < 60) {
+          errors.push(`${serviceName} requires the applicant to be at least 60 years old.`);
+        }
+        if (/first[- ]?time job seeker/i.test(serviceName) && valNum < 15) {
+          errors.push(`${serviceName} requires the applicant to be at least 15 years old.`);
+        }
       }
     }
 
@@ -133,13 +152,27 @@ const validateServiceFormData = (formFields, formData = {}, serviceName = 'Servi
         errors.push(`${field.label || field.key} must be a valid date.`);
       } else if (isBirthDate) {
         const today = new Date();
-        today.setHours(23, 59, 59, 999);
-        if (parsedDate > today) {
-          errors.push(`${field.label || field.key} cannot be a future date.`);
+        today.setHours(0, 0, 0, 0);
+        if (parsedDate >= today) {
+          errors.push(`${field.label || field.key} must be a past date (cannot be today or in the future).`);
         }
-        const minYear = new Date().getFullYear() - 125;
+        const minYear = today.getFullYear() - 125;
         if (parsedDate.getFullYear() < minYear) {
-          errors.push(`${field.label || field.key} is not a valid birth date.`);
+          errors.push(`${field.label || field.key} must be a valid date within the last 125 years.`);
+        }
+
+        // Check age requirement for age-restricted services
+        const computedAge = calculateAgeHelper(parsedDate);
+        if (computedAge !== null) {
+          if (/senior/i.test(serviceName) && computedAge < 60) {
+            errors.push(`${serviceName} requires the applicant to be at least 60 years old (current computed age: ${computedAge}).`);
+          }
+          if (/first[- ]?time job seeker/i.test(serviceName) && computedAge < 15) {
+            errors.push(`${serviceName} requires the applicant to be at least 15 years old (current computed age: ${computedAge}).`);
+          }
+          if (/solo parent/i.test(serviceName) && computedAge < 18) {
+            errors.push(`${serviceName} requires the applicant to be at least 18 years old (current computed age: ${computedAge}).`);
+          }
         }
       }
     }
@@ -189,9 +222,13 @@ const validateGuestInput = (guest) => {
   if (birthDate) {
     const d = new Date(birthDate);
     const today = new Date();
-    today.setHours(23, 59, 59, 999);
-    if (isNaN(d.getTime()) || d > today || d.getFullYear() < (today.getFullYear() - 125)) {
-      errors.push('Guest birth date must be a valid past date.');
+    today.setHours(0, 0, 0, 0);
+    if (isNaN(d.getTime())) {
+      errors.push('Guest birth date must be a valid date.');
+    } else if (d >= today) {
+      errors.push('Guest birth date must be a past date (cannot be today or in the future).');
+    } else if (d.getFullYear() < (today.getFullYear() - 125)) {
+      errors.push('Guest birth date must be a valid date within the last 125 years.');
     }
   }
   if (contactNumber && !/^(09\d{9}|\+639\d{9})$/.test(contactNumber)) {

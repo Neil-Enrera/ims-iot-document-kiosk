@@ -730,9 +730,16 @@ export type BarangayStep =
 
                         <!-- Date of Birth -->
                         <div>
-                          <label for="guest-birthDate" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
-                            {{ t('doc.guestInfo.birthDate') }} <span class="text-[#F97316]">*</span>
-                          </label>
+                          <div class="flex items-center justify-between mb-1.5">
+                            <label for="guest-birthDate" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A]">
+                              {{ t('doc.guestInfo.birthDate') }} <span class="text-[#F97316]">*</span>
+                            </label>
+                            @if (getGuestAge() !== null) {
+                              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs sm:text-sm font-semibold bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE]">
+                                {{ t('doc.form.computedAge', { age: getGuestAge() ?? '' }) }}
+                              </span>
+                            }
+                          </div>
                           <div class="flex items-center rounded-xl border-2 bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
                                [class.border-[#DC2626]]="guestInvalid('birthDate')">
                             <div class="shrink-0 w-12 sm:w-14 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
@@ -742,9 +749,9 @@ export type BarangayStep =
                               </svg>
                             </div>
                             <input id="guest-birthDate" type="date" name="birthDate" [(ngModel)]="guestForm.birthDate"
-                                   [placeholder]="t('doc.guestInfo.birthDatePh')" [max]="todayDateString()"
+                                   [placeholder]="t('doc.guestInfo.birthDatePh')" [max]="maxBirthDateString()"
                                    class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] font-medium text-[#0F172A] bg-transparent outline-none border-none" />
-                            @if (guestForm.birthDate) {
+                            @if (guestForm.birthDate && !guestInvalid('birthDate')) {
                               <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                                   <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
@@ -753,11 +760,11 @@ export type BarangayStep =
                             }
                           </div>
                           @if (guestInvalid('birthDate')) {
-                            <p class="flex items-center gap-1.5 text-base font-medium text-[#B91C1C]">
+                            <p class="mt-1.5 flex items-center gap-1.5 text-sm sm:text-base font-medium text-[#B91C1C]">
                               <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
                                 <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
                               </svg>
-                              {{ t('err.guest.birthDate') }}
+                              {{ t('err.birthDatePast', { field: t('doc.guestInfo.birthDate') }) }}
                             </p>
                           }
                         </div>
@@ -1503,9 +1510,16 @@ export type BarangayStep =
                         <div class="flex flex-wrap gap-x-5 gap-y-4 sm:gap-y-5">
                           @for (field of selectedService()!.form_fields!; track field.key) {
                             <div [class]="formGridClass(field)">
-                              <label [attr.for]="'doc-form-' + field.key" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
-                                {{ fieldLabel(field) }} @if (field.required) { <span class="text-[#F97316]">*</span> }
-                              </label>
+                              <div class="flex items-center justify-between mb-1.5">
+                                <label [attr.for]="'doc-form-' + field.key" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A]">
+                                  {{ fieldLabel(field) }} @if (field.required) { <span class="text-[#F97316]">*</span> }
+                                </label>
+                                @if (isBirthDateField(field) && getDynamicFieldAge(field.key) !== null) {
+                                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs sm:text-sm font-semibold bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE]">
+                                    {{ t('doc.form.computedAge', { age: getDynamicFieldAge(field.key) ?? '' }) }}
+                                  </span>
+                                }
+                              </div>
 
                               @switch (field.type) {
                                 @case ('select') {
@@ -1657,7 +1671,7 @@ export type BarangayStep =
                                       [attr.inputmode]="fieldInputMode(field)"
                                       [attr.maxlength]="fieldMaxLength(field)"
                                       [attr.min]="field.validation?.min !== undefined ? field.validation.min : null"
-                                      [attr.max]="field.validation?.max !== undefined ? field.validation.max : (field.type === 'date' && (field.key.toLowerCase().includes('birth') || field.label.toLowerCase().includes('birth')) ? todayDateString() : null)"
+                                      [attr.max]="field.validation?.max !== undefined ? field.validation.max : (isBirthDateField(field) ? maxBirthDateString() : (field.type === 'date' ? todayDateString() : null))"
                                       class="flex-1 min-w-0 bg-transparent px-3.5 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] outline-none border-none" />
                                   </div>
                                 }
@@ -1785,7 +1799,7 @@ export type BarangayStep =
                            (load)="onEsp32StreamLoad()"
                            (error)="onEsp32StreamError()"
                            crossorigin="anonymous"
-                           class="w-full aspect-video object-cover"
+                           class="w-full aspect-video object-cover -rotate-90 scale-[1.35]"
                            alt="ESP32-CAM Live Preview" />
                     } @else {
                       <video #videoEl autoplay playsinline class="w-full aspect-video object-cover"></video>
@@ -2780,9 +2794,16 @@ export type BarangayStep =
                         <div class="flex flex-wrap gap-x-5 gap-y-4 sm:gap-y-5">
                           @for (field of barangayService()!.form_fields!; track field.key) {
                             <div [class]="formGridClass(field)">
-                              <label [attr.for]="'bar-form-' + field.key" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
-                                {{ fieldLabel(field) }} @if (field.required) { <span class="text-[#F97316]">*</span> }
-                              </label>
+                              <div class="flex items-center justify-between mb-1.5">
+                                <label [attr.for]="'bar-form-' + field.key" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A]">
+                                  {{ fieldLabel(field) }} @if (field.required) { <span class="text-[#F97316]">*</span> }
+                                </label>
+                                @if (isBirthDateField(field) && getDynamicFieldAge(field.key) !== null) {
+                                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs sm:text-sm font-semibold bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE]">
+                                    {{ t('doc.form.computedAge', { age: getDynamicFieldAge(field.key) ?? '' }) }}
+                                  </span>
+                                }
+                              </div>
 
                               @switch (field.type) {
                                 @case ('select') {
@@ -2865,7 +2886,7 @@ export type BarangayStep =
                                       [attr.inputmode]="fieldInputMode(field)"
                                       [attr.maxlength]="fieldMaxLength(field)"
                                       [attr.min]="field.validation?.min !== undefined ? field.validation.min : null"
-                                      [attr.max]="field.validation?.max !== undefined ? field.validation.max : (field.type === 'date' && (field.key.toLowerCase().includes('birth') || field.label.toLowerCase().includes('birth')) ? todayDateString() : null)"
+                                      [attr.max]="field.validation?.max !== undefined ? field.validation.max : (isBirthDateField(field) ? maxBirthDateString() : (field.type === 'date' ? todayDateString() : null))"
                                       class="flex-1 min-w-0 bg-transparent px-3.5 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] outline-none border-none" />
                                     @if (formValues()[field.key]) {
                                       <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
@@ -3030,9 +3051,16 @@ export type BarangayStep =
 
                           <!-- Birth Date -->
                           <div>
-                            <label for="barangay-birthDate" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
-                              {{ t('bar.form.birthDate') }} <span class="text-[#F97316]">*</span>
-                            </label>
+                            <div class="flex items-center justify-between mb-1.5">
+                              <label for="barangay-birthDate" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A]">
+                                {{ t('bar.form.birthDate') }} <span class="text-[#F97316]">*</span>
+                              </label>
+                              @if (getBarangayAge() !== null) {
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs sm:text-sm font-semibold bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE]">
+                                  {{ t('doc.form.computedAge', { age: getBarangayAge() ?? '' }) }}
+                                </span>
+                              }
+                            </div>
                             <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
                                  [class.border-[#DC2626]]="barangayInvalid('birthDate')">
                               <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
@@ -3040,9 +3068,9 @@ export type BarangayStep =
                                   <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18" stroke-linecap="round"/>
                                 </svg>
                               </div>
-                              <input id="barangay-birthDate" type="date" name="birthDate" [(ngModel)]="barangayForm.birthDate" [max]="todayDateString()"
+                              <input id="barangay-birthDate" type="date" name="birthDate" [(ngModel)]="barangayForm.birthDate" [max]="maxBirthDateString()"
                                      class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] bg-transparent outline-none border-none" />
-                              @if (barangayForm.birthDate) {
+                              @if (barangayForm.birthDate && !barangayInvalid('birthDate')) {
                                 <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
                                   <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
@@ -3055,7 +3083,7 @@ export type BarangayStep =
                                 <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
                                   <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
                                 </svg>
-                                {{ t('err.bar.birthDate') }}
+                                {{ t('err.birthDatePast', { field: t('bar.form.birthDate') }) }}
                               </p>
                             }
                           </div>
@@ -3503,7 +3531,7 @@ export type BarangayStep =
                                      (load)="onEsp32StreamLoad()"
                                      (error)="onEsp32StreamError()"
                                      crossorigin="anonymous"
-                                     class="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
+                                     class="absolute inset-0 w-full h-full object-cover select-none pointer-events-none -rotate-90 scale-[1.35]"
                                      alt="ESP32-CAM Live Preview" />
                               } @else {
                                 <video #videoEl autoplay playsinline class="absolute inset-0 w-full h-full object-cover"></video>
@@ -4772,7 +4800,7 @@ export class KioskComponent implements OnInit, OnDestroy {
   language = signal<KioskLanguage>('en');
   currentDateTime = signal<Date>(new Date());
 
-  t(key: string, params?: Record<string, string | number>): string {
+  t(key: string, params?: Record<string, any>): string {
     return this.translations.translate(key, params);
   }
 
@@ -5087,6 +5115,7 @@ export class KioskComponent implements OnInit, OnDestroy {
       else if (keyLower === 'lastname' || keyLower === 'lname' || keyLower === 'surname') currentValues[f.key] = r.last_name || '';
       else if (keyLower === 'suffix') currentValues[f.key] = r.suffix || '';
       else if (keyLower === 'birthdate' || keyLower === 'dob' || keyLower === 'dateofbirth') currentValues[f.key] = r.birth_date ? r.birth_date.split('T')[0] : '';
+      else if (keyLower === 'age') currentValues[f.key] = this.calculateAge(r.birth_date) ?? '';
       else if (keyLower === 'birthplace' || keyLower === 'pob' || keyLower === 'placeofbirth') currentValues[f.key] = r.birth_place || '';
       else if (keyLower === 'gender' || keyLower === 'sex') currentValues[f.key] = r.gender || '';
       else if (keyLower === 'civilstatus') currentValues[f.key] = r.civil_status || '';
@@ -5312,11 +5341,13 @@ export class KioskComponent implements OnInit, OnDestroy {
     const resident = this.resident();
     if (resident) {
       const nameParts = [resident.first_name, resident.middle_name, resident.last_name, resident.suffix].filter(Boolean);
+      const computedAge = this.calculateAge(resident.birth_date);
       const source: Record<string, any> = {
         full_name: nameParts.join(' '),
         address: resident.address_line,
         address_line: resident.address_line,
         birth_date: this.formatDate(resident.birth_date),
+        age: computedAge !== null ? computedAge : '',
         gender: resident.gender,
         civil_status: resident.civil_status,
         blood_type: resident.blood_type,
@@ -5327,7 +5358,23 @@ export class KioskComponent implements OnInit, OnDestroy {
       };
       for (const key of Object.keys(source)) {
         const value = source[key];
-        if (value !== null && value !== undefined) defaults[key] = value;
+        if (value !== null && value !== undefined && value !== '') defaults[key] = value;
+      }
+    } else if (this.guestForm.fullName || this.guestForm.birthDate) {
+      const g = this.guestForm;
+      const computedAge = this.calculateAge(g.birthDate);
+      const source: Record<string, any> = {
+        full_name: g.fullName,
+        address: g.address,
+        address_line: g.address,
+        birth_date: g.birthDate,
+        age: computedAge !== null ? computedAge : '',
+        contact_number: g.contactNumber,
+        email: g.email
+      };
+      for (const key of Object.keys(source)) {
+        const value = source[key];
+        if (value !== null && value !== undefined && value !== '') defaults[key] = value;
       }
     }
     this.formValues.set(defaults);
@@ -5425,7 +5472,21 @@ export class KioskComponent implements OnInit, OnDestroy {
   }
 
   updateFormValue(key: string, value: any) {
-    this.formValues.update(v => ({ ...v, [key]: value }));
+    this.formValues.update(v => {
+      const updated = { ...v, [key]: value };
+      const keyLower = (key || '').toLowerCase();
+      if (keyLower.includes('birth') || keyLower === 'dob' || keyLower === 'dateofbirth') {
+        const computedAge = this.calculateAge(value);
+        if (computedAge !== null) {
+          const fields = this.selectedService()?.form_fields || this.barangayService()?.form_fields || [];
+          const ageField = fields.find(f => f.key.toLowerCase() === 'age' || (f.label && f.label.toLowerCase() === 'age'));
+          if (ageField) {
+            updated[ageField.key] = computedAge;
+          }
+        }
+      }
+      return updated;
+    });
     if (this.formErrors()[key]) {
       this.formErrors.update(e => { const n = { ...e }; delete n[key]; return n; });
     }
@@ -5579,6 +5640,45 @@ export class KioskComponent implements OnInit, OnDestroy {
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${d.getFullYear()}-${month}-${day}`;
+  }
+
+  maxBirthDateString(): string {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${d.getFullYear()}-${month}-${day}`;
+  }
+
+  calculateAge(birthDate: string | Date | null | undefined): number | null {
+    if (!birthDate) return null;
+    const birth = new Date(birthDate);
+    if (isNaN(birth.getTime())) return null;
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age >= 0 && age <= 125 ? age : null;
+  }
+
+  isBirthDateField(field: FormField): boolean {
+    const key = (field.key || '').toLowerCase();
+    const label = (field.label || '').toLowerCase();
+    return field.type === 'date' && (key.includes('birth') || label.includes('birth') || key === 'dob' || key === 'dateofbirth');
+  }
+
+  getGuestAge(): number | null {
+    return this.calculateAge(this.guestForm.birthDate);
+  }
+
+  getBarangayAge(): number | null {
+    return this.calculateAge(this.barangayForm.birthDate);
+  }
+
+  getDynamicFieldAge(key: string): number | null {
+    return this.calculateAge(this.formValues()[key] as string);
   }
 
   // ============================================================
@@ -5844,7 +5944,7 @@ export class KioskComponent implements OnInit, OnDestroy {
 
     // 5. Date / Birthday validations
     const isDateField = field.type === 'date';
-    const isBirthDate = isDateField && (field.key.toLowerCase().includes('birth') || label.toLowerCase().includes('birth'));
+    const isBirthDate = isDateField && (field.key.toLowerCase().includes('birth') || label.toLowerCase().includes('birth') || field.key.toLowerCase() === 'dob');
     if (isDateField) {
       const parsedDate = new Date(valStr);
       if (isNaN(parsedDate.getTime())) {
@@ -5852,13 +5952,29 @@ export class KioskComponent implements OnInit, OnDestroy {
       }
       if (isBirthDate) {
         const today = new Date();
-        today.setHours(23, 59, 59, 999);
-        if (parsedDate > today) {
-          return this.t('err.futureDate', { field: label });
+        today.setHours(0, 0, 0, 0);
+        if (parsedDate >= today) {
+          return this.t('err.birthDatePast', { field: label });
         }
-        const minYear = new Date().getFullYear() - 125;
+        const minYear = today.getFullYear() - 125;
         if (parsedDate.getFullYear() < minYear) {
-          return this.t('err.invalidDate', { field: label });
+          return this.t('err.birthDateRange', { field: label });
+        }
+
+        // Check service minimum age restrictions
+        const computedAge = this.calculateAge(valStr);
+        const service = this.selectedService();
+        const serviceName = service?.service_name || '';
+        if (computedAge !== null) {
+          if (/senior/i.test(serviceName) && computedAge < 60) {
+            return this.t('err.minServiceAge', { service: serviceName, minAge: 60, age: computedAge });
+          }
+          if (/first[- ]?time job seeker/i.test(serviceName) && computedAge < 15) {
+            return this.t('err.minServiceAge', { service: serviceName, minAge: 15, age: computedAge });
+          }
+          if (/solo parent/i.test(serviceName) && computedAge < 18) {
+            return this.t('err.minServiceAge', { service: serviceName, minAge: 18, age: computedAge });
+          }
         }
       }
     }
@@ -5898,9 +6014,13 @@ export class KioskComponent implements OnInit, OnDestroy {
     }
     const birth = new Date(g.birthDate);
     const today = new Date();
-    today.setHours(23, 59, 59, 999);
-    if (isNaN(birth.getTime()) || birth > today || birth.getFullYear() < (today.getFullYear() - 125)) {
-      this.formError.set(this.t('err.futureDate', { field: this.t('bar.form.birthDate') || 'Birth Date' }));
+    today.setHours(0, 0, 0, 0);
+    if (isNaN(birth.getTime()) || birth >= today) {
+      this.formError.set(this.t('err.birthDatePast', { field: this.t('doc.guestInfo.birthDate') || 'Date of Birth' }));
+      return;
+    }
+    if (birth.getFullYear() < (today.getFullYear() - 125)) {
+      this.formError.set(this.t('err.birthDateRange', { field: this.t('doc.guestInfo.birthDate') || 'Date of Birth' }));
       return;
     }
     if (!g.address.trim() || g.address.trim().length < 5) {
@@ -5933,8 +6053,8 @@ export class KioskComponent implements OnInit, OnDestroy {
         if (!g.birthDate) return true;
         const d = new Date(g.birthDate);
         const today = new Date();
-        today.setHours(23, 59, 59, 999);
-        return isNaN(d.getTime()) || d > today || d.getFullYear() < (today.getFullYear() - 125);
+        today.setHours(0, 0, 0, 0);
+        return isNaN(d.getTime()) || d >= today || d.getFullYear() < (today.getFullYear() - 125);
       }
       case 'address':
         return !g.address.trim() || g.address.trim().length < 5 || g.address.length > 255;
@@ -5965,8 +6085,8 @@ export class KioskComponent implements OnInit, OnDestroy {
         if (!f.birthDate) return true;
         const d = new Date(f.birthDate);
         const today = new Date();
-        today.setHours(23, 59, 59, 999);
-        return isNaN(d.getTime()) || d > today || d.getFullYear() < (today.getFullYear() - 125);
+        today.setHours(0, 0, 0, 0);
+        return isNaN(d.getTime()) || d >= today || d.getFullYear() < (today.getFullYear() - 125);
       }
       case 'gender':
         return !f.gender;
@@ -6046,9 +6166,13 @@ export class KioskComponent implements OnInit, OnDestroy {
       }
       const birth = new Date(f.birthDate);
       const today = new Date();
-      today.setHours(23, 59, 59, 999);
-      if (isNaN(birth.getTime()) || birth > today || birth.getFullYear() < (today.getFullYear() - 125)) {
-        this.formError.set(this.t('err.futureDate', { field: this.t('bar.form.birthDate') || 'Birth Date' }));
+      today.setHours(0, 0, 0, 0);
+      if (isNaN(birth.getTime()) || birth >= today) {
+        this.formError.set(this.t('err.birthDatePast', { field: this.t('bar.form.birthDate') || 'Birth Date' }));
+        return;
+      }
+      if (birth.getFullYear() < (today.getFullYear() - 125)) {
+        this.formError.set(this.t('err.birthDateRange', { field: this.t('bar.form.birthDate') || 'Birth Date' }));
         return;
       }
       if (!f.addressLine.trim() || f.addressLine.trim().length < 5) {
@@ -6524,18 +6648,59 @@ export class KioskComponent implements OnInit, OnDestroy {
     setTimeout(() => this.startCamera(), 100);
   }
 
-  private drawFrame(el: any): string {
+  private drawFrame(el: any, rotate90: boolean = false): string {
     const canvas = document.createElement('canvas');
     const width = el.videoWidth || el.naturalWidth || el.clientWidth || el.width || 640;
     const height = el.videoHeight || el.naturalHeight || el.clientHeight || el.height || 480;
-    canvas.width = width > 0 ? width : 640;
-    canvas.height = height > 0 ? height : 480;
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      ctx.drawImage(el, 0, 0, canvas.width, canvas.height);
-      return canvas.toDataURL('image/jpeg', 0.9);
+    if (rotate90) {
+      canvas.width = height > 0 ? height : 480;
+      canvas.height = width > 0 ? width : 640;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate((-90 * Math.PI) / 180);
+        ctx.drawImage(el, -width / 2, -height / 2, width, height);
+        return canvas.toDataURL('image/jpeg', 0.92);
+      }
+    } else {
+      canvas.width = width > 0 ? width : 640;
+      canvas.height = height > 0 ? height : 480;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(el, 0, 0, canvas.width, canvas.height);
+        return canvas.toDataURL('image/jpeg', 0.9);
+      }
     }
     return '';
+  }
+
+  private rotateBlob90Deg(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(blob);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const canvas = document.createElement('canvas');
+        // Swapping width and height for 90° counter-clockwise rotation (left)
+        canvas.width = img.naturalHeight || img.height || 480;
+        canvas.height = img.naturalWidth || img.width || 640;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          this.kioskService.blobToDataUrl(blob).then(resolve).catch(reject);
+          return;
+        }
+        // Rotate 90 degrees counter-clockwise around the canvas center
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate((-90 * Math.PI) / 180);
+        ctx.drawImage(img, -(img.naturalWidth || img.width) / 2, -(img.naturalHeight || img.height) / 2);
+        resolve(canvas.toDataURL('image/jpeg', 0.92));
+      };
+      img.onerror = (err) => {
+        URL.revokeObjectURL(url);
+        reject(err);
+      };
+      img.src = url;
+    });
   }
 
   toggleIpCamera() {
@@ -6555,19 +6720,19 @@ export class KioskComponent implements OnInit, OnDestroy {
       this.submitting.set(true);
       console.log('[ESP32-CAM] Taking photo: requesting capture snapshot...');
 
-      // First attempt: direct snapshot from ESP32-CAM /capture endpoint
+      // First attempt: direct snapshot from ESP32-CAM /capture endpoint with 90° rotation
       const targetCaptureUrl = `${this.esp32CaptureUrl()}?t=${Date.now()}`;
       this.kioskService.captureEsp32Cam(targetCaptureUrl).subscribe({
         next: async (blob) => {
           try {
             if (!blob || blob.size === 0) throw new Error('Empty blob received from /capture');
-            const dataUrl = await this.kioskService.blobToDataUrl(blob);
-            console.log('[ESP32-CAM] Photo captured successfully! Size:', blob.size, 'bytes');
+            const dataUrl = await this.rotateBlob90Deg(blob);
+            console.log('[ESP32-CAM] Photo captured and rotated 90° counter-clockwise (left) successfully! Size:', blob.size, 'bytes');
             this.capturedPhoto.set(dataUrl);
             this.errorMessage.set('');
             this.esp32StreamUrl.set(''); // Free socket once photo is set
           } catch (conversionErr) {
-            console.warn('[ESP32-CAM] Blob conversion failed, falling back to stream frame:', conversionErr);
+            console.warn('[ESP32-CAM] Blob 90° rotation failed, falling back to stream frame:', conversionErr);
             this.fallbackCaptureFromStreamElement();
           }
           this.submitting.set(false);
@@ -6617,9 +6782,9 @@ export class KioskComponent implements OnInit, OnDestroy {
     const el = this.esp32StreamEl?.nativeElement || this.inlineEsp32StreamEl?.nativeElement;
     if (el) {
       try {
-        const frameData = this.drawFrame(el);
+        const frameData = this.drawFrame(el, true);
         if (frameData && frameData.length > 100) {
-          console.log('[ESP32-CAM] Captured photo from live stream canvas frame');
+          console.log('[ESP32-CAM] Captured and rotated 90° photo from live stream canvas frame');
           this.capturedPhoto.set(frameData);
           this.errorMessage.set('');
           this.esp32StreamUrl.set('');
