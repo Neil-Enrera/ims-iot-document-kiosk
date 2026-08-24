@@ -2551,52 +2551,20 @@ export type BarangayStep =
 
                     <!-- Requirements card -->
                     <div class="bg-white border border-[#E5E7EB] rounded-[20px] shadow-[0_2px_14px_rgba(15,23,42,0.07)] px-5 sm:px-7 py-5 sm:py-6">
-
-                      <!-- Requirement 1 -->
-                      <div class="flex items-start gap-3.5 sm:gap-4">
-                        <div class="shrink-0 w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
-                          <svg class="w-6 h-6 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>
-                          </svg>
+                      @for (reqItem of getBarangayIdRequirementsList(); track $index; let last = $last) {
+                        <div class="flex items-start gap-3.5 sm:gap-4">
+                          <div class="shrink-0 w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
+                            <span class="text-[16px] font-bold text-[#F97316]">{{ $index + 1 }}</span>
+                          </div>
+                          <div class="flex-1 min-w-0">
+                            <h3 class="text-[clamp(1rem,1.4vw,1.1875rem)] font-bold text-[#0F172A] leading-tight">{{ reqItem }}</h3>
+                            <p class="text-[clamp(0.875rem,1.05vw,0.975rem)] text-[#64748B] mt-0.5 leading-snug">Required document for Barangay ID verification</p>
+                          </div>
                         </div>
-                        <div class="flex-1 min-w-0">
-                          <h3 class="text-[clamp(1rem,1.4vw,1.1875rem)] font-bold text-[#0F172A] leading-tight">{{ t('bar.requirements.req1.title') }}</h3>
-                          <p class="text-[clamp(0.875rem,1.05vw,0.975rem)] text-[#64748B] mt-1 leading-snug">{{ t('bar.requirements.req1.desc') }}</p>
-                        </div>
-                      </div>
-
-                      <!-- Divider -->
-                      <div class="h-px bg-[#E5E7EB] my-4 sm:my-5"></div>
-
-                      <!-- Requirement 2 -->
-                      <div class="flex items-start gap-3.5 sm:gap-4">
-                        <div class="shrink-0 w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
-                          <svg class="w-6 h-6 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955a1.126 1.126 0 0 1 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H18.375c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/>
-                          </svg>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                          <h3 class="text-[clamp(1rem,1.4vw,1.1875rem)] font-bold text-[#0F172A] leading-tight">{{ t('bar.requirements.req2.title') }}</h3>
-                          <p class="text-[clamp(0.875rem,1.05vw,0.975rem)] text-[#64748B] mt-1 leading-snug">{{ t('bar.requirements.req2.desc') }}</p>
-                        </div>
-                      </div>
-
-                      <!-- Divider -->
-                      <div class="h-px bg-[#E5E7EB] my-4 sm:my-5"></div>
-
-                      <!-- Requirement 3 -->
-                      <div class="flex items-start gap-3.5 sm:gap-4">
-                        <div class="shrink-0 w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
-                          <svg class="w-6 h-6 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                            <rect x="3" y="5" width="18" height="14" rx="2" stroke-linejoin="round"/>
-                            <path d="m3.5 7 8.5 6 8.5-6" stroke-linejoin="round"/>
-                          </svg>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                          <h3 class="text-[clamp(1rem,1.4vw,1.1875rem)] font-bold text-[#0F172A] leading-tight">{{ t('bar.requirements.req3.title') }}</h3>
-                          <p class="text-[clamp(0.875rem,1.05vw,0.975rem)] text-[#64748B] mt-1 leading-snug">{{ t('bar.requirements.req3.desc') }}</p>
-                        </div>
-                      </div>
+                        @if (!last) {
+                          <div class="h-px bg-[#E5E7EB] my-4 sm:my-5"></div>
+                        }
+                      }
 
                       <!-- Important notice -->
                       <div class="flex items-start gap-3 rounded-xl bg-[#FFF7ED] border border-[#F97316]/20 px-4 sm:px-5 py-3.5 mt-5 sm:mt-6">
@@ -4738,6 +4706,7 @@ export class KioskComponent implements OnInit, OnDestroy {
   serviceError = signal('');
   requestNumbers = signal<string[]>([]);
   barangayService = signal<Service | null>(null);
+  kioskSettings = signal<Record<string, string>>({});
   capturedPhoto = signal<string | null>(null);
   capturedSignature = signal<string | null>(null);
   requestNumber = signal('');
@@ -4889,8 +4858,9 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.rfidConnectionSub = this.rfidScanService.connection().subscribe(connected => {
       this.rfidConnected.set(connected);
     });
-    // Preload the Barangay ID service requirements for the application flow
+    // Preload the Barangay ID service requirements and kiosk settings
     this.loadBarangayService();
+    this.loadKioskSettings();
     // Start date/time clock for welcome screen
     this.dateTimeTimer = setInterval(() => this.currentDateTime.set(new Date()), 1000);
   }
@@ -4996,6 +4966,17 @@ export class KioskComponent implements OnInit, OnDestroy {
       next: (result: any) => {
         this.barangayService.set((result?.data || []).find((s: Service) => s.service_name === 'Barangay ID') || null);
       }
+    });
+  }
+
+  loadKioskSettings() {
+    this.kioskService.getSettings().subscribe({
+      next: (result: any) => {
+        if (result?.data) {
+          this.kioskSettings.set(result.data);
+        }
+      },
+      error: (err) => console.warn('Could not load kiosk settings:', err)
     });
   }
 
@@ -5661,6 +5642,44 @@ export class KioskComponent implements OnInit, OnDestroy {
     return age;
   }
 
+  getBarangayIdMinAge(): number {
+    const val = this.kioskSettings()['barangay_id_min_age'];
+    return val ? parseInt(val, 10) || 15 : 15;
+  }
+
+  getBarangayIdAdultAge(): number {
+    const val = this.kioskSettings()['barangay_id_adult_age'];
+    return val ? parseInt(val, 10) || 18 : 18;
+  }
+
+  getBarangayIdRequirementsList(): string[] {
+    const svc = this.barangayService();
+    if (svc?.requirements && svc.requirements.length > 0) {
+      return svc.requirements;
+    }
+    const age = this.getBarangayAge();
+    if (age !== null && age < this.getBarangayIdAdultAge()) {
+      const minorReqs = this.kioskSettings()['barangay_id_minor_reqs'];
+      if (minorReqs && minorReqs.trim()) {
+        return minorReqs.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+      }
+      return [
+        'Proof of Residency',
+        'Purok/Zone Certification or Clearance',
+        'Barangay ID Application Form'
+      ];
+    }
+    const adultReqs = this.kioskSettings()['barangay_id_adult_reqs'];
+    if (adultReqs && adultReqs.trim()) {
+      return adultReqs.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+    }
+    return [
+      'Proof of Residency',
+      'Valid Government ID or Barangay Clearance',
+      'Barangay ID Application Form'
+    ];
+  }
+
   validateBirthDateValue(val: unknown, label: string, serviceName?: string): string | null {
     if (this.isEmptyValue(val)) return null;
     const age = this.calculateAge(val as string);
@@ -5674,6 +5693,12 @@ export class KioskComponent implements OnInit, OnDestroy {
       return this.t('err.birthDateRange', { field: label });
     }
     const svcName = serviceName || this.selectedService()?.service_name || '';
+    if (this.mode() === 'barangay' || /barangay[- ]?id/i.test(svcName)) {
+      const minAge = this.getBarangayIdMinAge();
+      if (age < minAge) {
+        return this.t('err.barangayIdMinAge', { minAge, age });
+      }
+    }
     if (/senior/i.test(svcName) && age < 60) {
       return this.t('err.minServiceAge', { service: svcName, minAge: 60, age });
     }
@@ -5723,6 +5748,7 @@ export class KioskComponent implements OnInit, OnDestroy {
   }
 
   isBarangayFormDobInvalid(): boolean {
+    const minAge = this.getBarangayIdMinAge();
     const fields = this.barangayService()?.form_fields;
     if (fields && fields.length > 0) {
       const dobField = fields.find(f => this.isBirthDateField(f));
@@ -5730,14 +5756,14 @@ export class KioskComponent implements OnInit, OnDestroy {
         const val = this.formValues()[dobField.key];
         if (val) {
           const age = this.calculateAge(val as string);
-          if (age === null || age < 1 || age > 125) return true;
+          if (age === null || age < minAge || age > 125) return true;
         }
       }
     } else {
       const f = this.barangayForm;
       if (f.birthDate) {
         const age = this.calculateAge(f.birthDate);
-        if (age === null || age < 1 || age > 125) return true;
+        if (age === null || age < minAge || age > 125) return true;
       }
     }
     return false;
@@ -6118,11 +6144,12 @@ export class KioskComponent implements OnInit, OnDestroy {
 
   barangayInvalid(key: string): boolean {
     const f = this.barangayForm;
+    const minAge = this.getBarangayIdMinAge();
     switch (key) {
       case 'birthDate': {
         if (f.birthDate) {
           const age = this.calculateAge(f.birthDate);
-          return age === null || age < 1 || age > 125;
+          return age === null || age < minAge || age > 125;
         }
         return this.barangaySubmitted() && !f.birthDate;
       }

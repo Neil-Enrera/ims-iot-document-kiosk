@@ -123,6 +123,21 @@ const getServices = async (req, res) => {
   }
 };
 
+const getKioskSettings = async (req, res) => {
+  try {
+    const settingRepo = require('../repositories/setting.repository');
+    const allSettings = await settingRepo.findAll();
+    const settingsMap = {};
+    for (const s of allSettings) {
+      settingsMap[s.setting_key] = s.setting_value;
+    }
+    return successResponse(res, 'Kiosk settings retrieved.', settingsMap);
+  } catch (error) {
+    console.error('Kiosk getKioskSettings error:', error);
+    return errorResponse(res, 500, 'Internal server error.');
+  }
+};
+
 const parseJsonField = (value) => {
   if (value === null || value === undefined) return null;
   if (typeof value === 'string') {
@@ -383,5 +398,6 @@ module.exports = {
   getStatusDisplay,
   getStatusDisplayStream,
   broadcastStatusDisplayUpdate,
-  getHardwareStatus
+  getHardwareStatus,
+  getKioskSettings
 };

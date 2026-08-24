@@ -54,6 +54,8 @@ import { FormsModule } from '@angular/forms';
                       </select>
                     } @else if (setting.setting_type === 'number') {
                       <input type="number" class="w-full border rounded px-3 py-2" [(ngModel)]="setting.setting_value" [disabled]="setting.is_readonly" />
+                    } @else if (setting.setting_key.endsWith('_reqs') || (setting.setting_value && setting.setting_value.includes('\n'))) {
+                      <textarea rows="3" class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-300" [(ngModel)]="setting.setting_value" [disabled]="setting.is_readonly" placeholder="One requirement per line"></textarea>
                     } @else {
                       <input type="text" class="w-full border rounded px-3 py-2" [(ngModel)]="setting.setting_value" [disabled]="setting.is_readonly" />
                     }

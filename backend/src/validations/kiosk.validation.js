@@ -53,7 +53,7 @@ const barangayIdApplicationValidation = [
     .isLength({ min: 2, max: 50 }).withMessage('Last name must be between 2 and 50 characters.')
     .matches(/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/).withMessage('Last name must contain letters only.'),
   body('suffix').optional().trim().isLength({ max: 20 }).withMessage('Suffix must not exceed 20 characters.'),
-  body('birthDate').optional({ values: 'null' }).isISO8601().withMessage('Invalid birth date format.').custom(val => {
+  body('birthDate').optional({ values: 'null' }).isISO8601().withMessage('Invalid birth date format.').custom(async (val) => {
     if (!val) return true;
     const age = calculateAge(val);
     if (age === null || isNaN(age)) {
@@ -64,6 +64,16 @@ const barangayIdApplicationValidation = [
     }
     if (age > 125) {
       throw new Error('Birth date must be a valid date within the last 125 years.');
+    }
+    try {
+      const settingRepo = require('../repositories/setting.repository');
+      const minAgeSetting = await settingRepo.findByKey('barangay_id_min_age');
+      const minAge = minAgeSetting ? parseInt(minAgeSetting.setting_value, 10) || 15 : 15;
+      if (age < minAge) {
+        throw new Error(`Barangay ID application requires the applicant to be at least ${minAge} years old based on barangay policy (current computed age: ${age}).`);
+      }
+    } catch (e) {
+      if (e.message && e.message.includes('Barangay ID application requires')) throw e;
     }
     return true;
   }),

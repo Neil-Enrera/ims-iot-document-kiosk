@@ -17,5 +17,6 @@ router.post('/kiosk/rfid/verify', ...rfidVerifyValidation, validate, controller.
 router.get('/kiosk/status-display', restrictStatusDisplayToLan, controller.getStatusDisplay);
 router.get('/kiosk/status-display/stream', restrictStatusDisplayToLan, controller.getStatusDisplayStream);
 router.get('/kiosk/hardware/status', controller.getHardwareStatus);
+router.get('/kiosk/settings', controller.getKioskSettings);
 
 module.exports = router;

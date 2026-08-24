@@ -383,6 +383,7 @@ export const en: TranslationDictionary = {
   'err.invalidDate': '{{field}} must be a valid date.',
   'err.invalidAge': '{{field}} must be a reasonable age (1 to 125).',
   'err.invalidName': '{{field}} must contain valid name characters.',
+  'err.barangayIdMinAge': 'Applicants must be at least {{minAge}} years old to apply for a Barangay ID based on barangay policy (current age: {{age}}).',
   'doc.form.computedAge': 'Age: {{age}} yrs old',
   'doc.form.yearsOld': '{{age}} years old',
   'placeholder.guest': 'Guest',
