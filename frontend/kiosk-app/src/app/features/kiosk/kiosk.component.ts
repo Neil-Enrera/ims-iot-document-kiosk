@@ -339,27 +339,164 @@ export type BarangayStep =
             </div>
           }
 
-          <!-- RFID STEP: error / not recognized -->
+          <!-- RFID STEP: error / not recognized (Barangay ID Not Found) -->
           @if (rfidStep() === 'error') {
-            <div class="absolute inset-0 flex flex-col items-center justify-center p-8">
-              <div class="max-w-lg w-full text-center">
-                <div class="w-24 h-24 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
-                  </svg>
+            <div class="absolute inset-0 bg-[#F8FAFC] text-[#0F172A] select-none overflow-hidden [font-family:'Inter',sans-serif] flex flex-col">
+
+              <!-- Background image (same as Welcome page) -->
+              <div class="absolute inset-0 bg-cover bg-center pointer-events-none" style="background-image: url('Background.png')" aria-hidden="true"></div>
+              <!-- Subtle radial glow -->
+              <div class="absolute inset-0 pointer-events-none" aria-hidden="true"
+                   style="background: radial-gradient(ellipse 72% 58% at 50% 42%, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0.35) 55%, rgba(255,255,255,0.05) 100%);"></div>
+
+              <!-- Curved orange header accent (top-left) -->
+              <div class="absolute top-0 left-0 w-64 h-40 pointer-events-none" aria-hidden="true">
+                <svg viewBox="0 0 256 160" class="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M0 0 H256 V80 C256 124 220 160 176 160 H0 Z" fill="#F97316" opacity="0.12"/>
+                </svg>
+              </div>
+
+              <!-- Main scrollable content area -->
+              <div class="relative flex-1 overflow-y-auto flex flex-col justify-between">
+                <div class="min-h-full flex flex-col items-center justify-center px-4 sm:px-8 py-4 sm:py-6">
+
+                  <!-- Header: Seal, WELCOME, Barangay San Manuel, Document Request Kiosk -->
+                  <div class="text-center mb-5 sm:mb-7">
+                    <div class="mx-auto mb-3 sm:mb-4 flex items-center justify-center">
+                      <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white border-2 border-[#F97316]/40 flex items-center justify-center shadow-sm overflow-hidden shrink-0">
+                        <img src="Barangay Logo.png" alt="Barangay San Manuel logo" class="w-full h-full object-cover">
+                      </div>
+                    </div>
+                    <p class="text-[11px] sm:text-[13px] font-semibold tracking-[0.35em] text-[#F97316] mb-1.5 uppercase">{{ t('landing.welcome') }}</p>
+                    <h1 class="text-[clamp(1.75rem,4vw,2.75rem)] font-bold tracking-tight text-[#0F172A] leading-tight">{{ t('landing.barangayName') }}</h1>
+                    <p class="text-[clamp(0.95rem,1.6vw,1.2rem)] font-medium text-[#64748B] mt-1">{{ t('landing.subtitle') }}</p>
+                  </div>
+
+                  <!-- Main Error Card -->
+                  <div class="w-full max-w-2xl bg-white/95 border border-[#E2E8F0] rounded-[24px] sm:rounded-[28px] shadow-[0_8px_30px_rgba(15,23,42,0.06)] px-6 sm:px-10 py-7 sm:py-9 text-center backdrop-blur-sm">
+
+                    <!-- Orange Warning Icon -->
+                    <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#FFF7ED] flex items-center justify-center mx-auto mb-4 sm:mb-5">
+                      <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[#F97316] flex items-center justify-center text-white shadow-sm">
+                        <svg class="w-7 h-7 sm:w-8 sm:h-8" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                        </svg>
+                      </div>
+                    </div>
+
+                    <!-- Title -->
+                    <h2 class="text-[clamp(1.5rem,2.8vw,2rem)] font-bold text-[#0F172A] tracking-tight leading-snug">
+                      {{ t('rfid.error.title') }}
+                    </h2>
+
+                    <!-- Orange divider accent -->
+                    <div class="w-12 h-1 bg-[#F97316] rounded-full mx-auto my-3 sm:my-3.5"></div>
+
+                    <!-- Message text -->
+                    <p class="text-[clamp(0.95rem,1.4vw,1.1rem)] text-[#64748B] max-w-lg mx-auto leading-relaxed mb-6 sm:mb-8 font-normal">
+                      {{ t('rfid.error.desc') }}
+                    </p>
+
+                    <!-- Two Action Buttons side-by-side -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 w-full">
+                      <!-- Scan Again: solid orange -->
+                      <button (click)="retryRfid()"
+                              class="flex items-center justify-center gap-3 min-h-[58px] sm:min-h-[64px] px-6 rounded-2xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white text-base sm:text-lg font-bold shadow-[0_4px_14px_rgba(249,115,22,0.3)] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30">
+                        <!-- Scan / viewfinder icon -->
+                        <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.5A.75.75 0 014.5 3.75h3a.75.75 0 010 1.5H5.25v2.25a.75.75 0 01-1.5 0v-3zM16.5 3.75a.75.75 0 01.75.75v3a.75.75 0 01-1.5 0V5.25H13.5a.75.75 0 010-1.5h3zM3.75 16.5a.75.75 0 011.5 0v2.25h2.25a.75.75 0 010 1.5h-3a.75.75 0 01-.75-.75v-3zM20.25 16.5a.75.75 0 010 1.5v3a.75.75 0 01-.75.75h-3a.75.75 0 010-1.5h2.25V16.5a.75.75 0 01.75-.75zM7.5 12h9"/>
+                        </svg>
+                        <span>{{ t('common.scanAgain') }}</span>
+                      </button>
+
+                      <!-- Continue Without Barangay ID: white with orange border -->
+                      <button (click)="continueWithout()"
+                              class="flex items-center justify-center gap-3 min-h-[58px] sm:min-h-[64px] px-6 rounded-2xl bg-white border-2 border-[#F97316] hover:bg-[#FFF7ED] active:scale-[0.98] text-[#0F172A] text-base sm:text-lg font-bold shadow-sm transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/20">
+                        <!-- Person outline icon -->
+                        <svg class="w-6 h-6 shrink-0 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
+                        </svg>
+                        <span class="text-left leading-tight">{{ t('rfid.continueWithout') }}</span>
+                      </button>
+                    </div>
+
+                  </div>
                 </div>
-                <h2 class="text-3xl font-bold mb-4">{{ t('rfid.error.title') }}</h2>
-                <p class="text-xl text-blue-200 mb-8">
-                  {{ rfidError() }}
-                  <br/>
-                  {{ t('rfid.error.desc') }}
-                </p>
-                <div class="flex flex-col gap-4">
-                  <app-button variant="primary" size="lg" class="w-full" (onClick)="retryRfid()">{{ t('common.scanAgain') }}</app-button>
-                  <app-button variant="secondary" size="lg" class="w-full" (onClick)="continueWithout()">
-                    {{ t('rfid.continueWithout') }}
-                  </app-button>
+
+                <!-- Footer: Same bottom information bar as Welcome page -->
+                <div class="relative border-t border-[#E5E7EB] bg-white/90 backdrop-blur-sm">
+                  <div class="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-1.5 lg:py-2 grid grid-cols-2 md:grid-cols-4 gap-x-6 lg:gap-x-8 gap-y-2 lg:gap-y-3 items-center">
+
+                    <!-- Section 1: Language -->
+                    <div class="flex flex-col items-center gap-1.5 text-center min-w-0">
+                      <div class="flex items-center gap-1.5 text-[#0F172A]">
+                        <svg class="w-[18px] h-[18px] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                          <circle cx="12" cy="12" r="9"/><path d="M3.6 9h16.8M3.6 15h16.8M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/>
+                        </svg>
+                        <span class="text-[13px] font-semibold">{{ t('landing.footer.language') }}</span>
+                      </div>
+                      <div class="inline-flex rounded-lg overflow-hidden border border-[#E5E7EB] bg-white shadow-sm min-w-0">
+                        <button
+                          (click)="setLanguage('en')"
+                          class="px-3 sm:px-5 py-1.5 text-[13px] font-semibold transition-colors min-h-[34px]"
+                          [class.bg-[#F97316]]="language() === 'en'"
+                          [class.text-white]="language() === 'en'"
+                          [class.bg-white]="language() !== 'en'"
+                          [class.text-[#0F172A]]="language() !== 'en'">
+                          English
+                        </button>
+                        <button
+                          (click)="setLanguage('fil')"
+                          class="px-3 sm:px-5 py-1.5 text-[13px] border-l border-[#E5E7EB] font-semibold transition-colors min-h-[34px]"
+                          [class.bg-[#F97316]]="language() === 'fil'"
+                          [class.text-white]="language() === 'fil'"
+                          [class.bg-white]="language() !== 'fil'"
+                          [class.text-[#0F172A]]="language() !== 'fil'">
+                          Filipino
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Section 2: Need Assistance -->
+                    <div class="flex flex-col items-center gap-1 text-center min-w-0">
+                      <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="9"/>
+                        <path d="M9.5 9a2.5 2.5 0 114.6 1.3c-.8 1-1.9 1.7-1.9 3.2" stroke-linecap="round"/>
+                        <path d="M12 17h.01" stroke-linecap="round"/>
+                      </svg>
+                      <div>
+                        <p class="text-[13px] lg:text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.assistance') }}</p>
+                        <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.assistanceDesc') }}</p>
+                      </div>
+                    </div>
+
+                    <!-- Section 3: Office Hours -->
+                    <div class="flex flex-col items-center gap-1 text-center min-w-0">
+                      <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="9"/>
+                        <path d="M12 7v5l3 2" stroke-linecap="round"/>
+                      </svg>
+                      <div>
+                        <p class="text-[13px] lg:text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.hours') }}</p>
+                        <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.monFri') }}</p>
+                        <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.hoursRange') }}</p>
+                      </div>
+                    </div>
+
+                    <!-- Section 4: Date & Time -->
+                    <div class="flex flex-col items-center gap-1 text-center min-w-0">
+                      <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <rect x="3" y="5" width="18" height="16" rx="2"/>
+                        <path d="M8 3v4M16 3v4M3 10h18"/>
+                      </svg>
+                      <div class="min-w-0">
+                        <p class="text-[11px] lg:text-[12px] font-medium text-[#64748B] leading-snug">{{ formatFooterDate() }}</p>
+                        <p class="text-base lg:text-lg font-bold text-[#F97316] leading-tight">{{ formatFooterTime() }}</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
+
               </div>
             </div>
           }

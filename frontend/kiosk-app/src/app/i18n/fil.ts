@@ -41,7 +41,7 @@ export const fil: TranslationDictionary = {
   'rfid.findRecord': 'Hanapin ang Aking Record',
   'rfid.continueWithout': 'Magpatuloy Nang Walang Barangay ID',
   'rfid.error.title': 'Hindi Natagpuan ang Barangay ID',
-  'rfid.error.desc': 'Pakitry muli o magpatuloy nang walang Barangay ID.',
+  'rfid.error.desc': 'Hindi namin makilala ang iyong Barangay ID. Pakisubukang i-scan muli o magpatuloy nang walang Barangay ID.',
   'rfid.search.title': 'Hanapin ang Aking Record',
   'rfid.search.subtitle': 'Hanapin ang iyong umiiral na account',
   'rfid.search.hint': 'I-type ang iyong pangalan o resident code upang magsimula',

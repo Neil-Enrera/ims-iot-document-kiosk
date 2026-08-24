@@ -48,7 +48,7 @@ export const en: TranslationDictionary = {
   'rfid.findRecord': 'Find My Record',
   'rfid.continueWithout': 'Continue Without Barangay ID',
   'rfid.error.title': 'Barangay ID Not Found',
-  'rfid.error.desc': 'Please try again or continue without a Barangay ID.',
+  'rfid.error.desc': "We couldn't recognize your Barangay ID. Please try scanning again or continue without a Barangay ID.",
   'rfid.search.title': 'Find My Record',
   'rfid.search.subtitle': 'Search for your existing account',
   'rfid.search.hint': 'Type your name or resident code to begin',
