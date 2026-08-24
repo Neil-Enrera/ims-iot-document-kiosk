@@ -31,7 +31,7 @@ import { ModalComponent } from '../../shared/components/modal.component';
         <div>
           <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Audit Logs</h1>
           <p class="text-sm text-slate-500 mt-1">
-            Real-time security and operational audit trail tracking all staff and system actions.
+            Real-time security and operational audit trail tracking all staff, kiosk, and system actions.
           </p>
         </div>
         <div class="flex items-center gap-2.5">
@@ -108,7 +108,7 @@ import { ModalComponent } from '../../shared/components/modal.component';
         </div>
       </app-card>
 
-      <!-- Logs Table Card -->
+      <!-- Logs Table Card (Clickable rows) -->
       <app-card>
         <app-table
           [columns]="columns"
@@ -116,8 +116,23 @@ import { ModalComponent } from '../../shared/components/modal.component';
           [loading]="loading()"
           trackBy="audit_log_id"
           emptyMessage="No audit logs match the current criteria"
-          [cellTemplates]="{ user_name: userCell, module: moduleCell, action: actionCell, ip_address: ipCell, created_at: dateCell, actions: actionsCell }"
+          [cellTemplates]="{
+            audit_log_id: idCell,
+            user_name: userCell,
+            module: moduleCell,
+            action: actionCell,
+            ip_address: ipCell,
+            created_at: dateCell
+          }"
+          (onRowClick)="onRowClick($event)"
         >
+          <!-- ID Cell -->
+          <ng-template #idCell let-row="row">
+            <span class="font-mono text-xs font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+              #{{ row.audit_log_id }}
+            </span>
+          </ng-template>
+
           <!-- User Cell -->
           <ng-template #userCell let-row="row">
             <div class="flex items-center gap-2.5 min-w-0 py-0.5">
@@ -153,26 +168,22 @@ import { ModalComponent } from '../../shared/components/modal.component';
 
           <!-- IP Address Cell -->
           <ng-template #ipCell let-row="row">
-            <span class="font-mono text-xs text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+            <span class="font-mono text-xs text-slate-600 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
               {{ row.ip_address || '—' }}
             </span>
           </ng-template>
 
-          <!-- Date Cell -->
+          <!-- Date & Time Cell with subtle chevron -->
           <ng-template #dateCell let-row="row">
-            <div class="text-xs">
-              <p class="font-semibold text-slate-800">{{ row.created_at | date: 'mediumDate' }}</p>
-              <p class="text-slate-500">{{ row.created_at | date: 'shortTime' }}</p>
+            <div class="flex items-center justify-between gap-3">
+              <div class="text-xs">
+                <p class="font-semibold text-slate-800">{{ row.created_at | date: 'mediumDate' }}</p>
+                <p class="text-slate-500">{{ row.created_at | date: 'shortTime' }}</p>
+              </div>
+              <svg class="w-4 h-4 text-slate-300 group-hover:text-orange-500 transition-colors shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+              </svg>
             </div>
-          </ng-template>
-
-          <!-- Actions Cell -->
-          <ng-template #actionsCell let-row="row">
-            <button
-              (click)="viewDetails(row)"
-              class="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800 hover:underline">
-              Details
-            </button>
           </ng-template>
         </app-table>
 
@@ -187,60 +198,86 @@ import { ModalComponent } from '../../shared/components/modal.component';
         }
       </app-card>
 
-      <!-- Details Modal -->
+      <!-- Audit Log Details Modal -->
       <app-modal
         [open]="showDetailsModal()"
-        title="Audit Log Entry Details"
+        [title]="selectedLog() ? ('Audit Log #' + selectedLog()?.audit_log_id) : 'Audit Log Details'"
+        containerClass="max-w-xl"
         (onClose)="closeDetailsModal()">
-        @if (selectedLog()) {
-          <div class="space-y-4 text-sm">
-            <div class="grid grid-cols-2 gap-3 p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+        @if (selectedLog(); as log) {
+          <div class="space-y-5 text-sm">
+            <!-- Header Summary Card -->
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-4">
               <div>
-                <p class="text-xs text-slate-500 font-medium uppercase">Log ID</p>
-                <p class="font-bold text-slate-900 mt-0.5">#{{ selectedLog()?.audit_log_id }}</p>
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Module</span>
+                <div class="mt-1">
+                  <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold" [ngClass]="getModuleBadgeClass(log.module)">
+                    {{ log.module || 'System' }}
+                  </span>
+                </div>
               </div>
-              <div>
-                <p class="text-xs text-slate-500 font-medium uppercase">Timestamp</p>
-                <p class="font-semibold text-slate-900 mt-0.5">{{ selectedLog()?.created_at | date: 'medium' }}</p>
+              <div class="text-right">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Date & Time</span>
+                <p class="font-bold text-slate-900 mt-1">{{ log.created_at | date: 'medium' }}</p>
               </div>
             </div>
 
-            <div class="space-y-3">
-              <div>
-                <p class="text-xs text-slate-500 font-medium uppercase">User / Actor</p>
-                <div class="flex items-center gap-2 mt-1">
-                  <span class="font-semibold text-slate-900">{{ selectedLog()?.user_name || selectedLog()?.username || 'System' }}</span>
-                  @if (selectedLog()?.role_name) {
-                    <span class="px-2 py-0.5 text-xs rounded-full bg-slate-200 text-slate-800 font-medium">
-                      {{ selectedLog()?.role_name }}
-                    </span>
-                  }
+            <!-- User / Actor Section -->
+            <div class="p-4 rounded-xl border border-slate-200 bg-white space-y-3">
+              <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Administrator / Staff / User</p>
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-orange-100 text-orange-700 font-bold text-sm flex items-center justify-center shrink-0 border border-orange-200">
+                  {{ getInitials(log.user_name || log.username || 'System') }}
                 </div>
-                @if (selectedLog()?.email) {
-                  <p class="text-xs text-slate-500 mt-0.5">{{ selectedLog()?.email }}</p>
-                }
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-2">
+                    <p class="font-bold text-slate-900 text-base">{{ log.user_name || log.username || 'System' }}</p>
+                    @if (log.role_name) {
+                      <span class="px-2 py-0.5 text-xs rounded-full bg-slate-100 text-slate-700 font-semibold border border-slate-200">
+                        {{ log.role_name }}
+                      </span>
+                    }
+                  </div>
+                  <div class="flex items-center gap-3 text-xs text-slate-500 mt-0.5">
+                    @if (log.username) {
+                      <span>Username: <strong class="text-slate-700">&#64;{{ log.username }}</strong></span>
+                    }
+                    @if (log.email) {
+                      <span>•</span>
+                      <span>{{ log.email }}</span>
+                    }
+                  </div>
+                </div>
               </div>
+            </div>
 
-              <div>
-                <p class="text-xs text-slate-500 font-medium uppercase">Module</p>
-                <span class="inline-flex items-center mt-1 px-2.5 py-0.5 rounded-full text-xs font-semibold" [ngClass]="getModuleBadgeClass(selectedLog()?.module || '')">
-                  {{ selectedLog()?.module || 'System' }}
-                </span>
-              </div>
-
-              <div>
-                <p class="text-xs text-slate-500 font-medium uppercase">Action Description</p>
-                <p class="p-3 bg-slate-100 rounded-lg text-slate-800 font-medium mt-1 break-words">
-                  {{ selectedLog()?.action }}
+            <!-- Action Description Section -->
+            <div class="p-4 rounded-xl border border-slate-200 bg-white space-y-2">
+              <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Action Performed</p>
+              <div class="p-3.5 bg-slate-50 rounded-lg border border-slate-200/80">
+                <p class="font-semibold text-slate-900 text-sm leading-relaxed break-words">
+                  {{ log.action }}
                 </p>
               </div>
+            </div>
 
+            <!-- Metadata & Network Section -->
+            <div class="grid grid-cols-2 gap-3 p-4 rounded-xl border border-slate-200 bg-white">
               <div>
-                <p class="text-xs text-slate-500 font-medium uppercase">IP Address</p>
-                <p class="font-mono text-xs text-slate-700 mt-1">{{ selectedLog()?.ip_address || 'N/A' }}</p>
+                <p class="text-xs font-bold uppercase tracking-wider text-slate-500">IP Address</p>
+                <p class="font-mono text-xs font-semibold text-slate-800 mt-1 bg-slate-50 px-2.5 py-1 rounded border border-slate-200 inline-block">
+                  {{ log.ip_address || 'N/A' }}
+                </p>
+              </div>
+              <div>
+                <p class="text-xs font-bold uppercase tracking-wider text-slate-500">User ID Reference</p>
+                <p class="text-xs font-semibold text-slate-800 mt-1">
+                  User #{{ log.user_id }}
+                </p>
               </div>
             </div>
 
+            <!-- Footer Action -->
             <div class="pt-3 border-t border-slate-200 flex justify-end">
               <app-button variant="secondary" (onClick)="closeDetailsModal()">Close</app-button>
             </div>
@@ -279,10 +316,9 @@ export class AuditComponent implements OnInit {
     { key: 'audit_log_id', label: 'ID', sortable: true },
     { key: 'user_name', label: 'User / Actor' },
     { key: 'module', label: 'Module', sortable: true },
-    { key: 'action', label: 'Action Taken', sortable: true },
+    { key: 'action', label: 'Action Performed', sortable: true },
     { key: 'ip_address', label: 'IP Address' },
-    { key: 'created_at', label: 'Timestamp', sortable: true },
-    { key: 'actions', label: 'Details' }
+    { key: 'created_at', label: 'Date & Time', sortable: true }
   ];
 
   constructor(private auditService: AuditService) {}
@@ -321,6 +357,11 @@ export class AuditComponent implements OnInit {
       },
       error: () => this.loading.set(false)
     });
+  }
+
+  onRowClick(log: AuditLog) {
+    this.selectedLog.set(log);
+    this.showDetailsModal.set(true);
   }
 
   onSearch(value: string) {
@@ -365,11 +406,6 @@ export class AuditComponent implements OnInit {
     this.limit = limit;
     this.page.set(1);
     this.loadLogs();
-  }
-
-  viewDetails(log: AuditLog) {
-    this.selectedLog.set(log);
-    this.showDetailsModal.set(true);
   }
 
   closeDetailsModal() {
