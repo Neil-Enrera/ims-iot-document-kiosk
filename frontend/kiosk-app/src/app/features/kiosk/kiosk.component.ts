@@ -862,8 +862,7 @@ export type BarangayStep =
                       <!-- Form actions -->
                       <div class="flex items-center justify-center mt-5 sm:mt-6">
                         <button (click)="validateGuestForm()"
-                                [disabled]="isGuestDobInvalid()"
-                                class="flex items-center justify-center gap-2.5 min-h-[56px] min-w-[200px] sm:min-w-[220px] px-6 sm:px-8 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white text-lg font-bold shadow-[0_4px_14px_rgba(249,115,22,0.35)] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:active:scale-100">
+                                class="flex items-center justify-center gap-2.5 min-h-[56px] min-w-[200px] sm:min-w-[220px] px-6 sm:px-8 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white text-lg font-bold shadow-[0_4px_14px_rgba(249,115,22,0.35)] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40">
                           {{ t('common.continue') }}
                           <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
@@ -3207,8 +3206,7 @@ export type BarangayStep =
                     <!-- Continue button (single primary action, centered) -->
                     <div class="flex items-center justify-center mt-5 sm:mt-6">
                       <button (click)="validateBarangayForm()"
-                              [disabled]="isBarangayFormDobInvalid()"
-                              class="flex items-center justify-center gap-2 min-h-[56px] min-w-[220px] sm:min-w-[240px] px-7 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white text-base sm:text-lg font-bold shadow-[0_4px_14px_rgba(249,115,22,0.35)] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:active:scale-100">
+                              class="flex items-center justify-center gap-2 min-h-[56px] min-w-[220px] sm:min-w-[240px] px-7 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white text-base sm:text-lg font-bold shadow-[0_4px_14px_rgba(249,115,22,0.35)] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40">
                         {{ t('common.continue') }}
                         <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
                           <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
@@ -6113,20 +6111,14 @@ export class KioskComponent implements OnInit, OnDestroy {
   }
 
   guestInvalid(key: string): boolean {
+    if (!this.guestSubmitted()) return false;
     const g = this.guestForm;
     switch (key) {
       case 'birthDate': {
-        if (g.birthDate) {
-          const age = this.calculateAge(g.birthDate);
-          return age === null || age < 1 || age > 125;
-        }
-        return this.guestSubmitted() && !g.birthDate;
+        if (!g.birthDate) return true;
+        const age = this.calculateAge(g.birthDate);
+        return age === null || age < 1 || age > 125;
       }
-      default:
-        if (!this.guestSubmitted()) return false;
-        break;
-    }
-    switch (key) {
       case 'fullName':
         return !g.fullName.trim() || g.fullName.trim().length < 2 || g.fullName.length > 100 || !/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(g.fullName.trim());
       case 'address':
@@ -6143,21 +6135,15 @@ export class KioskComponent implements OnInit, OnDestroy {
   }
 
   barangayInvalid(key: string): boolean {
+    if (!this.barangaySubmitted()) return false;
     const f = this.barangayForm;
     const minAge = this.getBarangayIdMinAge();
     switch (key) {
       case 'birthDate': {
-        if (f.birthDate) {
-          const age = this.calculateAge(f.birthDate);
-          return age === null || age < minAge || age > 125;
-        }
-        return this.barangaySubmitted() && !f.birthDate;
+        if (!f.birthDate) return true;
+        const age = this.calculateAge(f.birthDate);
+        return age === null || age < minAge || age > 125;
       }
-      default:
-        if (!this.barangaySubmitted()) return false;
-        break;
-    }
-    switch (key) {
       case 'firstName':
         return !f.firstName.trim() || f.firstName.trim().length < 2 || f.firstName.length > 50 || !/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(f.firstName.trim());
       case 'lastName':
