@@ -757,7 +757,7 @@ export type BarangayStep =
                               <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
                                 <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
                               </svg>
-                              {{ t('err.birthDatePast', { field: t('doc.guestInfo.birthDate') }) }}
+                              {{ getGuestDobErrorMessage() }}
                             </p>
                           }
                         </div>
@@ -3055,7 +3055,7 @@ export type BarangayStep =
                                 <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
                                   <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
                                 </svg>
-                                {{ t('err.birthDatePast', { field: t('bar.form.birthDate') }) }}
+                                {{ getBarangayDobErrorMessage() }}
                               </p>
                             }
                           </div>
@@ -5702,6 +5702,24 @@ export class KioskComponent implements OnInit, OnDestroy {
     return this.calculateAge(this.formValues()[key] as string);
   }
 
+  getGuestDobErrorMessage(): string {
+    const g = this.guestForm;
+    if (!g.birthDate) {
+      return this.t('err.guest.birthDate') || this.t('err.bar.birthDate') || 'Please select a valid Date of Birth.';
+    }
+    const err = this.validateBirthDateValue(g.birthDate, this.t('doc.guestInfo.birthDate') || 'Date of Birth');
+    return err || 'Please select a valid Date of Birth.';
+  }
+
+  getBarangayDobErrorMessage(): string {
+    const f = this.barangayForm;
+    if (!f.birthDate) {
+      return this.t('err.bar.birthDate') || 'Please select a valid Date of Birth.';
+    }
+    const err = this.validateBirthDateValue(f.birthDate, this.t('bar.form.birthDate') || 'Birth Date');
+    return err || 'Please select a valid Date of Birth.';
+  }
+
   // ============================================================
   // INPUT SANITIZATION & FILTERING HELPERS (Physical & Touchscreen)
   // ============================================================
@@ -6698,36 +6716,96 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.saveState();
   }
 
+  private captureEsp32Image(url: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      let done = false;
+
+      const timer = setTimeout(() => {
+        if (done) return;
+        done = true;
+        reject(new Error('ESP32-CAM capture timed out'));
+      }, 6000);
+
+      img.onload = () => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        try {
+          const canvas = document.createElement('canvas');
+          const width = img.naturalWidth || img.width || 640;
+          const height = img.naturalHeight || img.height || 480;
+          // Rotate 90° counter-clockwise (left) from landscape to portrait
+          canvas.width = height;
+          canvas.height = width;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Could not create 2D canvas context'));
+            return;
+          }
+          ctx.translate(canvas.width / 2, canvas.height / 2);
+          ctx.rotate((-90 * Math.PI) / 180);
+          ctx.drawImage(img, -width / 2, -height / 2, width, height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+          resolve(dataUrl);
+        } catch (err) {
+          reject(err);
+        }
+      };
+
+      img.onerror = (err) => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        reject(err);
+      };
+
+      img.src = url;
+    });
+  }
+
   capturePhoto() {
     if (this.cameraMode() === 'esp32') {
       this.submitting.set(true);
       console.log('[ESP32-CAM] Taking photo: requesting capture snapshot...');
 
-      // First attempt: direct snapshot from ESP32-CAM /capture endpoint with 90° rotation
-      const targetCaptureUrl = `${this.esp32CaptureUrl()}?t=${Date.now()}`;
-      this.kioskService.captureEsp32Cam(targetCaptureUrl).subscribe({
-        next: async (blob) => {
-          try {
-            if (!blob || blob.size === 0) throw new Error('Empty blob received from /capture');
-            const dataUrl = await this.rotateBlob90Deg(blob);
-            console.log('[ESP32-CAM] Photo captured and rotated 90° counter-clockwise (left) successfully! Size:', blob.size, 'bytes');
-            this.capturedPhoto.set(dataUrl);
-            this.errorMessage.set('');
-            this.esp32StreamUrl.set(''); // Free socket once photo is set
-          } catch (conversionErr) {
-            console.warn('[ESP32-CAM] Blob 90° rotation failed, falling back to stream frame:', conversionErr);
-            this.fallbackCaptureFromStreamElement();
-          }
+      const targetCaptureUrl = `${this.esp32CaptureUrl()}${this.esp32CaptureUrl().includes('?') ? '&' : '?'}t=${Date.now()}`;
+      this.captureEsp32Image(targetCaptureUrl)
+        .then((dataUrl) => {
+          console.log('[ESP32-CAM] Photo captured and rotated 90° counter-clockwise (left) successfully!');
+          this.capturedPhoto.set(dataUrl);
+          this.errorMessage.set('');
+          this.esp32StreamUrl.set(''); // Free socket while photo preview is shown
           this.submitting.set(false);
           this.saveState();
-        },
-        error: (err) => {
-          console.warn('[ESP32-CAM] Direct /capture endpoint unreachable, falling back to live stream frame:', err);
-          this.fallbackCaptureFromStreamElement();
-          this.submitting.set(false);
-          this.saveState();
-        }
-      });
+        })
+        .catch((imgErr) => {
+          console.warn('[ESP32-CAM] Direct Image capture failed, attempting HttpClient fallback:', imgErr);
+          this.kioskService.captureEsp32Cam(targetCaptureUrl).subscribe({
+            next: async (blob) => {
+              try {
+                if (!blob || blob.size === 0) throw new Error('Empty blob received from /capture');
+                const dataUrl = await this.rotateBlob90Deg(blob);
+                console.log('[ESP32-CAM] Photo captured via HttpClient and rotated 90° successfully! Size:', blob.size);
+                this.capturedPhoto.set(dataUrl);
+                this.errorMessage.set('');
+                this.esp32StreamUrl.set('');
+              } catch (conversionErr) {
+                console.warn('[ESP32-CAM] Blob 90° rotation failed, falling back to stream frame:', conversionErr);
+                this.fallbackCaptureFromStreamElement();
+              }
+              this.submitting.set(false);
+              this.saveState();
+            },
+            error: (err) => {
+              console.warn('[ESP32-CAM] Direct /capture endpoint unreachable, falling back to live stream frame:', err);
+              this.fallbackCaptureFromStreamElement();
+              this.submitting.set(false);
+              this.saveState();
+            }
+          });
+        });
       return;
     }
 
