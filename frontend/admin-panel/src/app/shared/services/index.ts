@@ -281,6 +281,14 @@ export class AuditService {
   getAll(params?: any) {
     return this.api.getList<AuditLog>('/audit-logs', params);
   }
+
+  getModules() {
+    return this.api.get<string[]>('/audit-logs/modules');
+  }
+
+  getById(id: number) {
+    return this.api.get<AuditLog>(`/audit-logs/${id}`);
+  }
 }
 
 @Injectable({ providedIn: 'root' })

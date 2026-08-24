@@ -1,4 +1,5 @@
 const settingService = require('../services/setting.service');
+const auditRepository = require('../repositories/audit.repository');
 const { successResponse, errorResponse } = require('../utils/apiResponse');
 
 const getAll = async (req, res) => {
@@ -35,6 +36,12 @@ const update = async (req, res) => {
     if (value === undefined) return errorResponse(res, 400, 'Value is required.');
     const result = await settingService.updateSetting(req.params.key, String(value), req.user.userId);
     if (!result.success) return errorResponse(res, 400, result.message);
+    auditRepository.log({
+      userId: req.user?.userId,
+      action: `Updated setting '${req.params.key}'`,
+      module: 'Settings',
+      ipAddress: req.ip
+    });
     return successResponse(res, result.message);
   } catch (error) {
     return errorResponse(res, 500, 'Internal server error.');

@@ -255,6 +255,9 @@ export interface AuditLog {
   ip_address: string | null;
   created_at: string;
   username?: string;
+  user_name?: string;
+  email?: string;
+  role_name?: string;
 }
 
 export interface DashboardSummary {

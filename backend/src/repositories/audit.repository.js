@@ -1,31 +1,51 @@
 const pool = require('../config/database');
 
 const log = async ({ userId, action, module, ipAddress }) => {
-  const [result] = await pool.query(
-    'INSERT INTO audit_logs (user_id, action, module, ip_address) VALUES (?, ?, ?, ?)',
-    [userId, action, module, ipAddress]
-  );
-  return result.insertId;
+  try {
+    const effectiveUserId = userId || 1;
+    const [result] = await pool.query(
+      'INSERT INTO audit_logs (user_id, action, module, ip_address) VALUES (?, ?, ?, ?)',
+      [effectiveUserId, action, module, ipAddress || '127.0.0.1']
+    );
+    return result.insertId;
+  } catch (err) {
+    console.error('Failed to insert audit log:', err);
+    return null;
+  }
 };
 
-const findAll = async ({ search, module, userId, dateFrom, dateTo, page, limit }) => {
-  let query = 'SELECT a.*, CONCAT(u.first_name, " ", u.last_name) AS user_name FROM audit_logs a JOIN users u ON a.user_id = u.user_id';
-  let countQuery = 'SELECT COUNT(*) AS total FROM audit_logs a';
+const findAll = async ({ search, module, userId, dateFrom, dateTo, page = 1, limit = 20 }) => {
+  let query = `
+    SELECT 
+      a.*, 
+      COALESCE(NULLIF(TRIM(CONCAT(u.first_name, ' ', COALESCE(u.last_name, ''))), ''), u.username, 'System') AS user_name,
+      u.username,
+      u.email,
+      r.role_name
+    FROM audit_logs a 
+    LEFT JOIN users u ON a.user_id = u.user_id
+    LEFT JOIN roles r ON u.role_id = r.role_id
+  `;
+  let countQuery = `
+    SELECT COUNT(*) AS total 
+    FROM audit_logs a 
+    LEFT JOIN users u ON a.user_id = u.user_id
+  `;
   const conditions = [];
   const params = [];
   const countParams = [];
 
-  if (search) {
-    conditions.push('(a.action LIKE ? OR a.module LIKE ?)');
-    const term = `%${search}%`;
-    params.push(term, term);
-    countParams.push(term, term);
+  if (search && search.trim()) {
+    const term = `%${search.trim()}%`;
+    conditions.push('(a.action LIKE ? OR a.module LIKE ? OR a.ip_address LIKE ? OR u.username LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ? OR CONCAT(u.first_name, " ", u.last_name) LIKE ?)');
+    params.push(term, term, term, term, term, term, term);
+    countParams.push(term, term, term, term, term, term, term);
   }
 
-  if (module) {
+  if (module && module.trim() && module !== 'All') {
     conditions.push('a.module = ?');
-    params.push(module);
-    countParams.push(module);
+    params.push(module.trim());
+    countParams.push(module.trim());
   }
 
   if (userId) {
@@ -35,13 +55,13 @@ const findAll = async ({ search, module, userId, dateFrom, dateTo, page, limit }
   }
 
   if (dateFrom) {
-    conditions.push('a.created_at >= ?');
+    conditions.push('DATE(a.created_at) >= ?');
     params.push(dateFrom);
     countParams.push(dateFrom);
   }
 
   if (dateTo) {
-    conditions.push('a.created_at <= ?');
+    conditions.push('DATE(a.created_at) <= ?');
     params.push(dateTo);
     countParams.push(dateTo);
   }
@@ -52,23 +72,38 @@ const findAll = async ({ search, module, userId, dateFrom, dateTo, page, limit }
     countQuery += whereClause;
   }
 
-  query += ' ORDER BY a.created_at DESC';
-  const offset = (page - 1) * limit;
+  query += ' ORDER BY a.created_at DESC, a.audit_log_id DESC';
+  const numLimit = parseInt(limit, 10) || 20;
+  const numPage = parseInt(page, 10) || 1;
+  const offset = (numPage - 1) * numLimit;
   query += ' LIMIT ? OFFSET ?';
-  params.push(limit, offset);
+  params.push(numLimit, offset);
 
   const [rows] = await pool.query(query, params);
   const [countResult] = await pool.query(countQuery, countParams);
 
-  return { logs: rows, total: countResult[0].total, page, limit };
+  return { logs: rows, total: countResult[0]?.total || 0, page: numPage, limit: numLimit };
 };
 
 const findById = async (auditLogId) => {
-  const [rows] = await pool.query(
-    'SELECT a.*, CONCAT(u.first_name, " ", u.last_name) AS user_name FROM audit_logs a JOIN users u ON a.user_id = u.user_id WHERE a.audit_log_id = ?',
-    [auditLogId]
-  );
+  const [rows] = await pool.query(`
+    SELECT 
+      a.*, 
+      COALESCE(NULLIF(TRIM(CONCAT(u.first_name, ' ', COALESCE(u.last_name, ''))), ''), u.username, 'System') AS user_name,
+      u.username,
+      u.email,
+      r.role_name
+    FROM audit_logs a 
+    LEFT JOIN users u ON a.user_id = u.user_id
+    LEFT JOIN roles r ON u.role_id = r.role_id
+    WHERE a.audit_log_id = ?
+  `, [auditLogId]);
   return rows[0] || null;
 };
 
-module.exports = { log, findAll, findById };
+const getModules = async () => {
+  const [rows] = await pool.query('SELECT DISTINCT module FROM audit_logs WHERE module IS NOT NULL AND module != "" ORDER BY module ASC');
+  return rows.map(r => r.module);
+};
+
+module.exports = { log, findAll, findById, getModules };

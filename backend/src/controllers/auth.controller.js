@@ -1,4 +1,5 @@
 const authService = require('../services/auth.service');
+const auditRepository = require('../repositories/audit.repository');
 const { successResponse, errorResponse } = require('../utils/apiResponse');
 
 const login = async (req, res) => {
@@ -12,6 +13,15 @@ const login = async (req, res) => {
     const result = await authService.login(identifier, password);
     if (!result.success) {
       return errorResponse(res, 401, result.message);
+    }
+
+    if (result.data?.user) {
+      auditRepository.log({
+        userId: result.data.user.userId || result.data.user.user_id,
+        action: `User logged in: ${identifier}`,
+        module: 'Authentication',
+        ipAddress: req.ip
+      });
     }
 
     return successResponse(res, result.message, result.data);
@@ -31,6 +41,15 @@ const verifyLoginOtp = async (req, res) => {
     const result = await authService.verifyLoginOtp(email, code, tempToken);
     if (!result.success) {
       return errorResponse(res, 400, result.message);
+    }
+
+    if (result.data?.user) {
+      auditRepository.log({
+        userId: result.data.user.userId || result.data.user.user_id,
+        action: `User authenticated via OTP: ${email}`,
+        module: 'Authentication',
+        ipAddress: req.ip
+      });
     }
 
     return successResponse(res, result.message, result.data);

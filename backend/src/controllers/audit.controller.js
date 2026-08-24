@@ -28,4 +28,13 @@ const getById = async (req, res) => {
   }
 };
 
-module.exports = { getAll, getById };
+const getModules = async (req, res) => {
+  try {
+    const result = await auditService.getAuditModules();
+    return successResponse(res, result.message, result.data);
+  } catch {
+    return errorResponse(res, 500, 'Internal server error.');
+  }
+};
+
+module.exports = { getAll, getById, getModules };

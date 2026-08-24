@@ -13,4 +13,9 @@ const getAuditLogById = async (auditLogId) => {
   return { success: true, message: 'Audit log retrieved successfully.', data: log };
 };
 
-module.exports = { getAuditLogs, getAuditLogById };
+const getAuditModules = async () => {
+  const modules = await auditRepository.getModules();
+  return { success: true, message: 'Audit modules retrieved successfully.', data: modules };
+};
+
+module.exports = { getAuditLogs, getAuditLogById, getAuditModules };
