@@ -4885,6 +4885,7 @@ export class KioskComponent implements OnInit, OnDestroy {
   showBarangayDobError = signal<boolean>(false);
   showGuestDobError = signal<boolean>(false);
   photoQualityError = signal<string>('');
+  hasWarnedQualityForCapture = signal<boolean>(false);
   private photoQualityErrorTimer: any;
   private barangayDobErrorTimer: any;
   private guestDobErrorTimer: any;
@@ -6592,16 +6593,17 @@ export class KioskComponent implements OnInit, OnDestroy {
   async confirmBarangayPhoto() {
     const photo = this.capturedPhoto();
     if (!photo) {
-      this.triggerPhotoQualityError(this.t('bar.photo.unavailableDesc'));
+      this.triggerPhotoQualityError(this.t('bar.photo.unavailableDesc'), 3000);
       return;
     }
 
     const check = await this.analyzeImageQuality(photo);
-    if (!check.valid) {
+    if (!check.valid && !this.hasWarnedQualityForCapture()) {
+      this.hasWarnedQualityForCapture.set(true);
       if (check.reason === 'dark') {
-        this.triggerPhotoQualityError(this.t('bar.photo.darkError'));
+        this.triggerPhotoQualityError(this.t('bar.photo.darkError'), 3000);
       } else {
-        this.triggerPhotoQualityError(this.t('bar.photo.blurryError'));
+        this.triggerPhotoQualityError(this.t('bar.photo.blurryError'), 3000);
       }
       return;
     }
@@ -7175,6 +7177,12 @@ export class KioskComponent implements OnInit, OnDestroy {
   }
 
   capturePhoto() {
+    this.hasWarnedQualityForCapture.set(false);
+    this.photoQualityError.set('');
+    if (this.photoQualityErrorTimer) {
+      clearTimeout(this.photoQualityErrorTimer);
+      this.photoQualityErrorTimer = null;
+    }
     if (this.cameraMode() === 'esp32') {
       this.submitting.set(true);
       console.log('[ESP32-CAM] Taking photo: requesting capture snapshot...');
@@ -7278,16 +7286,17 @@ export class KioskComponent implements OnInit, OnDestroy {
   async confirmPhoto() {
     const photo = this.capturedPhoto();
     if (!photo) {
-      this.triggerPhotoQualityError(this.t('bar.photo.unavailableDesc'));
+      this.triggerPhotoQualityError(this.t('bar.photo.unavailableDesc'), 3000);
       return;
     }
 
     const check = await this.analyzeImageQuality(photo);
-    if (!check.valid) {
+    if (!check.valid && !this.hasWarnedQualityForCapture()) {
+      this.hasWarnedQualityForCapture.set(true);
       if (check.reason === 'dark') {
-        this.triggerPhotoQualityError(this.t('bar.photo.darkError'));
+        this.triggerPhotoQualityError(this.t('bar.photo.darkError'), 3000);
       } else {
-        this.triggerPhotoQualityError(this.t('bar.photo.blurryError'));
+        this.triggerPhotoQualityError(this.t('bar.photo.blurryError'), 3000);
       }
       return;
     }
@@ -7302,6 +7311,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.capturedPhoto.set(null);
     this.errorMessage.set('');
     this.photoQualityError.set('');
+    this.hasWarnedQualityForCapture.set(false);
     if (this.photoQualityErrorTimer) {
       clearTimeout(this.photoQualityErrorTimer);
       this.photoQualityErrorTimer = null;
