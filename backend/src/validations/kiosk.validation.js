@@ -70,7 +70,7 @@ const barangayIdApplicationValidation = [
       const minAgeSetting = await settingRepo.findByKey('barangay_id_min_age');
       const minAge = minAgeSetting ? parseInt(minAgeSetting.setting_value, 10) || 15 : 15;
       if (age < minAge) {
-        throw new Error(`Barangay ID application requires the applicant to be at least ${minAge} years old based on barangay policy (current computed age: ${age}).`);
+        throw new Error(`Barangay ID application requires the applicant to be at least ${minAge} years old based on barangay policy.`);
       }
     } catch (e) {
       if (e.message && e.message.includes('Barangay ID application requires')) throw e;

@@ -859,6 +859,23 @@ export type BarangayStep =
                         </div>
                       </div>
 
+                      <!-- Validation error alert -->
+                      @if (formError()) {
+                        <div class="mt-5 sm:mt-6 flex items-start justify-between gap-3 rounded-xl border-2 border-[#DC2626] bg-[#FEF2F2] px-4 py-3.5" role="alert">
+                          <div class="flex items-start gap-3 min-w-0">
+                            <svg class="w-6 h-6 shrink-0 text-[#DC2626]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                              <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
+                            </svg>
+                            <p class="text-[15px] sm:text-base font-semibold text-[#B91C1C]">{{ formError() }}</p>
+                          </div>
+                          <button (click)="formError.set('')" type="button" class="text-[#DC2626] hover:text-[#991B1B] p-1 rounded-lg transition-colors focus:outline-none" aria-label="Dismiss error">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                          </button>
+                        </div>
+                      }
+
                       <!-- Form actions -->
                       <div class="flex items-center justify-center mt-5 sm:mt-6">
                         <button (click)="validateGuestForm()"
@@ -3194,11 +3211,18 @@ export type BarangayStep =
                       }
 
                       @if (formError()) {
-                        <div class="mt-5 sm:mt-6 flex items-start gap-3 rounded-xl border-2 border-[#DC2626] bg-[#FEF2F2] px-4 py-3.5" role="alert">
-                          <svg class="w-6 h-6 shrink-0 text-[#DC2626]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                            <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
-                          </svg>
-                          <p class="text-[15px] sm:text-base font-semibold text-[#B91C1C]">{{ formError() }}</p>
+                        <div class="mt-5 sm:mt-6 flex items-start justify-between gap-3 rounded-xl border-2 border-[#DC2626] bg-[#FEF2F2] px-4 py-3.5" role="alert">
+                          <div class="flex items-start gap-3 min-w-0">
+                            <svg class="w-6 h-6 shrink-0 text-[#DC2626]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                              <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
+                            </svg>
+                            <p class="text-[15px] sm:text-base font-semibold text-[#B91C1C]">{{ formError() }}</p>
+                          </div>
+                          <button (click)="formError.set('')" type="button" class="text-[#DC2626] hover:text-[#991B1B] p-1 rounded-lg transition-colors focus:outline-none" aria-label="Dismiss error">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                          </button>
                         </div>
                       }
                     </div>
@@ -5694,17 +5718,17 @@ export class KioskComponent implements OnInit, OnDestroy {
     if (this.mode() === 'barangay' || /barangay[- ]?id/i.test(svcName)) {
       const minAge = this.getBarangayIdMinAge();
       if (age < minAge) {
-        return this.t('err.barangayIdMinAge', { minAge, age });
+        return this.t('err.barangayIdMinAge', { minAge });
       }
     }
     if (/senior/i.test(svcName) && age < 60) {
-      return this.t('err.minServiceAge', { service: svcName, minAge: 60, age });
+      return this.t('err.minServiceAge', { service: svcName, minAge: 60 });
     }
     if (/first[- ]?time job seeker/i.test(svcName) && age < 15) {
-      return this.t('err.minServiceAge', { service: svcName, minAge: 15, age });
+      return this.t('err.minServiceAge', { service: svcName, minAge: 15 });
     }
     if (/solo parent/i.test(svcName) && age < 18) {
-      return this.t('err.minServiceAge', { service: svcName, minAge: 18, age });
+      return this.t('err.minServiceAge', { service: svcName, minAge: 18 });
     }
     return null;
   }
