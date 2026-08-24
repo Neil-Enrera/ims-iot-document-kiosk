@@ -730,16 +730,9 @@ export type BarangayStep =
 
                         <!-- Date of Birth -->
                         <div>
-                          <div class="flex items-center justify-between mb-1.5">
-                            <label for="guest-birthDate" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A]">
-                              {{ t('doc.guestInfo.birthDate') }} <span class="text-[#F97316]">*</span>
-                            </label>
-                            @if (getGuestAge() !== null) {
-                              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs sm:text-sm font-semibold bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE]">
-                                {{ t('doc.form.computedAge', { age: getGuestAge() ?? '' }) }}
-                              </span>
-                            }
-                          </div>
+                          <label for="guest-birthDate" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
+                            {{ t('doc.guestInfo.birthDate') }} <span class="text-[#F97316]">*</span>
+                          </label>
                           <div class="flex items-center rounded-xl border-2 bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
                                [class.border-[#DC2626]]="guestInvalid('birthDate')">
                             <div class="shrink-0 w-12 sm:w-14 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
@@ -1510,16 +1503,9 @@ export type BarangayStep =
                         <div class="flex flex-wrap gap-x-5 gap-y-4 sm:gap-y-5">
                           @for (field of selectedService()!.form_fields!; track field.key) {
                             <div [class]="formGridClass(field)">
-                              <div class="flex items-center justify-between mb-1.5">
-                                <label [attr.for]="'doc-form-' + field.key" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A]">
-                                  {{ fieldLabel(field) }} @if (field.required) { <span class="text-[#F97316]">*</span> }
-                                </label>
-                                @if (isBirthDateField(field) && getDynamicFieldAge(field.key) !== null) {
-                                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs sm:text-sm font-semibold bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE]">
-                                    {{ t('doc.form.computedAge', { age: getDynamicFieldAge(field.key) ?? '' }) }}
-                                  </span>
-                                }
-                              </div>
+                              <label [attr.for]="'doc-form-' + field.key" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
+                                {{ fieldLabel(field) }} @if (field.required) { <span class="text-[#F97316]">*</span> }
+                              </label>
 
                               @switch (field.type) {
                                 @case ('select') {
@@ -2794,16 +2780,9 @@ export type BarangayStep =
                         <div class="flex flex-wrap gap-x-5 gap-y-4 sm:gap-y-5">
                           @for (field of barangayService()!.form_fields!; track field.key) {
                             <div [class]="formGridClass(field)">
-                              <div class="flex items-center justify-between mb-1.5">
-                                <label [attr.for]="'bar-form-' + field.key" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A]">
-                                  {{ fieldLabel(field) }} @if (field.required) { <span class="text-[#F97316]">*</span> }
-                                </label>
-                                @if (isBirthDateField(field) && getDynamicFieldAge(field.key) !== null) {
-                                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs sm:text-sm font-semibold bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE]">
-                                    {{ t('doc.form.computedAge', { age: getDynamicFieldAge(field.key) ?? '' }) }}
-                                  </span>
-                                }
-                              </div>
+                              <label [attr.for]="'bar-form-' + field.key" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
+                                {{ fieldLabel(field) }} @if (field.required) { <span class="text-[#F97316]">*</span> }
+                              </label>
 
                               @switch (field.type) {
                                 @case ('select') {
@@ -3051,16 +3030,9 @@ export type BarangayStep =
 
                           <!-- Birth Date -->
                           <div>
-                            <div class="flex items-center justify-between mb-1.5">
-                              <label for="barangay-birthDate" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A]">
-                                {{ t('bar.form.birthDate') }} <span class="text-[#F97316]">*</span>
-                              </label>
-                              @if (getBarangayAge() !== null) {
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs sm:text-sm font-semibold bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE]">
-                                  {{ t('doc.form.computedAge', { age: getBarangayAge() ?? '' }) }}
-                                </span>
-                              }
-                            </div>
+                            <label for="barangay-birthDate" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
+                              {{ t('bar.form.birthDate') }} <span class="text-[#F97316]">*</span>
+                            </label>
                             <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
                                  [class.border-[#DC2626]]="barangayInvalid('birthDate')">
                               <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
@@ -5642,25 +5614,74 @@ export class KioskComponent implements OnInit, OnDestroy {
     return `${d.getFullYear()}-${month}-${day}`;
   }
 
+  parseBirthDate(birthDate: string | Date | null | undefined): { year: number; month: number; day: number } | null {
+    if (!birthDate) return null;
+    if (birthDate instanceof Date) {
+      if (isNaN(birthDate.getTime())) return null;
+      return {
+        year: birthDate.getFullYear(),
+        month: birthDate.getMonth(),
+        day: birthDate.getDate()
+      };
+    }
+    const s = String(birthDate).trim();
+    const match = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+    if (match) {
+      const year = parseInt(match[1], 10);
+      const month = parseInt(match[2], 10) - 1;
+      const day = parseInt(match[3], 10);
+      if (month >= 0 && month <= 11 && day >= 1 && day <= 31) {
+        return { year, month, day };
+      }
+    }
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return null;
+    return { year: d.getFullYear(), month: d.getMonth(), day: d.getDate() };
+  }
+
   maxBirthDateString(): string {
     const d = new Date();
-    d.setDate(d.getDate() - 1);
+    d.setFullYear(d.getFullYear() - 1);
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${d.getFullYear()}-${month}-${day}`;
   }
 
   calculateAge(birthDate: string | Date | null | undefined): number | null {
-    if (!birthDate) return null;
-    const birth = new Date(birthDate);
-    if (isNaN(birth.getTime())) return null;
+    const parsed = this.parseBirthDate(birthDate);
+    if (!parsed) return null;
     const today = new Date();
-    let age = today.getFullYear() - birth.getFullYear();
-    const m = today.getMonth() - birth.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+    let age = today.getFullYear() - parsed.year;
+    const m = today.getMonth() - parsed.month;
+    if (m < 0 || (m === 0 && today.getDate() < parsed.day)) {
       age--;
     }
-    return age >= 0 && age <= 125 ? age : null;
+    return age;
+  }
+
+  validateBirthDateValue(val: unknown, label: string, serviceName?: string): string | null {
+    if (this.isEmptyValue(val)) return null;
+    const age = this.calculateAge(val as string);
+    if (age === null || isNaN(age)) {
+      return this.t('err.invalidDate', { field: label });
+    }
+    if (age < 1) {
+      return this.t('err.birthDateMinAge', { field: label });
+    }
+    if (age > 125) {
+      return this.t('err.birthDateRange', { field: label });
+    }
+    const svcName = serviceName || this.selectedService()?.service_name || '';
+    if (/senior/i.test(svcName) && age < 60) {
+      return this.t('err.minServiceAge', { service: svcName, minAge: 60, age });
+    }
+    if (/first[- ]?time job seeker/i.test(svcName) && age < 15) {
+      return this.t('err.minServiceAge', { service: svcName, minAge: 15, age });
+    }
+    if (/solo parent/i.test(svcName) && age < 18) {
+      return this.t('err.minServiceAge', { service: svcName, minAge: 18, age });
+    }
+    return null;
   }
 
   isBirthDateField(field: FormField): boolean {
@@ -5946,35 +5967,13 @@ export class KioskComponent implements OnInit, OnDestroy {
     const isDateField = field.type === 'date';
     const isBirthDate = isDateField && (field.key.toLowerCase().includes('birth') || label.toLowerCase().includes('birth') || field.key.toLowerCase() === 'dob');
     if (isDateField) {
-      const parsedDate = new Date(valStr);
-      if (isNaN(parsedDate.getTime())) {
-        return this.t('err.invalidDate', { field: label });
-      }
       if (isBirthDate) {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        if (parsedDate >= today) {
-          return this.t('err.birthDatePast', { field: label });
-        }
-        const minYear = today.getFullYear() - 125;
-        if (parsedDate.getFullYear() < minYear) {
-          return this.t('err.birthDateRange', { field: label });
-        }
-
-        // Check service minimum age restrictions
-        const computedAge = this.calculateAge(valStr);
-        const service = this.selectedService();
-        const serviceName = service?.service_name || '';
-        if (computedAge !== null) {
-          if (/senior/i.test(serviceName) && computedAge < 60) {
-            return this.t('err.minServiceAge', { service: serviceName, minAge: 60, age: computedAge });
-          }
-          if (/first[- ]?time job seeker/i.test(serviceName) && computedAge < 15) {
-            return this.t('err.minServiceAge', { service: serviceName, minAge: 15, age: computedAge });
-          }
-          if (/solo parent/i.test(serviceName) && computedAge < 18) {
-            return this.t('err.minServiceAge', { service: serviceName, minAge: 18, age: computedAge });
-          }
+        const error = this.validateBirthDateValue(value, label);
+        if (error) return error;
+      } else {
+        const parsedDate = new Date(valStr);
+        if (isNaN(parsedDate.getTime())) {
+          return this.t('err.invalidDate', { field: label });
         }
       }
     }
@@ -6012,15 +6011,9 @@ export class KioskComponent implements OnInit, OnDestroy {
       this.formError.set(this.t('err.guest.birthDate'));
       return;
     }
-    const birth = new Date(g.birthDate);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (isNaN(birth.getTime()) || birth >= today) {
-      this.formError.set(this.t('err.birthDatePast', { field: this.t('doc.guestInfo.birthDate') || 'Date of Birth' }));
-      return;
-    }
-    if (birth.getFullYear() < (today.getFullYear() - 125)) {
-      this.formError.set(this.t('err.birthDateRange', { field: this.t('doc.guestInfo.birthDate') || 'Date of Birth' }));
+    const dobError = this.validateBirthDateValue(g.birthDate, this.t('doc.guestInfo.birthDate') || 'Date of Birth');
+    if (dobError) {
+      this.formError.set(dobError);
       return;
     }
     if (!g.address.trim() || g.address.trim().length < 5) {
@@ -6051,10 +6044,8 @@ export class KioskComponent implements OnInit, OnDestroy {
         return !g.fullName.trim() || g.fullName.trim().length < 2 || g.fullName.length > 100 || !/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(g.fullName.trim());
       case 'birthDate': {
         if (!g.birthDate) return true;
-        const d = new Date(g.birthDate);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        return isNaN(d.getTime()) || d >= today || d.getFullYear() < (today.getFullYear() - 125);
+        const age = this.calculateAge(g.birthDate);
+        return age === null || age < 1 || age > 125;
       }
       case 'address':
         return !g.address.trim() || g.address.trim().length < 5 || g.address.length > 255;
@@ -6083,10 +6074,8 @@ export class KioskComponent implements OnInit, OnDestroy {
         return f.suffix.length > 20;
       case 'birthDate': {
         if (!f.birthDate) return true;
-        const d = new Date(f.birthDate);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        return isNaN(d.getTime()) || d >= today || d.getFullYear() < (today.getFullYear() - 125);
+        const age = this.calculateAge(f.birthDate);
+        return age === null || age < 1 || age > 125;
       }
       case 'gender':
         return !f.gender;
@@ -6164,15 +6153,9 @@ export class KioskComponent implements OnInit, OnDestroy {
         this.formError.set(this.t('err.bar.birthDate'));
         return;
       }
-      const birth = new Date(f.birthDate);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      if (isNaN(birth.getTime()) || birth >= today) {
-        this.formError.set(this.t('err.birthDatePast', { field: this.t('bar.form.birthDate') || 'Birth Date' }));
-        return;
-      }
-      if (birth.getFullYear() < (today.getFullYear() - 125)) {
-        this.formError.set(this.t('err.birthDateRange', { field: this.t('bar.form.birthDate') || 'Birth Date' }));
+      const dobError = this.validateBirthDateValue(f.birthDate, this.t('bar.form.birthDate') || 'Birth Date');
+      if (dobError) {
+        this.formError.set(dobError);
         return;
       }
       if (!f.addressLine.trim() || f.addressLine.trim().length < 5) {

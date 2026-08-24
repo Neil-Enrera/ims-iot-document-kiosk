@@ -85,7 +85,7 @@ const computeAge = (birthDate) => {
     age -= 1;
   }
   
-  return age >= 0 ? String(age) : '';
+  return (age >= 1 && age <= 125) ? String(age) : '';
 };
 
 const composeFullName = (r) => [r.first_name, r.middle_name, r.last_name, r.suffix].filter(Boolean).join(' ').trim();

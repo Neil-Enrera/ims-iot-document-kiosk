@@ -176,7 +176,14 @@ export interface BarangayIdApplication {
 
 @Injectable({ providedIn: 'root' })
 export class KioskService {
-  private readonly apiUrl = environment.apiUrl;
+  private get apiUrl(): string {
+    if (typeof window !== 'undefined' && window.location && window.location.hostname) {
+      const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
+      const host = window.location.hostname;
+      return `${protocol}//${host}:3000/api/v1`;
+    }
+    return environment.apiUrl;
+  }
 
   constructor(private http: HttpClient) {}
 

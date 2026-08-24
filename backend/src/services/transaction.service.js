@@ -57,17 +57,40 @@ const evaluateResidentPolicy = (service, activeRequests, latestRequest) => {
   return { allowed: true };
 };
 
-const calculateAgeHelper = (birthDate) => {
+const parseBirthDateHelper = (birthDate) => {
   if (!birthDate) return null;
-  const d = new Date(birthDate);
+  if (birthDate instanceof Date) {
+    return isNaN(birthDate.getTime()) ? null : {
+      year: birthDate.getFullYear(),
+      month: birthDate.getMonth(),
+      day: birthDate.getDate()
+    };
+  }
+  const s = String(birthDate).trim();
+  const match = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  if (match) {
+    const year = parseInt(match[1], 10);
+    const month = parseInt(match[2], 10) - 1;
+    const day = parseInt(match[3], 10);
+    if (month >= 0 && month <= 11 && day >= 1 && day <= 31) {
+      return { year, month, day };
+    }
+  }
+  const d = new Date(s);
   if (isNaN(d.getTime())) return null;
+  return { year: d.getFullYear(), month: d.getMonth(), day: d.getDate() };
+};
+
+const calculateAgeHelper = (birthDate) => {
+  const parsed = parseBirthDateHelper(birthDate);
+  if (!parsed) return null;
   const today = new Date();
-  let age = today.getFullYear() - d.getFullYear();
-  const m = today.getMonth() - d.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < d.getDate())) {
+  let age = today.getFullYear() - parsed.year;
+  const m = today.getMonth() - parsed.month;
+  if (m < 0 || (m === 0 && today.getDate() < parsed.day)) {
     age--;
   }
-  return age >= 0 ? age : null;
+  return age;
 };
 
 // Validate dynamic form data against service form_fields schema
@@ -106,14 +129,17 @@ const validateServiceFormData = (formFields, formData = {}, serviceName = 'Servi
         errors.push(`${field.label || field.key} must not exceed ${v.max}.`);
       }
       if (isAgeField) {
-        if (valNum < 0 || valNum > 125) {
-          errors.push(`${field.label || field.key} must be between 0 and 125.`);
+        if (valNum < 1 || valNum > 125) {
+          errors.push(`${field.label || field.key} must be between 1 and 125.`);
         }
         if (/senior/i.test(serviceName) && valNum < 60) {
           errors.push(`${serviceName} requires the applicant to be at least 60 years old.`);
         }
         if (/first[- ]?time job seeker/i.test(serviceName) && valNum < 15) {
           errors.push(`${serviceName} requires the applicant to be at least 15 years old.`);
+        }
+        if (/solo parent/i.test(serviceName) && valNum < 18) {
+          errors.push(`${serviceName} requires the applicant to be at least 18 years old.`);
         }
       }
     }
@@ -145,25 +171,18 @@ const validateServiceFormData = (formFields, formData = {}, serviceName = 'Servi
 
     // 5. Date / Birthday validations
     const isDateField = field.type === 'date';
-    const isBirthDate = isDateField && (field.key.toLowerCase().includes('birth') || (field.label && field.label.toLowerCase().includes('birth')));
+    const isBirthDate = isDateField && (field.key.toLowerCase().includes('birth') || (field.label && field.label.toLowerCase().includes('birth')) || field.key.toLowerCase() === 'dob');
     if (isDateField) {
-      const parsedDate = new Date(valStr);
-      if (isNaN(parsedDate.getTime())) {
-        errors.push(`${field.label || field.key} must be a valid date.`);
-      } else if (isBirthDate) {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        if (parsedDate >= today) {
-          errors.push(`${field.label || field.key} must be a past date (cannot be today or in the future).`);
-        }
-        const minYear = today.getFullYear() - 125;
-        if (parsedDate.getFullYear() < minYear) {
+      if (isBirthDate) {
+        const computedAge = calculateAgeHelper(valStr);
+        if (computedAge === null) {
+          errors.push(`${field.label || field.key} must be a valid date.`);
+        } else if (computedAge < 1) {
+          errors.push(`${field.label || field.key} is invalid. Resident must be at least 1 year old (cannot be born in the current year or month).`);
+        } else if (computedAge > 125) {
           errors.push(`${field.label || field.key} must be a valid date within the last 125 years.`);
-        }
-
-        // Check age requirement for age-restricted services
-        const computedAge = calculateAgeHelper(parsedDate);
-        if (computedAge !== null) {
+        } else {
+          // Check age requirement for age-restricted services
           if (/senior/i.test(serviceName) && computedAge < 60) {
             errors.push(`${serviceName} requires the applicant to be at least 60 years old (current computed age: ${computedAge}).`);
           }
@@ -173,6 +192,11 @@ const validateServiceFormData = (formFields, formData = {}, serviceName = 'Servi
           if (/solo parent/i.test(serviceName) && computedAge < 18) {
             errors.push(`${serviceName} requires the applicant to be at least 18 years old (current computed age: ${computedAge}).`);
           }
+        }
+      } else {
+        const parsedDate = new Date(valStr);
+        if (isNaN(parsedDate.getTime())) {
+          errors.push(`${field.label || field.key} must be a valid date.`);
         }
       }
     }
@@ -220,14 +244,12 @@ const validateGuestInput = (guest) => {
     errors.push('Guest full name must not exceed 100 characters.');
   }
   if (birthDate) {
-    const d = new Date(birthDate);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (isNaN(d.getTime())) {
+    const computedAge = calculateAgeHelper(birthDate);
+    if (computedAge === null) {
       errors.push('Guest birth date must be a valid date.');
-    } else if (d >= today) {
-      errors.push('Guest birth date must be a past date (cannot be today or in the future).');
-    } else if (d.getFullYear() < (today.getFullYear() - 125)) {
+    } else if (computedAge < 1) {
+      errors.push('Guest birth date is invalid. Resident must be at least 1 year old (cannot be born in the current year or month).');
+    } else if (computedAge > 125) {
       errors.push('Guest birth date must be a valid date within the last 125 years.');
     }
   }

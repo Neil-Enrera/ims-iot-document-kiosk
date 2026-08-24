@@ -1,5 +1,41 @@
 const { body, param } = require('express-validator');
 
+const parseBirthDate = (birthDate) => {
+  if (!birthDate) return null;
+  if (birthDate instanceof Date) {
+    return isNaN(birthDate.getTime()) ? null : {
+      year: birthDate.getFullYear(),
+      month: birthDate.getMonth(),
+      day: birthDate.getDate()
+    };
+  }
+  const s = String(birthDate).trim();
+  const match = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  if (match) {
+    const year = parseInt(match[1], 10);
+    const month = parseInt(match[2], 10) - 1;
+    const day = parseInt(match[3], 10);
+    if (month >= 0 && month <= 11 && day >= 1 && day <= 31) {
+      return { year, month, day };
+    }
+  }
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return null;
+  return { year: d.getFullYear(), month: d.getMonth(), day: d.getDate() };
+};
+
+const calculateAge = (birthDate) => {
+  const parsed = parseBirthDate(birthDate);
+  if (!parsed) return null;
+  const today = new Date();
+  let age = today.getFullYear() - parsed.year;
+  const m = today.getMonth() - parsed.month;
+  if (m < 0 || (m === 0 && today.getDate() < parsed.day)) {
+    age--;
+  }
+  return age;
+};
+
 const barangayIdApplicationValidation = [
   body('firstName')
     .trim()
@@ -19,17 +55,14 @@ const barangayIdApplicationValidation = [
   body('suffix').optional().trim().isLength({ max: 20 }).withMessage('Suffix must not exceed 20 characters.'),
   body('birthDate').optional({ values: 'null' }).isISO8601().withMessage('Invalid birth date format.').custom(val => {
     if (!val) return true;
-    const d = new Date(val);
-    if (isNaN(d.getTime())) {
+    const age = calculateAge(val);
+    if (age === null || isNaN(age)) {
       throw new Error('Invalid birth date format.');
     }
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (d >= today) {
-      throw new Error('Birth date must be a past date (cannot be today or in the future).');
+    if (age < 1) {
+      throw new Error('Birth date is invalid. Resident must be at least 1 year old (cannot be born in the current year or month).');
     }
-    const minYear = today.getFullYear() - 125;
-    if (d.getFullYear() < minYear) {
+    if (age > 125) {
       throw new Error('Birth date must be a valid date within the last 125 years.');
     }
     return true;

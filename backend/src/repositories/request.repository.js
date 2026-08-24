@@ -78,14 +78,16 @@ const findAll = async ({ search, statusId, residentId, serviceId, dateFrom, date
   const order = sortOrder === 'DESC' ? 'DESC' : 'ASC';
   query += ` ORDER BY ${column} ${order}`;
 
-  const offset = (page - 1) * limit;
+  const pageNum = Math.max(1, parseInt(page, 10) || 1);
+  const limitNum = Math.max(1, parseInt(limit, 10) || 10);
+  const offset = (pageNum - 1) * limitNum;
   query += ' LIMIT ? OFFSET ?';
-  params.push(limit, offset);
+  params.push(limitNum, offset);
 
   const [rows] = await pool.query(query, params);
   const [countResult] = await pool.query(countQuery, countParams);
 
-  return { requests: parseRequestRows(rows), total: countResult[0].total, page, limit };
+  return { requests: parseRequestRows(rows), total: countResult[0].total, page: pageNum, limit: limitNum };
 };
 
 const parseRequestRows = (rows) => {
