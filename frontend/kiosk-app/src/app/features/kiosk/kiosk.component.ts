@@ -4885,6 +4885,7 @@ export class KioskComponent implements OnInit, OnDestroy {
   showBarangayDobError = signal<boolean>(false);
   showGuestDobError = signal<boolean>(false);
   photoQualityError = signal<string>('');
+  photoValid = signal<boolean>(false);
   private photoQualityErrorTimer: any;
   private barangayDobErrorTimer: any;
   private guestDobErrorTimer: any;
@@ -6592,12 +6593,14 @@ export class KioskComponent implements OnInit, OnDestroy {
   async confirmBarangayPhoto() {
     const photo = this.capturedPhoto();
     if (!photo) {
+      this.photoValid.set(false);
       this.triggerPhotoQualityError(this.t('bar.photo.unavailableDesc'), 3500);
       return;
     }
 
     const check = await this.analyzeImageQuality(photo);
-    if (!check.valid) {
+    if (!check.valid || !this.photoValid()) {
+      this.photoValid.set(false);
       if (check.reason === 'dark') {
         this.triggerPhotoQualityError(this.t('bar.photo.darkError'), 3500);
       } else {
@@ -7173,52 +7176,71 @@ export class KioskComponent implements OnInit, OnDestroy {
     });
   }
 
-  capturePhoto() {
+  private async handleCapturedPhoto(dataUrl: string) {
+    this.capturedPhoto.set(dataUrl);
+    this.errorMessage.set('');
+    this.esp32StreamUrl.set(''); // Free socket while photo preview is shown
+    this.submitting.set(false);
+    this.saveState();
+
+    // Immediately run image quality validation on the newly captured photo
+    const check = await this.analyzeImageQuality(dataUrl);
+    if (!check.valid) {
+      this.photoValid.set(false);
+      if (check.reason === 'dark') {
+        this.triggerPhotoQualityError(this.t('bar.photo.darkError'), 3500);
+      } else {
+        this.triggerPhotoQualityError(this.t('bar.photo.blurryError'), 3500);
+      }
+    } else {
+      this.photoValid.set(true);
+      this.photoQualityError.set('');
+    }
+  }
+
+  async capturePhoto() {
     this.photoQualityError.set('');
+    this.photoValid.set(false);
     if (this.photoQualityErrorTimer) {
       clearTimeout(this.photoQualityErrorTimer);
       this.photoQualityErrorTimer = null;
     }
+
     if (this.cameraMode() === 'esp32') {
       this.submitting.set(true);
       console.log('[ESP32-CAM] Taking photo: requesting capture snapshot...');
 
       const targetCaptureUrl = `${this.esp32CaptureUrl()}${this.esp32CaptureUrl().includes('?') ? '&' : '?'}t=${Date.now()}`;
-      this.captureEsp32Image(targetCaptureUrl)
-        .then((dataUrl) => {
-          console.log('[ESP32-CAM] Photo captured and rotated 90° clockwise successfully!');
-          this.capturedPhoto.set(dataUrl);
-          this.errorMessage.set('');
-          this.esp32StreamUrl.set(''); // Free socket while photo preview is shown
-          this.submitting.set(false);
-          this.saveState();
-        })
-        .catch((imgErr) => {
-          console.warn('[ESP32-CAM] Direct Image capture failed, attempting HttpClient fallback:', imgErr);
-          this.kioskService.captureEsp32Cam(targetCaptureUrl).subscribe({
-            next: async (blob) => {
-              try {
-                if (!blob || blob.size === 0) throw new Error('Empty blob received from /capture');
-                const dataUrl = await this.rotateBlob90Deg(blob);
-                console.log('[ESP32-CAM] Photo captured via HttpClient and rotated 90° successfully! Size:', blob.size);
-                this.capturedPhoto.set(dataUrl);
-                this.errorMessage.set('');
-                this.esp32StreamUrl.set('');
-              } catch (conversionErr) {
-                console.warn('[ESP32-CAM] Blob 90° rotation failed, falling back to stream frame:', conversionErr);
-                this.fallbackCaptureFromStreamElement();
-              }
-              this.submitting.set(false);
-              this.saveState();
-            },
-            error: (err) => {
-              console.warn('[ESP32-CAM] Direct /capture endpoint unreachable, falling back to live stream frame:', err);
-              this.fallbackCaptureFromStreamElement();
-              this.submitting.set(false);
-              this.saveState();
-            }
-          });
-        });
+
+      // 1. Primary path: Direct HTTP fetch for raw JPEG blob (fastest, full quality)
+      try {
+        const response = await fetch(targetCaptureUrl, { signal: AbortSignal.timeout(4000) });
+        if (response.ok) {
+          const blob = await response.blob();
+          if (blob && blob.size > 100) {
+            const dataUrl = await this.rotateBlob90Deg(blob);
+            console.log('[ESP32-CAM] Photo captured and rotated 90° clockwise successfully! Size:', blob.size);
+            await this.handleCapturedPhoto(dataUrl);
+            return;
+          }
+        }
+      } catch (fetchErr) {
+        console.warn('[ESP32-CAM] Direct fetch failed, attempting image loader fallback:', fetchErr);
+      }
+
+      // 2. Secondary path: Image loader with 90° canvas rotation
+      try {
+        const dataUrl = await this.captureEsp32Image(targetCaptureUrl);
+        console.log('[ESP32-CAM] Photo captured via image loader and rotated 90° clockwise');
+        await this.handleCapturedPhoto(dataUrl);
+        return;
+      } catch (imgErr) {
+        console.warn('[ESP32-CAM] Image capture failed, attempting live stream frame fallback:', imgErr);
+      }
+
+      // 3. Fallback: Frame grab from live stream canvas element
+      await this.fallbackCaptureFromStreamElement();
+      this.submitting.set(false);
       return;
     }
 
@@ -7226,12 +7248,11 @@ export class KioskComponent implements OnInit, OnDestroy {
       this.submitting.set(true);
       console.log('[Webcam] Triggering capture on Mini-PC/Laptop...');
       this.kioskService.captureWebcam().subscribe({
-        next: (res) => {
+        next: async (res) => {
           this.submitting.set(false);
           console.log('[Webcam] Capture response:', res);
-          if (res && res.success) {
-            this.capturedPhoto.set(res.image);
-            this.saveState();
+          if (res && res.success && res.image) {
+            await this.handleCapturedPhoto(res.image);
           } else {
             console.error('[Webcam] Capture error:', res.error);
             alert(res.error || 'Failed to capture photo from USB webcam.');
@@ -7246,22 +7267,20 @@ export class KioskComponent implements OnInit, OnDestroy {
     } else {
       const el = this.videoEl?.nativeElement || this.inlineVideoEl?.nativeElement;
       if (!el) return;
-      this.capturedPhoto.set(this.drawFrame(el));
+      const dataUrl = this.drawFrame(el);
       this.stopCamera();
-      this.saveState();
+      await this.handleCapturedPhoto(dataUrl);
     }
   }
 
-  private fallbackCaptureFromStreamElement() {
+  private async fallbackCaptureFromStreamElement() {
     const el = this.esp32StreamEl?.nativeElement || this.inlineEsp32StreamEl?.nativeElement;
     if (el) {
       try {
         const frameData = this.drawFrame(el, true);
         if (frameData && frameData.length > 100) {
           console.log('[ESP32-CAM] Captured and rotated 90° photo from live stream canvas frame');
-          this.capturedPhoto.set(frameData);
-          this.errorMessage.set('');
-          this.esp32StreamUrl.set('');
+          await this.handleCapturedPhoto(frameData);
           return;
         }
       } catch (canvasErr) {
@@ -7274,6 +7293,7 @@ export class KioskComponent implements OnInit, OnDestroy {
   skipPhoto() {
     this.stopCamera();
     this.capturedPhoto.set(null);
+    this.photoValid.set(false);
     this.stashActivePhoto();
     this.clearDocPreview();
     this.advanceOrReview();
@@ -7282,12 +7302,14 @@ export class KioskComponent implements OnInit, OnDestroy {
   async confirmPhoto() {
     const photo = this.capturedPhoto();
     if (!photo) {
+      this.photoValid.set(false);
       this.triggerPhotoQualityError(this.t('bar.photo.unavailableDesc'), 3500);
       return;
     }
 
     const check = await this.analyzeImageQuality(photo);
-    if (!check.valid) {
+    if (!check.valid || !this.photoValid()) {
+      this.photoValid.set(false);
       if (check.reason === 'dark') {
         this.triggerPhotoQualityError(this.t('bar.photo.darkError'), 3500);
       } else {
@@ -7304,6 +7326,7 @@ export class KioskComponent implements OnInit, OnDestroy {
 
   retakePhoto() {
     this.capturedPhoto.set(null);
+    this.photoValid.set(false);
     this.errorMessage.set('');
     this.photoQualityError.set('');
     if (this.photoQualityErrorTimer) {
