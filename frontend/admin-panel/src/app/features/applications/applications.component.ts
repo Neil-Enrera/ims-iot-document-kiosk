@@ -941,7 +941,8 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
   loadBarangayIdService() {
     this.serviceService.getAll().subscribe({
       next: (res) => {
-        const found = (res.data || []).find((s: any) => s.service_name === 'Barangay ID');
+        const list = Array.isArray(res.data) ? res.data : [];
+        const found = list.find((s: any) => s.service_name && s.service_name.trim().toLowerCase() === 'barangay id');
         this.barangayIdService.set(found || null);
       }
     });
@@ -949,11 +950,16 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
 
   onSaveConfig(data: any) {
     const svc = this.barangayIdService();
-    if (!svc) return;
     this.savingConfig.set(true);
-    this.serviceService.update(svc.service_id, data).subscribe({
-      next: (res) => {
-        this.handleTemplate(svc.service_id, data).subscribe({
+
+    const save$ = svc
+      ? this.serviceService.update(svc.service_id, data)
+      : this.serviceService.create({ ...data, serviceName: 'Barangay ID' });
+
+    save$.subscribe({
+      next: (res: any) => {
+        const targetId = svc ? svc.service_id : res.data?.service_id;
+        this.handleTemplate(targetId, data).subscribe({
           next: () => {
             this.savingConfig.set(false);
             this.showConfig.set(false);
