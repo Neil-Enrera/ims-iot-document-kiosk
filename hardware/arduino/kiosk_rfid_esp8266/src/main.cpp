@@ -202,7 +202,8 @@ void checkWiFi() {
 void setupWebSocket() {
     webSocket.begin(KIOSK_SERVER_HOST, KIOSK_SERVER_PORT, KIOSK_SERVER_PATH);
     webSocket.onEvent(webSocketEvent);
-    webSocket.setReconnectInterval(3000); // Auto-reconnect every 3s
+    webSocket.setReconnectInterval(2000); // Fast auto-reconnect (every 2s)
+    webSocket.enableHeartbeat(3000, 2000, 2); // Ping every 3s, timeout 2s (detects server restarts within 3-5 seconds)
 }
 
 void webSocketEvent(WStype_t type, uint8_t* payload, size_t length) {

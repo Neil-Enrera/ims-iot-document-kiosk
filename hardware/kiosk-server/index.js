@@ -449,9 +449,25 @@ app.post('/api/arduino/rfid/verify', async (req, res) => {
 });
 
 // ============================================================
-// Start Server
+// Start Server & Graceful Shutdown
 // ============================================================
 
 const PORT = process.env.KIOSK_PORT || 3001;
 server.listen(PORT, () => console.log(`[Kiosk Server] Dual Serial/WS + REST on port ${PORT}`));
+
+function shutdown() {
+  console.log('[Kiosk Server] Gracefully closing connections...');
+  if (serialPortInstance && serialPortInstance.isOpen) {
+    try { serialPortInstance.close(); } catch {}
+  }
+  wss.clients.forEach(client => {
+    try { client.close(1001, 'Server shutting down'); } catch {}
+  });
+  server.close(() => {
+    process.exit(0);
+  });
+}
+
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
 
