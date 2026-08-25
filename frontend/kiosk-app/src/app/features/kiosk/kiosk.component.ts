@@ -6665,9 +6665,24 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.errorMessage.set('');
 
     const dynamicValues = { ...this.formValues() };
-    const firstName = String(dynamicValues['first_name'] || dynamicValues['firstName'] || this.barangayForm.firstName || '').trim();
-    const middleName = String(dynamicValues['middle_name'] || dynamicValues['middleName'] || this.barangayForm.middleName || '').trim() || null;
-    const lastName = String(dynamicValues['last_name'] || dynamicValues['lastName'] || this.barangayForm.lastName || '').trim();
+    let firstName = String(dynamicValues['first_name'] || dynamicValues['firstName'] || this.barangayForm.firstName || '').trim();
+    let middleName = String(dynamicValues['middle_name'] || dynamicValues['middleName'] || this.barangayForm.middleName || '').trim() || null;
+    let lastName = String(dynamicValues['last_name'] || dynamicValues['lastName'] || this.barangayForm.lastName || '').trim();
+
+    // Fallback: if the form collected a single "full_name" field, parse it into first and last names
+    if ((!firstName || !lastName) && dynamicValues['full_name']) {
+      const parts = String(dynamicValues['full_name']).trim().split(/\s+/);
+      if (parts.length === 1) {
+        firstName = parts[0];
+        lastName = parts[0];
+      } else if (parts.length === 2) {
+        firstName = parts[0];
+        lastName = parts[1];
+      } else {
+        firstName = parts.slice(0, -1).join(' ');
+        lastName = parts[parts.length - 1];
+      }
+    }
     const suffix = String(dynamicValues['suffix'] || this.barangayForm.suffix || '').trim() || null;
     const birthDate = String(dynamicValues['birth_date'] || dynamicValues['birthDate'] || this.barangayForm.birthDate || '').trim() || null;
     const birthPlace = String(dynamicValues['birth_place'] || dynamicValues['birthPlace'] || dynamicValues['place_of_birth'] || dynamicValues['placeOfBirth'] || this.barangayForm.birthPlace || '').trim() || null;
