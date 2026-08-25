@@ -275,15 +275,39 @@ void webSocketEvent(WStype_t type, uint8_t* payload, size_t length) {
 
 
 // =========================
-// RFID Scanning
+// RFID Scanning & Watchdog
 // =========================
 
-void scanRFID() {
+unsigned long lastRfidHealthCheck = 0;
 
-    if (!rfid.PICC_IsNewCardPresent()) return;
+void checkRfidHealth() {
+    if (millis() - lastRfidHealthCheck < 3000) return;
+    lastRfidHealthCheck = millis();
+
+    byte version = rfid.PCD_ReadRegister(MFRC522::VersionReg);
+    // If version is 0x00 or 0xFF, SPI communication is uninitialized/stalled
+    if (version == 0x00 || version == 0xFF) {
+        Serial.println(F("[RFID] MFRC522 SPI uninitialized/stalled — reinitializing reader..."));
+        SPI.begin();
+        rfid.PCD_Init();
+        rfid.PCD_SetAntennaGain(MFRC522::RxGain_max);
+    }
+}
+
+void scanRFID() {
+    // 1. Ensure RC522 SPI hardware is alive
+    checkRfidHealth();
+
+    // 2. Check for card presence (dual attempt for WUPA/REQA response)
+    if (!rfid.PICC_IsNewCardPresent() && !rfid.PICC_IsNewCardPresent()) return;
     if (!rfid.PICC_ReadCardSerial())   return;
 
     String uid = readUid();
+    if (uid.length() < 4) {
+        rfid.PICC_HaltA();
+        rfid.PCD_StopCrypto1();
+        return;
+    }
 
     // Debounce: ignore same card scanned within RFID_COOLDOWN period
     if (uid == lastScannedUid && (millis() - lastScanTime < RFID_COOLDOWN)) {
