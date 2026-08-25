@@ -3,6 +3,7 @@ export const environment = {
   apiUrl: 'http://192.168.254.109:3000/api/v1',
   hardwareWsUrl: 'ws://192.168.254.109:3001/ws?type=kiosk',
   esp32CamStreamUrl: 'http://192.168.254.111/stream',
-  esp32CamCaptureUrl: 'http://192.168.254.111/capture'
+  esp32CamCaptureUrl: 'http://192.168.254.111/capture',
+  enablePhotoValidation: false
 };
 

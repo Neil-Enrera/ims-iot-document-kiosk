@@ -1958,7 +1958,7 @@ export type BarangayStep =
                 } @else {
                   <div class="text-center">
                     <img [src]="capturedPhoto()" class="w-64 h-64 rounded-2xl mx-auto mb-4 object-cover border-4 border-white shadow-md" />
-                    @if (photoQualityError()) {
+                    @if (enablePhotoValidation() && photoQualityError()) {
                       <div class="w-full max-w-sm mx-auto mb-4 p-3 rounded-xl bg-amber-50 border-2 border-amber-300 flex items-center gap-2.5 text-amber-900 shadow-sm text-left">
                         <svg class="w-5 h-5 text-amber-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
@@ -3708,7 +3708,7 @@ export type BarangayStep =
                                 <p class="text-[13px] sm:text-sm text-[#64748B]">{{ t('bar.photo.waiting') }}</p>
                               }
                             } @else {
-                              @if (photoQualityError()) {
+                              @if (enablePhotoValidation() && photoQualityError()) {
                                 <div class="w-full max-w-[440px] mx-auto mb-2 p-3 rounded-xl bg-amber-50 border-2 border-amber-300 flex items-center gap-2.5 text-amber-900 shadow-sm text-left animate-shake">
                                   <svg class="w-5 h-5 text-amber-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
@@ -4886,6 +4886,7 @@ export class KioskComponent implements OnInit, OnDestroy {
   showGuestDobError = signal<boolean>(false);
   photoQualityError = signal<string>('');
   photoValid = signal<boolean>(false);
+  enablePhotoValidation = signal<boolean>(environment.enablePhotoValidation ?? false);
   private photoQualityErrorTimer: any;
   private barangayDobErrorTimer: any;
   private guestDobErrorTimer: any;
@@ -6598,15 +6599,17 @@ export class KioskComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const check = await this.analyzeImageQuality(photo);
-    if (!check.valid || !this.photoValid()) {
-      this.photoValid.set(false);
-      if (check.reason === 'dark') {
-        this.triggerPhotoQualityError(this.t('bar.photo.darkError'), 3500);
-      } else {
-        this.triggerPhotoQualityError(this.t('bar.photo.blurryError'), 3500);
+    if (this.enablePhotoValidation()) {
+      const check = await this.analyzeImageQuality(photo);
+      if (!check.valid || !this.photoValid()) {
+        this.photoValid.set(false);
+        if (check.reason === 'dark') {
+          this.triggerPhotoQualityError(this.t('bar.photo.darkError'), 3500);
+        } else {
+          this.triggerPhotoQualityError(this.t('bar.photo.blurryError'), 3500);
+        }
+        return;
       }
-      return;
     }
 
     this.photoQualityError.set('');
@@ -7215,14 +7218,20 @@ export class KioskComponent implements OnInit, OnDestroy {
 
     // Immediately run image quality validation on the newly captured photo
     const check = await this.analyzeImageQuality(dataUrl);
-    if (!check.valid) {
-      this.photoValid.set(false);
-      if (check.reason === 'dark') {
-        this.triggerPhotoQualityError(this.t('bar.photo.darkError'), 3500);
+    if (this.enablePhotoValidation()) {
+      if (!check.valid) {
+        this.photoValid.set(false);
+        if (check.reason === 'dark') {
+          this.triggerPhotoQualityError(this.t('bar.photo.darkError'), 3500);
+        } else {
+          this.triggerPhotoQualityError(this.t('bar.photo.blurryError'), 3500);
+        }
       } else {
-        this.triggerPhotoQualityError(this.t('bar.photo.blurryError'), 3500);
+        this.photoValid.set(true);
+        this.photoQualityError.set('');
       }
     } else {
+      // When photo validation is hidden/disabled, allow photo immediately without error indicators
       this.photoValid.set(true);
       this.photoQualityError.set('');
     }
@@ -7357,15 +7366,17 @@ export class KioskComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const check = await this.analyzeImageQuality(photo);
-    if (!check.valid || !this.photoValid()) {
-      this.photoValid.set(false);
-      if (check.reason === 'dark') {
-        this.triggerPhotoQualityError(this.t('bar.photo.darkError'), 3500);
-      } else {
-        this.triggerPhotoQualityError(this.t('bar.photo.blurryError'), 3500);
+    if (this.enablePhotoValidation()) {
+      const check = await this.analyzeImageQuality(photo);
+      if (!check.valid || !this.photoValid()) {
+        this.photoValid.set(false);
+        if (check.reason === 'dark') {
+          this.triggerPhotoQualityError(this.t('bar.photo.darkError'), 3500);
+        } else {
+          this.triggerPhotoQualityError(this.t('bar.photo.blurryError'), 3500);
+        }
+        return;
       }
-      return;
     }
 
     this.photoQualityError.set('');
