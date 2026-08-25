@@ -300,7 +300,7 @@ export class KioskService {
   }
 
   captureEsp32Cam(url?: string): Observable<Blob> {
-    const targetUrl = url || environment.esp32CamCaptureUrl || 'http://192.168.100.200/capture';
+    const targetUrl = url || environment.esp32CamCaptureUrl || 'http://192.168.254.111/capture';
     return this.http.get(targetUrl, { responseType: 'blob' });
   }
 

@@ -4903,8 +4903,8 @@ export class KioskComponent implements OnInit, OnDestroy {
 
   // ESP32-CAM signals
   cameraMode = signal<'esp32' | 'webcam'>('esp32');
-  esp32StreamUrl = signal<string>(environment.esp32CamStreamUrl || 'http://192.168.100.200/stream');
-  esp32CaptureUrl = signal<string>(environment.esp32CamCaptureUrl || 'http://192.168.100.200/capture');
+  esp32StreamUrl = signal<string>(environment.esp32CamStreamUrl || 'http://192.168.254.111/stream');
+  esp32CaptureUrl = signal<string>(environment.esp32CamCaptureUrl || 'http://192.168.254.111/capture');
   esp32Error = signal<boolean>(false);
 
   formError = signal('');
@@ -6925,7 +6925,7 @@ export class KioskComponent implements OnInit, OnDestroy {
 
   startCamera(target?: HTMLVideoElement) {
     if (this.cameraMode() === 'esp32') {
-      const baseStreamUrl = environment.esp32CamStreamUrl || 'http://192.168.100.200/stream';
+      const baseStreamUrl = environment.esp32CamStreamUrl || 'http://192.168.254.111/stream';
       this.esp32StreamUrl.set(`${baseStreamUrl}?t=${Date.now()}`);
       this.cameraReady.set(true);
       this.esp32Error.set(false);
@@ -7354,7 +7354,7 @@ export class KioskComponent implements OnInit, OnDestroy {
       this.photoQualityErrorTimer = null;
     }
     if (this.cameraMode() === 'esp32') {
-      this.esp32StreamUrl.set(`${environment.esp32CamStreamUrl || 'http://192.168.100.200/stream'}?t=${Date.now()}`);
+      this.esp32StreamUrl.set(`${environment.esp32CamStreamUrl || 'http://192.168.254.111/stream'}?t=${Date.now()}`);
       this.cameraReady.set(true);
     } else {
       setTimeout(() => this.startCamera(), 100);
