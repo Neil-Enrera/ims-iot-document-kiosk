@@ -36,7 +36,29 @@ const calculateAge = (birthDate) => {
   return age;
 };
 
+const normalizeBarangayIdNames = (req, res, next) => {
+  if (!req.body) req.body = {};
+  const formData = req.body.formData || {};
+  const fullName = req.body.fullName || formData.full_name || formData.fullName;
+  
+  if ((!req.body.firstName || !req.body.lastName) && fullName) {
+    const parts = String(fullName).trim().split(/\s+/);
+    if (parts.length === 1) {
+      if (!req.body.firstName) req.body.firstName = parts[0];
+      if (!req.body.lastName) req.body.lastName = parts[0];
+    } else if (parts.length === 2) {
+      if (!req.body.firstName) req.body.firstName = parts[0];
+      if (!req.body.lastName) req.body.lastName = parts[1];
+    } else {
+      if (!req.body.firstName) req.body.firstName = parts.slice(0, -1).join(' ');
+      if (!req.body.lastName) req.body.lastName = parts[parts.length - 1];
+    }
+  }
+  next();
+};
+
 const barangayIdApplicationValidation = [
+  normalizeBarangayIdNames,
   body('firstName')
     .trim()
     .notEmpty().withMessage('First name is required.')
