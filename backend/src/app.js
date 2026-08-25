@@ -15,6 +15,9 @@ const allowedOrigins = [
   'http://localhost:4200',
   'http://localhost:4201',
   'http://localhost:3000',
+  'http://172.20.10.9:4200',
+  'http://172.20.10.9:4201',
+  'http://172.20.10.9:3000',
   'http://192.168.100.245:4200',
   'http://192.168.100.245:4201',
   'http://192.168.100.245:3000',
@@ -28,7 +31,7 @@ app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (e.g. mobile apps, curl, server-to-server)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1 || origin.startsWith('http://192.168.')) {
+    if (allowedOrigins.indexOf(origin) !== -1 || origin.startsWith('http://192.168.') || origin.startsWith('http://172.20.')) {
       return callback(null, true);
     }
     return callback(null, true); // Permissive CORS for local LAN development
