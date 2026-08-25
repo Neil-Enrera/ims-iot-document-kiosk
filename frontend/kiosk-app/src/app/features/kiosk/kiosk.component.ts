@@ -1939,7 +1939,7 @@ export type BarangayStep =
                            (load)="onEsp32StreamLoad()"
                            (error)="onEsp32StreamError()"
                            crossorigin="anonymous"
-                           class="w-full aspect-video object-cover -rotate-90 scale-[1.35]"
+                           class="w-full aspect-video object-cover rotate-90 scale-[1.35]"
                            alt="ESP32-CAM Live Preview" />
                     } @else {
                       <video #videoEl autoplay playsinline class="w-full aspect-video object-cover"></video>
@@ -3640,7 +3640,7 @@ export type BarangayStep =
                                      (load)="onEsp32StreamLoad()"
                                      (error)="onEsp32StreamError()"
                                      crossorigin="anonymous"
-                                     class="absolute inset-0 w-full h-full object-cover select-none pointer-events-none -rotate-90 scale-[1.35]"
+                                     class="absolute inset-0 w-full h-full object-cover select-none pointer-events-none rotate-90 scale-[1.35]"
                                      alt="ESP32-CAM Live Preview" />
                               } @else {
                                 <video #videoEl autoplay playsinline class="absolute inset-0 w-full h-full object-cover"></video>
@@ -7068,7 +7068,7 @@ export class KioskComponent implements OnInit, OnDestroy {
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.translate(canvas.width / 2, canvas.height / 2);
-        ctx.rotate((-90 * Math.PI) / 180);
+        ctx.rotate((90 * Math.PI) / 180);
         ctx.drawImage(el, -width / 2, -height / 2, width, height);
         return canvas.toDataURL('image/jpeg', 0.92);
       }
@@ -7091,7 +7091,6 @@ export class KioskComponent implements OnInit, OnDestroy {
       img.onload = () => {
         URL.revokeObjectURL(url);
         const canvas = document.createElement('canvas');
-        // Swapping width and height for 90° counter-clockwise rotation (left)
         canvas.width = img.naturalHeight || img.height || 480;
         canvas.height = img.naturalWidth || img.width || 640;
         const ctx = canvas.getContext('2d');
@@ -7099,9 +7098,9 @@ export class KioskComponent implements OnInit, OnDestroy {
           this.kioskService.blobToDataUrl(blob).then(resolve).catch(reject);
           return;
         }
-        // Rotate 90 degrees counter-clockwise around the canvas center
+        // Rotate 90 degrees clockwise around the canvas center (180° from prior orientation)
         ctx.translate(canvas.width / 2, canvas.height / 2);
-        ctx.rotate((-90 * Math.PI) / 180);
+        ctx.rotate((90 * Math.PI) / 180);
         ctx.drawImage(img, -(img.naturalWidth || img.width) / 2, -(img.naturalHeight || img.height) / 2);
         resolve(canvas.toDataURL('image/jpeg', 0.92));
       };
@@ -7145,7 +7144,7 @@ export class KioskComponent implements OnInit, OnDestroy {
           const canvas = document.createElement('canvas');
           const width = img.naturalWidth || img.width || 640;
           const height = img.naturalHeight || img.height || 480;
-          // Rotate 90° counter-clockwise (left) from landscape to portrait
+          // Rotate 90° clockwise from landscape to portrait (180° from prior orientation)
           canvas.width = height;
           canvas.height = width;
           const ctx = canvas.getContext('2d');
@@ -7154,7 +7153,7 @@ export class KioskComponent implements OnInit, OnDestroy {
             return;
           }
           ctx.translate(canvas.width / 2, canvas.height / 2);
-          ctx.rotate((-90 * Math.PI) / 180);
+          ctx.rotate((90 * Math.PI) / 180);
           ctx.drawImage(img, -width / 2, -height / 2, width, height);
           const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
           resolve(dataUrl);
@@ -7187,7 +7186,7 @@ export class KioskComponent implements OnInit, OnDestroy {
       const targetCaptureUrl = `${this.esp32CaptureUrl()}${this.esp32CaptureUrl().includes('?') ? '&' : '?'}t=${Date.now()}`;
       this.captureEsp32Image(targetCaptureUrl)
         .then((dataUrl) => {
-          console.log('[ESP32-CAM] Photo captured and rotated 90° counter-clockwise (left) successfully!');
+          console.log('[ESP32-CAM] Photo captured and rotated 90° clockwise successfully!');
           this.capturedPhoto.set(dataUrl);
           this.errorMessage.set('');
           this.esp32StreamUrl.set(''); // Free socket while photo preview is shown
