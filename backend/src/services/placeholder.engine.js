@@ -132,9 +132,24 @@ const PLACEHOLDERS = [
     resolve: (c) => pick(c.resident.house_number, c.application.house_number, c.application.house_no)
   },
   {
+    key: 'block', category: 'address', source: 'application', label: 'Block number', aliases: ['blk', 'block_no', 'block_number'],
+    description: 'Block number from address / application.',
+    resolve: (c) => pick(c.application.block, c.application.Block, c.application.blk, c.resident.block)
+  },
+  {
+    key: 'lot', category: 'address', source: 'application', label: 'Lot number', aliases: ['lot_no', 'lot_number'],
+    description: 'Lot number from address / application.',
+    resolve: (c) => pick(c.application.lot, c.application.Lot, c.resident.lot)
+  },
+  {
     key: 'street', category: 'address', source: 'resident', label: 'Street', aliases: ['street_name', 'st'],
     description: 'Street name.',
     resolve: (c) => pick(c.resident.street, c.application.street, c.application.street_name)
+  },
+  {
+    key: 'subdivision', category: 'address', source: 'resident', label: 'Subdivision', aliases: ['subd', 'subdivision_name', 'village'],
+    description: 'Subdivision or village name.',
+    resolve: (c) => pick(c.resident.subdivision, c.application.subdivision, c.application.Subdivision)
   },
   {
     key: 'purok_zone', category: 'address', source: 'resident', label: 'Purok / Zone', aliases: ['purok', 'zone', 'purok_zone_no'],
@@ -170,7 +185,52 @@ const PLACEHOLDERS = [
   {
     key: 'purpose', category: 'document', source: 'application', label: 'Purpose', aliases: ['request_purpose', 'purpose_of_request', 'purpose_of_document'],
     description: 'Purpose stated on the application.',
-    resolve: (c) => pick(c.request.purpose, c.application.purpose)
+    resolve: (c) => pick(c.request.purpose, c.application.purpose, c.application.Purpose)
+  },
+  {
+    key: 'relative_name', category: 'document', source: 'application', label: 'Relative / Beneficiary name', aliases: ['beneficiary_name', 'relative', 'beneficiary'],
+    description: 'Name of relative or beneficiary.',
+    resolve: (c) => pick(c.application.relative_name, c.application.beneficiary_name)
+  },
+  {
+    key: 'applicant_name', category: 'document', source: 'application', label: 'Applicant / Company name', aliases: ['company_name', 'contractor_name', 'authorized_person'],
+    description: 'Applicant or authorized company name.',
+    resolve: (c) => pick(c.application.applicant_name, c.application.company_name, composeFullName(c.resident))
+  },
+  {
+    key: 'office_address', category: 'document', source: 'application', label: 'Office address', aliases: ['company_address', 'business_address'],
+    description: 'Office or business address.',
+    resolve: (c) => pick(c.application.office_address, c.application.business_address, c.resident.address_line)
+  },
+  {
+    key: 'activity_type', category: 'document', source: 'application', label: 'Permit activity type', aliases: ['activity', 'scope_of_work'],
+    description: 'Scope or activity authorized by permit (e.g. EXCAVATION/INSTALLATION).',
+    resolve: (c) => pick(c.application.activity_type, c.application.scope_of_work) || 'EXCAVATION/INSTALLATION/REPLACEMENT'
+  },
+  {
+    key: 'quantity_description', category: 'document', source: 'application', label: 'Quantity / Item description', aliases: ['quantity', 'items_description'],
+    description: 'Quantity or item description (e.g. 5 CONCRETE).',
+    resolve: (c) => pick(c.application.quantity_description, c.application.quantity)
+  },
+  {
+    key: 'requested_by', category: 'document', source: 'application', label: 'Requested by', aliases: ['requestor', 'requestor_name'],
+    description: 'Person or representative who requested the permit.',
+    resolve: (c) => pick(c.application.requested_by, c.application.requestor, composeFullName(c.resident))
+  },
+  {
+    key: 'amount_paid', category: 'document', source: 'system', label: 'Amount paid', aliases: ['fee', 'processing_fee', 'amount'],
+    description: 'Service fee or amount paid.',
+    resolve: (c) => pick(c.request.amount_paid, c.service.processing_fee, c.application.amount_paid) || '0.00'
+  },
+  {
+    key: 'or_number', category: 'document', source: 'application', label: 'OR Number', aliases: ['or_no', 'official_receipt_number', 'receipt_number'],
+    description: 'Official receipt number.',
+    resolve: (c) => pick(c.request.or_number, c.application.or_number, c.application.or_no)
+  },
+  {
+    key: 'or_date', category: 'document', source: 'system', label: 'OR Date', aliases: ['receipt_date'],
+    description: 'Official receipt issuance date.',
+    resolve: (c) => formatDate(c.request.or_date || c.system.date)
   },
   { key: 'date_requested', category: 'document', source: 'system', label: 'Date requested', aliases: ['request_date', 'date_filed'], description: 'Date the request was filed.', resolve: (c) => formatDate(c.request.request_date) },
   { key: 'date_approved', category: 'document', source: 'system', label: 'Date approved', aliases: ['approval_date', 'date_of_approval'], description: 'Date the request was approved / reviewed.', resolve: (c) => formatDate(c.request.reviewed_date) || formatDate(c.request.date_approved) },
