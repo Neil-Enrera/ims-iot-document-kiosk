@@ -4885,7 +4885,6 @@ export class KioskComponent implements OnInit, OnDestroy {
   showBarangayDobError = signal<boolean>(false);
   showGuestDobError = signal<boolean>(false);
   photoQualityError = signal<string>('');
-  hasWarnedQualityForCapture = signal<boolean>(false);
   private photoQualityErrorTimer: any;
   private barangayDobErrorTimer: any;
   private guestDobErrorTimer: any;
@@ -6593,17 +6592,16 @@ export class KioskComponent implements OnInit, OnDestroy {
   async confirmBarangayPhoto() {
     const photo = this.capturedPhoto();
     if (!photo) {
-      this.triggerPhotoQualityError(this.t('bar.photo.unavailableDesc'), 3000);
+      this.triggerPhotoQualityError(this.t('bar.photo.unavailableDesc'), 3500);
       return;
     }
 
     const check = await this.analyzeImageQuality(photo);
-    if (!check.valid && !this.hasWarnedQualityForCapture()) {
-      this.hasWarnedQualityForCapture.set(true);
+    if (!check.valid) {
       if (check.reason === 'dark') {
-        this.triggerPhotoQualityError(this.t('bar.photo.darkError'), 3000);
+        this.triggerPhotoQualityError(this.t('bar.photo.darkError'), 3500);
       } else {
-        this.triggerPhotoQualityError(this.t('bar.photo.blurryError'), 3000);
+        this.triggerPhotoQualityError(this.t('bar.photo.blurryError'), 3500);
       }
       return;
     }
@@ -7177,7 +7175,6 @@ export class KioskComponent implements OnInit, OnDestroy {
   }
 
   capturePhoto() {
-    this.hasWarnedQualityForCapture.set(false);
     this.photoQualityError.set('');
     if (this.photoQualityErrorTimer) {
       clearTimeout(this.photoQualityErrorTimer);
@@ -7286,17 +7283,16 @@ export class KioskComponent implements OnInit, OnDestroy {
   async confirmPhoto() {
     const photo = this.capturedPhoto();
     if (!photo) {
-      this.triggerPhotoQualityError(this.t('bar.photo.unavailableDesc'), 3000);
+      this.triggerPhotoQualityError(this.t('bar.photo.unavailableDesc'), 3500);
       return;
     }
 
     const check = await this.analyzeImageQuality(photo);
-    if (!check.valid && !this.hasWarnedQualityForCapture()) {
-      this.hasWarnedQualityForCapture.set(true);
+    if (!check.valid) {
       if (check.reason === 'dark') {
-        this.triggerPhotoQualityError(this.t('bar.photo.darkError'), 3000);
+        this.triggerPhotoQualityError(this.t('bar.photo.darkError'), 3500);
       } else {
-        this.triggerPhotoQualityError(this.t('bar.photo.blurryError'), 3000);
+        this.triggerPhotoQualityError(this.t('bar.photo.blurryError'), 3500);
       }
       return;
     }
@@ -7311,7 +7307,6 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.capturedPhoto.set(null);
     this.errorMessage.set('');
     this.photoQualityError.set('');
-    this.hasWarnedQualityForCapture.set(false);
     if (this.photoQualityErrorTimer) {
       clearTimeout(this.photoQualityErrorTimer);
       this.photoQualityErrorTimer = null;
