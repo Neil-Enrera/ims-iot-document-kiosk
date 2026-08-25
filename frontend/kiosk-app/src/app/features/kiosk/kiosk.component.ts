@@ -7208,16 +7208,20 @@ export class KioskComponent implements OnInit, OnDestroy {
 
     if (this.cameraMode() === 'esp32') {
       this.submitting.set(true);
-      console.log('[ESP32-CAM] Taking photo: requesting capture snapshot...');
+      console.log('[ESP32-CAM] Taking photo: releasing live stream socket to free camera frame buffer...');
+
+      // 1. Immediately disconnect live stream image so ESP32-CAM stream_handler loop exits and releases the DMA buffer
+      this.esp32StreamUrl.set('');
+      await new Promise((resolve) => setTimeout(resolve, 120));
 
       const targetCaptureUrl = `${this.esp32CaptureUrl()}${this.esp32CaptureUrl().includes('?') ? '&' : '?'}t=${Date.now()}`;
 
-      // 1. Primary path: Direct HTTP fetch for raw JPEG blob (fastest, full quality)
+      // 2. Fetch the fresh high-resolution captured JPEG from ESP32-CAM
       try {
-        const response = await fetch(targetCaptureUrl, { signal: AbortSignal.timeout(4000) });
+        const response = await fetch(targetCaptureUrl, { signal: AbortSignal.timeout(5000) });
         if (response.ok) {
           const blob = await response.blob();
-          if (blob && blob.size > 100) {
+          if (blob && blob.size > 200) {
             const dataUrl = await this.rotateBlob90Deg(blob);
             console.log('[ESP32-CAM] Photo captured and rotated 90° clockwise successfully! Size:', blob.size);
             await this.handleCapturedPhoto(dataUrl);
@@ -7225,22 +7229,38 @@ export class KioskComponent implements OnInit, OnDestroy {
           }
         }
       } catch (fetchErr) {
-        console.warn('[ESP32-CAM] Direct fetch failed, attempting image loader fallback:', fetchErr);
+        console.warn('[ESP32-CAM] Direct capture fetch attempt 1 failed, retrying...', fetchErr);
       }
 
-      // 2. Secondary path: Image loader with 90° canvas rotation
+      // 3. Retry fetch once more with brief delay
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        const response = await fetch(targetCaptureUrl, { signal: AbortSignal.timeout(4000) });
+        if (response.ok) {
+          const blob = await response.blob();
+          if (blob && blob.size > 200) {
+            const dataUrl = await this.rotateBlob90Deg(blob);
+            console.log('[ESP32-CAM] Photo captured on retry! Size:', blob.size);
+            await this.handleCapturedPhoto(dataUrl);
+            return;
+          }
+        }
+      } catch (retryErr) {
+        console.warn('[ESP32-CAM] Capture retry failed, attempting image loader:', retryErr);
+      }
+
+      // 4. Secondary path: Image loader with 90° canvas rotation
       try {
         const dataUrl = await this.captureEsp32Image(targetCaptureUrl);
         console.log('[ESP32-CAM] Photo captured via image loader and rotated 90° clockwise');
         await this.handleCapturedPhoto(dataUrl);
         return;
       } catch (imgErr) {
-        console.warn('[ESP32-CAM] Image capture failed, attempting live stream frame fallback:', imgErr);
+        console.error('[ESP32-CAM] All capture methods failed:', imgErr);
       }
 
-      // 3. Fallback: Frame grab from live stream canvas element
-      await this.fallbackCaptureFromStreamElement();
       this.submitting.set(false);
+      this.errorMessage.set(this.t('err.cameraDenied') || 'Could not capture image from ESP32-CAM. Please try again.');
       return;
     }
 
