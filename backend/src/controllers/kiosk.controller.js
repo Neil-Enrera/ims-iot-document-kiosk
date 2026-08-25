@@ -102,13 +102,13 @@ const createRequest = async (req, res) => {
   }
 };
 
-// Public services list for kiosk (no auth required)
+// Public services list for kiosk (no auth required) - returns regular document services only
 const getServices = async (req, res) => {
   try {
     const [rows] = await pool.query(
       `SELECT service_id, service_name, description, requirements, form_fields,
               processing_fee, requires_photo, is_active, template_path
-       FROM services WHERE is_active = 1 ORDER BY service_name`
+       FROM services WHERE is_active = 1 AND LOWER(TRIM(service_name)) != 'barangay id' ORDER BY service_name`
     );
     const services = rows.map(s => ({
       ...s,
@@ -119,6 +119,28 @@ const getServices = async (req, res) => {
     return successResponse(res, 'Services retrieved.', services);
   } catch (error) {
     console.error('Kiosk getServices error:', error);
+    return errorResponse(res, 500, 'Internal server error.');
+  }
+};
+
+// Dedicated Barangay ID config endpoint for Kiosk
+const getBarangayIdConfig = async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT service_id, service_name, description, requirements, form_fields,
+              processing_fee, requires_photo, is_active, template_path
+       FROM services WHERE LOWER(TRIM(service_name)) = 'barangay id' LIMIT 1`
+    );
+    if (rows.length === 0) return errorResponse(res, 404, 'Barangay ID configuration not found.');
+    const s = rows[0];
+    return successResponse(res, 'Barangay ID configuration retrieved.', {
+      ...s,
+      requirements: parseJsonField(s.requirements),
+      form_fields: parseJsonField(s.form_fields),
+      has_template: !!s.template_path
+    });
+  } catch (error) {
+    console.error('Kiosk getBarangayIdConfig error:', error);
     return errorResponse(res, 500, 'Internal server error.');
   }
 };
@@ -399,5 +421,6 @@ module.exports = {
   getStatusDisplayStream,
   broadcastStatusDisplayUpdate,
   getHardwareStatus,
-  getKioskSettings
+  getKioskSettings,
+  getBarangayIdConfig
 };

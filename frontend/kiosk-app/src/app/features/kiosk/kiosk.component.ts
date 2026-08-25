@@ -5147,9 +5147,19 @@ export class KioskComponent implements OnInit, OnDestroy {
   }
 
   private loadBarangayService() {
-    this.kioskService.getServices().subscribe({
+    this.kioskService.getBarangayIdConfig().subscribe({
       next: (result: any) => {
-        this.barangayService.set((result?.data || []).find((s: Service) => s.service_name && s.service_name.trim().toLowerCase() === 'barangay id') || null);
+        if (result?.data) {
+          this.barangayService.set(result.data);
+        }
+      },
+      error: () => {
+        // Fallback in case endpoint is not reached
+        this.kioskService.getServices().subscribe({
+          next: (result: any) => {
+            this.barangayService.set((result?.data || []).find((s: Service) => s.service_name && s.service_name.trim().toLowerCase() === 'barangay id') || null);
+          }
+        });
       }
     });
   }

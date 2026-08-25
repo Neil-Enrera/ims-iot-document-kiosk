@@ -125,7 +125,12 @@ export class ServicesComponent implements OnInit {
   loadServices() {
     this.loading.set(true);
     this.serviceService.getAll({ search: this.search(), page: this.page(), limit: this.limit }).subscribe({
-      next: (res) => { this.services.set(res.data); this.total.set(res.pagination.total); this.loading.set(false); },
+      next: (res) => {
+        const regularServices = (res.data || []).filter((s: Service) => s.service_name && s.service_name.trim().toLowerCase() !== 'barangay id');
+        this.services.set(regularServices);
+        this.total.set(res.pagination.total ? Math.max(0, res.pagination.total - ((res.data || []).length - regularServices.length)) : regularServices.length);
+        this.loading.set(false);
+      },
       error: () => this.loading.set(false)
     });
   }

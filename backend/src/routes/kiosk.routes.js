@@ -18,5 +18,6 @@ router.get('/kiosk/status-display', restrictStatusDisplayToLan, controller.getSt
 router.get('/kiosk/status-display/stream', restrictStatusDisplayToLan, controller.getStatusDisplayStream);
 router.get('/kiosk/hardware/status', controller.getHardwareStatus);
 router.get('/kiosk/settings', controller.getKioskSettings);
+router.get('/kiosk/barangay-id/config', controller.getBarangayIdConfig);
 
 module.exports = router;

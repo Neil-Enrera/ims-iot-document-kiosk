@@ -203,6 +203,10 @@ export class KioskService {
     return this.http.get<ApiResponse<Service[]>>(`${this.apiUrl}/kiosk/services`);
   }
 
+  getBarangayIdConfig(): Observable<ApiResponse<Service>> {
+    return this.http.get<ApiResponse<Service>>(`${this.apiUrl}/kiosk/barangay-id/config`);
+  }
+
   getSettings(): Observable<ApiResponse<Record<string, string>>> {
     return this.http.get<ApiResponse<Record<string, string>>>(`${this.apiUrl}/kiosk/settings`);
   }
