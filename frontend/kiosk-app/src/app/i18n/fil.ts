@@ -176,6 +176,8 @@ export const fil: TranslationDictionary = {
   'doc.review.purpose': 'Layunin ng Kahilingan',
   'doc.review.requestedOn': 'Hiniling Noong',
   'doc.review.residentId': 'ID ng Residente',
+  'doc.review.temporarySession': 'Pansamantalang Sesyon',
+  'doc.review.guestRequester': 'Bisita / Guest',
   'doc.review.service': 'Serbisyo',
   'doc.review.fee': 'Bayad',
   'doc.review.details': 'Mga Detalye ng Aplikasyon',

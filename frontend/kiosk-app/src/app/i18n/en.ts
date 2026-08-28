@@ -186,6 +186,8 @@ export const en: TranslationDictionary = {
   'doc.review.purpose': 'Purpose of Request',
   'doc.review.requestedOn': 'Requested On',
   'doc.review.residentId': 'Resident ID',
+  'doc.review.temporarySession': 'Temporary Session',
+  'doc.review.guestRequester': 'Guest Requester',
   'doc.review.service': 'Service',
   'doc.review.fee': 'Fee',
   'doc.review.details': 'Application Details',

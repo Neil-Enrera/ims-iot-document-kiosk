@@ -2189,8 +2189,9 @@ export type BarangayStep =
 
               <!-- Resident summary (compact horizontal card) -->
               <div class="relative z-10 px-4 sm:px-8 pb-1">
-                <div class="mx-auto w-full max-w-[1000px] flex flex-wrap items-center gap-x-10 lg:gap-x-16 gap-y-3 bg-white/80 border border-[#E5E7EB] rounded-2xl shadow-sm px-4 sm:px-6 py-3">
-                  <div class="flex items-center gap-3 min-w-0">
+                <div class="mx-auto w-full max-w-[1000px] flex items-center justify-between gap-3 sm:gap-6 bg-white/90 backdrop-blur-sm border border-[#E5E7EB] rounded-2xl shadow-sm px-4 sm:px-6 py-2.5 sm:py-3">
+                  <!-- Avatar + Name + ID/Contact info -->
+                  <div class="flex items-center gap-3 min-w-0 flex-1 sm:flex-initial max-w-[55%] sm:max-w-[40%]">
                     <div class="shrink-0 w-10 h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden bg-[#FFF7ED] border border-[#F97316]/25 flex items-center justify-center" aria-hidden="true">
                       @if (displayPhoto()) {
                         <img [src]="displayPhoto()" alt="" class="w-full h-full object-cover" />
@@ -2199,32 +2200,46 @@ export type BarangayStep =
                       }
                     </div>
                     <div class="min-w-0">
-                      <p class="text-[15px] sm:text-[16px] font-bold text-[#0F172A] leading-tight truncate">{{ displayName() }}</p>
-                      <p class="text-[12px] sm:text-[13px] font-medium text-[#64748B] leading-snug truncate">
-                        {{ t('doc.review.residentId') }}: <span class="font-semibold text-[#0F172A]">{{ displayCode() }}</span>
-                      </p>
+                      <p class="text-[14px] sm:text-[16px] font-bold text-[#0F172A] leading-tight truncate" [title]="displayName()">{{ displayName() }}</p>
+                      @if (resident()) {
+                        <p class="text-[11px] sm:text-[13px] font-medium text-[#64748B] leading-snug truncate">
+                          {{ t('doc.review.residentId') }}: <span class="font-semibold text-[#0F172A]">{{ resident()!.resident_code }}</span>
+                        </p>
+                      } @else {
+                        <p class="text-[11px] sm:text-[13px] font-medium text-[#64748B] leading-snug truncate">
+                          {{ t('doc.guestInfo.contact') }}: <span class="font-semibold text-[#0F172A]">{{ guestForm.contactNumber || t('doc.review.guestRequester') }}</span>
+                        </p>
+                      }
                     </div>
                   </div>
-                  <div class="hidden md:flex flex-col min-w-0">
-                    <p class="text-[11px] font-semibold uppercase tracking-wide text-[#64748B]">{{ t('profile.address') }}</p>
-                    <p class="text-[13px] sm:text-[14px] font-bold text-[#0F172A] leading-snug truncate">{{ displayAddress() }}</p>
+
+                  <!-- Address (flexible middle column) -->
+                  <div class="hidden sm:flex flex-col flex-1 min-w-0 max-w-[420px] px-2">
+                    <p class="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wide text-[#64748B]">{{ t('profile.address') }}</p>
+                    <p class="text-[12px] sm:text-[13px] font-bold text-[#0F172A] leading-snug truncate" [title]="displayAddress()">{{ displayAddress() }}</p>
                   </div>
+
                   @if (resident()) {
-                    <div class="hidden md:flex flex-col min-w-0">
-                      <p class="text-[11px] font-semibold uppercase tracking-wide text-[#64748B]">{{ t('doc.form.rfidNo') }}</p>
-                      <p class="text-[13px] sm:text-[14px] font-bold text-[#0F172A] leading-snug">{{ rfidDisplayNumber() }}</p>
+                    <div class="hidden lg:flex flex-col min-w-0 shrink-0">
+                      <p class="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wide text-[#64748B]">{{ t('doc.form.rfidNo') }}</p>
+                      <p class="text-[12px] sm:text-[13px] font-bold text-[#0F172A] leading-snug">{{ rfidDisplayNumber() }}</p>
                     </div>
                   }
-                  <div class="ml-auto shrink-0">
+
+                  <!-- Right Status Badge (never wraps to new line) -->
+                  <div class="shrink-0 flex items-center">
                     @if (resident()) {
-                      <span class="inline-flex items-center gap-1.5 rounded-full bg-[#DCFCE7] border border-[#BBF7D0] px-3 py-1 text-[12px] sm:text-[13px] font-bold text-[#166534]">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" aria-hidden="true">
+                      <span class="inline-flex items-center gap-1.5 rounded-full bg-[#DCFCE7] border border-[#BBF7D0] px-3 py-1 text-[11px] sm:text-[12px] font-bold text-[#166534] whitespace-nowrap">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" aria-hidden="true">
                           <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                         </svg>
                         {{ t('doc.form.activeResident') }}
                       </span>
                     } @else {
-                      <span class="inline-flex items-center rounded-full bg-[#F1F5F9] border border-[#CBD5E1] px-3 py-1 text-[12px] sm:text-[13px] font-bold text-[#475569]">{{ displayCode() }}</span>
+                      <span class="inline-flex items-center gap-1.5 rounded-full bg-[#FFF7ED] border border-[#FDBA74] px-3 py-1 text-[11px] sm:text-[12px] font-bold text-[#EA580C] whitespace-nowrap shadow-xs">
+                        <span class="w-1.5 h-1.5 rounded-full bg-[#F97316]"></span>
+                        {{ t('doc.review.temporarySession') }}
+                      </span>
                     }
                   </div>
                 </div>
