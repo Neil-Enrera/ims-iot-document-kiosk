@@ -30,14 +30,22 @@ import { Resident } from '../../shared/interfaces/api.interfaces';
       </div>
 
       <div class="border-t pt-4">
-        <h4 class="text-sm font-bold text-slate-800 mb-3">Address Information</h4>
+        <div class="flex items-center justify-between mb-3">
+          <h4 class="text-sm font-bold text-slate-800">Address Information</h4>
+          <button type="button" (click)="autoComposeAddress(true)" class="text-xs font-semibold text-emerald-600 hover:text-emerald-700 underline transition-colors">
+            Generate Complete Address
+          </button>
+        </div>
         <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <app-input label="House Number" [value]="form.houseNumber" (valueChange)="form.houseNumber = $event" maxlength="50" placeholder="House #" />
-          <app-input label="Street" [value]="form.street" (valueChange)="form.street = $event" maxlength="100" placeholder="Street Name" />
-          <app-input label="Purok / Zone" [value]="form.purokZone" (valueChange)="form.purokZone = $event" maxlength="100" placeholder="Purok 1" />
-          <app-input label="Sitio" [value]="form.sitio" (valueChange)="form.sitio = $event" maxlength="100" placeholder="Sitio" />
-          <app-input label="Municipality" [value]="form.municipality" (valueChange)="form.municipality = $event" maxlength="100" placeholder="San Manuel" />
-          <app-input label="Province" [value]="form.province" (valueChange)="form.province = $event" maxlength="100" placeholder="Tarlac" />
+          <app-input label="Subdivision" [value]="form.subdivision" (valueChange)="updateAddressField('subdivision', $event)" maxlength="100" placeholder="e.g. San Manuel Subdivision" />
+          <app-input label="Street" [value]="form.street" (valueChange)="updateAddressField('street', $event)" maxlength="100" placeholder="e.g. Mabini Street" />
+          <app-input label="Block" [value]="form.block" (valueChange)="updateAddressField('block', $event)" maxlength="50" placeholder="e.g. 10" />
+          <app-input label="Lot" [value]="form.lot" (valueChange)="updateAddressField('lot', $event)" maxlength="50" placeholder="e.g. 5" />
+          <app-input label="House Number" [value]="form.houseNumber" (valueChange)="updateAddressField('houseNumber', $event)" maxlength="50" placeholder="House #" />
+          <app-input label="Purok / Zone" [value]="form.purokZone" (valueChange)="updateAddressField('purokZone', $event)" maxlength="100" placeholder="Purok 1" />
+          <app-input label="Sitio" [value]="form.sitio" (valueChange)="updateAddressField('sitio', $event)" maxlength="100" placeholder="Sitio" />
+          <app-input label="Municipality" [value]="form.municipality" (valueChange)="updateAddressField('municipality', $event)" maxlength="100" placeholder="San Manuel" />
+          <app-input label="Province" [value]="form.province" (valueChange)="updateAddressField('province', $event)" maxlength="100" placeholder="Tarlac" />
           <app-input label="ZIP Code" [value]="form.zipCode" (valueChange)="form.zipCode = $event" filterType="numeric" maxlength="10" placeholder="2301" />
         </div>
         <div class="mt-4">
@@ -82,6 +90,9 @@ export class ResidentFormComponent implements OnInit, OnChanges {
     addressLine: '',
     houseNumber: '',
     street: '',
+    subdivision: '',
+    block: '',
+    lot: '',
     purokZone: '',
     sitio: '',
     municipality: '',
@@ -142,6 +153,9 @@ export class ResidentFormComponent implements OnInit, OnChanges {
         addressLine: this.resident.address_line || '',
         houseNumber: this.resident.house_number || '',
         street: this.resident.street || '',
+        subdivision: this.resident.subdivision || '',
+        block: this.resident.block || '',
+        lot: this.resident.lot || '',
         purokZone: this.resident.purok_zone || '',
         sitio: this.resident.sitio || '',
         municipality: this.resident.municipality || '',
@@ -150,6 +164,42 @@ export class ResidentFormComponent implements OnInit, OnChanges {
         contactNumber: this.resident.contact_number || '',
         email: this.resident.email || ''
       };
+    }
+  }
+
+  updateAddressField(field: string, val: string) {
+    (this.form as any)[field] = val;
+    // If not in edit mode or address line is empty, auto-update address line
+    if (!this.editMode || !this.form.addressLine.trim()) {
+      this.autoComposeAddress();
+    }
+  }
+
+  autoComposeAddress(force = false) {
+    const rawParts = [
+      this.form.block ? (this.form.block.toLowerCase().startsWith('blk') ? this.form.block : `Blk ${this.form.block}`) : null,
+      this.form.lot ? (this.form.lot.toLowerCase().startsWith('lot') ? this.form.lot : `Lot ${this.form.lot}`) : null,
+      this.form.houseNumber,
+      this.form.street,
+      this.form.subdivision,
+      this.form.purokZone,
+      this.form.sitio,
+      this.form.municipality,
+      this.form.province
+    ].filter(x => !!x && String(x).trim() !== '');
+
+    const uniqueParts: string[] = [];
+    for (const part of rawParts) {
+      if (part && !uniqueParts.some(p => p.toLowerCase() === String(part).toLowerCase())) {
+        uniqueParts.push(part);
+      }
+    }
+
+    if (uniqueParts.length > 0) {
+      this.form.addressLine = uniqueParts.join(', ');
+      if (this.errors['addressLine']) {
+        delete this.errors['addressLine'];
+      }
     }
   }
 

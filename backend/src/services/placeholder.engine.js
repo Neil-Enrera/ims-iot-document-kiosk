@@ -132,14 +132,14 @@ const PLACEHOLDERS = [
     resolve: (c) => pick(c.resident.house_number, c.application.house_number, c.application.house_no)
   },
   {
-    key: 'block', category: 'address', source: 'application', label: 'Block number', aliases: ['blk', 'block_no', 'block_number'],
+    key: 'block', category: 'address', source: 'resident', label: 'Block number', aliases: ['blk', 'block_no', 'block_number'],
     description: 'Block number from address / application.',
-    resolve: (c) => pick(c.application.block, c.application.Block, c.application.blk, c.resident.block)
+    resolve: (c) => pick(c.resident.block, c.application.block, c.application.Block, c.application.blk)
   },
   {
-    key: 'lot', category: 'address', source: 'application', label: 'Lot number', aliases: ['lot_no', 'lot_number'],
+    key: 'lot', category: 'address', source: 'resident', label: 'Lot number', aliases: ['lot_no', 'lot_number'],
     description: 'Lot number from address / application.',
-    resolve: (c) => pick(c.application.lot, c.application.Lot, c.resident.lot)
+    resolve: (c) => pick(c.resident.lot, c.application.lot, c.application.Lot)
   },
   {
     key: 'street', category: 'address', source: 'resident', label: 'Street', aliases: ['street_name', 'st'],
@@ -317,11 +317,45 @@ const buildContext = ({ request, resident, service, barangay, processedBy, now }
   // Guest submissions store identity under form_data._guest; merge those fields
   // into the application context so guest-derived placeholders (name, age, etc.)
   // resolve through the same generic path as registered residents.
+  let guestData = null;
   if (application && typeof application === 'object' && application._guest && typeof application._guest === 'object') {
-    application = { ...application, ...application._guest };
+    guestData = application._guest;
+    application = { ...application, ...guestData };
   }
+
+  let effResident = resident || {};
+  if ((!resident || Object.keys(resident).length === 0) && guestData) {
+    effResident = {
+      first_name: guestData.first_name || (guestData.full_name ? guestData.full_name.split(' ')[0] : ''),
+      middle_name: guestData.middle_name || '',
+      last_name: guestData.last_name || '',
+      suffix: guestData.suffix || '',
+      birth_date: guestData.birth_date || '',
+      birth_place: guestData.birth_place || '',
+      gender: guestData.gender || '',
+      civil_status: guestData.civil_status || '',
+      nationality: guestData.nationality || 'Filipino',
+      religion: guestData.religion || '',
+      occupation: guestData.occupation || '',
+      blood_type: guestData.blood_type || '',
+      contact_number: guestData.contact_number || '',
+      email: guestData.email || '',
+      subdivision: guestData.subdivision || '',
+      street: guestData.street || '',
+      block: guestData.block || '',
+      lot: guestData.lot || '',
+      house_number: guestData.house_number || '',
+      purok_zone: guestData.purok_zone || '',
+      sitio: guestData.sitio || '',
+      municipality: guestData.municipality || '',
+      province: guestData.province || '',
+      zip_code: guestData.zip_code || '',
+      address_line: guestData.address || guestData.address_line || ''
+    };
+  }
+
   return {
-    resident: resident || {},
+    resident: effResident,
     application,
     request: request || {},
     service: service || {},

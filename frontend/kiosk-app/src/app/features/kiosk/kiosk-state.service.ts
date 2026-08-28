@@ -22,11 +22,32 @@ export interface KioskState {
   inlinePhotos: Record<string, string>;
   activePhotoField: string | null;
   guestForm: {
-    fullName: string;
+    fullName?: string;
+    firstName: string;
+    middleName: string;
+    lastName: string;
+    suffix: string;
     birthDate: string;
-    address: string;
+    birthPlace: string;
+    gender: string;
+    civilStatus: string;
+    nationality: string;
+    religion: string;
+    occupation: string;
+    bloodType: string;
     contactNumber: string;
     email: string;
+    subdivision: string;
+    street: string;
+    block: string;
+    lot: string;
+    houseNumber: string;
+    purokZone: string;
+    sitio: string;
+    municipality: string;
+    province: string;
+    zipCode: string;
+    address: string;
   };
   barangayForm: {
     firstName: string;

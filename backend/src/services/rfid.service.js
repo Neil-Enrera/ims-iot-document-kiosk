@@ -89,8 +89,9 @@ const getResidentByUid = async (cardUid) => {
 // and the RFID card record (card id, uid, issue/expiry, card status).
 const splitResidentAndRfid = (card) => {
   const {
-    first_name, middle_name, last_name, suffix, resident_code, birth_date,
-    gender, civil_status, blood_type, occupation, contact_number, email, address_line,
+    first_name, middle_name, last_name, suffix, resident_code, birth_date, birth_place,
+    nationality, religion, gender, civil_status, blood_type, occupation, contact_number, email,
+    address_line, house_number, street, subdivision, block, lot, purok_zone, sitio, municipality, province, zip_code,
     emergency_contact_name, emergency_contact_number,
     resident_photo, resident_status, resident_barangay_id, ...rfidData
   } = card;
@@ -103,12 +104,25 @@ const splitResidentAndRfid = (card) => {
     last_name,
     suffix,
     birth_date,
+    birth_place,
+    nationality,
+    religion,
     gender,
     civil_status,
     blood_type,
     occupation,
     barangay_id: resident_barangay_id,
     address_line,
+    house_number,
+    street,
+    subdivision,
+    block,
+    lot,
+    purok_zone,
+    sitio,
+    municipality,
+    province,
+    zip_code,
     contact_number,
     email,
     emergency_contact_name,

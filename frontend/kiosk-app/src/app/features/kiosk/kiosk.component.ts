@@ -746,6 +746,7 @@ export type BarangayStep =
                [language]="language()"
                (onBack)="goBack()"
                (onContinue)="proceedToServices()"
+               (onUpdateResident)="onResidentUpdated($event)"
                (languageChange)="setLanguage($event)"></app-resident-profile>
           }
 
@@ -815,7 +816,7 @@ export type BarangayStep =
               <div class="relative flex-1 overflow-y-auto">
                 <div class="min-h-full flex items-center justify-center px-5 sm:px-10 py-5 sm:py-8">
 
-                  <div class="w-full max-w-[660px]">
+                  <div class="w-full max-w-[840px]">
 
                     <!-- Page header -->
                     <div class="text-center mb-5 sm:mb-7">
@@ -824,175 +825,318 @@ export type BarangayStep =
                     </div>
 
                     <!-- Form card -->
-                    <div class="bg-white border border-[#E5E7EB] rounded-[20px] shadow-[0_2px_14px_rgba(15,23,42,0.07)] px-5 sm:px-7 py-5 sm:py-6">
-                      <div class="space-y-3.5 sm:space-y-4">
-
-                        <!-- Full Name -->
+                    <div class="bg-white border border-[#E5E7EB] rounded-[20px] shadow-[0_2px_14px_rgba(15,23,42,0.07)] px-5 sm:px-8 py-5 sm:py-7">
+                      
+                      <!-- Personal Information Section (2 columns on tablet/desktop) -->
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+                        
+                        <!-- First Name -->
                         <div>
-                          <label for="guest-fullName" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
-                            {{ t('doc.guestInfo.fullName') }} <span class="text-[#F97316]">*</span>
+                          <label for="guest-firstName" class="block text-[14px] sm:text-[15px] font-semibold text-[#0F172A] mb-1.5">
+                            {{ t('doc.guestInfo.firstName') }} <span class="text-[#F97316]">*</span>
                           </label>
                           <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
-                               [class.border-[#DC2626]]="guestInvalid('fullName')">
-                            <div class="shrink-0 w-12 sm:w-14 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
-                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                                <circle cx="12" cy="8" r="4"/>
-                                <path d="M4 20c0-3.6 3.6-5 8-5s8 1.4 8 5" stroke-linecap="round"/>
-                              </svg>
-                            </div>
-                            <input id="guest-fullName" type="text" name="fullName"
-                                   [value]="guestForm.fullName || ''"
+                               [class.border-[#DC2626]]="guestInvalid('firstName')">
+                            <input id="guest-firstName" type="text" name="firstName"
+                                   [value]="guestForm.firstName || ''"
                                    (keydown)="filterNameKeyDown($event)"
-                                   (input)="onGuestNameInput($event)"
-                                   (paste)="onGuestNamePaste($event)"
-                                   [placeholder]="t('doc.guestInfo.fullNamePh')" autocomplete="name" maxlength="100"
-                                   class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
-                            @if (guestForm.fullName) {
-                              <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-                                </svg>
-                              </div>
-                            }
+                                   (input)="onGuestNameFieldInput('firstName', $event)"
+                                   (paste)="onGuestNameFieldPaste('firstName', $event)"
+                                   [placeholder]="t('doc.guestInfo.firstNamePh')" autocomplete="given-name" maxlength="50"
+                                   class="flex-1 min-w-0 px-3.5 sm:px-4 py-2.5 sm:py-3 text-[15px] sm:text-[16px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
                           </div>
-                          @if (guestInvalid('fullName')) {
-                            <p class="mt-2 flex items-center gap-1.5 text-base font-medium text-[#B91C1C]">
-                              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                                <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
-                              </svg>
-                              {{ t('err.guest.fullName') }}
-                            </p>
+                          @if (guestInvalid('firstName')) {
+                            <p class="mt-1 text-xs sm:text-sm font-medium text-[#B91C1C]">{{ t('err.invalidName', { field: t('doc.guestInfo.firstName') }) }}</p>
                           }
                         </div>
 
-                        <!-- Date of Birth -->
+                        <!-- Middle Name -->
                         <div>
-                          <label for="guest-birthDate" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
+                          <label for="guest-middleName" class="block text-[14px] sm:text-[15px] font-semibold text-[#0F172A] mb-1.5">
+                            {{ t('doc.guestInfo.middleName') }}
+                          </label>
+                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
+                               [class.border-[#DC2626]]="guestInvalid('middleName')">
+                            <input id="guest-middleName" type="text" name="middleName"
+                                   [value]="guestForm.middleName || ''"
+                                   (keydown)="filterNameKeyDown($event)"
+                                   (input)="onGuestNameFieldInput('middleName', $event)"
+                                   (paste)="onGuestNameFieldPaste('middleName', $event)"
+                                   [placeholder]="t('doc.guestInfo.middleNamePh')" autocomplete="additional-name" maxlength="50"
+                                   class="flex-1 min-w-0 px-3.5 sm:px-4 py-2.5 sm:py-3 text-[15px] sm:text-[16px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
+                          </div>
+                          @if (guestInvalid('middleName')) {
+                            <p class="mt-1 text-xs sm:text-sm font-medium text-[#B91C1C]">{{ t('err.invalidName', { field: t('doc.guestInfo.middleName') }) }}</p>
+                          }
+                        </div>
+
+                        <!-- Last Name -->
+                        <div>
+                          <label for="guest-lastName" class="block text-[14px] sm:text-[15px] font-semibold text-[#0F172A] mb-1.5">
+                            {{ t('doc.guestInfo.lastName') }} <span class="text-[#F97316]">*</span>
+                          </label>
+                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
+                               [class.border-[#DC2626]]="guestInvalid('lastName')">
+                            <input id="guest-lastName" type="text" name="lastName"
+                                   [value]="guestForm.lastName || ''"
+                                   (keydown)="filterNameKeyDown($event)"
+                                   (input)="onGuestNameFieldInput('lastName', $event)"
+                                   (paste)="onGuestNameFieldPaste('lastName', $event)"
+                                   [placeholder]="t('doc.guestInfo.lastNamePh')" autocomplete="family-name" maxlength="50"
+                                   class="flex-1 min-w-0 px-3.5 sm:px-4 py-2.5 sm:py-3 text-[15px] sm:text-[16px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
+                          </div>
+                          @if (guestInvalid('lastName')) {
+                            <p class="mt-1 text-xs sm:text-sm font-medium text-[#B91C1C]">{{ t('err.invalidName', { field: t('doc.guestInfo.lastName') }) }}</p>
+                          }
+                        </div>
+
+                        <!-- Suffix -->
+                        <div>
+                          <label for="guest-suffix" class="block text-[14px] sm:text-[15px] font-semibold text-[#0F172A] mb-1.5">
+                            {{ t('doc.guestInfo.suffix') }}
+                          </label>
+                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden">
+                            <input id="guest-suffix" type="text" name="suffix"
+                                   [(ngModel)]="guestForm.suffix"
+                                   [placeholder]="t('doc.guestInfo.suffixPh')" maxlength="20"
+                                   class="flex-1 min-w-0 px-3.5 sm:px-4 py-2.5 sm:py-3 text-[15px] sm:text-[16px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
+                          </div>
+                        </div>
+
+                        <!-- Birth Date -->
+                        <div>
+                          <label for="guest-birthDate" class="block text-[14px] sm:text-[15px] font-semibold text-[#0F172A] mb-1.5">
                             {{ t('doc.guestInfo.birthDate') }} <span class="text-[#F97316]">*</span>
                           </label>
-                          <div class="flex items-center rounded-xl border-2 bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
+                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
                                [class.border-[#DC2626]]="guestInvalid('birthDate')">
-                            <div class="shrink-0 w-12 sm:w-14 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
-                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                                <rect x="3" y="5" width="18" height="16" rx="2"/>
-                                <path d="M8 3v4M16 3v4M3 10h18" stroke-linecap="round"/>
-                              </svg>
-                            </div>
                             <input id="guest-birthDate" type="date" name="birthDate" [(ngModel)]="guestForm.birthDate"
                                    [placeholder]="t('doc.guestInfo.birthDatePh')" [max]="maxBirthDateString()"
-                                   class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] font-medium text-[#0F172A] bg-transparent outline-none border-none" />
-                            @if (guestForm.birthDate && !guestInvalid('birthDate')) {
-                              <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-                                </svg>
-                              </div>
-                            }
+                                   class="flex-1 min-w-0 px-3.5 sm:px-4 py-2.5 sm:py-3 text-[15px] sm:text-[16px] font-medium text-[#0F172A] bg-transparent outline-none border-none" />
                           </div>
                           @if (guestInvalid('birthDate')) {
-                            <p class="mt-1.5 flex items-center gap-1.5 text-sm sm:text-base font-medium text-[#B91C1C]">
-                              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                                <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
-                              </svg>
-                              {{ getGuestDobErrorMessage() }}
-                            </p>
+                            <p class="mt-1 text-xs sm:text-sm font-medium text-[#B91C1C]">{{ getGuestDobErrorMessage() }}</p>
                           }
                         </div>
 
-                        <!-- Address -->
+                        <!-- Birth Place -->
                         <div>
-                          <label for="guest-address" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
-                            {{ t('doc.guestInfo.address') }} <span class="text-[#F97316]">*</span>
+                          <label for="guest-birthPlace" class="block text-[14px] sm:text-[15px] font-semibold text-[#0F172A] mb-1.5">
+                            {{ t('doc.guestInfo.birthPlace') }}
                           </label>
-                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
-                               [class.border-[#DC2626]]="guestInvalid('address')">
-                            <div class="shrink-0 w-12 sm:w-14 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
-                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                                <path d="M12 21s7-5.5 7-11a7 7 0 10-14 0c0 5.5 7 11 7 11z" stroke-linejoin="round"/>
-                                <circle cx="12" cy="10" r="2.5"/>
-                              </svg>
-                            </div>
-                            <input id="guest-address" type="text" name="address" [(ngModel)]="guestForm.address"
-                                   [placeholder]="t('doc.guestInfo.addressPh')" autocomplete="street-address" maxlength="255"
-                                   class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] font-medium text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
-                            @if (guestForm.address) {
-                              <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-                                </svg>
-                              </div>
-                            }
+                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden">
+                            <input id="guest-birthPlace" type="text" name="birthPlace" [(ngModel)]="guestForm.birthPlace"
+                                   [placeholder]="t('doc.guestInfo.birthPlacePh')" maxlength="100"
+                                   class="flex-1 min-w-0 px-3.5 sm:px-4 py-2.5 sm:py-3 text-[15px] sm:text-[16px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
                           </div>
-                          @if (guestInvalid('address')) {
-                            <p class="flex items-center gap-1.5 text-base font-medium text-[#B91C1C]">
-                              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                                <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
-                              </svg>
-                              {{ t('err.guest.address') }}
-                            </p>
-                          }
+                        </div>
+
+                        <!-- Gender -->
+                        <div>
+                          <label for="guest-gender" class="block text-[14px] sm:text-[15px] font-semibold text-[#0F172A] mb-1.5">
+                            {{ t('doc.guestInfo.gender') }}
+                          </label>
+                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden px-3 sm:px-4 py-1.5 sm:py-2">
+                            <select id="guest-gender" name="gender" [(ngModel)]="guestForm.gender"
+                                    class="w-full text-[15px] sm:text-[16px] text-[#0F172A] bg-transparent outline-none border-none">
+                              <option value="Male">Male</option>
+                              <option value="Female">Female</option>
+                              <option value="Other">Other</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <!-- Civil Status -->
+                        <div>
+                          <label for="guest-civilStatus" class="block text-[14px] sm:text-[15px] font-semibold text-[#0F172A] mb-1.5">
+                            {{ t('doc.guestInfo.civilStatus') }}
+                          </label>
+                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden px-3 sm:px-4 py-1.5 sm:py-2">
+                            <select id="guest-civilStatus" name="civilStatus" [(ngModel)]="guestForm.civilStatus"
+                                    class="w-full text-[15px] sm:text-[16px] text-[#0F172A] bg-transparent outline-none border-none">
+                              <option value="Single">Single</option>
+                              <option value="Married">Married</option>
+                              <option value="Widowed">Widowed</option>
+                              <option value="Separated">Separated</option>
+                              <option value="Divorced">Divorced</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <!-- Nationality -->
+                        <div>
+                          <label for="guest-nationality" class="block text-[14px] sm:text-[15px] font-semibold text-[#0F172A] mb-1.5">
+                            {{ t('doc.guestInfo.nationality') }}
+                          </label>
+                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden">
+                            <input id="guest-nationality" type="text" name="nationality" [(ngModel)]="guestForm.nationality"
+                                   [placeholder]="t('doc.guestInfo.nationalityPh')" maxlength="50"
+                                   class="flex-1 min-w-0 px-3.5 sm:px-4 py-2.5 sm:py-3 text-[15px] sm:text-[16px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
+                          </div>
+                        </div>
+
+                        <!-- Religion -->
+                        <div>
+                          <label for="guest-religion" class="block text-[14px] sm:text-[15px] font-semibold text-[#0F172A] mb-1.5">
+                            {{ t('doc.guestInfo.religion') }}
+                          </label>
+                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden">
+                            <input id="guest-religion" type="text" name="religion" [(ngModel)]="guestForm.religion"
+                                   [placeholder]="t('doc.guestInfo.religionPh')" maxlength="50"
+                                   class="flex-1 min-w-0 px-3.5 sm:px-4 py-2.5 sm:py-3 text-[15px] sm:text-[16px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
+                          </div>
+                        </div>
+
+                        <!-- Occupation -->
+                        <div>
+                          <label for="guest-occupation" class="block text-[14px] sm:text-[15px] font-semibold text-[#0F172A] mb-1.5">
+                            {{ t('doc.guestInfo.occupation') }}
+                          </label>
+                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden">
+                            <input id="guest-occupation" type="text" name="occupation" [(ngModel)]="guestForm.occupation"
+                                   [placeholder]="t('doc.guestInfo.occupationPh')" maxlength="100"
+                                   class="flex-1 min-w-0 px-3.5 sm:px-4 py-2.5 sm:py-3 text-[15px] sm:text-[16px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
+                          </div>
+                        </div>
+
+                        <!-- Blood Type -->
+                        <div>
+                          <label for="guest-bloodType" class="block text-[14px] sm:text-[15px] font-semibold text-[#0F172A] mb-1.5">
+                            {{ t('doc.guestInfo.bloodType') }}
+                          </label>
+                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden">
+                            <input id="guest-bloodType" type="text" name="bloodType" [(ngModel)]="guestForm.bloodType"
+                                   [placeholder]="t('doc.guestInfo.bloodTypePh')" maxlength="10"
+                                   class="flex-1 min-w-0 px-3.5 sm:px-4 py-2.5 sm:py-3 text-[15px] sm:text-[16px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
+                          </div>
                         </div>
 
                         <!-- Contact Number -->
                         <div>
-                          <label for="guest-contactNumber" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
+                          <label for="guest-contactNumber" class="block text-[14px] sm:text-[15px] font-semibold text-[#0F172A] mb-1.5">
                             {{ t('doc.guestInfo.contact') }} <span class="text-[#F97316]">*</span>
                           </label>
                           <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
                                [class.border-[#DC2626]]="guestInvalid('contactNumber')">
-                            <div class="shrink-0 w-12 sm:w-14 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
-                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                                <path d="M6.5 5h3l1.6 4-2 1.2a11 11 0 005.7 5.7l1.2-2 4 1.6v3a1.5 1.5 0 01-1.6 1.5A15.5 15.5 0 015 6.6 1.5 1.5 0 016.5 5z" stroke-linejoin="round"/>
-                              </svg>
-                            </div>
                             <input id="guest-contactNumber" type="tel" name="contactNumber"
                                    [value]="guestForm.contactNumber || ''"
                                    (keydown)="filterNumberKeyDown($event)"
                                    (input)="onGuestPhoneInput($event)"
                                    (paste)="onGuestPhonePaste($event)"
                                    [placeholder]="t('doc.guestInfo.contactPh')" autocomplete="tel" inputmode="numeric" maxlength="11"
-                                   class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] font-medium text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
-                            @if (guestForm.contactNumber) {
-                              <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-                                </svg>
-                              </div>
-                            }
+                                   class="flex-1 min-w-0 px-3.5 sm:px-4 py-2.5 sm:py-3 text-[15px] sm:text-[16px] font-medium text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
                           </div>
                           @if (guestInvalid('contactNumber')) {
-                            <p class="flex items-center gap-1.5 text-base font-medium text-[#B91C1C]">
-                              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                                <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
-                              </svg>
-                              {{ t('err.guest.contact') }}
-                            </p>
+                            <p class="mt-1 text-xs sm:text-sm font-medium text-[#B91C1C]">{{ t('err.invalidPhone', { field: t('doc.guestInfo.contact') }) }}</p>
                           }
                         </div>
 
-                        <!-- Email (optional) -->
+                        <!-- Email -->
                         <div>
-                          <label for="guest-email" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
+                          <label for="guest-email" class="block text-[14px] sm:text-[15px] font-semibold text-[#0F172A] mb-1.5">
                             {{ t('doc.guestInfo.email') }}
                           </label>
-                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden">
-                            <div class="shrink-0 w-12 sm:w-14 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
-                              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                                <rect x="3" y="5" width="18" height="14" rx="2"/>
-                                <path d="M3.5 7l8.5 6 8.5-6" stroke-linejoin="round"/>
-                              </svg>
-                            </div>
+                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
+                               [class.border-[#DC2626]]="guestInvalid('email')">
                             <input id="guest-email" type="email" name="email" [(ngModel)]="guestForm.email"
                                    [placeholder]="t('doc.guestInfo.emailPh')" autocomplete="email" inputmode="email" maxlength="100"
-                                   class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] font-medium text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
-                            @if (guestForm.email) {
-                              <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-                                </svg>
-                              </div>
-                            }
+                                   class="flex-1 min-w-0 px-3.5 sm:px-4 py-2.5 sm:py-3 text-[15px] sm:text-[16px] font-medium text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
                           </div>
+                          @if (guestInvalid('email')) {
+                            <p class="mt-1 text-xs sm:text-sm font-medium text-[#B91C1C]">{{ t('err.invalidEmail', { field: 'Email' }) }}</p>
+                          }
+                        </div>
+                      </div>
+
+                      <!-- Divider -->
+                      <div class="border-t border-slate-200 mt-6 pt-5">
+                        
+                        <!-- Address Header with Action -->
+                        <div class="flex items-center justify-between mb-3.5">
+                          <h3 class="text-[16px] sm:text-[17px] font-bold text-[#0F172A]">{{ t('doc.guestInfo.addressSection') }}</h3>
+                          <button type="button" (click)="autoComposeGuestAddress(true)" class="text-xs sm:text-sm font-semibold text-[#F97316] hover:text-[#EA580C] underline transition-colors focus:outline-none">
+                            {{ t('doc.guestInfo.generateAddress') }}
+                          </button>
+                        </div>
+
+                        <!-- Address Inputs (3-column grid) -->
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-3.5 sm:gap-4">
+                          <div>
+                            <label for="guest-subdivision" class="block text-[13px] sm:text-[14px] font-semibold text-[#0F172A] mb-1">{{ t('doc.guestInfo.subdivision') }}</label>
+                            <div class="rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm focus-within:border-[#F97316] overflow-hidden">
+                              <input id="guest-subdivision" type="text" [value]="guestForm.subdivision" (input)="updateGuestAddressField('subdivision', $any($event.target).value)" maxlength="100" [placeholder]="t('doc.guestInfo.subdivisionPh')" class="w-full px-3 py-2 text-[14px] sm:text-[15px] text-[#0F172A] bg-transparent outline-none" />
+                            </div>
+                          </div>
+                          <div>
+                            <label for="guest-street" class="block text-[13px] sm:text-[14px] font-semibold text-[#0F172A] mb-1">{{ t('doc.guestInfo.street') }}</label>
+                            <div class="rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm focus-within:border-[#F97316] overflow-hidden">
+                              <input id="guest-street" type="text" [value]="guestForm.street" (input)="updateGuestAddressField('street', $any($event.target).value)" maxlength="100" [placeholder]="t('doc.guestInfo.streetPh')" class="w-full px-3 py-2 text-[14px] sm:text-[15px] text-[#0F172A] bg-transparent outline-none" />
+                            </div>
+                          </div>
+                          <div>
+                            <label for="guest-block" class="block text-[13px] sm:text-[14px] font-semibold text-[#0F172A] mb-1">{{ t('doc.guestInfo.block') }}</label>
+                            <div class="rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm focus-within:border-[#F97316] overflow-hidden">
+                              <input id="guest-block" type="text" [value]="guestForm.block" (input)="updateGuestAddressField('block', $any($event.target).value)" maxlength="50" [placeholder]="t('doc.guestInfo.blockPh')" class="w-full px-3 py-2 text-[14px] sm:text-[15px] text-[#0F172A] bg-transparent outline-none" />
+                            </div>
+                          </div>
+                          <div>
+                            <label for="guest-lot" class="block text-[13px] sm:text-[14px] font-semibold text-[#0F172A] mb-1">{{ t('doc.guestInfo.lot') }}</label>
+                            <div class="rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm focus-within:border-[#F97316] overflow-hidden">
+                              <input id="guest-lot" type="text" [value]="guestForm.lot" (input)="updateGuestAddressField('lot', $any($event.target).value)" maxlength="50" [placeholder]="t('doc.guestInfo.lotPh')" class="w-full px-3 py-2 text-[14px] sm:text-[15px] text-[#0F172A] bg-transparent outline-none" />
+                            </div>
+                          </div>
+                          <div>
+                            <label for="guest-houseNumber" class="block text-[13px] sm:text-[14px] font-semibold text-[#0F172A] mb-1">{{ t('doc.guestInfo.houseNumber') }}</label>
+                            <div class="rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm focus-within:border-[#F97316] overflow-hidden">
+                              <input id="guest-houseNumber" type="text" [value]="guestForm.houseNumber" (input)="updateGuestAddressField('houseNumber', $any($event.target).value)" maxlength="50" [placeholder]="t('doc.guestInfo.houseNumberPh')" class="w-full px-3 py-2 text-[14px] sm:text-[15px] text-[#0F172A] bg-transparent outline-none" />
+                            </div>
+                          </div>
+                          <div>
+                            <label for="guest-purokZone" class="block text-[13px] sm:text-[14px] font-semibold text-[#0F172A] mb-1">{{ t('doc.guestInfo.purokZone') }}</label>
+                            <div class="rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm focus-within:border-[#F97316] overflow-hidden">
+                              <input id="guest-purokZone" type="text" [value]="guestForm.purokZone" (input)="updateGuestAddressField('purokZone', $any($event.target).value)" maxlength="100" [placeholder]="t('doc.guestInfo.purokZonePh')" class="w-full px-3 py-2 text-[14px] sm:text-[15px] text-[#0F172A] bg-transparent outline-none" />
+                            </div>
+                          </div>
+                          <div>
+                            <label for="guest-sitio" class="block text-[13px] sm:text-[14px] font-semibold text-[#0F172A] mb-1">{{ t('doc.guestInfo.sitio') }}</label>
+                            <div class="rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm focus-within:border-[#F97316] overflow-hidden">
+                              <input id="guest-sitio" type="text" [value]="guestForm.sitio" (input)="updateGuestAddressField('sitio', $any($event.target).value)" maxlength="100" [placeholder]="t('doc.guestInfo.sitioPh')" class="w-full px-3 py-2 text-[14px] sm:text-[15px] text-[#0F172A] bg-transparent outline-none" />
+                            </div>
+                          </div>
+                          <div>
+                            <label for="guest-municipality" class="block text-[13px] sm:text-[14px] font-semibold text-[#0F172A] mb-1">{{ t('doc.guestInfo.municipality') }}</label>
+                            <div class="rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm focus-within:border-[#F97316] overflow-hidden">
+                              <input id="guest-municipality" type="text" [value]="guestForm.municipality" (input)="updateGuestAddressField('municipality', $any($event.target).value)" maxlength="100" [placeholder]="t('doc.guestInfo.municipalityPh')" class="w-full px-3 py-2 text-[14px] sm:text-[15px] text-[#0F172A] bg-transparent outline-none" />
+                            </div>
+                          </div>
+                          <div>
+                            <label for="guest-province" class="block text-[13px] sm:text-[14px] font-semibold text-[#0F172A] mb-1">{{ t('doc.guestInfo.province') }}</label>
+                            <div class="rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm focus-within:border-[#F97316] overflow-hidden">
+                              <input id="guest-province" type="text" [value]="guestForm.province" (input)="updateGuestAddressField('province', $any($event.target).value)" maxlength="100" [placeholder]="t('doc.guestInfo.provincePh')" class="w-full px-3 py-2 text-[14px] sm:text-[15px] text-[#0F172A] bg-transparent outline-none" />
+                            </div>
+                          </div>
+                          <div>
+                            <label for="guest-zipCode" class="block text-[13px] sm:text-[14px] font-semibold text-[#0F172A] mb-1">{{ t('doc.guestInfo.zipCode') }}</label>
+                            <div class="rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm focus-within:border-[#F97316] overflow-hidden">
+                              <input id="guest-zipCode" type="text" [value]="guestForm.zipCode" (keydown)="filterNumberKeyDown($event)" (input)="guestForm.zipCode = sanitizeDigits($any($event.target).value, 10)" maxlength="10" [placeholder]="t('doc.guestInfo.zipCodePh')" class="w-full px-3 py-2 text-[14px] sm:text-[15px] text-[#0F172A] bg-transparent outline-none" />
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- Full Address / Barangay Address Line -->
+                        <div class="mt-4">
+                          <label for="guest-address" class="block text-[14px] sm:text-[15px] font-semibold text-[#0F172A] mb-1.5">
+                            {{ t('doc.guestInfo.address') }} <span class="text-[#F97316]">*</span>
+                          </label>
+                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
+                               [class.border-[#DC2626]]="guestInvalid('address')">
+                            <input id="guest-address" type="text" name="address" [(ngModel)]="guestForm.address"
+                                   [placeholder]="t('doc.guestInfo.addressPh')" autocomplete="street-address" maxlength="255"
+                                   class="flex-1 min-w-0 px-3.5 sm:px-4 py-2.5 sm:py-3 text-[15px] sm:text-[16px] font-medium text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
+                          </div>
+                          @if (guestInvalid('address')) {
+                            <p class="mt-1 text-xs sm:text-sm font-medium text-[#B91C1C]">{{ t('err.guest.address') }}</p>
+                          }
                         </div>
                       </div>
 
@@ -4993,10 +5137,31 @@ export class KioskComponent implements OnInit, OnDestroy {
   // Guest (temporary session) state
   guestForm = {
     fullName: '',
+    firstName: '',
+    middleName: '',
+    lastName: '',
+    suffix: '',
     birthDate: '',
-    address: '',
+    birthPlace: '',
+    gender: 'Male',
+    civilStatus: 'Single',
+    nationality: 'Filipino',
+    religion: '',
+    occupation: '',
+    bloodType: '',
     contactNumber: '',
-    email: ''
+    email: '',
+    subdivision: '',
+    street: '',
+    block: '',
+    lot: '',
+    houseNumber: '',
+    purokZone: '',
+    sitio: '',
+    municipality: 'San Manuel',
+    province: 'Tarlac',
+    zipCode: '',
+    address: ''
   };
 
   barangayForm = {
@@ -5071,7 +5236,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.formValues.set(savedState.formValues);
     this.inlinePhotos.set(savedState.inlinePhotos);
     this.activePhotoField.set(savedState.activePhotoField);
-    this.guestForm = savedState.guestForm;
+    this.guestForm = { ...this.guestForm, ...(savedState.guestForm || {}) };
     this.barangayForm = { ...this.barangayForm, ...savedState.barangayForm };
     this.submissionKey = savedState.submissionKey;
 
@@ -5237,11 +5402,43 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.saveState();
   }
 
+  resetGuestForm() {
+    this.guestForm = {
+      fullName: '',
+      firstName: '',
+      middleName: '',
+      lastName: '',
+      suffix: '',
+      birthDate: '',
+      birthPlace: '',
+      gender: 'Male',
+      civilStatus: 'Single',
+      nationality: 'Filipino',
+      religion: '',
+      occupation: '',
+      bloodType: '',
+      contactNumber: '',
+      email: '',
+      subdivision: '',
+      street: '',
+      block: '',
+      lot: '',
+      houseNumber: '',
+      purokZone: '',
+      sitio: '',
+      municipality: 'San Manuel',
+      province: 'Tarlac',
+      zipCode: '',
+      address: ''
+    };
+    this.guestSubmitted.set(false);
+  }
+
   startGuestRequest() {
     this.stopCamera();
     this.errorMessage.set('');
     this.formError.set('');
-    this.guestForm = { fullName: '', birthDate: '', address: '', contactNumber: '', email: '' };
+    this.resetGuestForm();
     this.resident.set(null);
     this.rfidCard.set(null);
     this.mode.set('documents');
@@ -5505,7 +5702,16 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.saveState();
   }
 
+  onResidentUpdated(updated: Resident) {
+    console.log('[Kiosk Component] Resident profile updated for session:', updated.first_name, updated.last_name);
+    this.resident.set(updated);
+    this.serviceForms.set({});
+    this.formValues.set({});
+    this.saveState();
+  }
+
   // Load (or initialize) the form values for the currently active service.
+  // Automatically populates all matching fields from the verified Resident Record.
   private loadServiceForm() {
     const svc = this.selectedService();
     if (!svc) return;
@@ -5517,49 +5723,218 @@ export class KioskComponent implements OnInit, OnDestroy {
     }
     const defaults: Record<string, unknown> = {};
     for (const field of svc.form_fields || []) {
-      if (field.defaultValue) defaults[field.key] = field.defaultValue;
+      if (field.defaultValue !== undefined && field.defaultValue !== null && field.defaultValue !== '') {
+        defaults[field.key] = field.defaultValue;
+      }
     }
+
     const resident = this.resident();
     if (resident) {
-      const nameParts = [resident.first_name, resident.middle_name, resident.last_name, resident.suffix].filter(Boolean);
-      const computedAge = this.calculateAge(resident.birth_date);
-      const source: Record<string, any> = {
-        full_name: nameParts.join(' '),
-        address: resident.address_line,
-        address_line: resident.address_line,
-        birth_date: this.formatDate(resident.birth_date),
-        age: computedAge !== null ? computedAge : '',
-        gender: resident.gender,
-        civil_status: resident.civil_status,
-        blood_type: resident.blood_type,
-        contact_number: resident.contact_number,
-        email: resident.email,
-        emergency_contact_name: resident.emergency_contact_name,
-        emergency_contact_number: resident.emergency_contact_number
-      };
-      for (const key of Object.keys(source)) {
-        const value = source[key];
-        if (value !== null && value !== undefined && value !== '') defaults[key] = value;
+      for (const field of svc.form_fields || []) {
+        if (defaults[field.key] === undefined || defaults[field.key] === null || defaults[field.key] === '') {
+          const autoVal = this.resolveResidentFieldValue(resident, field.key, field.label);
+          if (autoVal !== null && autoVal !== undefined && autoVal !== '') {
+            defaults[field.key] = autoVal;
+          }
+        }
       }
-    } else if (this.guestForm.fullName || this.guestForm.birthDate) {
+    } else if (this.guestForm.firstName || this.guestForm.lastName || this.guestForm.fullName || this.guestForm.birthDate) {
       const g = this.guestForm;
-      const computedAge = this.calculateAge(g.birthDate);
-      const source: Record<string, any> = {
-        full_name: g.fullName,
-        address: g.address,
-        address_line: g.address,
+      const computedFullName = (g.firstName || g.lastName)
+        ? [g.firstName, g.middleName, g.lastName, g.suffix].filter(Boolean).join(' ').trim()
+        : (g.fullName || '').trim();
+      const guestResident: Partial<Resident> = {
+        first_name: g.firstName || computedFullName,
+        middle_name: g.middleName,
+        last_name: g.lastName,
+        suffix: g.suffix,
         birth_date: g.birthDate,
-        age: computedAge !== null ? computedAge : '',
+        birth_place: g.birthPlace,
+        gender: g.gender,
+        civil_status: g.civilStatus,
+        nationality: g.nationality,
+        religion: g.religion,
+        occupation: g.occupation,
+        blood_type: g.bloodType,
         contact_number: g.contactNumber,
-        email: g.email
+        email: g.email,
+        subdivision: g.subdivision,
+        street: g.street,
+        block: g.block,
+        lot: g.lot,
+        house_number: g.houseNumber,
+        purok_zone: g.purokZone,
+        sitio: g.sitio,
+        municipality: g.municipality,
+        province: g.province,
+        zip_code: g.zipCode,
+        address_line: g.address
       };
-      for (const key of Object.keys(source)) {
-        const value = source[key];
-        if (value !== null && value !== undefined && value !== '') defaults[key] = value;
+      for (const field of svc.form_fields || []) {
+        if (defaults[field.key] === undefined || defaults[field.key] === null || defaults[field.key] === '') {
+          const autoVal = this.resolveResidentFieldValue(guestResident as Resident, field.key, field.label);
+          if (autoVal !== null && autoVal !== undefined && autoVal !== '') {
+            defaults[field.key] = autoVal;
+          }
+        }
       }
     }
     this.formValues.set(defaults);
     this.formErrors.set({});
+  }
+
+  // Intelligent resolution for resident demographic & address fields
+  private resolveResidentFieldValue(r: Resident, key: string, label: string = ''): any {
+    if (!r) return null;
+    const normKey = (key || '').toLowerCase().replace(/[-_\s.]/g, '');
+    const normLabel = (label || '').toLowerCase().replace(/[-_\s.]/g, '');
+
+    const isMatch = (...aliases: string[]) => {
+      return aliases.some(a => {
+        const normA = a.toLowerCase().replace(/[-_\s.]/g, '');
+        return normKey === normA || normLabel === normA || normKey.includes(normA) || normLabel.includes(normA);
+      });
+    };
+
+    // Full Name
+    if (isMatch('fullname', 'full_name', 'applicantname', 'residentname', 'completename', 'nameofresident') && !isMatch('emergency', 'relative', 'father', 'mother', 'spouse', 'guardian')) {
+      const parts = [r.first_name, r.middle_name, r.last_name, r.suffix].filter(Boolean);
+      return parts.join(' ');
+    }
+    // First Name
+    if (isMatch('firstname', 'first_name', 'givenname') && !isMatch('emergency', 'relative', 'father', 'mother', 'spouse', 'guardian')) {
+      return r.first_name || '';
+    }
+    // Middle Name
+    if (isMatch('middlename', 'middle_name') && !isMatch('emergency', 'relative', 'father', 'mother', 'spouse', 'guardian')) {
+      return r.middle_name || '';
+    }
+    // Last Name
+    if (isMatch('lastname', 'last_name', 'surname', 'familyname') && !isMatch('emergency', 'relative', 'father', 'mother', 'spouse', 'guardian')) {
+      return r.last_name || '';
+    }
+    // Suffix
+    if (isMatch('suffix', 'namesuffix') && !isMatch('emergency', 'relative', 'father', 'mother', 'spouse', 'guardian')) {
+      return r.suffix || '';
+    }
+    // Birth Date / DOB
+    if (isMatch('birthdate', 'birth_date', 'dateofbirth', 'dob', 'bdate')) {
+      return this.formatDate(r.birth_date);
+    }
+    // Place of Birth
+    if (isMatch('birthplace', 'birth_place', 'placeofbirth', 'pob')) {
+      return r.birth_place || '';
+    }
+    // Age
+    if (isMatch('age', 'ageyears')) {
+      const computedAge = this.calculateAge(r.birth_date);
+      return computedAge !== null ? computedAge : '';
+    }
+    // Gender / Sex
+    if (isMatch('gender', 'sex')) {
+      return r.gender || '';
+    }
+    // Civil Status
+    if (isMatch('civilstatus', 'civil_status', 'maritalstatus')) {
+      return r.civil_status || '';
+    }
+    // Blood Type
+    if (isMatch('bloodtype', 'blood_type')) {
+      return r.blood_type || '';
+    }
+    // Occupation
+    if (isMatch('occupation', 'profession', 'job')) {
+      return r.occupation || '';
+    }
+    // Nationality / Citizenship
+    if (isMatch('nationality', 'citizenship')) {
+      return r.nationality || 'Filipino';
+    }
+    // Religion
+    if (isMatch('religion')) {
+      return r.religion || '';
+    }
+    // Contact Number
+    if (isMatch('contactnumber', 'contact_number', 'contactno', 'contact_no', 'phone', 'phonenumber', 'mobile', 'mobilenumber', 'cellphone', 'tel') && !isMatch('emergency')) {
+      return r.contact_number || '';
+    }
+    // Email
+    if (isMatch('email', 'emailaddress', 'email_address')) {
+      return r.email || '';
+    }
+    // Complete Address
+    if (isMatch('completeaddress', 'complete_address', 'addressline', 'address_line', 'residentialaddress') || (isMatch('address') && !isMatch('email', 'block', 'lot', 'street', 'purok', 'zone', 'subdivision'))) {
+      return r.address_line || '';
+    }
+    // Block
+    if (isMatch('block', 'blockno', 'block_no', 'blocknumber', 'blk')) {
+      return r.block || this.extractBlock(r.address_line) || '';
+    }
+    // Lot
+    if (isMatch('lot', 'lotno', 'lot_no', 'lotnumber')) {
+      return r.lot || this.extractLot(r.address_line) || '';
+    }
+    // House No
+    if (isMatch('housenumber', 'house_number', 'houseno', 'house_no')) {
+      return r.house_number || '';
+    }
+    // Street
+    if (isMatch('street', 'streetname', 'street_name', 'st')) {
+      return r.street || this.extractStreet(r.address_line) || '';
+    }
+    // Subdivision
+    if (isMatch('subdivision', 'subd', 'village')) {
+      return r.subdivision || this.extractSubdivision(r.address_line) || '';
+    }
+    // Purok / Zone / Sitio
+    if (isMatch('purok', 'zone', 'purokzone', 'purok_zone', 'purokno', 'sitio')) {
+      return r.purok_zone || r.sitio || this.extractPurok(r.address_line) || '';
+    }
+    // Emergency Contact Person
+    if (isMatch('emergencycontactname', 'emergency_contact_name', 'emergencyname', 'emergency_name', 'emergencycontactperson', 'emergencycontact')) {
+      return r.emergency_contact_name || '';
+    }
+    // Emergency Contact Number
+    if (isMatch('emergencycontactnumber', 'emergency_contact_number', 'emergencycontactno', 'emergency_contact_no', 'emergencyphone', 'emergencymobile')) {
+      return r.emergency_contact_number || '';
+    }
+
+    // Generic fallback: check if r has exact matching property
+    if ((r as any)[key] !== undefined && (r as any)[key] !== null) {
+      return (r as any)[key];
+    }
+
+    return null;
+  }
+
+  private extractBlock(addr: string | null | undefined): string | null {
+    if (!addr) return null;
+    const m = addr.match(/(?:blk|block)\.?\s*([0-9a-z-]+)/i);
+    return m ? m[1] : null;
+  }
+
+  private extractLot(addr: string | null | undefined): string | null {
+    if (!addr) return null;
+    const m = addr.match(/(?:lot)\.?\s*([0-9a-z-]+)/i);
+    return m ? m[1] : null;
+  }
+
+  private extractStreet(addr: string | null | undefined): string | null {
+    if (!addr) return null;
+    const m = addr.match(/(?:,\s*|\b)([0-9a-z\s]+?(?:street|st\.|st|ave|avenue|dr|drive|rd|road))\b/i);
+    return m ? m[1].trim() : null;
+  }
+
+  private extractPurok(addr: string | null | undefined): string | null {
+    if (!addr) return null;
+    const m = addr.match(/(?:purok|zone|prk|zn)\.?\s*([0-9a-z-]+)/i);
+    return m ? `Purok ${m[1]}` : null;
+  }
+
+  private extractSubdivision(addr: string | null | undefined): string | null {
+    if (!addr) return null;
+    const m = addr.match(/(?:,\s*|\b)([0-9a-z\s]+?(?:subd|subdivision|village|homes|estates))\b/i);
+    return m ? m[1].trim() : null;
   }
 
   // Persist the current form values against the active service.
@@ -6064,6 +6439,55 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.guestForm.fullName = clean;
   }
 
+  onGuestNameFieldInput(field: 'firstName' | 'middleName' | 'lastName', event: Event) {
+    const input = event.target as HTMLInputElement;
+    const clean = this.sanitizeName(input.value, 50);
+    input.value = clean;
+    this.guestForm[field] = clean;
+    this.guestForm.fullName = [this.guestForm.firstName, this.guestForm.middleName, this.guestForm.lastName, this.guestForm.suffix].filter(Boolean).join(' ').trim();
+  }
+
+  onGuestNameFieldPaste(field: 'firstName' | 'middleName' | 'lastName', event: ClipboardEvent) {
+    event.preventDefault();
+    const text = event.clipboardData?.getData('text') || '';
+    const clean = this.sanitizeName(text, 50);
+    const input = event.target as HTMLInputElement;
+    input.value = clean;
+    this.guestForm[field] = clean;
+    this.guestForm.fullName = [this.guestForm.firstName, this.guestForm.middleName, this.guestForm.lastName, this.guestForm.suffix].filter(Boolean).join(' ').trim();
+  }
+
+  autoComposeGuestAddress(force = false) {
+    const g = this.guestForm;
+    const rawParts = [
+      g.block ? (g.block.toLowerCase().startsWith('blk') ? g.block : `Blk ${g.block}`) : null,
+      g.lot ? (g.lot.toLowerCase().startsWith('lot') ? g.lot : `Lot ${g.lot}`) : null,
+      g.houseNumber,
+      g.street,
+      g.subdivision,
+      g.purokZone,
+      g.sitio,
+      g.municipality,
+      g.province
+    ].filter(x => !!x && String(x).trim() !== '');
+
+    const uniqueParts: string[] = [];
+    for (const part of rawParts) {
+      if (part && !uniqueParts.some(p => p.toLowerCase() === String(part).toLowerCase())) {
+        uniqueParts.push(part);
+      }
+    }
+
+    if (uniqueParts.length > 0) {
+      g.address = uniqueParts.join(', ');
+    }
+  }
+
+  updateGuestAddressField(field: string, val: string) {
+    (this.guestForm as any)[field] = val;
+    this.autoComposeGuestAddress();
+  }
+
   onGuestPhoneInput(event: Event) {
     const input = event.target as HTMLInputElement;
     const clean = this.sanitizePhone(input.value);
@@ -6303,10 +6727,27 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.guestSubmitted.set(true);
     this.formError.set('');
     const g = this.guestForm;
-    const cleanPhone = g.contactNumber.trim().replace(/[\s\-()]/g, '');
+    const nameRegex = /^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/;
+    const cleanPhone = (g.contactNumber || '').trim().replace(/[\s\-()]/g, '');
 
-    if (!g.fullName.trim() || g.fullName.trim().length < 2 || !/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(g.fullName.trim())) {
-      this.triggerFormError(this.t('err.invalidName', { field: this.t('bar.form.fullName') || 'Full Name' }), 3000);
+    // If address is empty or short, attempt auto-composition first
+    if (!g.address || g.address.trim().length < 5) {
+      this.autoComposeGuestAddress();
+    }
+
+    // Sync computed full name
+    g.fullName = [g.firstName, g.middleName, g.lastName, g.suffix].filter(Boolean).join(' ').trim();
+
+    if (!g.firstName.trim() || g.firstName.trim().length < 2 || !nameRegex.test(g.firstName.trim())) {
+      this.triggerFormError(this.t('err.invalidName', { field: this.t('doc.guestInfo.firstName') || 'First Name' }), 3000);
+      return;
+    }
+    if (g.middleName && g.middleName.trim() && !nameRegex.test(g.middleName.trim())) {
+      this.triggerFormError(this.t('err.invalidName', { field: this.t('doc.guestInfo.middleName') || 'Middle Name' }), 3000);
+      return;
+    }
+    if (!g.lastName.trim() || g.lastName.trim().length < 2 || !nameRegex.test(g.lastName.trim())) {
+      this.triggerFormError(this.t('err.invalidName', { field: this.t('doc.guestInfo.lastName') || 'Last Name' }), 3000);
       return;
     }
     if (!g.birthDate) {
@@ -6320,16 +6761,16 @@ export class KioskComponent implements OnInit, OnDestroy {
       this.triggerGuestDobError(3000);
       return;
     }
-    if (!g.address.trim() || g.address.trim().length < 5) {
-      this.triggerFormError(this.t('err.guest.address'), 3000);
-      return;
-    }
     if (!cleanPhone || !/^(09\d{9}|\+639\d{9}|\d{7,11})$/.test(cleanPhone)) {
-      this.triggerFormError(this.t('err.invalidPhone', { field: this.t('bar.form.contact') || 'Contact Number' }), 3000);
+      this.triggerFormError(this.t('err.invalidPhone', { field: this.t('doc.guestInfo.contact') || 'Contact Number' }), 3000);
       return;
     }
     if (g.email && g.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(g.email.trim())) {
       this.triggerFormError(this.t('err.invalidEmail', { field: 'Email' }), 3000);
+      return;
+    }
+    if (!g.address.trim() || g.address.trim().length < 5) {
+      this.triggerFormError(this.t('err.guest.address'), 3000);
       return;
     }
 
@@ -6343,23 +6784,30 @@ export class KioskComponent implements OnInit, OnDestroy {
   guestInvalid(key: string): boolean {
     if (!this.guestSubmitted()) return false;
     const g = this.guestForm;
+    const nameRegex = /^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/;
     switch (key) {
+      case 'firstName':
+        return !g.firstName.trim() || g.firstName.trim().length < 2 || g.firstName.length > 50 || !nameRegex.test(g.firstName.trim());
+      case 'middleName':
+        return !!(g.middleName && g.middleName.trim() && (g.middleName.length > 50 || !nameRegex.test(g.middleName.trim())));
+      case 'lastName':
+        return !g.lastName.trim() || g.lastName.trim().length < 2 || g.lastName.length > 50 || !nameRegex.test(g.lastName.trim());
+      case 'fullName':
+        return !g.fullName.trim() || g.fullName.trim().length < 2 || g.fullName.length > 100;
       case 'birthDate': {
         if (!this.showGuestDobError()) return false;
         if (!g.birthDate) return true;
         const age = this.calculateAge(g.birthDate);
         return age === null || age < 1 || age > 125;
       }
-      case 'fullName':
-        return !g.fullName.trim() || g.fullName.trim().length < 2 || g.fullName.length > 100 || !/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(g.fullName.trim());
-      case 'address':
-        return !g.address.trim() || g.address.trim().length < 5 || g.address.length > 255;
       case 'contactNumber': {
-        const clean = g.contactNumber.trim().replace(/[\s\-()]/g, '');
+        const clean = (g.contactNumber || '').trim().replace(/[\s\-()]/g, '');
         return !clean || !/^(09\d{9}|\+639\d{9}|\d{7,11})$/.test(clean);
       }
       case 'email':
         return !!(g.email && g.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(g.email.trim()));
+      case 'address':
+        return !g.address.trim() || g.address.trim().length < 5 || g.address.length > 255;
       default:
         return false;
     }
@@ -6883,12 +7331,37 @@ export class KioskComponent implements OnInit, OnDestroy {
     if (resident) {
       data.resident_id = resident.resident_id;
     } else {
+      const g = this.guestForm;
+      const computedFullName = (g.firstName || g.lastName)
+        ? [g.firstName, g.middleName, g.lastName, g.suffix].filter(Boolean).join(' ').trim()
+        : (g.fullName || '').trim();
       data.guest = {
-        full_name: this.guestForm.fullName.trim(),
-        birth_date: this.guestForm.birthDate || undefined,
-        address: this.guestForm.address.trim(),
-        contact_number: this.guestForm.contactNumber.trim(),
-        email: this.guestForm.email.trim() || undefined
+        full_name: computedFullName,
+        first_name: g.firstName?.trim() || undefined,
+        middle_name: g.middleName?.trim() || undefined,
+        last_name: g.lastName?.trim() || undefined,
+        suffix: g.suffix?.trim() || undefined,
+        birth_date: g.birthDate || undefined,
+        birth_place: g.birthPlace?.trim() || undefined,
+        gender: g.gender || undefined,
+        civil_status: g.civilStatus || undefined,
+        nationality: g.nationality?.trim() || undefined,
+        religion: g.religion?.trim() || undefined,
+        occupation: g.occupation?.trim() || undefined,
+        blood_type: g.bloodType?.trim() || undefined,
+        contact_number: g.contactNumber.trim(),
+        email: g.email.trim() || undefined,
+        subdivision: g.subdivision?.trim() || undefined,
+        street: g.street?.trim() || undefined,
+        block: g.block?.trim() || undefined,
+        lot: g.lot?.trim() || undefined,
+        house_number: g.houseNumber?.trim() || undefined,
+        purok_zone: g.purokZone?.trim() || undefined,
+        sitio: g.sitio?.trim() || undefined,
+        municipality: g.municipality?.trim() || undefined,
+        province: g.province?.trim() || undefined,
+        zip_code: g.zipCode?.trim() || undefined,
+        address: g.address.trim()
       };
     }
 
@@ -7424,7 +7897,9 @@ export class KioskComponent implements OnInit, OnDestroy {
 
   displayName(): string {
     if (this.resident()) return `${this.resident()!.first_name} ${this.resident()!.last_name}`;
-    return this.guestForm.fullName || this.t('placeholder.guest');
+    const g = this.guestForm;
+    const computed = [g.firstName, g.middleName, g.lastName, g.suffix].filter(Boolean).join(' ').trim();
+    return computed || g.fullName || this.t('placeholder.guest');
   }
 
   displayAddress(): string {
@@ -7592,12 +8067,37 @@ export class KioskComponent implements OnInit, OnDestroy {
     if (resident) {
       data.resident_id = resident.resident_id;
     } else {
+      const g = this.guestForm;
+      const computedFullName = (g.firstName || g.lastName)
+        ? [g.firstName, g.middleName, g.lastName, g.suffix].filter(Boolean).join(' ').trim()
+        : (g.fullName || '').trim();
       data.guest = {
-        full_name: this.guestForm.fullName.trim(),
-        birth_date: this.guestForm.birthDate || undefined,
-        address: this.guestForm.address.trim(),
-        contact_number: this.guestForm.contactNumber.trim(),
-        email: this.guestForm.email.trim() || undefined
+        full_name: computedFullName,
+        first_name: g.firstName?.trim() || undefined,
+        middle_name: g.middleName?.trim() || undefined,
+        last_name: g.lastName?.trim() || undefined,
+        suffix: g.suffix?.trim() || undefined,
+        birth_date: g.birthDate || undefined,
+        birth_place: g.birthPlace?.trim() || undefined,
+        gender: g.gender || undefined,
+        civil_status: g.civilStatus || undefined,
+        nationality: g.nationality?.trim() || undefined,
+        religion: g.religion?.trim() || undefined,
+        occupation: g.occupation?.trim() || undefined,
+        blood_type: g.bloodType?.trim() || undefined,
+        contact_number: g.contactNumber.trim(),
+        email: g.email.trim() || undefined,
+        subdivision: g.subdivision?.trim() || undefined,
+        street: g.street?.trim() || undefined,
+        block: g.block?.trim() || undefined,
+        lot: g.lot?.trim() || undefined,
+        house_number: g.houseNumber?.trim() || undefined,
+        purok_zone: g.purokZone?.trim() || undefined,
+        sitio: g.sitio?.trim() || undefined,
+        municipality: g.municipality?.trim() || undefined,
+        province: g.province?.trim() || undefined,
+        zip_code: g.zipCode?.trim() || undefined,
+        address: g.address.trim()
       };
     }
 
@@ -7682,7 +8182,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.searchQuery = '';
     this.searchResults.set([]);
     this.resetBarangayForm();
-    this.guestForm = { fullName: '', birthDate: '', address: '', contactNumber: '', email: '' };
+    this.resetGuestForm();
     this.formValues.set({});
     this.formErrors.set({});
     this.inlinePhotos.set({});

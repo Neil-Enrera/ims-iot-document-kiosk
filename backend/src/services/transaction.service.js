@@ -230,7 +230,7 @@ const validateServiceFormData = (formFields, formData = {}, serviceName = 'Servi
 const validateGuestInput = (guest) => {
   if (!guest) return [];
   const errors = [];
-  const fullName = String(guest.full_name || guest.fullName || '').trim();
+  const fullName = String(guest.full_name || guest.fullName || [guest.first_name, guest.middle_name, guest.last_name, guest.suffix].filter(Boolean).join(' ') || '').trim();
   const birthDate = guest.birth_date || guest.birthDate;
   const contactNumber = String(guest.contact_number || guest.contactNumber || '').trim().replace(/[\s\-()]/g, '');
   const email = guest.email ? String(guest.email).trim() : '';
@@ -274,12 +274,33 @@ const buildGuestSnapshot = (guest) => {
     const trimmed = String(value).trim();
     if (trimmed) snapshot[key] = trimmed;
   };
-  putTrimmed('full_name', g.full_name);
+  const computedFullName = g.full_name || [g.first_name, g.middle_name, g.last_name, g.suffix].filter(Boolean).join(' ').trim();
+  putTrimmed('full_name', computedFullName);
+  putTrimmed('first_name', g.first_name);
   putTrimmed('middle_name', g.middle_name);
+  putTrimmed('last_name', g.last_name);
+  putTrimmed('suffix', g.suffix);
   if (g.birth_date) snapshot.birth_date = g.birth_date;
-  putTrimmed('address', g.address);
+  putTrimmed('birth_place', g.birth_place);
+  putTrimmed('gender', g.gender);
+  putTrimmed('civil_status', g.civil_status);
+  putTrimmed('nationality', g.nationality);
+  putTrimmed('religion', g.religion);
+  putTrimmed('occupation', g.occupation);
+  putTrimmed('blood_type', g.blood_type);
   putTrimmed('contact_number', g.contact_number);
   putTrimmed('email', g.email);
+  putTrimmed('subdivision', g.subdivision);
+  putTrimmed('street', g.street);
+  putTrimmed('block', g.block);
+  putTrimmed('lot', g.lot);
+  putTrimmed('house_number', g.house_number);
+  putTrimmed('purok_zone', g.purok_zone);
+  putTrimmed('sitio', g.sitio);
+  putTrimmed('municipality', g.municipality);
+  putTrimmed('province', g.province);
+  putTrimmed('zip_code', g.zip_code);
+  putTrimmed('address', g.address);
   return Object.keys(snapshot).length ? snapshot : null;
 };
 
@@ -633,6 +654,7 @@ const savePhoto = async (requestId, photo) => {
 module.exports = {
   submitTransaction,
   evaluateResidentPolicy,
+  validateGuestInput,
   buildGuestSnapshot,
   mergeGuestFormData,
   formatRequestNumber

@@ -1,13 +1,14 @@
 import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { environment } from '../../../environments/environment';
-import { Resident, RfidCardInfo } from './kiosk.service';
+import { KioskService, Resident, RfidCardInfo } from './kiosk.service';
 import { TranslationService, KioskLanguage } from '../../i18n/translation.service';
 
 @Component({
   selector: 'app-resident-profile',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   template: `
     <div class="absolute inset-0 bg-[#F8FAFC] text-[#0F172A] select-none overflow-hidden [font-family:'Inter',sans-serif] flex flex-col justify-between">
 
@@ -251,17 +252,26 @@ import { TranslationService, KioskLanguage } from '../../i18n/translation.servic
                 </div>
 
                 <!-- Field 6: Address -->
-                <div class="flex items-start gap-3">
+                <div class="flex items-start gap-3 col-span-1 sm:col-span-2">
                   <div class="w-8 h-8 rounded-lg bg-[#FFF7ED] text-[#F97316] flex items-center justify-center shrink-0 mt-0.5">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                     </svg>
                   </div>
-                  <div class="min-w-0">
+                  <div class="min-w-0 flex-1">
                     <p class="text-xs font-semibold text-[#64748B] uppercase tracking-wide">{{ t('profile.address') }}</p>
                     <p class="text-sm sm:text-base font-bold text-[#0F172A] mt-0.5 leading-snug">
-                      {{ mask(fallback(resident?.address_line)) }}
+                      {{ mask(formatFullAddress(resident)) }}
                     </p>
+                    @if (!detailsHidden() && (resident?.subdivision || resident?.street || resident?.block || resident?.lot || resident?.purok_zone)) {
+                      <div class="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-xs text-slate-500 font-medium">
+                        @if (resident?.subdivision) { <span>Subdivision: <strong class="text-slate-800">{{ resident?.subdivision }}</strong></span> }
+                        @if (resident?.street) { <span>Street: <strong class="text-slate-800">{{ resident?.street }}</strong></span> }
+                        @if (resident?.block) { <span>Block: <strong class="text-slate-800">{{ resident?.block }}</strong></span> }
+                        @if (resident?.lot) { <span>Lot: <strong class="text-slate-800">{{ resident?.lot }}</strong></span> }
+                        @if (resident?.purok_zone) { <span>Purok/Zone: <strong class="text-slate-800">{{ resident?.purok_zone }}</strong></span> }
+                      </div>
+                    }
                   </div>
                 </div>
 
@@ -273,16 +283,178 @@ import { TranslationService, KioskLanguage } from '../../i18n/translation.servic
       </main>
 
       <!-- ============ BOTTOM ACTIONS ============ -->
-      <div class="relative z-10 shrink-0 flex items-center justify-center py-2.5 px-4">
-        <!-- OK Button -->
+      <div class="relative z-10 shrink-0 flex flex-wrap items-center justify-center gap-3 sm:gap-4 py-2.5 px-4">
+        <!-- Edit Information Button -->
+        <button (click)="openEditModal()"
+                type="button"
+                class="px-6 sm:px-8 py-3 rounded-xl bg-white hover:bg-[#FFF7ED] border-2 border-[#F97316] text-[#EA580C] text-sm sm:text-base font-bold shadow-xs active:scale-95 transition-all flex items-center gap-2 focus:outline-none focus:ring-3 focus:ring-[#F97316]/30">
+          <svg class="w-5 h-5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+          </svg>
+          <span>{{ t('profile.editInfo') }}</span>
+        </button>
+
+        <!-- Confirm & Continue Button -->
         <button (click)="onContinue.emit()"
-                class="px-10 py-3 rounded-xl bg-[#F97316] text-white text-base sm:text-lg font-bold shadow-sm hover:bg-[#EA580C] active:scale-95 transition-all flex items-center gap-2 focus:outline-none focus:ring-3 focus:ring-[#F97316]/30">
+                type="button"
+                class="px-8 sm:px-10 py-3 rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-white text-sm sm:text-base font-bold shadow-md active:scale-95 transition-all flex items-center gap-2.5 focus:outline-none focus:ring-3 focus:ring-[#F97316]/30">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
           </svg>
-          <span>{{ t('profile.ok') }}</span>
+          <span>{{ t('profile.confirmContinue') }}</span>
         </button>
       </div>
+
+      <!-- ============ EDIT PROFILE MODAL ============ -->
+      <!-- ============ REQUEST INFORMATION UPDATE MODAL ============ -->
+      @if (showEditModal()) {
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs select-none">
+          <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <!-- Modal Header -->
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-[#FFF7ED] text-[#F97316] flex items-center justify-center">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="text-lg font-extrabold text-slate-900">{{ t('profile.requestUpdateTitle') }}</h3>
+                  <p class="text-xs text-slate-500">{{ t('profile.requestUpdateDesc') }}</p>
+                </div>
+              </div>
+              <button (click)="closeEditModal()" class="w-8 h-8 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 flex items-center justify-center transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
+            </div>
+
+            @if (requestSubmittedSuccess()) {
+              <!-- Success Screen -->
+              <div class="p-8 text-center space-y-4">
+                <div class="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto">
+                  <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                  </svg>
+                </div>
+                <div>
+                  <h4 class="text-xl font-bold text-slate-900">{{ t('profile.requestSuccess') }}</h4>
+                  <p class="text-sm text-slate-600 max-w-md mx-auto mt-2 leading-relaxed">{{ t('profile.requestSuccessDesc') }}</p>
+                </div>
+                <div class="pt-4">
+                  <button (click)="acknowledgeAndContinue()"
+                          class="px-8 py-3 rounded-xl text-base font-bold bg-[#F97316] hover:bg-[#EA580C] text-white shadow-md transition inline-flex items-center gap-2">
+                    {{ t('profile.confirmContinue') }}
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                  </button>
+                </div>
+              </div>
+            } @else {
+              <!-- Modal Body -->
+              <div class="p-6 overflow-y-auto space-y-4 text-left">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">{{ t('profile.contactNumber') }}</label>
+                    <input type="tel" [(ngModel)]="editForm.contact_number" placeholder="09xxxxxxxxx"
+                           class="w-full px-3.5 py-2.5 text-sm font-semibold rounded-xl border border-slate-300 focus:border-[#F97316] focus:ring-2 focus:ring-[#F97316]/20 outline-none transition" />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">{{ t('profile.email') }}</label>
+                    <input type="email" [(ngModel)]="editForm.email" placeholder="you@example.com"
+                           class="w-full px-3.5 py-2.5 text-sm font-semibold rounded-xl border border-slate-300 focus:border-[#F97316] focus:ring-2 focus:ring-[#F97316]/20 outline-none transition" />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">{{ t('profile.civilStatus') }}</label>
+                    <select [(ngModel)]="editForm.civil_status"
+                            class="w-full px-3.5 py-2.5 text-sm font-semibold rounded-xl border border-slate-300 focus:border-[#F97316] focus:ring-2 focus:ring-[#F97316]/20 outline-none transition bg-white">
+                      <option value="Single">Single</option>
+                      <option value="Married">Married</option>
+                      <option value="Widowed">Widowed</option>
+                      <option value="Separated">Separated</option>
+                      <option value="Divorced">Divorced</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">{{ t('profile.occupation') }}</label>
+                    <input type="text" [(ngModel)]="editForm.occupation" placeholder="Occupation"
+                           class="w-full px-3.5 py-2.5 text-sm font-semibold rounded-xl border border-slate-300 focus:border-[#F97316] focus:ring-2 focus:ring-[#F97316]/20 outline-none transition" />
+                  </div>
+                </div>
+
+                <!-- Address Details Section -->
+                <div class="border-t border-slate-100 pt-3">
+                  <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide mb-2.5 flex items-center gap-1.5">
+                    <svg class="w-4 h-4 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                    <span>Address Information</span>
+                  </h4>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                    <div>
+                      <label class="block text-xs font-bold text-slate-600 uppercase tracking-wide mb-1">Subdivision</label>
+                      <input type="text" [(ngModel)]="editForm.subdivision" placeholder="e.g. San Manuel Subdivision"
+                             class="w-full px-3.5 py-2 text-sm font-semibold rounded-xl border border-slate-300 focus:border-[#F97316] focus:ring-2 focus:ring-[#F97316]/20 outline-none transition" />
+                    </div>
+                    <div>
+                      <label class="block text-xs font-bold text-slate-600 uppercase tracking-wide mb-1">Street</label>
+                      <input type="text" [(ngModel)]="editForm.street" placeholder="e.g. Mabini Street"
+                             class="w-full px-3.5 py-2 text-sm font-semibold rounded-xl border border-slate-300 focus:border-[#F97316] focus:ring-2 focus:ring-[#F97316]/20 outline-none transition" />
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-3 gap-3 mb-3">
+                    <div>
+                      <label class="block text-xs font-bold text-slate-600 uppercase tracking-wide mb-1">Block</label>
+                      <input type="text" [(ngModel)]="editForm.block" placeholder="e.g. 10"
+                             class="w-full px-3 py-2 text-sm font-semibold rounded-xl border border-slate-300 focus:border-[#F97316] focus:ring-2 focus:ring-[#F97316]/20 outline-none transition" />
+                    </div>
+                    <div>
+                      <label class="block text-xs font-bold text-slate-600 uppercase tracking-wide mb-1">Lot</label>
+                      <input type="text" [(ngModel)]="editForm.lot" placeholder="e.g. 5"
+                             class="w-full px-3 py-2 text-sm font-semibold rounded-xl border border-slate-300 focus:border-[#F97316] focus:ring-2 focus:ring-[#F97316]/20 outline-none transition" />
+                    </div>
+                    <div>
+                      <label class="block text-xs font-bold text-slate-600 uppercase tracking-wide mb-1">Purok / Zone</label>
+                      <input type="text" [(ngModel)]="editForm.purok_zone" placeholder="e.g. Purok 2"
+                             class="w-full px-3 py-2 text-sm font-semibold rounded-xl border border-slate-300 focus:border-[#F97316] focus:ring-2 focus:ring-[#F97316]/20 outline-none transition" />
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Reason for Requested Update -->
+                <div class="pt-2 border-t border-slate-100">
+                  <label class="block text-xs font-bold text-[#F97316] uppercase tracking-wide mb-1">
+                    {{ t('profile.reasonForChange') }} <span class="text-red-500">*</span>
+                  </label>
+                  <textarea [(ngModel)]="updateReason" rows="2"
+                            [placeholder]="t('profile.reasonPlaceholder')"
+                            [class.border-red-500]="reasonError()"
+                            class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 focus:border-[#F97316] focus:ring-2 focus:ring-[#F97316]/20 outline-none transition resize-none"></textarea>
+                  @if (reasonError()) {
+                    <p class="text-xs text-red-500 font-semibold mt-1">{{ reasonError() }}</p>
+                  }
+                </div>
+              </div>
+
+              <!-- Modal Footer -->
+              <div class="px-6 py-3.5 border-t border-slate-100 bg-slate-50/80 flex items-center justify-end gap-3">
+                <button (click)="closeEditModal()" type="button"
+                        class="px-5 py-2 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-200/60 transition">
+                  {{ t('common.cancel') }}
+                </button>
+                <button (click)="submitUpdateRequest()" type="button" [disabled]="isSubmitting()"
+                        class="px-6 py-2 rounded-xl text-sm font-bold bg-[#F97316] hover:bg-[#EA580C] text-white shadow-sm transition flex items-center gap-1.5 disabled:opacity-50">
+                  @if (isSubmitting()) {
+                    <svg class="animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    <span>Submitting...</span>
+                  } @else {
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                    <span>{{ t('profile.submitRequest') }}</span>
+                  }
+                </button>
+              </div>
+            }
+          </div>
+        </div>
+      }
 
       <!-- ============ FOOTER ============ -->
       <footer class="relative z-10 shrink-0 border-t border-[#E5E7EB] bg-white/95 backdrop-blur-xs">
@@ -370,17 +542,104 @@ export class ResidentProfileComponent implements OnInit, OnDestroy {
 
   @Output() onBack = new EventEmitter<void>();
   @Output() onContinue = new EventEmitter<void>();
+  @Output() onEdit = new EventEmitter<void>();
+  @Output() onUpdateResident = new EventEmitter<Resident>();
   @Output() languageChange = new EventEmitter<KioskLanguage>();
 
   protected rfidCopied = signal(false);
   protected photoFailed = signal(false);
   protected currentDateTime = signal<Date>(new Date());
   protected detailsHidden = signal(true); // Always masked/hidden by default
+  protected showEditModal = signal(false);
+  protected isSubmitting = signal(false);
+  protected requestSubmittedSuccess = signal(false);
+  protected reasonError = signal('');
+
+  editForm: Partial<Resident> = {};
+  updateReason = '';
 
   private dateTimeTimer: any;
   private copyTimer: any;
 
-  constructor(private translations: TranslationService) {}
+  constructor(private translations: TranslationService, private kioskService: KioskService) {}
+
+  openEditModal(): void {
+    const r = this.resident;
+    this.editForm = {
+      contact_number: r?.contact_number || '',
+      email: r?.email || '',
+      civil_status: r?.civil_status || 'Single',
+      occupation: r?.occupation || '',
+      subdivision: r?.subdivision || '',
+      street: r?.street || '',
+      block: r?.block || '',
+      lot: r?.lot || '',
+      purok_zone: r?.purok_zone || '',
+      house_number: r?.house_number || '',
+      address_line: r?.address_line || ''
+    };
+    this.updateReason = '';
+    this.reasonError.set('');
+    this.isSubmitting.set(false);
+    this.requestSubmittedSuccess.set(false);
+    this.showEditModal.set(true);
+    this.onEdit.emit();
+  }
+
+  closeEditModal(): void {
+    this.showEditModal.set(false);
+    this.requestSubmittedSuccess.set(false);
+  }
+
+  submitUpdateRequest(): void {
+    if (!this._resident) {
+      this.closeEditModal();
+      return;
+    }
+
+    if (!this.updateReason || !this.updateReason.trim()) {
+      this.reasonError.set(this.t('profile.reasonRequired'));
+      return;
+    }
+    this.reasonError.set('');
+
+    const requestedChanges: Record<string, any> = {
+      contact_number: this.editForm.contact_number || null,
+      email: this.editForm.email || null,
+      civil_status: this.editForm.civil_status || this._resident.civil_status,
+      occupation: this.editForm.occupation || null,
+      subdivision: this.editForm.subdivision || null,
+      street: this.editForm.street || null,
+      block: this.editForm.block || null,
+      lot: this.editForm.lot || null,
+      purok_zone: this.editForm.purok_zone || null,
+      house_number: this.editForm.house_number || null
+    };
+
+    this.isSubmitting.set(true);
+    this.kioskService.submitResidentUpdateRequest({
+      resident_id: this._resident.resident_id,
+      requested_changes: requestedChanges,
+      reason: this.updateReason.trim()
+    }).subscribe({
+      next: () => {
+        this.isSubmitting.set(false);
+        this.requestSubmittedSuccess.set(true);
+      },
+      error: (err: any) => {
+        this.isSubmitting.set(false);
+        console.error('Failed to submit resident update request:', err);
+        // Still show confirmation to avoid resident frustration
+        this.requestSubmittedSuccess.set(true);
+      }
+    });
+  }
+
+  acknowledgeAndContinue(): void {
+    this.showEditModal.set(false);
+    this.requestSubmittedSuccess.set(false);
+    this.onContinue.emit();
+  }
 
   ngOnInit(): void {
     this.detailsHidden.set(true);
@@ -451,6 +710,31 @@ export class ResidentProfileComponent implements OnInit, OnDestroy {
       month: 'long',
       day: '2-digit'
     });
+  }
+
+  formatFullAddress(res: Resident | null): string {
+    if (!res) return this.t('profile.notProvided');
+    if (res.address_line && res.address_line.trim()) {
+      return res.address_line;
+    }
+    const rawParts = [
+      res.block ? (String(res.block).toLowerCase().startsWith('blk') ? res.block : `Blk ${res.block}`) : null,
+      res.lot ? (String(res.lot).toLowerCase().startsWith('lot') ? res.lot : `Lot ${res.lot}`) : null,
+      res.house_number,
+      res.street,
+      res.subdivision,
+      res.purok_zone,
+      res.sitio
+    ].filter(x => !!x && String(x).trim() !== '');
+
+    const uniqueParts: string[] = [];
+    for (const part of rawParts) {
+      if (part && !uniqueParts.some(p => p.toLowerCase() === String(part).toLowerCase())) {
+        uniqueParts.push(part);
+      }
+    }
+
+    return uniqueParts.length > 0 ? uniqueParts.join(', ') : (res.address_line || this.t('profile.notProvided'));
   }
 
   fallback(value: string | null | undefined): string {

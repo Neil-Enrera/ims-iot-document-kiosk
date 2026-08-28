@@ -19,5 +19,9 @@ router.get('/kiosk/status-display/stream', restrictStatusDisplayToLan, controlle
 router.get('/kiosk/hardware/status', controller.getHardwareStatus);
 router.get('/kiosk/settings', controller.getKioskSettings);
 router.get('/kiosk/barangay-id/config', controller.getBarangayIdConfig);
+router.put('/kiosk/residents/:id', controller.updateResidentProfile);
+router.patch('/kiosk/residents/:id', controller.updateResidentProfile);
+router.post('/kiosk/residents/update-requests', controller.submitResidentUpdateRequest);
+router.post('/kiosk/residents/:id/update-requests', controller.submitResidentUpdateRequest);
 
 module.exports = router;

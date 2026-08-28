@@ -245,6 +245,27 @@ export class ApplicationService {
 }
 
 @Injectable({ providedIn: 'root' })
+export class ResidentUpdateService {
+  constructor(private api: ApiService) {}
+
+  getAll(params?: any) {
+    return this.api.getList<any>('/resident-updates', params);
+  }
+
+  getById(id: number) {
+    return this.api.get<any>(`/resident-updates/${id}`);
+  }
+
+  approve(id: number, reviewNotes?: string) {
+    return this.api.post<any>(`/resident-updates/${id}/approve`, { review_notes: reviewNotes });
+  }
+
+  reject(id: number, reviewNotes?: string) {
+    return this.api.post<any>(`/resident-updates/${id}/reject`, { review_notes: reviewNotes });
+  }
+}
+
+@Injectable({ providedIn: 'root' })
 export class DashboardService {
   constructor(private api: ApiService) {}
 

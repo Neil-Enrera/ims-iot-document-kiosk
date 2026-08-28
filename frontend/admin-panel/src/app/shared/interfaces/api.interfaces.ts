@@ -62,6 +62,9 @@ export interface Resident {
   address_line: string;
   house_number: string | null;
   street: string | null;
+  subdivision?: string | null;
+  block?: string | null;
+  lot?: string | null;
   purok_zone: string | null;
   sitio: string | null;
   municipality: string | null;

@@ -5,8 +5,9 @@ const searchResidents = async (search, limit = 20) => {
   const term = `%${search.trim()}%`;
   const [rows] = await pool.query(
     `SELECT resident_id, resident_code, first_name, middle_name, last_name, suffix,
-            birth_date, gender, civil_status, blood_type, occupation, address_line, contact_number,
-            email, emergency_contact_name, emergency_contact_number, photo, status,
+            birth_date, birth_place, nationality, religion, gender, civil_status, blood_type, occupation,
+            address_line, house_number, street, subdivision, block, lot, purok_zone, sitio, municipality, province, zip_code,
+            contact_number, email, emergency_contact_name, emergency_contact_number, photo, status,
             barangay_id
      FROM residents
      WHERE status = 'ACTIVE'
@@ -23,8 +24,9 @@ const searchResidents = async (search, limit = 20) => {
 const findResidentById = async (id) => {
   const [[row]] = await pool.query(
     `SELECT resident_id, resident_code, first_name, middle_name, last_name, suffix,
-            birth_date, gender, civil_status, blood_type, occupation, address_line, contact_number,
-            email, emergency_contact_name, emergency_contact_number, photo, status,
+            birth_date, birth_place, nationality, religion, gender, civil_status, blood_type, occupation,
+            address_line, house_number, street, subdivision, block, lot, purok_zone, sitio, municipality, province, zip_code,
+            contact_number, email, emergency_contact_name, emergency_contact_number, photo, status,
             barangay_id
      FROM residents
      WHERE resident_id = ? AND status = 'ACTIVE'`,

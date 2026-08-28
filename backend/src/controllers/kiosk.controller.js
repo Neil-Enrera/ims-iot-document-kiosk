@@ -145,6 +145,37 @@ const getBarangayIdConfig = async (req, res) => {
   }
 };
 
+const updateResidentProfile = async (req, res) => {
+  try {
+    const residentId = req.params.id;
+    const residentRepo = require('../repositories/resident.repository');
+    const resident = await residentRepo.findById(residentId);
+    if (!resident) {
+      return errorResponse(res, 404, 'Resident not found.');
+    }
+
+    const { contact_number, email, civil_status, occupation, address_line, house_number, street, purok_zone, sitio } = req.body;
+    await residentRepo.update(residentId, {
+      contact_number,
+      email,
+      civil_status,
+      occupation,
+      address_line,
+      house_number,
+      street,
+      purok_zone,
+      sitio
+    });
+
+    const kioskRepo = require('../repositories/kiosk.repository');
+    const updated = await kioskRepo.findResidentById(residentId);
+    return successResponse(res, 'Resident profile updated successfully.', updated);
+  } catch (error) {
+    console.error('Kiosk updateResidentProfile error:', error);
+    return errorResponse(res, 500, 'Internal server error.');
+  }
+};
+
 const getKioskSettings = async (req, res) => {
   try {
     const settingRepo = require('../repositories/setting.repository');
@@ -408,6 +439,38 @@ const getHardwareStatus = async (req, res) => {
   }
 };
 
+const submitResidentUpdateRequest = async (req, res) => {
+  try {
+    const residentId = req.params.id || req.body.resident_id;
+    const { requested_changes, reason } = req.body;
+    if (!residentId) {
+      return errorResponse(res, 400, 'Resident ID is required.');
+    }
+    if (!requested_changes || Object.keys(requested_changes).length === 0) {
+      return errorResponse(res, 400, 'At least one field to change must be specified.');
+    }
+    if (!reason || !reason.trim()) {
+      return errorResponse(res, 400, 'Reason for update is required.');
+    }
+
+    const residentUpdateService = require('../services/resident-update.service');
+    const result = await residentUpdateService.submitRequest({
+      residentId,
+      requestedChanges: requested_changes,
+      reason,
+      ipAddress: req.ip || req.connection.remoteAddress
+    });
+
+    if (!result.success) {
+      return errorResponse(res, 400, result.message);
+    }
+    return successResponse(res, result.message, result.data, 201);
+  } catch (error) {
+    console.error('Kiosk submitResidentUpdateRequest error:', error);
+    return errorResponse(res, 500, 'Internal server error.');
+  }
+};
+
 module.exports = {
   searchResidents,
   getResident,
@@ -422,5 +485,7 @@ module.exports = {
   broadcastStatusDisplayUpdate,
   getHardwareStatus,
   getKioskSettings,
-  getBarangayIdConfig
+  getBarangayIdConfig,
+  updateResidentProfile,
+  submitResidentUpdateRequest
 };

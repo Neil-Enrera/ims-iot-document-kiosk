@@ -2,7 +2,19 @@ const pool = require('../config/database');
 
 const log = async ({ userId, action, module, ipAddress }) => {
   try {
-    const effectiveUserId = userId || 1;
+    let effectiveUserId = userId;
+    if (effectiveUserId) {
+      const [u] = await pool.query('SELECT user_id FROM users WHERE user_id = ?', [effectiveUserId]);
+      if (u.length === 0) effectiveUserId = null;
+    }
+    if (!effectiveUserId) {
+      const [firstUser] = await pool.query('SELECT user_id FROM users ORDER BY user_id ASC LIMIT 1');
+      if (firstUser.length > 0) {
+        effectiveUserId = firstUser[0].user_id;
+      }
+    }
+    if (!effectiveUserId) return null;
+
     const [result] = await pool.query(
       'INSERT INTO audit_logs (user_id, action, module, ip_address) VALUES (?, ?, ?, ?)',
       [effectiveUserId, action, module, ipAddress || '127.0.0.1']

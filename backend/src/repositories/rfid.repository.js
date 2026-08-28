@@ -164,8 +164,8 @@ const findByUid = async (cardUid) => {
 
   const [rows] = await pool.query(
     `SELECT rc.*, r.first_name, r.middle_name, r.last_name, r.suffix, r.resident_code,
-            r.birth_date, r.gender, r.civil_status, r.blood_type, r.occupation,
-            r.contact_number, r.email, r.address_line,
+            r.birth_date, r.birth_place, r.nationality, r.religion, r.gender, r.civil_status, r.blood_type, r.occupation,
+            r.contact_number, r.email, r.address_line, r.house_number, r.street, r.subdivision, r.block, r.lot, r.purok_zone, r.sitio, r.municipality, r.province, r.zip_code,
             r.emergency_contact_name, r.emergency_contact_number,
             r.photo AS resident_photo, r.status AS resident_status, r.barangay_id AS resident_barangay_id
      FROM rfid_cards rc JOIN residents r ON rc.resident_id = r.resident_id 

@@ -64,19 +64,140 @@ const findByCode = async (residentCode) => {
   return rows[0] || null;
 };
 
-const create = async ({ residentCode, firstName, middleName, lastName, suffix, birthDate, birthPlace, nationality, religion, occupation, gender, civilStatus, barangayId, addressLine, houseNumber, street, purokZone, sitio, municipality, province, zipCode, contactNumber, email, bloodType, emergencyContactName, emergencyContactNumber }) => {
+const create = async (data) => {
+  const code = data.residentCode ?? data.resident_code;
+  const firstName = data.firstName ?? data.first_name;
+  const middleName = data.middleName ?? data.middle_name;
+  const lastName = data.lastName ?? data.last_name;
+  const suffix = data.suffix;
+  const birthDate = data.birthDate ?? data.birth_date;
+  const birthPlace = data.birthPlace ?? data.birth_place;
+  const nationality = data.nationality || 'Filipino';
+  const religion = data.religion;
+  const occupation = data.occupation;
+  const gender = data.gender;
+  const civilStatus = data.civilStatus ?? data.civil_status;
+  const barangayId = data.barangayId ?? data.barangay_id;
+  const houseNumber = data.houseNumber ?? data.house_number;
+  const street = data.street;
+  const subdivision = data.subdivision;
+  const block = data.block;
+  const lot = data.lot;
+  const purokZone = data.purokZone ?? data.purok_zone;
+  const sitio = data.sitio;
+  const municipality = data.municipality;
+  const province = data.province;
+  const zipCode = data.zipCode ?? data.zip_code;
+  const contactNumber = data.contactNumber ?? data.contact_number;
+  const email = data.email;
+  const bloodType = data.bloodType ?? data.blood_type;
+  const emergencyContactName = data.emergencyContactName ?? data.emergency_contact_name;
+  const emergencyContactNumber = data.emergencyContactNumber ?? data.emergency_contact_number;
+
+  let addressLine = data.addressLine ?? data.address_line;
+  if (!addressLine) {
+    const rawParts = [
+      block ? (String(block).toLowerCase().startsWith('blk') ? block : `Blk ${block}`) : null,
+      lot ? (String(lot).toLowerCase().startsWith('lot') ? lot : `Lot ${lot}`) : null,
+      houseNumber,
+      street,
+      subdivision,
+      purokZone,
+      sitio,
+      municipality,
+      province
+    ].filter(Boolean);
+
+    const uniqueParts = [];
+    for (const p of rawParts) {
+      if (p && !uniqueParts.some(u => u.toLowerCase() === String(p).toLowerCase())) {
+        uniqueParts.push(p);
+      }
+    }
+    addressLine = uniqueParts.join(', ');
+  }
+
   const [result] = await pool.query(
-    'INSERT INTO residents (resident_code, first_name, middle_name, last_name, suffix, birth_date, birth_place, nationality, religion, occupation, gender, civil_status, barangay_id, address_line, house_number, street, purok_zone, sitio, municipality, province, zip_code, contact_number, email, blood_type, emergency_contact_name, emergency_contact_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-    [residentCode, firstName, middleName, lastName, suffix, birthDate, birthPlace || null, nationality || null, religion || null, occupation || null, gender, civilStatus, barangayId, addressLine, houseNumber || null, street || null, purokZone || null, sitio || null, municipality || null, province || null, zipCode || null, contactNumber, email, bloodType || null, emergencyContactName || null, emergencyContactNumber || null]
+    'INSERT INTO residents (resident_code, first_name, middle_name, last_name, suffix, birth_date, birth_place, nationality, religion, occupation, gender, civil_status, barangay_id, address_line, house_number, street, subdivision, block, lot, purok_zone, sitio, municipality, province, zip_code, contact_number, email, blood_type, emergency_contact_name, emergency_contact_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    [code, firstName, middleName, lastName, suffix, birthDate, birthPlace || null, nationality || null, religion || null, occupation || null, gender, civilStatus, barangayId, addressLine || '', houseNumber || null, street || null, subdivision || null, block || null, lot || null, purokZone || null, sitio || null, municipality || null, province || null, zipCode || null, contactNumber || '', email || '', bloodType || null, emergencyContactName || null, emergencyContactNumber || null]
   );
   return result.insertId;
 };
 
-const update = async (residentId, { firstName, middleName, lastName, suffix, birthDate, birthPlace, nationality, religion, occupation, gender, civilStatus, barangayId, addressLine, houseNumber, street, purokZone, sitio, municipality, province, zipCode, contactNumber, email, bloodType, emergencyContactName, emergencyContactNumber }) => {
-  const [result] = await pool.query(
-    'UPDATE residents SET first_name = ?, middle_name = ?, last_name = ?, suffix = ?, birth_date = ?, birth_place = ?, nationality = ?, religion = ?, occupation = ?, gender = ?, civil_status = ?, barangay_id = ?, address_line = ?, house_number = ?, street = ?, purok_zone = ?, sitio = ?, municipality = ?, province = ?, zip_code = ?, contact_number = ?, email = ?, blood_type = ?, emergency_contact_name = ?, emergency_contact_number = ? WHERE resident_id = ?',
-    [firstName, middleName, lastName, suffix, birthDate, birthPlace || null, nationality || null, religion || null, occupation || null, gender, civilStatus, barangayId, addressLine, houseNumber || null, street || null, purokZone || null, sitio || null, municipality || null, province || null, zipCode || null, contactNumber, email, bloodType || null, emergencyContactName || null, emergencyContactNumber || null, residentId]
-  );
+const update = async (residentId, data) => {
+  const fields = [];
+  const params = [];
+
+  const map = {
+    first_name: data.firstName ?? data.first_name,
+    middle_name: data.middleName ?? data.middle_name,
+    last_name: data.lastName ?? data.last_name,
+    suffix: data.suffix,
+    birth_date: data.birthDate ?? data.birth_date,
+    birth_place: data.birthPlace ?? data.birth_place,
+    nationality: data.nationality,
+    religion: data.religion,
+    occupation: data.occupation,
+    gender: data.gender,
+    civil_status: data.civilStatus ?? data.civil_status,
+    barangay_id: data.barangayId ?? data.barangay_id,
+    address_line: data.addressLine ?? data.address_line,
+    house_number: data.houseNumber ?? data.house_number,
+    street: data.street,
+    subdivision: data.subdivision,
+    block: data.block,
+    lot: data.lot,
+    purok_zone: data.purokZone ?? data.purok_zone,
+    sitio: data.sitio,
+    municipality: data.municipality,
+    province: data.province,
+    zip_code: data.zipCode ?? data.zip_code,
+    contact_number: data.contactNumber ?? data.contact_number,
+    email: data.email,
+    blood_type: data.bloodType ?? data.blood_type,
+    emergency_contact_name: data.emergencyContactName ?? data.emergency_contact_name,
+    emergency_contact_number: data.emergencyContactNumber ?? data.emergency_contact_number
+  };
+
+  // If individual address parts are provided and address_line is not explicitly given, compose address_line
+  if (data.addressLine === undefined && data.address_line === undefined) {
+    if (data.subdivision !== undefined || data.block !== undefined || data.lot !== undefined || data.street !== undefined || data.purok_zone !== undefined || data.purokZone !== undefined || data.house_number !== undefined || data.houseNumber !== undefined) {
+      const rawParts = [
+        map.block ? (String(map.block).toLowerCase().startsWith('blk') ? map.block : `Blk ${map.block}`) : null,
+        map.lot ? (String(map.lot).toLowerCase().startsWith('lot') ? map.lot : `Lot ${map.lot}`) : null,
+        map.house_number,
+        map.street,
+        map.subdivision,
+        map.purok_zone,
+        map.sitio,
+        map.municipality,
+        map.province
+      ].filter(Boolean);
+
+      const uniqueParts = [];
+      for (const p of rawParts) {
+        if (p && !uniqueParts.some(u => u.toLowerCase() === String(p).toLowerCase())) {
+          uniqueParts.push(p);
+        }
+      }
+      if (uniqueParts.length > 0) {
+        map.address_line = uniqueParts.join(', ');
+      }
+    }
+  }
+
+  const nullableCols = ['birth_place', 'house_number', 'street', 'subdivision', 'block', 'lot', 'purok_zone', 'sitio', 'municipality', 'province', 'zip_code', 'blood_type', 'emergency_contact_name', 'emergency_contact_number'];
+
+  for (const [col, val] of Object.entries(map)) {
+    if (val !== undefined) {
+      fields.push(`${col} = ?`);
+      params.push(val === '' && nullableCols.includes(col) ? null : val);
+    }
+  }
+
+  if (fields.length === 0) return true;
+  params.push(residentId);
+  const [result] = await pool.query(`UPDATE residents SET ${fields.join(', ')} WHERE resident_id = ?`, params);
   return result.affectedRows > 0;
 };
 

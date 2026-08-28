@@ -69,12 +69,12 @@ const createNotification = async (userId, title, message, type = 'info', referen
 };
 
 const createNotificationForAdmins = async (title, message, type = 'info', referenceType, referenceId) => {
-  // Get all admin users (role_name = 'Administrator')
+  // Get all active admin/staff users
   const pool = require('../config/database');
   const [adminUsers] = await pool.query(
     `SELECT u.user_id FROM users u 
      JOIN user_roles ur ON u.role_id = ur.role_id 
-     WHERE ur.role_name = 'Administrator' AND u.status = 'ACTIVE'`
+     WHERE u.status = 'ACTIVE'`
   );
   const adminIds = adminUsers.map(u => u.user_id);
   if (adminIds.length === 0) return { success: true, message: 'No admin users found.', data: 0 };

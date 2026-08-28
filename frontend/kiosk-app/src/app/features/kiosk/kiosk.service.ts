@@ -12,12 +12,24 @@ export interface Resident {
   suffix: string | null;
   birth_date: string | null;
   birth_place?: string | null;
+  nationality?: string | null;
+  religion?: string | null;
   gender: string | null;
   civil_status: string | null;
   blood_type: string | null;
   occupation: string | null;
   barangay_id: number;
   address_line: string;
+  house_number?: string | null;
+  street?: string | null;
+  subdivision?: string | null;
+  block?: string | null;
+  lot?: string | null;
+  purok_zone?: string | null;
+  sitio?: string | null;
+  municipality?: string | null;
+  province?: string | null;
+  zip_code?: string | null;
   contact_number: string | null;
   email: string | null;
   emergency_contact_name: string | null;
@@ -126,11 +138,31 @@ export interface ApiResponse<T> {
 
 export interface GuestInfo {
   full_name: string;
+  first_name?: string;
   middle_name?: string;
+  last_name?: string;
+  suffix?: string;
   birth_date?: string;
-  address?: string;
+  birth_place?: string;
+  gender?: string;
+  civil_status?: string;
+  nationality?: string;
+  religion?: string;
+  occupation?: string;
+  blood_type?: string;
   contact_number?: string;
   email?: string;
+  subdivision?: string;
+  street?: string;
+  block?: string;
+  lot?: string;
+  house_number?: string;
+  purok_zone?: string;
+  sitio?: string;
+  municipality?: string;
+  province?: string;
+  zip_code?: string;
+  address?: string;
 }
 
 export interface RfidVerifyResult {
@@ -196,6 +228,14 @@ export class KioskService {
 
   getResident(id: number): Observable<ApiResponse<Resident>> {
     return this.http.get<ApiResponse<Resident>>(`${this.apiUrl}/kiosk/residents/${id}`);
+  }
+
+  updateResident(id: number, data: Partial<Resident>): Observable<ApiResponse<Resident>> {
+    return this.http.put<ApiResponse<Resident>>(`${this.apiUrl}/kiosk/residents/${id}`, data);
+  }
+
+  submitResidentUpdateRequest(payload: { resident_id: number; requested_changes: Record<string, any>; reason: string }): Observable<ApiResponse<any>> {
+    return this.http.post<ApiResponse<any>>(`${this.apiUrl}/kiosk/residents/update-requests`, payload);
   }
 
 
