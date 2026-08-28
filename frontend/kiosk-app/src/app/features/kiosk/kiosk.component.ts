@@ -999,18 +999,6 @@ export type BarangayStep =
                           </div>
                         </div>
 
-                        <!-- Blood Type -->
-                        <div>
-                          <label for="guest-bloodType" class="block text-[14px] sm:text-[15px] font-semibold text-[#0F172A] mb-1.5">
-                            {{ t('doc.guestInfo.bloodType') }}
-                          </label>
-                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden">
-                            <input id="guest-bloodType" type="text" name="bloodType" [(ngModel)]="guestForm.bloodType"
-                                   [placeholder]="t('doc.guestInfo.bloodTypePh')" maxlength="10"
-                                   class="flex-1 min-w-0 px-3.5 sm:px-4 py-2.5 sm:py-3 text-[15px] sm:text-[16px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
-                          </div>
-                        </div>
-
                         <!-- Contact Number -->
                         <div>
                           <label for="guest-contactNumber" class="block text-[14px] sm:text-[15px] font-semibold text-[#0F172A] mb-1.5">
@@ -1032,7 +1020,7 @@ export type BarangayStep =
                         </div>
 
                         <!-- Email -->
-                        <div>
+                        <div class="md:col-span-2">
                           <label for="guest-email" class="block text-[14px] sm:text-[15px] font-semibold text-[#0F172A] mb-1.5">
                             {{ t('doc.guestInfo.email') }}
                           </label>
@@ -1051,12 +1039,9 @@ export type BarangayStep =
                       <!-- Divider -->
                       <div class="border-t border-slate-200 mt-6 pt-5">
                         
-                        <!-- Address Header with Action -->
-                        <div class="flex items-center justify-between mb-3.5">
+                        <!-- Address Header -->
+                        <div class="mb-3.5">
                           <h3 class="text-[16px] sm:text-[17px] font-bold text-[#0F172A]">{{ t('doc.guestInfo.addressSection') }}</h3>
-                          <button type="button" (click)="autoComposeGuestAddress(true)" class="text-xs sm:text-sm font-semibold text-[#F97316] hover:text-[#EA580C] underline transition-colors focus:outline-none">
-                            {{ t('doc.guestInfo.generateAddress') }}
-                          </button>
                         </div>
 
                         <!-- Address Inputs (3-column grid) -->
@@ -1083,12 +1068,6 @@ export type BarangayStep =
                             <label for="guest-lot" class="block text-[13px] sm:text-[14px] font-semibold text-[#0F172A] mb-1">{{ t('doc.guestInfo.lot') }}</label>
                             <div class="rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm focus-within:border-[#F97316] overflow-hidden">
                               <input id="guest-lot" type="text" [value]="guestForm.lot" (input)="updateGuestAddressField('lot', $any($event.target).value)" maxlength="50" [placeholder]="t('doc.guestInfo.lotPh')" class="w-full px-3 py-2 text-[14px] sm:text-[15px] text-[#0F172A] bg-transparent outline-none" />
-                            </div>
-                          </div>
-                          <div>
-                            <label for="guest-houseNumber" class="block text-[13px] sm:text-[14px] font-semibold text-[#0F172A] mb-1">{{ t('doc.guestInfo.houseNumber') }}</label>
-                            <div class="rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm focus-within:border-[#F97316] overflow-hidden">
-                              <input id="guest-houseNumber" type="text" [value]="guestForm.houseNumber" (input)="updateGuestAddressField('houseNumber', $any($event.target).value)" maxlength="50" [placeholder]="t('doc.guestInfo.houseNumberPh')" class="w-full px-3 py-2 text-[14px] sm:text-[15px] text-[#0F172A] bg-transparent outline-none" />
                             </div>
                           </div>
                           <div>
@@ -6462,7 +6441,6 @@ export class KioskComponent implements OnInit, OnDestroy {
     const rawParts = [
       g.block ? (g.block.toLowerCase().startsWith('blk') ? g.block : `Blk ${g.block}`) : null,
       g.lot ? (g.lot.toLowerCase().startsWith('lot') ? g.lot : `Lot ${g.lot}`) : null,
-      g.houseNumber,
       g.street,
       g.subdivision,
       g.purokZone,

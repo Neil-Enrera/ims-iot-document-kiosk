@@ -24,24 +24,19 @@ import { Resident } from '../../shared/interfaces/api.interfaces';
         <app-input label="Nationality" [value]="form.nationality" (valueChange)="form.nationality = $event" filterType="name" maxlength="50" placeholder="Filipino" />
         <app-input label="Religion" [value]="form.religion" (valueChange)="form.religion = $event" maxlength="50" placeholder="Religion" />
         <app-input label="Occupation" [value]="form.occupation" (valueChange)="form.occupation = $event" maxlength="100" placeholder="Occupation" />
-        <app-input label="Blood Type" [value]="form.bloodType" (valueChange)="form.bloodType = $event" maxlength="10" placeholder="e.g. O+, A+" />
         <app-input label="Contact Number" type="tel" [value]="form.contactNumber" (valueChange)="form.contactNumber = $event" filterType="phone" maxlength="11" [error]="errors['contactNumber']" placeholder="09XXXXXXXXX" />
-        <app-input label="Email" type="email" [value]="form.email" (valueChange)="form.email = $event" maxlength="100" [error]="errors['email']" placeholder="resident@example.com" />
+        <app-input label="Email" type="email" [value]="form.email" (valueChange)="form.email = $event" maxlength="100" [error]="errors['email']" placeholder="resident@example.com" class="md:col-span-2" />
       </div>
 
       <div class="border-t pt-4">
-        <div class="flex items-center justify-between mb-3">
+        <div class="mb-3">
           <h4 class="text-sm font-bold text-slate-800">Address Information</h4>
-          <button type="button" (click)="autoComposeAddress(true)" class="text-xs font-semibold text-emerald-600 hover:text-emerald-700 underline transition-colors">
-            Generate Complete Address
-          </button>
         </div>
         <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
           <app-input label="Subdivision" [value]="form.subdivision" (valueChange)="updateAddressField('subdivision', $event)" maxlength="100" placeholder="e.g. San Manuel Subdivision" />
           <app-input label="Street" [value]="form.street" (valueChange)="updateAddressField('street', $event)" maxlength="100" placeholder="e.g. Mabini Street" />
           <app-input label="Block" [value]="form.block" (valueChange)="updateAddressField('block', $event)" maxlength="50" placeholder="e.g. 10" />
           <app-input label="Lot" [value]="form.lot" (valueChange)="updateAddressField('lot', $event)" maxlength="50" placeholder="e.g. 5" />
-          <app-input label="House Number" [value]="form.houseNumber" (valueChange)="updateAddressField('houseNumber', $event)" maxlength="50" placeholder="House #" />
           <app-input label="Purok / Zone" [value]="form.purokZone" (valueChange)="updateAddressField('purokZone', $event)" maxlength="100" placeholder="Purok 1" />
           <app-input label="Sitio" [value]="form.sitio" (valueChange)="updateAddressField('sitio', $event)" maxlength="100" placeholder="Sitio" />
           <app-input label="Municipality" [value]="form.municipality" (valueChange)="updateAddressField('municipality', $event)" maxlength="100" placeholder="San Manuel" />
@@ -179,7 +174,6 @@ export class ResidentFormComponent implements OnInit, OnChanges {
     const rawParts = [
       this.form.block ? (this.form.block.toLowerCase().startsWith('blk') ? this.form.block : `Blk ${this.form.block}`) : null,
       this.form.lot ? (this.form.lot.toLowerCase().startsWith('lot') ? this.form.lot : `Lot ${this.form.lot}`) : null,
-      this.form.houseNumber,
       this.form.street,
       this.form.subdivision,
       this.form.purokZone,
