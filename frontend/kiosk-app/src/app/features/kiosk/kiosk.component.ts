@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, signal, computed, ElementRef, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { KioskService, Resident, Service, GuestInfo, FormField, RfidCardInfo } from './kiosk.service';
+import { KioskService, Resident, Service, GuestInfo, FormField, RfidCardInfo, PreviousRequest } from './kiosk.service';
 import { RfidScanService } from './rfid-scan.service';
 import { KioskStateService, KioskState } from './kiosk-state.service';
 import { ButtonComponent } from './button.component';
@@ -1478,6 +1478,30 @@ export type BarangayStep =
                   <!-- Requirements card -->
                   <section class="bg-white border border-[#E5E7EB] rounded-[20px] shadow-[0_2px_14px_rgba(15,23,42,0.07)] px-4 sm:px-7 py-4 sm:py-5" aria-label="Service requirements">
 
+                    <!-- Reused Request Information Banner -->
+                    @if (reusedRequestInfo()) {
+                      <div class="mb-4 sm:mb-5 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50/50 border border-blue-200/80 p-3.5 sm:p-4 flex items-start gap-3.5 text-blue-900 shadow-2xs">
+                        <div class="shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-100/90 text-blue-600 flex items-center justify-center mt-0.5">
+                          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                          <div class="flex flex-wrap items-center gap-2">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-blue-200/70 text-blue-900">
+                              REUSING DATA
+                            </span>
+                            <span class="text-xs sm:text-sm font-bold text-blue-950">
+                              {{ t('requestAgain.requirementsNotice', { requestNumber: reusedRequestInfo()?.request_number }) }}
+                            </span>
+                          </div>
+                          <p class="text-[11px] sm:text-xs text-blue-700/90 mt-1 leading-relaxed">
+                            Your application form has been pre-filled with this previous submission. Please re-check the requirements below before continuing to the form.
+                          </p>
+                        </div>
+                      </div>
+                    }
+
                     <!-- Service header -->
                     <div class="flex items-start gap-3 sm:gap-4">
                       <div class="shrink-0 w-[52px] h-[52px] sm:w-[58px] sm:h-[58px] rounded-[14px] sm:rounded-[16px] bg-[#FFF7ED] border border-[#F97316]/15 flex items-center justify-center text-[#F97316]" aria-hidden="true">
@@ -1754,6 +1778,26 @@ export type BarangayStep =
                   }
                 </div>
               </div>
+
+              @if (reusedRequestInfo()) {
+                <div class="relative z-10 px-4 sm:px-8 pb-1">
+                  <div class="mx-auto w-full max-w-[820px] rounded-2xl bg-amber-50 border border-amber-200/90 p-3 sm:p-3.5 flex items-center justify-between gap-3 text-amber-900 shadow-2xs">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      <div class="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+                        <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </div>
+                      <p class="text-xs sm:text-sm font-semibold text-amber-950 truncate">
+                        {{ t('requestAgain.formNotice', { requestNumber: reusedRequestInfo()?.request_number }) }}
+                      </p>
+                    </div>
+                    <span class="shrink-0 text-[11px] font-bold text-amber-800 bg-amber-200/60 px-2.5 py-0.5 rounded-md">
+                      Editable Draft
+                    </span>
+                  </div>
+                </div>
+              }
 
               <!-- Main content: Request Details form -->
               <div class="relative z-10 flex-1 overflow-y-auto">
@@ -4963,6 +5007,126 @@ export type BarangayStep =
           (onClose)="closeDocPreview()"
           (onEdit)="editInformation()"
           (onSubmit)="submitRequest()" />
+
+        <!-- Request Again / Previous Request Modal -->
+        @if (showRequestAgainModal() && previousRequests().length > 0) {
+          <div class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-150">
+            <div class="w-full max-w-lg bg-white rounded-[24px] shadow-2xl border border-[#E5E7EB] overflow-hidden flex flex-col max-h-[90vh]">
+              <!-- Modal Header -->
+              <div class="p-5 sm:p-6 pb-4 border-b border-[#F1F5F9] bg-[#FFFBF7]">
+                <div class="flex items-center gap-3.5">
+                  <div class="w-12 h-12 rounded-2xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center text-[#F97316] shrink-0">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <h3 class="text-lg sm:text-xl font-bold text-[#0F172A] leading-tight">
+                      {{ t('requestAgain.modalTitle') }}
+                    </h3>
+                    <p class="text-xs sm:text-sm font-semibold text-[#F97316] mt-0.5">
+                      {{ selectedService()?.service_name }}
+                    </p>
+                  </div>
+                </div>
+                <p class="text-xs sm:text-sm text-[#475569] mt-3 leading-relaxed">
+                  {{ t('requestAgain.modalSubtitle') }}
+                </p>
+              </div>
+
+              <!-- Transaction Summary Card -->
+              <div class="p-5 sm:p-6 space-y-4 overflow-y-auto">
+                <div class="rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] p-4 sm:p-4.5 space-y-3">
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="text-xs font-semibold text-[#64748B] uppercase tracking-wide">{{ t('requestAgain.prevReqNumber') }}</span>
+                    <span class="font-mono text-xs sm:text-sm font-bold text-[#0F172A] bg-white px-2.5 py-1 rounded-lg border border-[#CBD5E1]">
+                      {{ previousRequests()[0].request_number }}
+                    </span>
+                  </div>
+
+                  <div class="flex items-center justify-between gap-2 text-xs sm:text-sm">
+                    <span class="text-[#64748B]">{{ t('requestAgain.dateRequested') }}</span>
+                    <span class="font-semibold text-[#0F172A]">
+                      {{ formatRequestDate(previousRequests()[0].request_date) }}
+                    </span>
+                  </div>
+
+                  <div class="flex items-center justify-between gap-2 text-xs sm:text-sm">
+                    <span class="text-[#64748B]">{{ t('requestAgain.status') }}</span>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold"
+                          [ngClass]="{
+                            'bg-emerald-100 text-emerald-800 border border-emerald-300': previousRequests()[0].status_name === 'Released',
+                            'bg-blue-100 text-blue-800 border border-blue-300': previousRequests()[0].status_name === 'Submitted' || previousRequests()[0].status_name === 'Under Review',
+                            'bg-gray-100 text-gray-800 border border-gray-300': previousRequests()[0].status_name !== 'Released' && previousRequests()[0].status_name !== 'Submitted' && previousRequests()[0].status_name !== 'Under Review'
+                          }">
+                      <span class="w-1.5 h-1.5 rounded-full"
+                            [ngClass]="{
+                              'bg-emerald-500': previousRequests()[0].status_name === 'Released',
+                              'bg-blue-500': previousRequests()[0].status_name === 'Submitted' || previousRequests()[0].status_name === 'Under Review',
+                              'bg-gray-500': previousRequests()[0].status_name !== 'Released' && previousRequests()[0].status_name !== 'Submitted' && previousRequests()[0].status_name !== 'Under Review'
+                            }"></span>
+                      {{ previousRequests()[0].status_name }}
+                    </span>
+                  </div>
+
+                  @if (getPreviousPurpose(previousRequests()[0])) {
+                    <div class="flex items-start justify-between gap-2 text-xs sm:text-sm pt-2 border-t border-[#E2E8F0]">
+                      <span class="text-[#64748B] shrink-0">{{ t('requestAgain.purpose') }}</span>
+                      <span class="font-medium text-[#0F172A] text-right break-words max-w-[65%]">
+                        {{ getPreviousPurpose(previousRequests()[0]) }}
+                      </span>
+                    </div>
+                  }
+                </div>
+
+                <!-- Action choices -->
+                <div class="space-y-2.5 pt-1">
+                  <!-- Request Again button -->
+                  <button (click)="usePreviousRequest(previousRequests()[0])"
+                          class="w-full text-left p-4 rounded-2xl bg-gradient-to-r from-[#F97316] to-[#EA580C] hover:from-[#EA580C] hover:to-[#C2410C] active:scale-[0.99] text-white shadow-md shadow-[#F97316]/25 transition-all group focus:outline-none focus:ring-4 focus:ring-[#F97316]/40 cursor-pointer">
+                    <div class="flex items-center justify-between gap-3">
+                      <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+                          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p class="font-bold text-sm sm:text-base leading-snug">{{ t('requestAgain.reuseBtn') }}</p>
+                          <p class="text-xs text-white/80 mt-0.5 leading-snug">{{ t('requestAgain.reuseDesc') }}</p>
+                        </div>
+                      </div>
+                      <svg class="w-5 h-5 shrink-0 text-white/70 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </button>
+
+                  <!-- Start Fresh button -->
+                  <button (click)="startFreshRequest()"
+                          class="w-full text-left p-3.5 rounded-2xl border-2 border-[#E2E8F0] hover:border-[#CBD5E1] hover:bg-[#F8FAFC] active:scale-[0.99] text-[#0F172A] transition-all group focus:outline-none focus:ring-4 focus:ring-gray-200 cursor-pointer">
+                    <div class="flex items-center justify-between gap-3">
+                      <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center shrink-0">
+                          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p class="font-bold text-sm sm:text-base text-[#0F172A] leading-snug">{{ t('requestAgain.startFreshBtn') }}</p>
+                          <p class="text-xs text-[#64748B] mt-0.5 leading-snug">{{ t('requestAgain.startFreshDesc') }}</p>
+                        </div>
+                      </div>
+                      <svg class="w-5 h-5 shrink-0 text-gray-400 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
       </div>
     </div>
   `
@@ -5031,6 +5195,12 @@ export class KioskComponent implements OnInit, OnDestroy {
   photoQualityError = signal<string>('');
   photoValid = signal<boolean>(false);
   enablePhotoValidation = signal<boolean>(environment.enablePhotoValidation ?? false);
+
+  // Request Again feature signals (RFID-verified residents)
+  previousRequests = signal<PreviousRequest[]>([]);
+  showRequestAgainModal = signal<boolean>(false);
+  reusedRequestInfo = signal<PreviousRequest | null>(null);
+  checkingPreviousRequests = signal<boolean>(false);
   private photoQualityErrorTimer: any;
   private barangayDobErrorTimer: any;
   private guestDobErrorTimer: any;
@@ -5716,10 +5886,105 @@ export class KioskComponent implements OnInit, OnDestroy {
     }
     this.serviceError.set('');
     this.serviceIndex.set(0);
+    this.reusedRequestInfo.set(null);
+
+    // Requirement 1 & 3: If verified RFID resident, check previous requests for this service
+    if (this.resident() && this.rfidCard()) {
+      const activeSvc = this.selectedService();
+      if (activeSvc) {
+        this.checkingPreviousRequests.set(true);
+        this.kioskService.getPreviousRequestsForService(this.resident()!.resident_id, activeSvc.service_id).subscribe({
+          next: (res) => {
+            this.checkingPreviousRequests.set(false);
+            if (res.success && res.data && res.data.length > 0) {
+              this.previousRequests.set(res.data);
+              this.showRequestAgainModal.set(true);
+            } else {
+              this.continueToRequirementsFresh();
+            }
+          },
+          error: (err) => {
+            console.warn('[Kiosk] Could not check previous requests, continuing fresh:', err);
+            this.checkingPreviousRequests.set(false);
+            this.continueToRequirementsFresh();
+          }
+        });
+        return;
+      }
+    }
+
+    this.continueToRequirementsFresh();
+  }
+
+  usePreviousRequest(prevReq: PreviousRequest) {
+    const svc = this.selectedService();
+    if (!svc) return;
+
+    this.reusedRequestInfo.set(prevReq);
+    this.showRequestAgainModal.set(false);
+
+    // Initialize/populate form values
+    this.loadServiceForm();
+    const currentValues = { ...this.formValues() };
+
+    // Overlay previous request form_data (excluding internal/transient keys)
+    if (prevReq.form_data && typeof prevReq.form_data === 'object') {
+      for (const [key, val] of Object.entries(prevReq.form_data)) {
+        if (key.startsWith('_') || key === 'photo' || key === 'signature' || key === 'idempotency_key') {
+          continue;
+        }
+        if (val !== undefined && val !== null && val !== '') {
+          currentValues[key] = val;
+        }
+      }
+    }
+
+    if (prevReq.purpose && !currentValues['purpose']) {
+      currentValues['purpose'] = prevReq.purpose;
+    }
+
+    this.formValues.set(currentValues);
+    this.serviceForms.update(m => ({ ...m, [svc.service_id]: currentValues }));
+
+    // Requirement 7: Re-check current requirements for the selected service
+    this.currentStep.set('requirements');
+    this.resetIdleTimer();
+    this.saveState();
+  }
+
+  startFreshRequest() {
+    this.reusedRequestInfo.set(null);
+    this.showRequestAgainModal.set(false);
+    this.continueToRequirementsFresh();
+  }
+
+  private continueToRequirementsFresh() {
     this.loadServiceForm();
     this.currentStep.set('requirements');
     this.resetIdleTimer();
     this.saveState();
+  }
+
+  formatRequestDate(dateStr: string): string {
+    if (!dateStr) return '';
+    try {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString(this.language() === 'fil' ? 'fil-PH' : 'en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch {
+      return dateStr.slice(0, 10);
+    }
+  }
+
+  getPreviousPurpose(req: PreviousRequest): string {
+    if (req.purpose && req.purpose.trim()) return req.purpose.trim();
+    if (req.form_data && req.form_data['purpose']) {
+      return String(req.form_data['purpose']).trim();
+    }
+    return '';
   }
 
   onResidentUpdated(updated: Resident) {
@@ -5977,8 +6242,28 @@ export class KioskComponent implements OnInit, OnDestroy {
     const idx = this.serviceIndex();
     if (idx + 1 < this.selectedServices().length) {
       this.serviceIndex.set(idx + 1);
-      this.loadServiceForm();
-      this.currentStep.set('requirements');
+      this.reusedRequestInfo.set(null);
+      const nextSvc = this.selectedService();
+      if (this.resident() && this.rfidCard() && nextSvc) {
+        this.checkingPreviousRequests.set(true);
+        this.kioskService.getPreviousRequestsForService(this.resident()!.resident_id, nextSvc.service_id).subscribe({
+          next: (res) => {
+            this.checkingPreviousRequests.set(false);
+            if (res.success && res.data && res.data.length > 0) {
+              this.previousRequests.set(res.data);
+              this.showRequestAgainModal.set(true);
+            } else {
+              this.continueToRequirementsFresh();
+            }
+          },
+          error: () => {
+            this.checkingPreviousRequests.set(false);
+            this.continueToRequirementsFresh();
+          }
+        });
+      } else {
+        this.continueToRequirementsFresh();
+      }
     } else {
       this.currentStep.set('review');
     }
@@ -5987,7 +6272,9 @@ export class KioskComponent implements OnInit, OnDestroy {
   }
 
   proceedToForm() {
-    this.loadServiceForm();
+    if (!this.reusedRequestInfo()) {
+      this.loadServiceForm();
+    }
     this.currentStep.set('form');
     this.resetIdleTimer();
     this.saveState();
@@ -8226,6 +8513,10 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.inlinePhotos.set({});
     this.activePhotoField.set(null);
     this.submissionKey = '';
+    this.previousRequests.set([]);
+    this.showRequestAgainModal.set(false);
+    this.reusedRequestInfo.set(null);
+    this.checkingPreviousRequests.set(false);
     this.kioskStateService.clear();
     this.resetIdleTimer();
   }

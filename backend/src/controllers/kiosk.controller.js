@@ -471,6 +471,28 @@ const submitResidentUpdateRequest = async (req, res) => {
   }
 };
 
+const getResidentPreviousRequestsForService = async (req, res) => {
+  try {
+    const residentId = parseInt(req.params.id, 10);
+    const serviceId = parseInt(req.query.service_id, 10);
+    const limit = parseInt(req.query.limit, 10) || 5;
+
+    if (!residentId || isNaN(residentId)) {
+      return errorResponse(res, 400, 'Valid resident ID is required.');
+    }
+    if (!serviceId || isNaN(serviceId)) {
+      return errorResponse(res, 400, 'Valid service ID is required.');
+    }
+
+    const transactionRepo = require('../repositories/transaction.repository');
+    const previousRequests = await transactionRepo.findPreviousRequestsByResidentAndService(residentId, serviceId, limit);
+    return successResponse(res, 'Previous requests retrieved successfully.', previousRequests);
+  } catch (error) {
+    console.error('Kiosk getResidentPreviousRequestsForService error:', error);
+    return errorResponse(res, 500, 'Internal server error.');
+  }
+};
+
 module.exports = {
   searchResidents,
   getResident,
@@ -487,5 +509,6 @@ module.exports = {
   getKioskSettings,
   getBarangayIdConfig,
   updateResidentProfile,
-  submitResidentUpdateRequest
+  submitResidentUpdateRequest,
+  getResidentPreviousRequestsForService
 };

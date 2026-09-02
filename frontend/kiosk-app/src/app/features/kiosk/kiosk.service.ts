@@ -206,6 +206,24 @@ export interface BarangayIdApplication {
   application_number_display?: string;
 }
 
+export interface PreviousRequest {
+  request_id: number;
+  request_number: string;
+  service_id: number;
+  resident_id: number;
+  status_id: number;
+  status_name: string;
+  service_name: string;
+  purpose?: string | null;
+  remarks?: string | null;
+  form_data?: Record<string, unknown> | null;
+  service_snapshot?: Record<string, unknown> | null;
+  request_date: string;
+  created_at: string;
+  processing_fee?: string | number;
+  requires_photo?: boolean | number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class KioskService {
   private get apiUrl(): string {
@@ -238,6 +256,12 @@ export class KioskService {
     return this.http.post<ApiResponse<any>>(`${this.apiUrl}/kiosk/residents/update-requests`, payload);
   }
 
+  getPreviousRequestsForService(residentId: number, serviceId: number, limit = 5): Observable<ApiResponse<PreviousRequest[]>> {
+    const params = new HttpParams()
+      .set('service_id', serviceId.toString())
+      .set('limit', limit.toString());
+    return this.http.get<ApiResponse<PreviousRequest[]>>(`${this.apiUrl}/kiosk/residents/${residentId}/previous-requests`, { params });
+  }
 
   getServices(): Observable<ApiResponse<Service[]>> {
     return this.http.get<ApiResponse<Service[]>>(`${this.apiUrl}/kiosk/services`);

@@ -194,6 +194,29 @@ const findPossibleGuestMatches = async (serviceId, guestInfo) => {
   });
 };
 
+// Previous requests for a resident and specific service (for "Request Again" reuse)
+const findPreviousRequestsByResidentAndService = async (residentId, serviceId, limit = 5) => {
+  const [rows] = await pool.query(
+    `SELECT rq.request_id, rq.request_number, rq.service_id, rq.resident_id,
+            rq.status_id, rq.purpose, rq.remarks, rq.form_data, rq.service_snapshot,
+            rq.request_date, rq.created_at,
+            rs.status_name,
+            s.service_name, s.processing_fee, s.requires_photo
+     FROM requests rq
+     JOIN request_statuses rs ON rq.status_id = rs.status_id
+     LEFT JOIN services s ON rq.service_id = s.service_id
+     WHERE rq.resident_id = ? AND rq.service_id = ?
+     ORDER BY rq.request_id DESC
+     LIMIT ?`,
+    [residentId, serviceId, Number(limit) || 5]
+  );
+  return rows.map(r => ({
+    ...r,
+    form_data: parseJsonField(r.form_data),
+    service_snapshot: parseJsonField(r.service_snapshot)
+  }));
+};
+
 module.exports = {
   ACTIVE_STATUS_IDS,
   RETURNED_STATUS_ID,
@@ -208,5 +231,6 @@ module.exports = {
   findResidentForSubmission,
   findActiveByResidentService,
   findLatestByResidentService,
-  findPossibleGuestMatches
+  findPossibleGuestMatches,
+  findPreviousRequestsByResidentAndService
 };

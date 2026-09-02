@@ -139,6 +139,21 @@ export const fil: TranslationDictionary = {
   'doc.services.selected': 'serbisyo ang napili',
   'doc.services.selectedPlural': 'mga serbisyo ang napili',
   'doc.services.required': 'Mangyaring pumili ng kahit isang serbisyo upang magpatuloy.',
+
+  // Request Again feature
+  'requestAgain.modalTitle': 'May Nakaraang Kahilingan',
+  'requestAgain.modalSubtitle': 'Dati ka nang nag-apply para sa dokumentong ito. Nais mo bang gamitin muli ang iyong nakaraang impormasyon?',
+  'requestAgain.prevReqNumber': 'Nakaraang Request No.',
+  'requestAgain.dateRequested': 'Petsa ng Kahilingan',
+  'requestAgain.status': 'Katayuan',
+  'requestAgain.purpose': 'Nakaraang Layunin',
+  'requestAgain.reuseBtn': 'Humingi Muli (Gamitin ang Datos)',
+  'requestAgain.reuseDesc': 'Ilalagay ang iyong dating isinumiteng impormasyon. Maaari mong baguhin at i-update ang bawat field.',
+  'requestAgain.startFreshBtn': 'Magsimula Mula sa Simula',
+  'requestAgain.startFreshDesc': 'Magsimula ng bagong form gamit lamang ang iyong impormasyon sa resident profile.',
+  'requestAgain.requirementsNotice': 'Ginagamit ang datos mula sa Request {{requestNumber}}. Pakitingnan ang kasalukuyang mga kinakailangan bago magpatuloy.',
+  'requestAgain.formNotice': 'Nalagyan ng draft mula sa Request {{requestNumber}}. Pakisuri at i-update ang anumang impormasyon bago isumite.',
+
   'doc.requirements.title': 'Mga Kinakailangan',
   'doc.requirements.subtitle': 'Pakitingnan ang mga kinakailangan bago magpatuloy.',
   'doc.requirements.whatToBring': 'Ano ang Dadalhin',

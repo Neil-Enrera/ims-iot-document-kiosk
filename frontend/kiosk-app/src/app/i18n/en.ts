@@ -147,8 +147,22 @@ export const en: TranslationDictionary = {
   'doc.services.free': 'FREE',
   'doc.services.hint': 'Select one or more services.',
   'doc.services.selected': 'service selected',
-  'doc.services.selectedPlural': 'services selected',
   'doc.services.required': 'Please select at least one service to continue.',
+
+  // Request Again feature
+  'requestAgain.modalTitle': 'Previous Request Found',
+  'requestAgain.modalSubtitle': 'You have previously applied for this document. Would you like to reuse your previous application details?',
+  'requestAgain.prevReqNumber': 'Previous Request No.',
+  'requestAgain.dateRequested': 'Date Requested',
+  'requestAgain.status': 'Status',
+  'requestAgain.purpose': 'Previous Purpose',
+  'requestAgain.reuseBtn': 'Request Again (Reuse Data)',
+  'requestAgain.reuseDesc': 'Pre-fills your form with previously submitted details. You can review and edit every field.',
+  'requestAgain.startFreshBtn': 'Start Fresh Application',
+  'requestAgain.startFreshDesc': 'Start with a clean form using only your verified resident profile data.',
+  'requestAgain.requirementsNotice': 'Reusing data from Request {{requestNumber}}. Please review current requirements before proceeding.',
+  'requestAgain.formNotice': 'Draft pre-filled from Request {{requestNumber}}. Please review and update any details before submitting.',
+
   'doc.requirements.title': 'Requirements',
   'doc.requirements.subtitle': 'Please review the requirements before proceeding.',
   'doc.requirements.whatToBring': 'What to Bring',
