@@ -1486,98 +1486,32 @@ export type BarangayStep =
                           <path d="M14 3v5h5M8 13h8M8 17h5" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                       </div>
-                      <div class="flex-1 min-w-0">
-                        <div class="flex flex-wrap items-center justify-between gap-2">
-                          <h2 class="text-[clamp(1.125rem,1.4vw,1.5rem)] font-bold text-[#0F172A] leading-tight uppercase break-words">{{ selectedService()?.service_name }}</h2>
-
-                          <!-- Dynamic Applicant Age & Status Badge -->
-                          @if (isApplicantUnderage()) {
-                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-300 shadow-2xs">
-                              <span class="w-2 h-2 rounded-full bg-red-500"></span>
-                              Underage (Age: {{ activeApplicantAge() }}) — Ineligible
-                            </span>
-                          } @else if (isApplicantMinor()) {
-                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300 shadow-2xs">
-                              <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-                              Minor Applicant (Age: {{ activeApplicantAge() }})
-                            </span>
-                          } @else {
-                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-300 shadow-2xs">
-                              <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-                              Adult Applicant {{ activeApplicantAge() !== null ? '(Age: ' + activeApplicantAge() + ')' : '' }}
-                            </span>
-                          }
-                        </div>
+                      <div class="min-w-0">
+                        <h2 class="text-[clamp(1.125rem,1.4vw,1.5rem)] font-bold text-[#0F172A] leading-tight uppercase break-words">{{ selectedService()?.service_name }}</h2>
                         @if (selectedService()?.description) {
-                          <p class="text-[clamp(0.875rem,1vw,0.9375rem)] font-medium text-[#64748B] leading-relaxed mt-1 max-w-[62ch]">{{ selectedService()?.description }}</p>
+                          <p class="text-[clamp(0.875rem,1vw,0.9375rem)] font-medium text-[#64748B] leading-relaxed mt-1.5 max-w-[62ch]">{{ selectedService()?.description }}</p>
                         }
                       </div>
                     </div>
 
-                    <!-- Date of Birth Quick Review & Dynamic Adjust Bar -->
-                    <div class="flex flex-wrap items-center justify-between gap-2 p-2.5 sm:p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] mt-3.5 text-xs sm:text-sm">
-                      <div class="flex items-center gap-2 text-[#334155]">
-                        <svg class="w-4 h-4 text-[#F97316] shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                          <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18" stroke-linecap="round"/>
-                        </svg>
-                        <span>Applicant Birth Date: <strong class="text-[#0F172A]">{{ activeApplicantDob() || 'Not yet entered' }}</strong></span>
-                        @if (activeApplicantAge() !== null) {
-                          <span class="text-[#64748B] font-semibold">({{ activeApplicantAge() }} yrs old)</span>
-                        }
-                      </div>
-                      <div class="flex items-center gap-2">
-                        <label for="doc-req-dob-edit" class="text-xs font-medium text-[#64748B]">Change DOB:</label>
-                        <input id="doc-req-dob-edit" type="date"
-                               [value]="activeApplicantDob()"
-                               (change)="onDobChange($event)"
-                               (input)="onDobChange($event)"
-                               [max]="maxBirthDateString()"
-                               class="px-2 py-1 text-xs rounded-lg border border-[#CBD5E1] bg-white text-[#0F172A] font-semibold shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#F97316]"
-                               title="Change Date of Birth to re-evaluate requirements dynamically" />
-                      </div>
-                    </div>
+                    @if (selectedService()?.requirements && selectedService()!.requirements!.length > 0) {
 
-                    <!-- Divider -->
-                    <div class="border-t border-[#E5E7EB] my-4 sm:my-5"></div>
+                      <!-- Divider -->
+                      <div class="border-t border-[#E5E7EB] my-4 sm:my-5"></div>
 
-                    @if (isApplicantUnderage()) {
-                      <!-- Ineligibility Alert Notice -->
-                      <div class="rounded-2xl bg-red-50 border-2 border-red-300 p-4 sm:p-5 text-red-900 flex items-start gap-3.5 my-2">
-                        <div class="shrink-0 w-10 h-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center">
-                          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-                            <circle cx="12" cy="12" r="9"/>
-                            <line x1="12" y1="8" x2="12" y2="12"/>
-                            <line x1="12" y1="16" x2="12.01" y2="16"/>
-                          </svg>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                          <h4 class="font-bold text-base text-red-900">Applicant is Ineligible (Below Minimum Age)</h4>
-                          <p class="text-xs sm:text-sm text-red-700 mt-1 leading-relaxed">
-                            The minimum eligible age to apply is <strong>{{ getBarangayIdMinAge() }} years old</strong> (Current calculated age: <strong>{{ activeApplicantAge() }}</strong>). Minor applicants below 15 years of age are not eligible to apply independently. Please coordinate with a parent or legal guardian at the Barangay Hall service desk.
-                          </p>
-                        </div>
-                      </div>
-                    } @else if (getApplicableRequirementsForService(selectedService()).length > 0) {
                       <!-- What to Bring heading -->
-                      <div class="flex items-center justify-between mb-3">
-                        <div class="flex items-center gap-2">
-                          <svg class="w-5 h-5 text-[#F97316] shrink-0" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">
-                            <rect x="5" y="4" width="14" height="17" rx="2"/>
-                            <path d="M9 4.5V3h6v1.5" stroke-linecap="round"/>
-                            <path d="M8.5 12.5l2.3 2.3 4.7-4.7" stroke-linecap="round" stroke-linejoin="round"/>
-                          </svg>
-                          <h3 class="text-[clamp(1rem,1.2vw,1.125rem)] font-bold text-[#0F172A]">{{ t('doc.requirements.whatToBring') }}</h3>
-                        </div>
-                        @if (isApplicantMinor()) {
-                          <span class="text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
-                            Minor Requirements (Aged 15–17)
-                          </span>
-                        }
+                      <div class="flex items-center gap-2 mb-3">
+                        <svg class="w-5 h-5 text-[#F97316] shrink-0" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">
+                          <rect x="5" y="4" width="14" height="17" rx="2"/>
+                          <path d="M9 4.5V3h6v1.5" stroke-linecap="round"/>
+                          <path d="M8.5 12.5l2.3 2.3 4.7-4.7" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <h3 class="text-[clamp(1rem,1.2vw,1.125rem)] font-bold text-[#0F172A]">{{ t('doc.requirements.whatToBring') }}</h3>
                       </div>
 
                       <!-- Requirement rows -->
                       <ul class="flex flex-col gap-2.5 sm:gap-3">
-                        @for (req of getApplicableRequirementsForService(selectedService()); track req) {
+                        @for (req of selectedService()!.requirements!; track req) {
                           <li class="w-full flex items-center gap-3 sm:gap-4 bg-[#FCF8F5] border border-[#E5E7EB] rounded-[12px] px-3.5 sm:px-4 py-3">
                             <div class="shrink-0 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#FFF7ED] border border-[#F97316]/15 text-[#F97316] flex items-center justify-center" aria-hidden="true">
                               <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
@@ -1598,6 +1532,7 @@ export type BarangayStep =
                         }
                       </ul>
                     } @else {
+                      <div class="border-t border-[#E5E7EB] my-4 sm:my-5"></div>
                       <p class="text-[clamp(0.9375rem,1vw,1rem)] font-medium text-[#64748B]">{{ t('doc.requirements.none') }}</p>
                     }
                   </section>
@@ -1612,8 +1547,7 @@ export type BarangayStep =
                       {{ t('common.back') }}
                     </button>
                     <button (click)="proceedToForm()"
-                            [disabled]="isApplicantUnderage()"
-                            class="flex items-center justify-center gap-2 min-h-[54px] min-w-[200px] sm:min-w-[220px] px-8 rounded-[14px] bg-[#F97316] text-white text-base sm:text-lg font-bold shadow-[0_4px_14px_rgba(249,115,22,0.35)] hover:bg-[#EA580C] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none">
+                            class="flex items-center justify-center gap-2 min-h-[54px] min-w-[200px] sm:min-w-[220px] px-8 rounded-[14px] bg-[#F97316] text-white text-base sm:text-lg font-bold shadow-[0_4px_14px_rgba(249,115,22,0.35)] hover:bg-[#EA580C] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40">
                       {{ t('common.continue') }}
                       <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
@@ -2911,110 +2845,45 @@ export type BarangayStep =
                   <div class="w-full max-w-[700px]">
 
                     <!-- Page header -->
-                    <div class="text-center mb-3 sm:mb-4">
-                      <div class="flex items-center justify-center gap-2 mb-2">
-                        @if (isApplicantUnderage()) {
-                          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-300 shadow-2xs">
-                            <span class="w-2 h-2 rounded-full bg-red-500"></span>
-                            Underage (Age: {{ activeApplicantAge() }}) — Ineligible
-                          </span>
-                        } @else if (isApplicantMinor()) {
-                          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300 shadow-2xs">
-                            <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-                            Minor Applicant (Age: {{ activeApplicantAge() }}) — Minor Requirements
-                          </span>
-                        } @else {
-                          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-300 shadow-2xs">
-                            <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-                            Adult Applicant {{ activeApplicantAge() !== null ? '(Age: ' + activeApplicantAge() + ')' : '' }} — Standard Requirements
-                          </span>
-                        }
-                      </div>
+                    <div class="text-center mb-4 sm:mb-6">
                       <h1 class="text-[clamp(1.5rem,2.2vw,2.125rem)] font-bold tracking-tight text-[#0F172A] leading-tight">{{ t('bar.requirements.title') }}</h1>
                       <p class="text-[clamp(0.925rem,1.1vw,1.075rem)] font-medium text-[#64748B] mt-1.5 sm:mt-2 max-w-2xl mx-auto">{{ t('bar.requirements.desc') }}</p>
                     </div>
 
-                    <!-- Date of Birth Quick Review & Dynamic Adjust Bar -->
-                    <div class="flex flex-wrap items-center justify-between gap-2 p-3 rounded-2xl bg-white border border-[#E5E7EB] shadow-xs mb-4 text-xs sm:text-sm">
-                      <div class="flex items-center gap-2 text-[#334155]">
-                        <svg class="w-4.5 h-4.5 text-[#F97316] shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                          <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18" stroke-linecap="round"/>
-                        </svg>
-                        <span>Applicant Birth Date: <strong class="text-[#0F172A]">{{ activeApplicantDob() || 'Not yet specified' }}</strong></span>
-                        @if (activeApplicantAge() !== null) {
-                          <span class="text-[#64748B] font-semibold">({{ activeApplicantAge() }} yrs old)</span>
-                        }
-                      </div>
-                      <div class="flex items-center gap-2">
-                        <label for="bar-req-dob-edit" class="text-xs font-medium text-[#64748B]">Change DOB:</label>
-                        <input id="bar-req-dob-edit" type="date"
-                               [value]="activeApplicantDob()"
-                               (change)="onDobChange($event)"
-                               (input)="onDobChange($event)"
-                               [max]="maxBirthDateString()"
-                               class="px-2 py-1 text-xs rounded-lg border border-[#CBD5E1] bg-white text-[#0F172A] font-semibold shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#F97316]"
-                               title="Change Date of Birth to re-evaluate requirements dynamically" />
-                      </div>
-                    </div>
-
                     <!-- Requirements card -->
                     <div class="bg-white border border-[#E5E7EB] rounded-[20px] shadow-[0_2px_14px_rgba(15,23,42,0.07)] px-5 sm:px-7 py-5 sm:py-6">
-                      @if (isApplicantUnderage()) {
-                        <!-- Ineligibility Alert Notice -->
-                        <div class="rounded-2xl bg-red-50 border-2 border-red-300 p-4 sm:p-5 text-red-900 flex items-start gap-3.5 my-2">
-                          <div class="shrink-0 w-10 h-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-                              <circle cx="12" cy="12" r="9"/>
-                              <line x1="12" y1="8" x2="12" y2="12"/>
-                              <line x1="12" y1="16" x2="12.01" y2="16"/>
-                            </svg>
+                      @for (reqItem of getBarangayIdRequirementsList(); track $index; let last = $last) {
+                        <div class="flex items-start gap-3.5 sm:gap-4">
+                          <div class="shrink-0 w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
+                            <span class="text-[16px] font-bold text-[#F97316]">{{ $index + 1 }}</span>
                           </div>
                           <div class="flex-1 min-w-0">
-                            <h4 class="font-bold text-base text-red-900">Applicant is Ineligible (Below Minimum Age)</h4>
-                            <p class="text-xs sm:text-sm text-red-700 mt-1 leading-relaxed">
-                              The minimum eligible age to apply for a Barangay ID is <strong>{{ getBarangayIdMinAge() }} years old</strong> (Current calculated age: <strong>{{ activeApplicantAge() }}</strong>). Minor applicants below 15 years of age are not eligible under the configured Barangay policy. Please coordinate with a parent or legal guardian at the Barangay Hall service desk.
-                            </p>
+                            <h3 class="text-[clamp(1rem,1.4vw,1.1875rem)] font-bold text-[#0F172A] leading-tight">{{ reqItem }}</h3>
+                            <p class="text-[clamp(0.875rem,1.05vw,0.975rem)] text-[#64748B] mt-0.5 leading-snug">Required document for Barangay ID verification</p>
                           </div>
                         </div>
-                      } @else {
-                        @for (reqItem of getBarangayIdRequirementsList(); track $index; let last = $last) {
-                          <div class="flex items-start gap-3.5 sm:gap-4">
-                            <div class="shrink-0 w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
-                              <span class="text-[16px] font-bold text-[#F97316]">{{ $index + 1 }}</span>
-                            </div>
-                            <div class="flex-1 min-w-0">
-                              <h3 class="text-[clamp(1rem,1.4vw,1.1875rem)] font-bold text-[#0F172A] leading-tight">{{ reqItem }}</h3>
-                              <p class="text-[clamp(0.875rem,1.05vw,0.975rem)] text-[#64748B] mt-0.5 leading-snug">
-                                {{ isApplicantMinor() ? 'Required document for Minor Barangay ID verification' : 'Required document for Barangay ID verification' }}
-                              </p>
-                            </div>
-                          </div>
-                          @if (!last) {
-                            <div class="h-px bg-[#E5E7EB] my-4 sm:my-5"></div>
-                          }
+                        @if (!last) {
+                          <div class="h-px bg-[#E5E7EB] my-4 sm:my-5"></div>
                         }
-
-                        <!-- Important notice -->
-                        <div class="flex items-start gap-3 rounded-xl bg-[#FFF7ED] border border-[#F97316]/20 px-4 sm:px-5 py-3.5 mt-5 sm:mt-6">
-                          <svg class="w-5 h-5 text-[#F97316] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
-                            <circle cx="12" cy="12" r="9"/>
-                            <path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
-                          </svg>
-                          <div class="flex-1 min-w-0">
-                            <p class="text-[14px] sm:text-[15px] font-bold text-[#0F172A]">{{ t('bar.requirements.note') }}</p>
-                            <p class="text-[13px] sm:text-[14px] text-[#64748B] mt-1 leading-snug">
-                              {{ isApplicantMinor() ? 'Minor applicants must present a valid Purok certification or student ID during verification.' : t('bar.requirements.noteDesc') }}
-                            </p>
-                          </div>
-                        </div>
                       }
+
+                      <!-- Important notice -->
+                      <div class="flex items-start gap-3 rounded-xl bg-[#FFF7ED] border border-[#F97316]/20 px-4 sm:px-5 py-3.5 mt-5 sm:mt-6">
+                        <svg class="w-5 h-5 text-[#F97316] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+                          <circle cx="12" cy="12" r="9"/>
+                          <path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
+                        </svg>
+                        <div class="flex-1 min-w-0">
+                          <p class="text-[14px] sm:text-[15px] font-bold text-[#0F172A]">{{ t('bar.requirements.note') }}</p>
+                          <p class="text-[13px] sm:text-[14px] text-[#64748B] mt-1 leading-snug">{{ t('bar.requirements.noteDesc') }}</p>
+                        </div>
+                      </div>
                     </div>
 
                     <!-- Continue button (single primary action, centered) -->
                     <div class="flex items-center justify-center mt-5 sm:mt-6">
                       <button (click)="proceedToBarangayForm()"
-                              [disabled]="isApplicantUnderage()"
-                              class="flex items-center justify-center gap-2 min-h-[56px] min-w-[220px] sm:min-w-[240px] px-7 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white text-base sm:text-lg font-bold shadow-[0_4px_14px_rgba(249,115,22,0.35)] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none">
+                              class="flex items-center justify-center gap-2 min-h-[56px] min-w-[220px] sm:min-w-[240px] px-7 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white text-base sm:text-lg font-bold shadow-[0_4px_14px_rgba(249,115,22,0.35)] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40">
                         {{ t('common.continue') }}
                         <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
                           <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
@@ -5157,19 +5026,6 @@ export class KioskComponent implements OnInit, OnDestroy {
   barangayService = signal<Service | null>(null);
   kioskSettings = signal<Record<string, string>>({});
   activeApplicantDob = signal<string>('');
-  activeApplicantAge = computed<number | null>(() => this.calculateAge(this.activeApplicantDob()));
-  isApplicantUnderage = computed<boolean>(() => {
-    const age = this.activeApplicantAge();
-    return age !== null && age < this.getBarangayIdMinAge();
-  });
-  isApplicantMinor = computed<boolean>(() => {
-    const age = this.activeApplicantAge();
-    return age !== null && age >= this.getBarangayIdMinAge() && age < this.getBarangayIdAdultAge();
-  });
-  isApplicantAdult = computed<boolean>(() => {
-    const age = this.activeApplicantAge();
-    return age === null || age >= this.getBarangayIdAdultAge();
-  });
   showBarangayDobError = signal<boolean>(false);
   showGuestDobError = signal<boolean>(false);
   photoQualityError = signal<string>('');
@@ -6131,9 +5987,6 @@ export class KioskComponent implements OnInit, OnDestroy {
   }
 
   proceedToForm() {
-    if (this.isApplicantUnderage()) {
-      return;
-    }
     this.loadServiceForm();
     this.currentStep.set('form');
     this.resetIdleTimer();
@@ -6455,55 +6308,16 @@ export class KioskComponent implements OnInit, OnDestroy {
     }
   }
 
-  getAdultConfiguredRequirements(service?: Service | null): string[] {
-    const svc = service || this.selectedService() || this.barangayService();
+  getBarangayIdRequirementsList(): string[] {
+    const svc = this.barangayService();
     if (svc?.requirements && svc.requirements.length > 0) {
       return svc.requirements;
-    }
-    const adultReqs = this.kioskSettings()['barangay_id_adult_reqs'];
-    if (adultReqs && adultReqs.trim()) {
-      return adultReqs.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
     }
     return [
       'Proof of Residency',
       'Valid Government ID or Barangay Clearance',
       'Barangay ID Application Form'
     ];
-  }
-
-  getMinorConfiguredRequirements(): string[] {
-    const minorReqs = this.kioskSettings()['barangay_id_minor_reqs'];
-    if (minorReqs && minorReqs.trim()) {
-      return minorReqs.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
-    }
-    return [
-      'Proof of Residency',
-      'Purok/Zone Certification or Clearance',
-      'Barangay ID Application Form'
-    ];
-  }
-
-  getApplicableRequirementsForService(service?: Service | null): string[] {
-    const age = this.activeApplicantAge();
-    const minAge = this.getBarangayIdMinAge();
-    const adultAge = this.getBarangayIdAdultAge();
-
-    // 1. Below 15 (< minAge): Underage / Ineligible
-    if (age !== null && age < minAge) {
-      return [];
-    }
-
-    // 2. 15–17 (Minor: >= minAge && < adultAge)
-    if (age !== null && age < adultAge) {
-      return this.getMinorConfiguredRequirements();
-    }
-
-    // 3. 18+ (Adult: >= adultAge or unknown/not yet entered)
-    return this.getAdultConfiguredRequirements(service);
-  }
-
-  getBarangayIdRequirementsList(): string[] {
-    return this.getApplicableRequirementsForService(this.barangayService());
   }
 
   validateBirthDateValue(val: unknown, label: string, serviceName?: string): string | null {
@@ -7084,9 +6898,6 @@ export class KioskComponent implements OnInit, OnDestroy {
   // ============================================================
 
   proceedToBarangayForm() {
-    if (this.isApplicantUnderage()) {
-      return;
-    }
     this.barangayStep.set('form');
     this.resetIdleTimer();
     this.saveState();
