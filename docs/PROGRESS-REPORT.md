@@ -15,6 +15,11 @@
 
 > **Note:** TASK-BACKEND-012 (Payment API) and TASK-FRONTEND-011 (Payment UI) removed per DEC-008.
 > **Recent Updates (August & September 2026):**
+> - **Resolved Barangay ID Draft Preview Error, Added Gender & Place of Birth to Information Update Modal, and Cleaned Resident Profile View** (`placeholder.engine.js` L568-650, `resident-profile.component.ts` L355-385, L580-630, `residents.component.ts` L305-315, `en.ts`, `fil.ts`):
+>   - **Root Cause for Draft ID Preview 500 Error**: `classifyTags` and `auditServiceConfiguration` in `placeholder.engine.js` invoked `.map()` directly on `service.form_fields` and `service.document_mappings`. When fetched via raw SQL queries in `id-card.service.js`, string-encoded JSON fields caused a `TypeError: ((intermediate value) || []).map is not a function`. Resolved with a robust `parseArray` helper that safely handles JSON strings, arrays, and nulls.
+>   - **Added Gender & Place of Birth to Kiosk Request Information Update Modal**: Added `Gender` (dropdown) and `Place of Birth` (text input) form fields in `resident-profile.component.ts`, updated `editForm` and `submitResidentUpdateRequest` payloads, and localized labels in English and Filipino.
+>   - **Removed Blood Type from Resident Profile Modal**: Cleaned up the "Personal Info" tab in the Admin Panel "Residents" detail modal (`residents.component.ts`) by removing the unused Blood Type field.
+>   - **Verification**: Verified draft preview generation returns HTTP 200 with valid DOCX buffer, and verified clean production builds for both `admin-panel` and `kiosk-app` with 0 errors.
 > - **Removed Service Limit Pill Badge on Kiosk Service Selection Screen** (`kiosk.component.ts` L1265-1275):
 >   - Removed the `(i) You can select up to 2 services. (X/2)` pill indicator from the header on the "Select a Service" step for a cleaner, streamlined header presentation while retaining the per-card selection validation and disabled state enforcement.
 >   - **Verification**: Verified clean build via `npm run build:kiosk` with 0 errors.
