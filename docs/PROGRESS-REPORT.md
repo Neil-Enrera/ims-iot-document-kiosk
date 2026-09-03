@@ -15,6 +15,13 @@
 
 > **Note:** TASK-BACKEND-012 (Payment API) and TASK-FRONTEND-011 (Payment UI) removed per DEC-008.
 > **Recent Updates (August & September 2026):**
+> - **Resolved Kiosk Document Request Stale Form Data on Back / Request Abandonment** (`kiosk.component.ts` L5965-5995, L6225-6365, L7560-7570, L8725-8815):
+>   - **Root Cause Identified**: Temporary form entries stashed into `serviceForms` and `formValues` during intermediate step validations were retained across request cycles and reloaded by `loadServiceForm()`, causing backed-out or abandoned inputs to linger when returning to the request flow.
+>   - **Lifecycle-Specific Request Session Reset**: Implemented `clearDocumentRequestSession()` to reset temporary request drafts (`serviceForms`, `servicePhotos`, `formValues`, `formErrors`, `capturedPhoto`, `reusedRequestInfo`) when the resident backs out of the active request (e.g. from `requirements` to `services`, `services` to `welcome`, or deselecting a service).
+>   - **Preserved In-Flight Form Edits**: Actively completing or editing the current request (`Form ↔ Photo ↔ Review`) continues to preserve form input without data loss.
+>   - **Protected Permanent Resident Records & RFID Session**: Resident database profiles and RFID identification remain untouched, ensuring new requests cleanly re-autofill latest verified resident details.
+>   - **Guest Session Cleanup**: Exiting or abandoning the "Continue without Barangay ID" flow clears temporary guest demographics and address data to prevent cross-session contamination.
+>   - **Verification**: Verified clean compilation with 0 errors via `npm run build:kiosk`.
 > - **Unified Service-Configurable Photo Capture for Document Requests & Barangay ID** (`kiosk.component.ts` L2135-2450, L6880-6895, L8585-8735):
 >   - **Direct UI & Workflow Reuse**: Reused the full Barangay ID Photo Capture UI in Document Requests when a service is configured with `Requires Photo Capture` enabled. Includes the 3-column layout (Photo Guidelines card, Camera Viewport with ESP32-CAM MJPEG Stream / WebCam live stream and 90° clockwise rotation, face positioning guide, photo blur/darkness quality check, and Helpful Photo Tips card).
 >   - **Expected Flow Enforcement**: Flow follows `Select Service → Application Form → Photo Capture → Review → Submit` when `requires_photo` is ON, and `Select Service → Application Form → Review → Submit` when `requires_photo` is OFF.
