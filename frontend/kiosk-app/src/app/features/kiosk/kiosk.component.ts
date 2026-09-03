@@ -4,7 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { KioskService, Resident, Service, GuestInfo, FormField, RfidCardInfo, PreviousRequest } from './kiosk.service';
 import { RfidScanService } from './rfid-scan.service';
 import { KioskStateService, KioskState } from './kiosk-state.service';
-import { ButtonComponent } from './button.component';
 import { SignaturePadComponent } from './signature-pad.component';
 import { BarangayPreviewModalComponent } from './barangay-preview-modal.component';
 import { DocumentPreviewModalComponent } from './document-preview-modal.component';
@@ -40,7 +39,7 @@ export type BarangayStep =
 @Component({
   selector: 'app-kiosk',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonComponent, SignaturePadComponent, BarangayPreviewModalComponent, DocumentPreviewModalComponent, ResidentProfileComponent],
+  imports: [CommonModule, FormsModule, SignaturePadComponent, BarangayPreviewModalComponent, DocumentPreviewModalComponent, ResidentProfileComponent],
   template: `
     <div class="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 text-white select-none flex">
 
