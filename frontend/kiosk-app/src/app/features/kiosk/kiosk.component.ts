@@ -2134,51 +2134,370 @@ export type BarangayStep =
 
           <!-- DOC STEP 4: Photo Capture (only if service requires photo) -->
           @if (currentStep() === 'photo') {
-            <div class="absolute inset-0 flex flex-col items-center justify-center p-8">
-              <div class="max-w-lg w-full">
-                <h2 class="text-3xl font-bold mb-6 text-center">{{ t('doc.photo.title') }}</h2>
-                @if (!capturedPhoto()) {
-                  <div class="bg-black rounded-2xl overflow-hidden mb-6 relative aspect-video flex flex-col items-center justify-center text-white">
-                    @if (cameraMode() === 'esp32') {
-                      <img #inlineEsp32StreamEl
-                           [src]="esp32StreamUrl()"
-                           (load)="onEsp32StreamLoad()"
-                           (error)="onEsp32StreamError()"
-                           crossorigin="anonymous"
-                           class="w-full aspect-video object-cover rotate-90 scale-[1.35]"
-                           alt="ESP32-CAM Live Preview" />
-                    } @else {
-                      <video #videoEl autoplay playsinline class="w-full aspect-video object-cover"></video>
-                    }
-                    <button (click)="switchCameraMode(cameraMode() === 'esp32' ? 'webcam' : 'esp32')"
-                            class="absolute top-3 right-3 z-10 bg-black/60 hover:bg-black/80 px-3 py-1.5 rounded-full text-xs font-semibold text-white">
-                      {{ cameraMode() === 'esp32' ? 'Tablet Cam' : 'ESP32-CAM' }}
-                    </button>
-                  </div>
-                  <div class="flex gap-4 justify-center">
-                    <app-button variant="primary" size="lg" [disabled]="!cameraReady() || submitting()" (onClick)="capturePhoto()">
-                      @if (submitting()) { Capturing... } @else { {{ t('doc.form.takePhoto') }} }
-                    </app-button>
-                    <app-button variant="secondary" size="lg" (onClick)="skipPhoto()">{{ t('common.skip') }}</app-button>
-                  </div>
-                } @else {
-                  <div class="text-center">
-                    <img [src]="capturedPhoto()" class="w-64 h-64 rounded-2xl mx-auto mb-4 object-cover border-4 border-white shadow-md" />
-                    @if (enablePhotoValidation() && photoQualityError()) {
-                      <div class="w-full max-w-sm mx-auto mb-4 p-3 rounded-xl bg-amber-50 border-2 border-amber-300 flex items-center gap-2.5 text-amber-900 shadow-sm text-left">
-                        <svg class="w-5 h-5 text-amber-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
-                        </svg>
-                        <p class="text-xs font-semibold leading-snug">{{ photoQualityError() }}</p>
-                      </div>
-                    }
-                    <div class="flex gap-4 justify-center">
-                      <app-button variant="primary" size="lg" (onClick)="confirmPhoto()">{{ t('doc.photo.useThis') }}</app-button>
-                      <app-button variant="secondary" size="lg" (onClick)="retakePhoto()">{{ t('common.retake') }}</app-button>
+            <div class="absolute inset-0 bg-[#F8FAFC] text-[#0F172A] select-none overflow-hidden [font-family:'Inter',sans-serif] flex flex-col">
+
+              <!-- Background image (same as the kiosk landing page) -->
+              <div class="absolute inset-0 bg-cover bg-center pointer-events-none" style="background-image: url('Background.png')" aria-hidden="true"></div>
+              <!-- Subtle radial glow keeps the form legible without washing the orange -->
+              <div class="absolute inset-0 pointer-events-none" aria-hidden="true"
+                   style="background: radial-gradient(ellipse 72% 58% at 50% 42%, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0.35) 55%, rgba(255,255,255,0.05) 100%);"></div>
+              <!-- Curved orange header accent (top-left, same as landing) -->
+              <div class="absolute top-0 left-0 w-64 h-40 pointer-events-none" aria-hidden="true">
+                <svg viewBox="0 0 256 160" class="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M0 0 H256 V80 C256 124 220 160 176 160 H0 Z" fill="#F97316" opacity="0.12"/>
+                </svg>
+              </div>
+
+              <!-- Top navigation: circular back (left) + logo (center) + RFID status (right) -->
+              <div class="relative z-10 flex items-center justify-center px-6 pt-[18px] pb-1">
+                <div class="absolute left-4 sm:left-6 top-[26px] z-40 flex items-center gap-2.5 sm:gap-3">
+                  <button (click)="goBack()"
+                          class="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px] rounded-full border-2 border-[#F97316]/60 bg-white flex items-center justify-center shadow-sm hover:bg-[#FFF7ED] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30"
+                          [attr.aria-label]="t('common.back')">
+                    <svg class="w-6 h-6 sm:w-7 sm:h-7 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                  </button>
+                  <button (click)="goBack()"
+                          class="flex items-center min-h-[44px] rounded-xl px-1 text-[#0F172A] font-semibold text-[15px] sm:text-base hover:text-[#F97316] transition-colors focus:outline-none focus:ring-2 focus:ring-[#F97316]/40">
+                    {{ t('common.back') }}
+                  </button>
+                </div>
+
+                <div class="w-[76px] h-[76px] sm:w-[88px] sm:h-[88px] rounded-full bg-white border-2 border-[#F97316]/30 shadow-sm overflow-hidden flex items-center justify-center">
+                  <img src="Barangay Logo.png" alt="Barangay San Manuel logo" class="w-full h-full object-cover">
+                </div>
+
+                <!-- RFID verification status (RFID-authenticated resident only) -->
+                @if (resident()) {
+                  <div class="absolute right-4 sm:right-6 top-[26px] z-40 flex items-center gap-2.5 rounded-2xl border border-[#BBF7D0] bg-[#DCFCE7]/95 backdrop-blur-sm px-3.5 sm:px-4 py-2 shadow-sm" role="status">
+                    <div class="shrink-0 w-9 h-9 rounded-full bg-[#16A34A] flex items-center justify-center" aria-hidden="true">
+                      <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 2l7 3v6c0 5-3.2 8.4-7 10-3.8-1.6-7-5-7-10V5l7-3z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m8.7 12 2.3 2.3 4.3-4.3"/>
+                      </svg>
+                    </div>
+                    <div class="text-left">
+                      <p class="text-[13px] sm:text-[14px] font-bold text-[#166534] leading-tight">{{ t('doc.form.rfidVerified') }}</p>
+                      <p class="text-[11px] sm:text-[12px] font-semibold text-[#15803D] leading-tight">{{ t('doc.form.activeResident') }}</p>
                     </div>
                   </div>
                 }
               </div>
+
+              <!-- Page header -->
+              <div class="relative z-10 text-center px-4 pt-0.5 pb-0.5">
+                <h1 class="text-[clamp(1.5rem,2.2vw,2.125rem)] font-bold tracking-tight text-[#0F172A] leading-tight">{{ t('bar.photo.title') }}</h1>
+                <p class="text-[clamp(0.925rem,1.1vw,1.075rem)] font-medium text-[#64748B] mt-1 sm:mt-1.5">{{ selectedService()?.service_name ? (selectedService()!.service_name + ' — ' + t('bar.photo.desc')) : t('bar.photo.desc') }}</p>
+              </div>
+
+              <!-- Progress indicator (6 steps) -->
+              <div class="relative z-10 flex items-center justify-center px-4 pb-1">
+                <ol class="flex items-center gap-1.5 sm:gap-2.5" aria-label="Kiosk progress">
+                  @for (num of [1, 2, 3, 4, 5, 6]; track num) {
+                    <li class="flex items-center gap-1.5 sm:gap-2.5">
+                      @if (num > 1) {
+                        <span class="w-5 sm:w-8 h-[3px] rounded-full"
+                              [class.bg-[#F97316]]="docProgressState(num) !== 'upcoming'"
+                              [class.bg-[#E5E7EB]]="docProgressState(num) === 'upcoming'"></span>
+                      }
+                      @if (docProgressState(num) === 'done') {
+                        <span class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#FFF7ED] border-2 border-[#F97316] flex items-center justify-center" aria-hidden="true">
+                          <svg class="w-4 h-4 sm:w-[18px] sm:h-[18px] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.6" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                          </svg>
+                        </span>
+                        <span class="hidden lg:block text-[13px] sm:text-[14px] font-bold text-[#0F172A] whitespace-nowrap">{{ t('doc.progress.' + num) }}</span>
+                      } @else if (docProgressState(num) === 'current') {
+                        <span class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#F97316] border-2 border-[#F97316] text-white flex items-center justify-center text-sm sm:text-base font-bold shadow-sm" aria-hidden="true">{{ num }}</span>
+                        <span class="hidden lg:block text-[13px] sm:text-[14px] font-bold text-[#F97316] whitespace-nowrap">{{ t('doc.progress.' + num) }}</span>
+                      } @else {
+                        <span class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white border-2 border-[#CBD5E1] text-[#94A3B8] flex items-center justify-center text-sm sm:text-base font-bold" aria-hidden="true">{{ num }}</span>
+                        <span class="hidden lg:block text-[13px] sm:text-[14px] font-medium text-[#64748B] whitespace-nowrap">{{ t('doc.progress.' + num) }}</span>
+                      }
+                    </li>
+                  }
+                </ol>
+              </div>
+
+              <!-- Main content: 3-column layout matching Barangay ID photo capture -->
+              <div class="relative flex-1 overflow-y-auto">
+                <div class="min-h-full flex flex-col items-center justify-center px-5 sm:px-8 py-4 sm:py-6">
+                  <div class="w-full max-w-[1180px]">
+                    <div class="grid grid-cols-1 xl:grid-cols-[240px_minmax(0,1fr)_240px] gap-4 sm:gap-5 items-stretch">
+
+                      <!-- LEFT: Photo Guidelines -->
+                      <aside aria-label="Photo Guidelines" class="order-2 xl:order-1 flex flex-col justify-center rounded-[20px] border border-[#E5E7EB] bg-white shadow-[0_2px_14px_rgba(15,23,42,0.07)] px-5 sm:px-6 py-5 sm:py-6">
+                        <div class="flex items-center gap-3 mb-3">
+                          <div class="shrink-0 w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
+                            <svg class="w-6 h-6 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18z"/>
+                              <path stroke-linecap="round" d="M8.5 14.5c1.8 1.6 5.2 1.6 7 0"/>
+                              <circle cx="9" cy="10.2" r=".5" fill="currentColor"/>
+                              <circle cx="15" cy="10.2" r=".5" fill="currentColor"/>
+                            </svg>
+                          </div>
+                          <h3 class="text-[clamp(1rem,1.4vw,1.1875rem)] font-bold text-[#0F172A] leading-tight">{{ t('bar.photo.guideTitle') }}</h3>
+                        </div>
+                        <ul class="space-y-3 sm:space-y-3.5">
+                          <li class="flex items-start gap-3">
+                            <svg class="w-5 h-5 text-[#F97316] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+                              <circle cx="12" cy="8" r="3.5"/>
+                              <path d="M5 20c0-3.8 3.1-6 7-6s7 2.2 7 6" stroke-linecap="round"/>
+                            </svg>
+                            <span class="text-[clamp(0.875rem,1.05vw,0.975rem)] text-[#334155] leading-snug">{{ t('bar.photo.guide1') }}</span>
+                          </li>
+                          <li class="flex items-start gap-3">
+                            <svg class="w-5 h-5 text-[#F97316] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+                              <circle cx="12" cy="12" r="7"/>
+                              <path d="M9 15.5h6" stroke-linecap="round"/>
+                              <circle cx="9" cy="10" r=".5" fill="currentColor"/>
+                              <circle cx="15" cy="10" r=".5" fill="currentColor"/>
+                            </svg>
+                            <span class="text-[clamp(0.875rem,1.05vw,0.975rem)] text-[#334155] leading-snug">{{ t('bar.photo.guide2') }}</span>
+                          </li>
+                          <li class="flex items-start gap-3">
+                            <svg class="w-5 h-5 text-[#F97316] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+                              <path d="M4 13c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke-linecap="round"/>
+                              <path d="M2 14h4M18 14h4M5 16.5c0 1.8 3 2.6 7 2.6s7-.8 7-2.6" stroke-linecap="round"/>
+                              <path d="M2 3l20 18" stroke-linecap="round"/>
+                            </svg>
+                            <span class="text-[clamp(0.875rem,1.05vw,0.975rem)] text-[#334155] leading-snug">{{ t('bar.photo.guide3') }}</span>
+                          </li>
+                          <li class="flex items-start gap-3">
+                            <svg class="w-5 h-5 text-[#F97316] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+                              <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/>
+                              <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                            <span class="text-[clamp(0.875rem,1.05vw,0.975rem)] text-[#334155] leading-snug">{{ t('bar.photo.guide4') }}</span>
+                          </li>
+                          <li class="flex items-start gap-3">
+                            <svg class="w-5 h-5 text-[#F97316] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+                              <circle cx="12" cy="12" r="4"/>
+                              <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1" stroke-linecap="round"/>
+                            </svg>
+                            <span class="text-[clamp(0.875rem,1.05vw,0.975rem)] text-[#334155] leading-snug">{{ t('bar.photo.guide5') }}</span>
+                          </li>
+                        </ul>
+                      </aside>
+
+                      <!-- CENTER: Camera preview -->
+                      <div class="order-1 xl:order-2 w-full max-w-[520px] mx-auto">
+                        <div class="bg-white border border-[#E5E7EB] rounded-[20px] shadow-[0_2px_14px_rgba(15,23,42,0.07)] p-2 sm:p-2.5">
+
+                          <!-- Camera viewport -->
+                          <div class="relative aspect-[4/3] rounded-[14px] overflow-hidden bg-[#0F172A]">
+                            @if (capturedPhoto()) {
+                              <img [src]="capturedPhoto()" alt="Captured photo" class="absolute inset-0 w-full h-full object-cover" />
+                            } @else if ((errorMessage() || esp32Error()) && !cameraReady()) {
+                              <!-- Camera unavailable warning (compact) -->
+                              <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center bg-[#0F172A]">
+                                <svg class="w-9 h-9 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M2 2l20 20M8.5 4h7L17 6h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-1"/>
+                                  <path stroke-linecap="round" d="M4 6h.5a2.5 2.5 0 0 0 2.5 2.5V9"/>
+                                  <circle cx="12" cy="14" r="3"/>
+                                </svg>
+                                <p class="text-white text-base font-semibold">{{ t('bar.photo.unavailable') }}</p>
+                                <p class="text-white/70 text-[13px] sm:text-sm max-w-xs">{{ esp32Error() ? 'ESP32-CAM is connecting or offline.' : (errorMessage() || t('bar.photo.unavailableDesc')) }}</p>
+                                <div class="flex gap-2.5 flex-wrap justify-center mt-1">
+                                  <button (click)="retryPhotoCamera()"
+                                          class="flex items-center gap-2 min-h-[44px] px-5 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white font-semibold text-sm transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                      <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v6h6M20 20v-6h-6M4 10a8 8 0 0 1 14-4M20 14a8 8 0 0 1-14 4"/>
+                                    </svg>
+                                    {{ t('bar.photo.tryAgain') }}
+                                  </button>
+                                  <button (click)="switchCameraMode(cameraMode() === 'esp32' ? 'webcam' : 'esp32')"
+                                          class="flex items-center gap-2 min-h-[44px] px-4 rounded-xl bg-white/20 hover:bg-white/30 text-white font-semibold text-sm transition-all duration-150">
+                                    {{ cameraMode() === 'esp32' ? 'Use Tablet Camera' : 'Use ESP32-CAM' }}
+                                  </button>
+                                </div>
+                              </div>
+                            } @else {
+                              <!-- Camera element: ESP32-CAM MJPEG Stream or Video -->
+                              @if (cameraMode() === 'esp32') {
+                                <img #esp32StreamEl
+                                     [src]="esp32StreamUrl()"
+                                     (load)="onEsp32StreamLoad()"
+                                     (error)="onEsp32StreamError()"
+                                     crossorigin="anonymous"
+                                     class="absolute inset-0 w-full h-full object-cover select-none pointer-events-none rotate-90 scale-[1.35]"
+                                     alt="ESP32-CAM Live Preview" />
+                              } @else {
+                                <video #videoEl autoplay playsinline class="absolute inset-0 w-full h-full object-cover"></video>
+                              }
+
+                              <!-- Face-positioning guide (fades out slightly when the camera is live) -->
+                              <div class="absolute inset-0 pointer-events-none transition-opacity duration-300" [class.opacity-40]="cameraReady()">
+                                <!-- Corner markers -->
+                                <div class="absolute inset-[18%]" aria-hidden="true">
+                                  <span class="absolute left-0 top-0 h-[2.5px] w-6 rounded bg-[#F97316]/90"></span>
+                                  <span class="absolute left-0 top-0 h-6 w-[2.5px] rounded bg-[#F97316]/90"></span>
+                                  <span class="absolute right-0 top-0 h-[2.5px] w-6 rounded bg-[#F97316]/90"></span>
+                                  <span class="absolute right-0 top-0 h-6 w-[2.5px] rounded bg-[#F97316]/90"></span>
+                                  <span class="absolute left-0 bottom-0 h-[2.5px] w-6 rounded bg-[#F97316]/90"></span>
+                                  <span class="absolute left-0 bottom-0 h-6 w-[2.5px] rounded bg-[#F97316]/90"></span>
+                                  <span class="absolute right-0 bottom-0 h-[2.5px] w-6 rounded bg-[#F97316]/90"></span>
+                                  <span class="absolute right-0 bottom-0 h-6 w-[2.5px] rounded bg-[#F97316]/90"></span>
+                                </div>
+                                <!-- Head-and-shoulders silhouette -->
+                                <svg class="absolute inset-0 m-auto w-36 max-w-[42%] text-white/40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 120 140" aria-hidden="true">
+                                  <circle cx="60" cy="46" r="24"/>
+                                  <path d="M28 126c2-26 16-40 32-40s30 14 32 40" stroke-linecap="round"/>
+                                </svg>
+                                <!-- Caption -->
+                                <div class="absolute inset-x-0 bottom-3 flex justify-center px-4">
+                                  <span class="rounded-full bg-black/50 backdrop-blur-sm px-4 py-1.5 text-white text-[13px] font-medium">{{ t('bar.photo.positionGuide') }}</span>
+                                </div>
+                              </div>
+
+                              <!-- Camera status chip & mode switch -->
+                              <div class="absolute left-3 top-3 flex items-center gap-2 rounded-full bg-black/60 backdrop-blur-sm px-3 py-1.5 z-20">
+                                <span class="h-2.5 w-2.5 rounded-full shrink-0"
+                                      [class.bg-[#10B981]]="cameraReady()"
+                                      [class.bg-[#FBBF24]]="!cameraReady()"></span>
+                                @if (cameraReady()) {
+                                  <span class="text-white text-[12px] font-semibold">{{ cameraMode() === 'esp32' ? 'ESP32-CAM (Live)' : t('bar.photo.cameraReady') }}</span>
+                                } @else {
+                                  <span class="text-white/80 text-[12px] font-semibold">Connecting...</span>
+                                }
+                              </div>
+
+                              <!-- Switch Camera Mode (top-right chip) -->
+                              <button (click)="switchCameraMode(cameraMode() === 'esp32' ? 'webcam' : 'esp32')"
+                                      class="absolute right-3 top-3 z-20 flex items-center gap-1.5 rounded-full bg-black/60 backdrop-blur-sm hover:bg-black/80 px-3 py-1.5 text-white text-[11px] font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-[#F97316]">
+                                <svg class="w-3.5 h-3.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v6h6M20 20v-6h-6M4 10a8 8 0 0 1 14-4M20 14a8 8 0 0 1-14 4"/>
+                                </svg>
+                                {{ cameraMode() === 'esp32' ? 'Tablet Cam' : 'ESP32-CAM' }}
+                              </button>
+                            }
+                          </div>
+
+                          <!-- Actions -->
+                          <div class="flex flex-col items-center justify-center gap-2.5 pt-3 sm:pt-3.5 pb-0.5">
+                            @if (!capturedPhoto()) {
+                              <button (click)="capturePhoto()" [disabled]="!cameraReady() || submitting()"
+                                      class="flex items-center justify-center gap-2.5 min-h-[56px] min-w-[300px] px-7 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white text-base sm:text-lg font-semibold shadow-[0_4px_14px_rgba(249,115,22,0.35)] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none">
+                                <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 8a2 2 0 0 1 2-2h2l1.5-2h7L17 6h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
+                                  <circle cx="12" cy="13" r="3.5"/>
+                                </svg>
+                                @if (submitting()) { Capturing... } @else { {{ t('bar.photo.take') }} }
+                              </button>
+                              @if (cameraReady()) {
+                                <p class="text-[13px] sm:text-sm text-[#64748B]">{{ t('bar.photo.waiting') }}</p>
+                              }
+                            } @else {
+                              @if (enablePhotoValidation() && photoQualityError()) {
+                                <div class="w-full max-w-[440px] mx-auto mb-2 p-3 rounded-xl bg-amber-50 border-2 border-amber-300 flex items-center gap-2.5 text-amber-900 shadow-sm text-left animate-shake">
+                                  <svg class="w-5 h-5 text-amber-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+                                  </svg>
+                                  <p class="text-xs sm:text-sm font-semibold leading-snug">{{ photoQualityError() }}</p>
+                                </div>
+                              }
+                              <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+                                <button (click)="confirmPhoto()"
+                                        class="flex items-center justify-center gap-2.5 min-h-[56px] min-w-[200px] px-7 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white text-base sm:text-lg font-semibold shadow-[0_4px_14px_rgba(249,115,22,0.35)] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40">
+                                  {{ t('bar.photo.use') }}
+                                  <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                                  </svg>
+                                </button>
+                                <button (click)="retakePhoto()"
+                                        class="flex items-center justify-center gap-2 min-h-[56px] min-w-[160px] px-6 rounded-xl bg-white border-2 border-[#F97316] text-[#F97316] hover:bg-[#FFF7ED] active:scale-[0.98] text-base sm:text-lg font-semibold transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30">
+                                  <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v6h6M20 20v-6h-6M4 10a8 8 0 0 1 14-4M20 14a8 8 0 0 1-14 4"/>
+                                  </svg>
+                                  {{ t('bar.photo.retake') }}
+                                </button>
+                              </div>
+                            }
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- RIGHT: Tips -->
+                      <aside aria-label="Photo Tips" class="order-3 flex flex-col justify-center rounded-[20px] border border-[#F97316]/20 bg-[#FFF7ED] px-5 sm:px-6 py-5 sm:py-6">
+                        <div class="flex items-center gap-3 mb-3">
+                          <div class="shrink-0 w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white border border-[#F97316]/20 flex items-center justify-center" aria-hidden="true">
+                            <svg class="w-6 h-6 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3a5.5 5.5 0 0 1 3.4 9.8c-.6.5-1.1 1.2-1.3 2.2h-4.2c-.2-1-.7-1.7-1.3-2.2A5.5 5.5 0 0 1 12 3z"/>
+                              <path stroke-linecap="round" d="M9.5 17.5h5M10.5 21h3"/>
+                            </svg>
+                          </div>
+                          <h3 class="text-[clamp(1rem,1.4vw,1.1875rem)] font-bold text-[#0F172A] leading-tight">{{ t('bar.photo.tipsTitle') }}</h3>
+                        </div>
+                        <p class="text-[clamp(0.875rem,1.05vw,0.975rem)] text-[#64748B] leading-relaxed">{{ t('bar.photo.tipsDesc') }}</p>
+                      </aside>
+
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Footer: same as the kiosk landing page (includes language selector) -->
+              <div class="relative z-10 border-t border-[#E5E7EB] bg-white/90 backdrop-blur-sm">
+                <div class="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-1.5 lg:py-2 grid grid-cols-2 md:grid-cols-4 gap-x-6 lg:gap-x-8 gap-y-2 lg:gap-y-3 items-center">
+                  <!-- Language Selector -->
+                  <div class="flex flex-col items-center gap-1.5 text-center min-w-0">
+                    <div class="flex items-center gap-1.5 text-[#0F172A]">
+                      <svg class="w-[18px] h-[18px] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="9"/><path d="M3.6 9h16.8M3.6 15h16.8M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/>
+                      </svg>
+                      <span class="text-[13px] font-semibold">{{ t('landing.footer.language') }}</span>
+                    </div>
+                    <div class="inline-flex rounded-lg overflow-hidden border border-[#E5E7EB] bg-white shadow-sm min-w-0">
+                      <button
+                        (click)="setLanguage('en')"
+                        class="px-3 sm:px-5 py-1.5 text-[13px] font-semibold transition-colors min-h-[34px]"
+                        [class.bg-[#F97316]]="language() === 'en'"
+                        [class.text-white]="language() === 'en'"
+                        [class.text-[#64748B]]="language() !== 'en'"
+                        [class.hover:bg-[#F1F5F9]]="language() !== 'en'">
+                        English
+                      </button>
+                      <button
+                        (click)="setLanguage('fil')"
+                        class="px-3 sm:px-5 py-1.5 text-[13px] font-semibold transition-colors min-h-[34px]"
+                        [class.bg-[#F97316]]="language() === 'fil'"
+                        [class.text-white]="language() === 'fil'"
+                        [class.text-[#64748B]]="language() !== 'fil'"
+                        [class.hover:bg-[#F1F5F9]]="language() !== 'fil'">
+                        Filipino
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Help Desk -->
+                  <div class="flex items-center gap-3 text-left min-w-0">
+                    <div class="w-9 h-9 rounded-xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center shrink-0" aria-hidden="true">
+                      <svg class="w-5 h-5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"/>
+                      </svg>
+                    </div>
+                    <div class="min-w-0">
+                      <p class="text-[12px] font-semibold text-[#0F172A] leading-tight truncate">{{ t('landing.footer.needHelp') }}</p>
+                      <p class="text-[11px] text-[#64748B] leading-tight truncate">{{ t('landing.footer.approachStaff') }}</p>
+                    </div>
+                  </div>
+
+                  <!-- Date & Time -->
+                  <div class="col-span-2 md:col-span-2 flex items-center justify-center md:justify-end gap-3 text-right">
+                    <div class="w-9 h-9 rounded-xl bg-[#FFF7ED] border border-[#F97316]/20 flex items-center justify-center shrink-0" aria-hidden="true">
+                      <svg class="w-5 h-5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="9"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <p class="text-[11px] lg:text-[12px] font-medium text-[#64748B] leading-snug">{{ formatFooterDate() }}</p>
+                      <p class="text-base lg:text-lg font-bold text-[#F97316] leading-tight">{{ formatFooterTime() }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
             </div>
           }
 
@@ -6561,10 +6880,20 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.serviceForms.update(m => ({ ...m, [service.service_id]: this.formValues() }));
 
     if (service.requires_photo) {
-      this.capturedPhoto.set(this.servicePhotos()[service.service_id] ?? null);
+      // Reuse existing photo from transaction if already captured for this or another service in current session
+      const existingPhoto = this.servicePhotos()[service.service_id]
+        || Object.values(this.servicePhotos()).find(p => !!p)
+        || this.capturedPhoto();
+
+      if (existingPhoto) {
+        this.capturedPhoto.set(existingPhoto);
+        this.servicePhotos.update(m => ({ ...m, [service.service_id]: existingPhoto }));
+      } else {
+        this.capturedPhoto.set(null);
+        setTimeout(() => this.startCamera(), 100);
+      }
       this.currentStep.set('photo');
       this.resetIdleTimer();
-      setTimeout(() => this.startCamera(), 100);
     } else {
       this.advanceOrReview();
     }
@@ -8258,6 +8587,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     }
 
     this.photoQualityError.set('');
+    this.stopCamera();
     this.stashActivePhoto();
     this.clearDocPreview();
     this.advanceOrReview();
@@ -8359,13 +8689,21 @@ export class KioskComponent implements OnInit, OnDestroy {
       if (step === 'review') {
         const svc = this.selectedService();
         if (svc?.requires_photo) {
-          this.capturedPhoto.set(this.servicePhotos()[svc.service_id] ?? null);
+          const photo = this.servicePhotos()[svc.service_id] || this.capturedPhoto();
+          this.capturedPhoto.set(photo ?? null);
           this.currentStep.set('photo');
-          setTimeout(() => this.startCamera(), 100);
+          if (!photo) setTimeout(() => this.startCamera(), 100);
         } else {
           this.loadServiceForm();
           this.currentStep.set('form');
         }
+        this.saveState();
+        return;
+      }
+      if (step === 'photo') {
+        this.stopCamera();
+        this.loadServiceForm();
+        this.currentStep.set('form');
         this.saveState();
         return;
       }
@@ -8392,13 +8730,6 @@ export class KioskComponent implements OnInit, OnDestroy {
         }
         this.saveState();
         return;
-      }
-      const steps: DocStep[] = ['welcome', 'guest-info', 'services', 'requirements', 'form', 'photo', 'review', 'success'];
-      const idx = steps.indexOf(step);
-      if (idx > 0) {
-        if (step === 'photo') this.stopCamera();
-        this.currentStep.set(steps[idx - 1]);
-        this.saveState();
       }
       return;
     }
