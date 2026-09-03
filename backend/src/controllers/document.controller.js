@@ -103,10 +103,14 @@ const scanPlaceholders = async (req, res) => {
 
     const placeholders = await documentService.scanTemplatePlaceholders(service.data);
     const classified = documentService.classifyPlaceholders(placeholders, service.data);
+    const audit = documentService.auditServiceConfiguration(service.data, placeholders);
     return successResponse(res, 'Template placeholders retrieved.', {
       placeholders,
       known: classified.known,
-      unknown: classified.unknown
+      unknown: classified.unknown,
+      unmappedFormFields: audit.unmappedFormFields,
+      warnings: audit.warnings,
+      audit
     });
   } catch (error) {
     console.error('Template placeholder scan error:', error);

@@ -15,6 +15,13 @@
 
 > **Note:** TASK-BACKEND-012 (Payment API) and TASK-FRONTEND-011 (Payment UI) removed per DEC-008.
 > **Recent Updates (August & September 2026):**
+> - **Enhanced Configurable Document Request & Generation Architecture with Real-Time Mapping Audit & Validation** (`placeholder.engine.js`, `document.service.js`, `document.controller.js`, `service-form.component.ts`, `placeholder-engine.test.js`):
+>   - **End-to-End Dynamic Service Support**: Ensured any new or existing service configured by the Administrator (custom form fields, DOCX template with arbitrary placeholders, explicit mappings) generates documents and previews dynamically without code changes or hardcoded conditionals.
+>   - **Comprehensive Configuration Audit Engine**: Added `auditServiceConfiguration()` to the placeholder engine which analyzes application fields against template placeholders and explicit mappings to flag unmapped application fields, unmapped template placeholders, and missing required mappings.
+>   - **Interactive Live Audit & Readiness Banner in Admin Panel**: Added a real-time validation banner in the Service Form builder that alerts administrators to unmapped application fields or template placeholders, complete with 1-click `+ Map` actions to instantly generate mappings.
+>   - **Full Parity for Draft Previews & Generated Documents**: Extended Kiosk live preview (`renderRequestPreview`) and Admin preview (`generateDocument`) to share identical placeholder resolution, fallback logic, and full guest demographic/address spreading.
+>   - **Missing Value Tracking**: Enhanced `apply()` to track and report missing values during document generation.
+>   - **Verification**: Verified 19/19 passing unit tests in `placeholder-engine.test.js`, 24/24 passing unit tests in core backend test suites, and clean production builds for both `admin-panel` and `kiosk-app` with 0 compilation errors.
 > - **Fixed Document Preview & Generation Placeholder Mapping Bug** (`placeholder.engine.js`, `service-form.component.ts`, `025-update-service-document-mappings.sql`, `placeholder-engine.test.js`):
 >   - **Bidirectional Mapping Resolution & Fallback Pipeline**: Fixed root cause where document requests in "Under Review" (and other statuses) for registered residents rendered blank full names when service mappings pointed to `source: "application"`. Added graceful fallback across `ctx.resident`, `ctx.application`, and master library resolvers.
 >   - **Date Part Resolution**: Resolved date part placeholders (`{{day}}`, `{{month}}`, `{{year}}`) to their proper discrete tokens (`3`, `September`, `2026`) even when mapped as system date fields.

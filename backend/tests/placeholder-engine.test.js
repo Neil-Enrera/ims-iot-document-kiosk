@@ -187,7 +187,7 @@ describe('Placeholder resolution', () => {
   });
 });
 
-describe('Placeholder validation', () => {
+describe('Placeholder validation and configuration audit', () => {
   it('classifies known, mapped and unknown tags', () => {
     const svc = { ...service, document_mappings: [{ placeholder: 'custom', source: 'application', field: 'custom' }] };
     const { known, unknown } = engine.classifyTags(['full_name', 'custom', 'mystery'], svc);
@@ -197,9 +197,100 @@ describe('Placeholder validation', () => {
     assert.deepStrictEqual(unknown.map((u) => u.norm), ['mystery']);
   });
 
-  it('warns about unknown placeholders', () => {
-    const warnings = engine.buildWarnings(['full_name', 'mystery'], service);
-    assert.ok(warnings.some((w) => w.includes('mystery')));
+  it('warns about unknown placeholders and unmapped application fields', () => {
+    const testSvc = {
+      service_name: 'Business Permit',
+      form_fields: [
+        { key: 'business_name', label: 'Business Name' },
+        { key: 'capital_amount', label: 'Capital Amount' }
+      ],
+      document_mappings: [
+        { placeholder: 'business_name', source: 'application', field: 'business_name' }
+      ]
+    };
+    const audit = engine.auditServiceConfiguration(testSvc, ['business_name', 'unknown_tag']);
+    assert.strictEqual(audit.valid, false);
+    assert.strictEqual(audit.unmappedFormFields.length, 1);
+    assert.strictEqual(audit.unmappedFormFields[0].key, 'capital_amount');
+    assert.strictEqual(audit.unknownTags.length, 1);
+    assert.strictEqual(audit.unknownTags[0].norm, 'unknown_tag');
+    assert.ok(audit.warnings.some((w) => w.includes('capital_amount') || w.includes('Capital Amount')));
+    assert.ok(audit.warnings.some((w) => w.includes('unknown_tag')));
+  });
+
+  it('tracks missing values when generating document data for a request', () => {
+    const testCtx = engine.buildContext({
+      request: { request_number: 'REQ-123', form_data: { business_name: 'Alpha Sari-Sari Store' } },
+      resident: { first_name: 'Maria', last_name: 'Santos' },
+      service: {
+        service_name: 'Business Permit',
+        document_mappings: [
+          { placeholder: 'business_name', source: 'application', field: 'business_name' },
+          { placeholder: 'capital_amount', source: 'application', field: 'capital_amount' }
+        ]
+      },
+      barangay
+    });
+    const { data, missingValues } = engine.apply({
+      templateTags: ['full_name', 'business_name', 'capital_amount'],
+      service: {
+        document_mappings: [
+          { placeholder: 'business_name', source: 'application', field: 'business_name' },
+          { placeholder: 'capital_amount', source: 'application', field: 'capital_amount' }
+        ]
+      },
+      context: testCtx
+    });
+    assert.strictEqual(data.full_name, 'Maria Santos');
+    assert.strictEqual(data.business_name, 'Alpha Sari-Sari Store');
+    assert.strictEqual(data.capital_amount, '');
+    assert.ok(missingValues.includes('capital_amount'));
+  });
+
+  it('handles brand new service with completely custom fields without code modification', () => {
+    const brandNewService = {
+      service_name: 'Tree Cutting Permit',
+      form_fields: [
+        { key: 'tree_species', label: 'Tree Species' },
+        { key: 'tree_location', label: 'Tree Location' },
+        { key: 'cutting_reason', label: 'Reason for Cutting' }
+      ],
+      document_mappings: [
+        { placeholder: 'applicant_name', source: 'resident', field: 'full_name' },
+        { placeholder: 'species', source: 'application', field: 'tree_species' },
+        { placeholder: 'location', source: 'application', field: 'tree_location' },
+        { placeholder: 'reason', source: 'application', field: 'cutting_reason' }
+      ]
+    };
+
+    const newReqCtx = engine.buildContext({
+      request: {
+        request_number: 'REQ-99999',
+        form_data: {
+          tree_species: 'Mahogany',
+          tree_location: 'Block 4 Lot 10 Phase 2',
+          cutting_reason: 'Hazardous tilting near power line'
+        }
+      },
+      resident: { first_name: 'Pedro', last_name: 'Penduko', birth_date: '1988-12-05' },
+      service: brandNewService,
+      barangay,
+      processedBy: 'Officer Santos'
+    });
+
+    const { data, unknown, missingValues } = engine.apply({
+      templateTags: ['applicant_name', 'species', 'location', 'reason', 'current_date', 'control_number'],
+      service: brandNewService,
+      context: newReqCtx
+    });
+
+    assert.strictEqual(data.applicant_name, 'Pedro Penduko');
+    assert.strictEqual(data.species, 'Mahogany');
+    assert.strictEqual(data.location, 'Block 4 Lot 10 Phase 2');
+    assert.strictEqual(data.reason, 'Hazardous tilting near power line');
+    assert.strictEqual(data.control_number, 'REQ-99999');
+    assert.strictEqual(unknown.length, 0);
+    assert.strictEqual(missingValues.length, 0);
   });
 });
 

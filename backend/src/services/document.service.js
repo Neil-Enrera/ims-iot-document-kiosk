@@ -252,15 +252,8 @@ const renderRequestPreview = async ({ serviceId, formData, residentId, guest, pr
   // the placeholder engine resolves {{full_name}} / {{address}} the same way it
   // does for the final stored request.
   const application = { ...(formData || {}) };
-  if (guest) {
-    application._guest = {
-      full_name: guest.full_name || null,
-      middle_name: guest.middle_name || null,
-      birth_date: guest.birth_date || null,
-      address: guest.address || null,
-      contact_number: guest.contact_number || null,
-      email: guest.email || null
-    };
+  if (guest && typeof guest === 'object') {
+    application._guest = { ...guest };
   }
 
   const resident = residentId ? await findResident(residentId) : null;
@@ -501,5 +494,6 @@ module.exports = {
   placeholderLibrary: () => placeholderEngine.listAll(),
   placeholderCategories: () => placeholderEngine.categories(),
   classifyPlaceholders: (tags, service) => placeholderEngine.classifyTags(tags, service),
+  auditServiceConfiguration: (service, tags) => placeholderEngine.auditServiceConfiguration(service, tags),
   buildPlaceholderWarnings: (tags, service) => placeholderEngine.buildWarnings(tags, service)
 };

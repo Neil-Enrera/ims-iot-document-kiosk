@@ -331,6 +331,61 @@ const APPLICATION_COMMON_FIELDS = [
         @if (placeholderScanError) {
           <p class="text-xs text-amber-600">{{ placeholderScanError }}</p>
         }
+
+        <!-- Live Mapping Audit Status Banner -->
+        @if (unmappedFormFields().length > 0) {
+          <div class="p-2.5 bg-amber-50 border border-amber-200 rounded-md text-xs text-amber-800 space-y-1">
+            <div class="flex items-center gap-1.5 font-semibold text-amber-900">
+              <svg class="w-4 h-4 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+              </svg>
+              <span>{{ unmappedFormFields().length }} application field(s) are not mapped to the document template:</span>
+            </div>
+            <div class="flex flex-wrap gap-1.5 pt-1">
+              @for (field of unmappedFormFields(); track field.key) {
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-900 rounded border border-amber-300 text-xs">
+                  <strong>{{ field.label || field.key }}</strong>
+                  <button type="button" (click)="autoMapFormField(field)" class="text-blue-700 hover:underline font-semibold ml-1 text-[11px]" title="Create placeholder mapping for this field">+ Map</button>
+                </span>
+              }
+            </div>
+            <p class="text-[11px] text-amber-700 pt-0.5">
+              Values entered by residents for these fields will be saved with the request, but will not appear in the generated DOCX unless mapped.
+            </p>
+          </div>
+        }
+
+        @if (unmappedTemplatePlaceholders().length > 0) {
+          <div class="p-2.5 bg-amber-50 border border-amber-200 rounded-md text-xs text-amber-800 space-y-1">
+            <div class="flex items-center gap-1.5 font-semibold text-amber-900">
+              <svg class="w-4 h-4 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+              </svg>
+              <span>{{ unmappedTemplatePlaceholders().length }} document placeholder(s) in the template are unmapped:</span>
+            </div>
+            <div class="flex flex-wrap gap-1.5 pt-1">
+              @for (tag of unmappedTemplatePlaceholders(); track tag) {
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-900 rounded border border-amber-300 text-xs">
+                  <code>{{'{{' + tag + '}}'}}</code>
+                  <button type="button" (click)="autoMapTemplatePlaceholder(tag)" class="text-blue-700 hover:underline font-semibold ml-1 text-[11px]" title="Add mapping for this placeholder">+ Map</button>
+                </span>
+              }
+            </div>
+            <p class="text-[11px] text-amber-700 pt-0.5">
+              These placeholders are not in the master library or application fields and will render blank in the DOCX unless mapped.
+            </p>
+          </div>
+        }
+
+        @if (detectedPlaceholders.length > 0 && unmappedFormFields().length === 0 && unmappedTemplatePlaceholders().length === 0) {
+          <div class="p-2 bg-green-50 border border-green-200 rounded-md text-xs text-green-800 flex items-center gap-1.5">
+            <svg class="w-4 h-4 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            <span>All application fields and template placeholders are mapped and ready.</span>
+          </div>
+        }
+
         @if (errors['documentMappings']) {
           <p class="text-xs text-red-500">{{ errors['documentMappings'] }}</p>
         }
@@ -608,6 +663,66 @@ export class ServiceFormComponent implements OnChanges, OnInit {
   // tags the docxtemplater lexer extracts (e.g. "{{Name}}" -> "Name").
   private normalizePlaceholder(placeholder: string): string {
     return placeholder.trim().replace(/^\{\{/, '').replace(/\}\}$/, '');
+  }
+
+  // Audit: Form fields that are not mapped to template placeholders
+  unmappedFormFields(): FormField[] {
+    const templateTags = new Set(this.detectedPlaceholders.map(p => this.normalizePlaceholder(p).toLowerCase()));
+    const mappedFieldKeys = new Set(
+      this.form.documentMappings
+        .filter(m => m.source === 'application')
+        .map(m => this.normalizePlaceholder(m.field || m.placeholder).toLowerCase())
+    );
+
+    return this.form.formFields.filter(f => {
+      if (!f.key.trim()) return false;
+      const normKey = f.key.trim().toLowerCase();
+      // If template tags were scanned, check against template tags AND mappings
+      if (templateTags.size > 0) {
+        return !templateTags.has(normKey) && !mappedFieldKeys.has(normKey);
+      }
+      // If template tags were not scanned yet, check if there's any mapping
+      return !mappedFieldKeys.has(normKey);
+    });
+  }
+
+  // Audit: Template placeholders that are neither in library nor in mappings/fields
+  unmappedTemplatePlaceholders(): string[] {
+    if (this.detectedPlaceholders.length === 0) return [];
+    const mappedTags = new Set(this.form.documentMappings.map(m => this.normalizePlaceholder(m.placeholder).toLowerCase()));
+    const formKeys = new Set(this.form.formFields.map(f => f.key.trim().toLowerCase()).filter(Boolean));
+    const knownTags = new Set(this.detectedKnown.map(k => k.tag.toLowerCase()));
+
+    return this.detectedPlaceholders.filter(p => {
+      const norm = p.toLowerCase();
+      return !knownTags.has(norm) && !mappedTags.has(norm) && !formKeys.has(norm);
+    });
+  }
+
+  autoMapFormField(field: FormField) {
+    const key = field.key.trim();
+    if (!key) return;
+    const existing = this.form.documentMappings.find(m => this.normalizePlaceholder(m.placeholder).toLowerCase() === key.toLowerCase());
+    if (!existing) {
+      this.form.documentMappings.push({
+        placeholder: key,
+        source: 'application',
+        field: key
+      });
+    }
+  }
+
+  autoMapTemplatePlaceholder(tag: string) {
+    const cleanTag = this.normalizePlaceholder(tag);
+    if (!cleanTag) return;
+    const existing = this.form.documentMappings.find(m => this.normalizePlaceholder(m.placeholder).toLowerCase() === cleanTag.toLowerCase());
+    if (!existing) {
+      this.form.documentMappings.push({
+        placeholder: cleanTag,
+        source: 'application',
+        field: cleanTag
+      });
+    }
   }
 
   scanPlaceholders() {

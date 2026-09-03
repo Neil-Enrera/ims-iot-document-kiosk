@@ -571,7 +571,7 @@ const stringify = (value) => {
 // Classify every tag in the template: known (library), mapped (explicit),
 // or unknown (will render blank unless it matches a form field).
 const classifyTags = (tags, service) => {
-  const formKeys = new Set((service?.form_fields || []).map((f) => f.key).filter(Boolean));
+  const formKeys = new Set((service?.form_fields || []).map((f) => normalize(f.key)).filter(Boolean));
   const mapped = new Set((service?.document_mappings || []).map((m) => normalize(m.placeholder)));
   const known = [];
   const unknown = [];
@@ -580,27 +580,63 @@ const classifyTags = (tags, service) => {
     const norm = normalize(tag);
     if (!norm) continue;
     used.push(norm);
-    if (isKnown(norm) || mapped.has(norm) || formKeys.has(norm)) known.push({ tag, norm, auto: isKnown(norm), mapped: mapped.has(norm) });
-    else unknown.push({ tag, norm });
+    if (isKnown(norm) || mapped.has(norm) || formKeys.has(norm)) {
+      known.push({ tag, norm, auto: isKnown(norm), mapped: mapped.has(norm) });
+    } else {
+      unknown.push({ tag, norm });
+    }
   }
   return { known, unknown, used };
 };
 
-const buildWarnings = (tags, service) => {
-  const { unknown, known } = classifyTags(tags, service);
+// Comprehensive audit of service configuration (form fields vs. template tags vs. mappings)
+const auditServiceConfiguration = (service, tags = []) => {
+  const templateTags = [...new Set((tags || []).map(normalize).filter(Boolean))];
+  const templateSet = new Set(templateTags);
+  const mappings = Array.isArray(service?.document_mappings) ? service.document_mappings : [];
+  const mappedFieldKeys = new Set(
+    mappings
+      .filter((m) => m.source === 'application')
+      .map((m) => normalize(m.field || m.placeholder))
+  );
+
+  const formFields = Array.isArray(service?.form_fields) ? service.form_fields : [];
+  const unmappedFormFields = formFields.filter((f) => {
+    const normKey = normalize(f.key);
+    return !templateSet.has(normKey) && !mappedFieldKeys.has(normKey);
+  });
+
+  const { unknown, known, used } = classifyTags(templateTags, service);
+
   const warnings = [];
-  if (!tags.length) {
+  if (!templateTags.length && service?.template_path) {
     warnings.push('No {{placeholder}} tags detected in the template (e.g. {{full_name}}, {{address}}). The DOCX must use {{double_braces}} placeholders instead of blank lines/underscores for automatic fill-in to work.');
-    return warnings;
   }
-  const unmappedLibrary = known.filter((k) => !k.mapped && !k.auto).map((k) => `{{${k.norm}}}`);
-  if (unmappedLibrary.length) {
-    warnings.push(`Placeholders matching application form fields but without a library entry will fill from the submitted form: ${unmappedLibrary.map(t => t).join(', ')}`);
-  }
+
   if (unknown.length) {
-    warnings.push(`Unknown placeholder(s) will render blank unless added to the placeholder library or mapped: ${unknown.map((u) => `{{${u.norm}}}`).join(', ')}`);
+    const unknownList = unknown.map((u) => `{{${u.norm}}}`).join(', ');
+    warnings.push(`${unknown.length} document placeholder(s) in the template are unmapped: ${unknownList}. These will render blank in generated documents unless mapped or matched to an application field.`);
   }
-  return warnings;
+
+  if (unmappedFormFields.length) {
+    const fieldLabels = unmappedFormFields.map((f) => `"${f.label || f.key}"`).join(', ');
+    warnings.push(`${unmappedFormFields.length} application field(s) are not mapped to the document template: ${fieldLabels}. Submitted values for these fields will be saved with the request but will not appear in the generated DOCX.`);
+  }
+
+  return {
+    valid: unknown.length === 0,
+    hasTemplate: templateTags.length > 0,
+    templateTags,
+    knownTags: known,
+    unknownTags: unknown,
+    unmappedFormFields,
+    warnings
+  };
+};
+
+const buildWarnings = (tags, service) => {
+  const audit = auditServiceConfiguration(service, tags);
+  return audit.warnings;
 };
 
 // Fill data for docxtemplater from the tags found in the template.
@@ -609,14 +645,26 @@ const apply = ({ templateTags, service, context }) => {
   const mappings = Array.isArray(service?.document_mappings) ? service.document_mappings : [];
   const data = {};
   const unknown = [];
+  const missingValues = [];
+
   for (const tag of tags) {
     if (isKnown(tag) || mappings.some((m) => normalize(m.placeholder) === tag) || (context.application && context.application[tag] !== undefined)) {
-      data[tag] = resolve(tag, context, mappings);
+      const val = resolve(tag, context, mappings);
+      data[tag] = val;
+      if (val === '') {
+        missingValues.push(tag);
+      }
     } else {
       unknown.push(tag);
     }
   }
-  return { data, unknown };
+
+  const warnings = buildWarnings(tags, service);
+  if (missingValues.length > 0) {
+    warnings.push(`${missingValues.length} mapped field(s) had no value provided: ${missingValues.map((m) => `{{${m}}}`).join(', ')}`);
+  }
+
+  return { data, unknown, missingValues, warnings };
 };
 
 // ------------------------------------------------------------------
@@ -645,6 +693,7 @@ module.exports = {
   buildContext,
   resolve,
   classifyTags,
+  auditServiceConfiguration,
   buildWarnings,
   apply,
   listAll,
