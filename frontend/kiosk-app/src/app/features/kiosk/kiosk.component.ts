@@ -1267,18 +1267,6 @@ export type BarangayStep =
                 <div class="text-center px-4 pt-0.5 pb-1 [@media(max-height:880px)]:pb-0.5">
                   <h1 class="text-[clamp(1.5rem,1.8vw,2rem)] font-bold tracking-tight text-[#0F172A] leading-none [@media(max-height:880px)]:text-[1.375rem]">{{ t('doc.services.title') }}</h1>
                   <p class="text-[clamp(0.875rem,1vw,1rem)] font-medium text-[#64748B] mt-0.5">{{ t('doc.services.subtitle') }}</p>
-                  <div class="inline-flex items-center gap-1.5 mt-1.5 px-3 py-1 rounded-full text-xs font-semibold border shadow-2xs transition-all"
-                       [class.bg-orange-50]="selectedServiceCount() < 2"
-                       [class.text-orange-700]="selectedServiceCount() < 2"
-                       [class.border-orange-200]="selectedServiceCount() < 2"
-                       [class.bg-emerald-50]="selectedServiceCount() === 2"
-                       [class.text-emerald-800]="selectedServiceCount() === 2"
-                       [class.border-emerald-200]="selectedServiceCount() === 2">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    <span>{{ t('doc.services.maxIndicator') }} ({{ selectedServiceCount() }}/2)</span>
-                  </div>
                 </div>
               </header>
 
