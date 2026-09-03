@@ -486,4 +486,9 @@ export const fil: TranslationDictionary = {
   'profile.status.inactive': 'Hindi Aktibo',
   'profile.status.blocked': 'Na-block',
   'profile.status.cancelled': 'Kinansela',
+
+  // ===== Idle / Inactivity warning =====
+  'idle.warningTitle': 'Nandiyan ka pa ba?',
+  'idle.warningDesc': 'Mag-e-expire ang iyong sesyon sa loob ng {seconds} segundo dahil sa kawalan ng aktibidad.',
+  'idle.continue': 'Nandito pa ako'
 };

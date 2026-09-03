@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, signal, computed, ElementRef, ViewChild, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, computed, ElementRef, ViewChild, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { KioskService, Resident, Service, GuestInfo, FormField, RfidCardInfo, PreviousRequest } from './kiosk.service';
@@ -5482,6 +5482,52 @@ export type BarangayStep =
             </div>
           </div>
         }
+
+        <!-- INACTIVITY / IDLE TIMEOUT WARNING MODAL -->
+        @if (showIdleWarning()) {
+          <div class="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 select-none animate-fade-in"
+               role="dialog" aria-modal="true" aria-labelledby="idle-warning-title">
+            <!-- Dark blurred backdrop -->
+            <div class="fixed inset-0 bg-slate-900/75 backdrop-blur-md transition-opacity"
+                 (click)="continueSession()" aria-hidden="true"></div>
+
+            <!-- Modal Content Card -->
+            <div class="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border-2 border-[#F97316]/30 overflow-hidden transform transition-all p-6 sm:p-8 text-center flex flex-col items-center">
+              
+              <!-- Countdown badge with pulse -->
+              <div class="relative mb-5">
+                <div class="w-20 h-20 rounded-full bg-orange-50 border-4 border-[#F97316] flex items-center justify-center text-[#F97316] shadow-lg shadow-orange-500/20">
+                  <span class="text-3xl font-extrabold font-mono tracking-tight">{{ idleCountdown() }}</span>
+                </div>
+                <div class="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-[#EA580C] text-white flex items-center justify-center text-xs shadow animate-ping"></div>
+              </div>
+
+              <!-- Title & Desc -->
+              <h3 id="idle-warning-title" class="text-2xl font-bold text-[#0F172A] tracking-tight mb-2">
+                {{ t('idle.warningTitle') }}
+              </h3>
+              <p class="text-sm sm:text-base text-[#64748B] mb-6 leading-relaxed">
+                {{ t('idle.warningDesc', { seconds: idleCountdown() }) }}
+              </p>
+
+              <!-- Actions -->
+              <div class="w-full flex flex-col gap-3">
+                <button (click)="continueSession()"
+                        class="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-[#F97316] to-[#EA580C] hover:from-[#EA580C] hover:to-[#C2410C] active:scale-[0.98] text-white font-bold text-lg shadow-lg shadow-orange-500/30 transition-all focus:outline-none focus:ring-4 focus:ring-orange-300 flex items-center justify-center gap-2 cursor-pointer">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                  </svg>
+                  {{ t('idle.continue') }}
+                </button>
+
+                <button (click)="cancel()"
+                        class="w-full py-2.5 px-4 text-sm font-semibold text-[#64748B] hover:text-[#0F172A] hover:bg-slate-100 rounded-xl transition-colors focus:outline-none cursor-pointer">
+                  {{ t('common.cancel') }}
+                </button>
+              </div>
+            </div>
+          </div>
+        }
       </div>
     </div>
   `
@@ -5556,6 +5602,13 @@ export class KioskComponent implements OnInit, OnDestroy {
   showRequestAgainModal = signal<boolean>(false);
   reusedRequestInfo = signal<PreviousRequest | null>(null);
   checkingPreviousRequests = signal<boolean>(false);
+
+  // Inactivity / Idle Timeout signals & timers
+  showIdleWarning = signal<boolean>(false);
+  idleCountdown = signal<number>(15);
+  private idleWarningTimer: any = null;
+  private idleCountdownInterval: any = null;
+
   private photoQualityErrorTimer: any;
   private barangayDobErrorTimer: any;
   private guestDobErrorTimer: any;
@@ -5824,7 +5877,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.rfidScanService.disconnect();
     if (this.rfidScanSub) this.rfidScanSub.unsubscribe();
     if (this.rfidConnectionSub) this.rfidConnectionSub.unsubscribe();
-    clearTimeout(this.idleTimer);
+    this.clearIdleTimers();
     clearTimeout(this.searchDebounce);
     clearTimeout(this.stateSaveDebounce);
     clearTimeout(this.copyTimer);
@@ -8996,16 +9049,83 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.reusedRequestInfo.set(null);
     this.checkingPreviousRequests.set(false);
     this.kioskStateService.clear();
-    this.resetIdleTimer();
+    this.clearIdleTimers();
+    this.showIdleWarning.set(false);
   }
 
   cancel() {
+    this.clearIdleTimers();
+    this.showIdleWarning.set(false);
     this.stopCamera();
     this.finish();
   }
 
+  // Global user interaction listener (touch, click, keydown, input, scroll)
+  // Ensures timer resets on real resident activity rather than expiring mid-form.
+  @HostListener('window:click')
+  @HostListener('window:touchstart')
+  @HostListener('window:pointerdown')
+  @HostListener('window:keydown')
+  @HostListener('window:input')
+  @HostListener('window:scroll')
+  onUserActivity() {
+    if (this.mode() === 'home') return;
+    if (this.showIdleWarning()) {
+      this.continueSession();
+      return;
+    }
+    this.resetIdleTimer();
+  }
+
+  continueSession() {
+    this.showIdleWarning.set(false);
+    this.clearIdleTimers();
+    this.resetIdleTimer();
+  }
+
+  private clearIdleTimers() {
+    if (this.idleTimer) {
+      clearTimeout(this.idleTimer);
+      this.idleTimer = null;
+    }
+    if (this.idleWarningTimer) {
+      clearTimeout(this.idleWarningTimer);
+      this.idleWarningTimer = null;
+    }
+    if (this.idleCountdownInterval) {
+      clearInterval(this.idleCountdownInterval);
+      this.idleCountdownInterval = null;
+    }
+  }
+
   resetIdleTimer() {
-    clearTimeout(this.idleTimer);
-    this.idleTimer = setTimeout(() => this.cancel(), 120000);
+    this.clearIdleTimers();
+    if (this.mode() === 'home') {
+      this.showIdleWarning.set(false);
+      return;
+    }
+
+    // Determine timeout duration from kiosk settings (default: 120s)
+    const rawSetting = this.kioskSettings()?.['kiosk_idle_timeout'];
+    const parsed = rawSetting ? parseInt(rawSetting, 10) : 120;
+    const totalTimeoutSec = !isNaN(parsed) && parsed >= 20 ? parsed : 120;
+
+    const warningDurationSec = Math.min(15, Math.max(5, Math.floor(totalTimeoutSec / 3)));
+    const idleBeforeWarningMs = Math.max((totalTimeoutSec - warningDurationSec) * 1000, 5000);
+
+    this.idleWarningTimer = setTimeout(() => {
+      this.idleCountdown.set(warningDurationSec);
+      this.showIdleWarning.set(true);
+
+      this.idleCountdownInterval = setInterval(() => {
+        const remaining = this.idleCountdown() - 1;
+        this.idleCountdown.set(remaining);
+        if (remaining <= 0) {
+          this.clearIdleTimers();
+          this.showIdleWarning.set(false);
+          this.cancel();
+        }
+      }, 1000);
+    }, idleBeforeWarningMs);
   }
 }

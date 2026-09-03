@@ -505,4 +505,9 @@ export const en: TranslationDictionary = {
   'profile.status.inactive': 'Inactive',
   'profile.status.blocked': 'Blocked',
   'profile.status.cancelled': 'Cancelled',
+
+  // ===== Idle / Inactivity warning =====
+  'idle.warningTitle': 'Are you still there?',
+  'idle.warningDesc': 'Your session will expire in {seconds} seconds due to inactivity.',
+  'idle.continue': "I'm still here"
 };
