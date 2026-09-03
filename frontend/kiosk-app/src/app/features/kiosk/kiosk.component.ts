@@ -5964,14 +5964,35 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.activeApplicantDob.set('');
   }
 
+  // Resets in-progress temporary document request state (forms, photos, drafts)
+  // while preserving the resident's permanent profile and RFID authentication.
+  clearDocumentRequestSession() {
+    this.serviceForms.set({});
+    this.servicePhotos.set({});
+    this.formValues.set({});
+    this.formErrors.set({});
+    this.capturedPhoto.set(null);
+    this.reusedRequestInfo.set(null);
+    this.serviceError.set('');
+    this.serviceIndex.set(0);
+    this.showDocPreview.set(false);
+    this.docPreviewBlob.set(null);
+    this.docPreviewError.set('');
+    this.inlinePhotos.set({});
+    this.activePhotoField.set(null);
+    this.submissionKey = '';
+  }
+
   startGuestRequest() {
     this.stopCamera();
     this.errorMessage.set('');
     this.formError.set('');
     this.resetGuestForm();
+    this.clearDocumentRequestSession();
     this.loadKioskSettings();
     this.resident.set(null);
     this.rfidCard.set(null);
+    this.selectedServices.set([]);
     this.mode.set('documents');
     this.currentStep.set('guest-info');
     this.resetIdleTimer();
@@ -6202,6 +6223,8 @@ export class KioskComponent implements OnInit, OnDestroy {
 
   proceedToServices() {
     this.loadServices();
+    this.clearDocumentRequestSession();
+    this.selectedServices.set([]);
     this.currentStep.set('services');
     this.resetIdleTimer();
     this.saveState();
@@ -6214,6 +6237,16 @@ export class KioskComponent implements OnInit, OnDestroy {
     const exists = current.some(s => s.service_id === service.service_id);
     if (exists) {
       this.selectedServices.set(current.filter(s => s.service_id !== service.service_id));
+      this.serviceForms.update(m => {
+        const copy = { ...m };
+        delete copy[service.service_id];
+        return copy;
+      });
+      this.servicePhotos.update(m => {
+        const copy = { ...m };
+        delete copy[service.service_id];
+        return copy;
+      });
       if (this.serviceError()) this.serviceError.set('');
     } else {
       if (current.length >= 2) {
@@ -6323,10 +6356,37 @@ export class KioskComponent implements OnInit, OnDestroy {
   startFreshRequest() {
     this.reusedRequestInfo.set(null);
     this.showRequestAgainModal.set(false);
+    const svc = this.selectedService();
+    if (svc) {
+      this.serviceForms.update(m => {
+        const copy = { ...m };
+        delete copy[svc.service_id];
+        return copy;
+      });
+      this.servicePhotos.update(m => {
+        const copy = { ...m };
+        delete copy[svc.service_id];
+        return copy;
+      });
+    }
+    this.formValues.set({});
     this.continueToRequirementsFresh();
   }
 
   private continueToRequirementsFresh() {
+    const svc = this.selectedService();
+    if (svc && !this.reusedRequestInfo()) {
+      this.serviceForms.update(m => {
+        const copy = { ...m };
+        delete copy[svc.service_id];
+        return copy;
+      });
+      this.servicePhotos.update(m => {
+        const copy = { ...m };
+        delete copy[svc.service_id];
+        return copy;
+      });
+    }
     this.loadServiceForm();
     this.currentStep.set('requirements');
     this.resetIdleTimer();
@@ -7499,6 +7559,8 @@ export class KioskComponent implements OnInit, OnDestroy {
 
     this.errorMessage.set('');
     this.loadServices();
+    this.clearDocumentRequestSession();
+    this.selectedServices.set([]);
     this.currentStep.set('services');
     this.resetIdleTimer();
     this.saveState();
@@ -8664,6 +8726,8 @@ export class KioskComponent implements OnInit, OnDestroy {
     }
 
     if (this.mode() === 'guest') {
+      this.resetGuestForm();
+      this.clearDocumentRequestSession();
       this.mode.set('home');
       this.saveState();
       return;
@@ -8672,6 +8736,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     if (this.mode() === 'documents') {
       const step = this.currentStep();
       if (step === 'welcome') {
+        this.clearDocumentRequestSession();
         this.resident.set(null);
         this.rfidCard.set(null);
         this.mode.set('rfid');
@@ -8681,6 +8746,8 @@ export class KioskComponent implements OnInit, OnDestroy {
         return;
       }
       if (step === 'guest-info') {
+        this.resetGuestForm();
+        this.clearDocumentRequestSession();
         this.mode.set('guest');
         this.saveState();
         return;
@@ -8708,12 +8775,12 @@ export class KioskComponent implements OnInit, OnDestroy {
       }
       if (step === 'form') {
         this.stopCamera();
-        this.stashActiveForm();
         this.currentStep.set('requirements');
         this.saveState();
         return;
       }
       if (step === 'requirements') {
+        this.clearDocumentRequestSession();
         this.currentStep.set('services');
         this.saveState();
         return;
@@ -8722,6 +8789,8 @@ export class KioskComponent implements OnInit, OnDestroy {
       // screen the resident actually came from: the profile/welcome screen for
       // RFID/manual-search residents, or the guest info form for temporary sessions.
       if (step === 'services') {
+        this.clearDocumentRequestSession();
+        this.selectedServices.set([]);
         if (this.resident()) {
           this.currentStep.set('welcome');
         } else {
@@ -8736,7 +8805,16 @@ export class KioskComponent implements OnInit, OnDestroy {
     if (this.mode() === 'barangay') {
       const step = this.barangayStep();
       if (step === 'requirements') {
-        this.mode.set('guest');
+        this.resetBarangayForm();
+        this.formValues.set({});
+        this.capturedPhoto.set(null);
+        this.capturedSignature.set(null);
+        if (this.resident()) {
+          this.mode.set('documents');
+          this.currentStep.set('welcome');
+        } else {
+          this.mode.set('guest');
+        }
         this.saveState();
         return;
       }
