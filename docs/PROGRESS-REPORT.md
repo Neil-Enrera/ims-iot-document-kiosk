@@ -15,6 +15,9 @@
 
 > **Note:** TASK-BACKEND-012 (Payment API) and TASK-FRONTEND-011 (Payment UI) removed per DEC-008.
 > **Recent Updates (August & September 2026):**
+> - **Removed Service Limit Pill Badge on Kiosk Service Selection Screen** (`kiosk.component.ts` L1265-1275):
+>   - Removed the `(i) You can select up to 2 services. (X/2)` pill indicator from the header on the "Select a Service" step for a cleaner, streamlined header presentation while retaining the per-card selection validation and disabled state enforcement.
+>   - **Verification**: Verified clean build via `npm run build:kiosk` with 0 errors.
 > - **Upgraded Kiosk Session Inactivity Timeout with User Activity Listeners & Warning Countdown** (`kiosk.component.ts` L5480-5530, L5605-5615, L5875-5885, L9045-9125, `en.ts`, `fil.ts`):
 >   - **Root Cause Identified**: The previous timeout was a blind `setTimeout` scheduled only on major step transitions, without listening to user interactions (clicks, touches, keyboard input, typing, scrolling). Residents actively typing on form pages were prematurely kicked back to the landing page mid-application.
 >   - **Meaningful Activity Listeners**: Added global `@HostListener` window listeners (`click`, `touchstart`, `pointerdown`, `keydown`, `input`, `scroll`) that automatically reset the idle timer on real user activity.
