@@ -341,6 +341,9 @@ const submitTransaction = async (input) => {
   if (!Array.isArray(services) || services.length === 0) {
     return { success: false, code: 'NO_SERVICES', message: 'At least one service is required.' };
   }
+  if (services.length > 2) {
+    return { success: false, code: 'MAX_SERVICES_EXCEEDED', message: 'You can select a maximum of 2 services per transaction.' };
+  }
   for (const s of services) {
     if (!s || !s.service_id) {
       return { success: false, code: 'INVALID_SERVICE', message: 'A service is missing its service_id.' };

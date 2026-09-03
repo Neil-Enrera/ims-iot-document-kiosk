@@ -1268,6 +1268,18 @@ export type BarangayStep =
                 <div class="text-center px-4 pt-0.5 pb-1 [@media(max-height:880px)]:pb-0.5">
                   <h1 class="text-[clamp(1.5rem,1.8vw,2rem)] font-bold tracking-tight text-[#0F172A] leading-none [@media(max-height:880px)]:text-[1.375rem]">{{ t('doc.services.title') }}</h1>
                   <p class="text-[clamp(0.875rem,1vw,1rem)] font-medium text-[#64748B] mt-0.5">{{ t('doc.services.subtitle') }}</p>
+                  <div class="inline-flex items-center gap-1.5 mt-1.5 px-3 py-1 rounded-full text-xs font-semibold border shadow-2xs transition-all"
+                       [class.bg-orange-50]="selectedServiceCount() < 2"
+                       [class.text-orange-700]="selectedServiceCount() < 2"
+                       [class.border-orange-200]="selectedServiceCount() < 2"
+                       [class.bg-emerald-50]="selectedServiceCount() === 2"
+                       [class.text-emerald-800]="selectedServiceCount() === 2"
+                       [class.border-emerald-200]="selectedServiceCount() === 2">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span>{{ t('doc.services.maxIndicator') }} ({{ selectedServiceCount() }}/2)</span>
+                  </div>
                 </div>
               </header>
 
@@ -1277,11 +1289,18 @@ export type BarangayStep =
                   @for (service of services(); track service.service_id) {
                     <button type="button"
                             (click)="toggleService(service)"
+                            [attr.aria-disabled]="isServiceDisabled(service)"
                             [class.border-[#F97316]]="isServiceSelected(service)"
                             [class.bg-[#FFF7ED]]="isServiceSelected(service)"
+                            [class.opacity-45]="isServiceDisabled(service)"
+                            [class.bg-slate-50]="isServiceDisabled(service)"
+                            [class.border-slate-200]="isServiceDisabled(service)"
+                            [class.cursor-not-allowed]="isServiceDisabled(service)"
                             class="w-full text-left flex items-center gap-4 sm:gap-5 rounded-[18px] border-2 border-[#E5E7EB] bg-white shadow-[0_2px_14px_rgba(15,23,42,0.07)] px-4 sm:px-6 py-4 sm:py-5 transition-all duration-150 hover:border-[#F97316]/50 hover:bg-[#FFF7ED]/40 hover:shadow-[0_4px_18px_rgba(249,115,22,0.12)] active:border-[#F97316] active:bg-[#FFF7ED] active:scale-[0.995] focus:outline-none focus:ring-4 focus:ring-[#F97316]/30 [@media(max-height:880px)]:py-3">
                       <!-- Left: icon in a light-orange rounded square -->
-                      <div class="shrink-0 w-[56px] h-[56px] sm:w-[64px] sm:h-[64px] rounded-[14px] sm:rounded-[16px] bg-[#FFF7ED] border border-[#F97316]/15 flex items-center justify-center text-[#F97316] [@media(max-height:880px)]:w-[52px] [@media(max-height:880px)]:h-[52px]" aria-hidden="true">
+                      <div class="shrink-0 w-[56px] h-[56px] sm:w-[64px] sm:h-[64px] rounded-[14px] sm:rounded-[16px] bg-[#FFF7ED] border border-[#F97316]/15 flex items-center justify-center text-[#F97316] [@media(max-height:880px)]:w-[52px] [@media(max-height:880px)]:h-[52px]"
+                           [class.grayscale]="isServiceDisabled(service)"
+                           aria-hidden="true">
                         <svg class="w-8 h-8 sm:w-9 sm:h-9" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                           <path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z" stroke-linecap="round" stroke-linejoin="round"/>
                           <path d="M14 3v5h5M8 13h8M8 17h5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1290,7 +1309,14 @@ export type BarangayStep =
 
                       <!-- Center: service name + description -->
                       <div class="flex-1 min-w-0 flex flex-col justify-center">
-                        <h2 class="text-[clamp(1.125rem,1.4vw,1.5rem)] font-bold text-[#0F172A] leading-snug tracking-tight uppercase break-words">{{ service.service_name }}</h2>
+                        <div class="flex items-center gap-2 flex-wrap">
+                          <h2 class="text-[clamp(1.125rem,1.4vw,1.5rem)] font-bold text-[#0F172A] leading-snug tracking-tight uppercase break-words">{{ service.service_name }}</h2>
+                          @if (isServiceDisabled(service)) {
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-600 uppercase tracking-wide">
+                              {{ t('doc.services.limitReachedBadge') }}
+                            </span>
+                          }
+                        </div>
                         @if (service.description) {
                           <p class="text-[clamp(0.875rem,1vw,0.9375rem)] font-medium text-[#64748B] leading-snug mt-0.5 sm:mt-1 line-clamp-3">{{ service.description }}</p>
                         }
@@ -1308,9 +1334,15 @@ export type BarangayStep =
                           }
                         </div>
                         @if (isServiceSelected(service)) {
-                          <div class="shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#F97316] flex items-center justify-center" aria-hidden="true">
+                          <div class="shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#F97316] flex items-center justify-center shadow-xs" aria-hidden="true">
                             <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
                               <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                            </svg>
+                          </div>
+                        } @else if (isServiceDisabled(service)) {
+                          <div class="shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-200 flex items-center justify-center text-slate-400" aria-hidden="true">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
                             </svg>
                           </div>
                         } @else {
@@ -1329,7 +1361,7 @@ export type BarangayStep =
                 <div class="mx-auto w-full max-w-[980px] flex flex-wrap items-center gap-3 bg-white/90 backdrop-blur-sm border border-[#E5E7EB] rounded-2xl shadow-sm px-4 sm:px-5 py-2.5">
                   <p class="flex-1 min-w-[160px] text-[13px] sm:text-[14px] font-semibold text-[#0F172A]">
                     @if (selectedServiceCount() > 0) {
-                      {{ selectedServiceCount() }} {{ selectedServiceCount() === 1 ? t('doc.services.selected') : t('doc.services.selectedPlural') }} ·
+                      {{ selectedServiceCount() }}/2 {{ selectedServiceCount() === 1 ? t('doc.services.selected') : t('doc.services.selectedPlural') }} ·
                       @if (selectedTotalFee() > 0) {
                         ₱{{ formatServiceFee(selectedTotalFee()) }}
                       } @else {
@@ -1349,7 +1381,12 @@ export type BarangayStep =
                   </button>
                 </div>
                 @if (serviceError()) {
-                  <p class="mx-auto mt-1.5 w-full max-w-[980px] text-[13px] sm:text-sm font-medium text-[#B91C1C] text-center">{{ serviceError() }}</p>
+                  <div class="mx-auto mt-2 w-full max-w-[980px] px-4 py-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 text-center shadow-xs">
+                    <svg class="w-4 h-4 text-red-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    <span>{{ serviceError() }}</span>
+                  </div>
                 }
               </div>
 
@@ -5857,13 +5894,26 @@ export class KioskComponent implements OnInit, OnDestroy {
   toggleService(service: Service) {
     const current = this.selectedServices();
     const exists = current.some(s => s.service_id === service.service_id);
-    this.selectedServices.set(exists ? current.filter(s => s.service_id !== service.service_id) : [...current, service]);
-    if (this.serviceError()) this.serviceError.set('');
+    if (exists) {
+      this.selectedServices.set(current.filter(s => s.service_id !== service.service_id));
+      if (this.serviceError()) this.serviceError.set('');
+    } else {
+      if (current.length >= 2) {
+        this.serviceError.set(this.t('doc.services.maxLimitReached'));
+        return;
+      }
+      this.selectedServices.set([...current, service]);
+      if (this.serviceError()) this.serviceError.set('');
+    }
     this.saveState();
   }
 
   isServiceSelected(service: Service): boolean {
     return this.selectedServices().some(s => s.service_id === service.service_id);
+  }
+
+  isServiceDisabled(service: Service): boolean {
+    return !this.isServiceSelected(service) && this.selectedServices().length >= 2;
   }
 
   selectedServiceCount(): number {
@@ -6010,6 +6060,26 @@ export class KioskComponent implements OnInit, OnDestroy {
     for (const field of svc.form_fields || []) {
       if (field.defaultValue !== undefined && field.defaultValue !== null && field.defaultValue !== '') {
         defaults[field.key] = field.defaultValue;
+      }
+    }
+
+    // Step 1: Pre-populate common fields from previously completed service forms in this transaction
+    const allSaved = Object.values(this.serviceForms());
+    if (allSaved.length > 0) {
+      for (const prevForm of allSaved) {
+        if (!prevForm || typeof prevForm !== 'object') continue;
+        for (const [k, v] of Object.entries(prevForm)) {
+          if (k.startsWith('_') || k === 'photo' || k === 'signature' || k === 'idempotency_key') continue;
+          if (v !== undefined && v !== null && v !== '') {
+            const matchingField = svc.form_fields?.find(f =>
+              f.key === k ||
+              f.key.toLowerCase().replace(/[-_\s.]/g, '') === k.toLowerCase().replace(/[-_\s.]/g, '')
+            );
+            if (matchingField && (defaults[matchingField.key] === undefined || defaults[matchingField.key] === null || defaults[matchingField.key] === '')) {
+              defaults[matchingField.key] = v;
+            }
+          }
+        }
       }
     }
 

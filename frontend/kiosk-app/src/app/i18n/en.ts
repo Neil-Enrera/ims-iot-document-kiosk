@@ -143,10 +143,15 @@ export const en: TranslationDictionary = {
   'doc.progress.6': 'Submit',
   'doc.services.title': 'Select a Service',
   'doc.services.subtitle': 'Please choose the document or service you need.',
+  'doc.services.maxIndicator': 'You can select up to 2 services.',
+  'doc.services.maxLimitReached': 'Maximum of 2 services per transaction reached. Please deselect one to choose another.',
+  'doc.services.limitReachedBadge': 'Limit reached (2 max)',
+  'doc.services.maxNotice': 'Max 2 services',
   'doc.services.processingFee': 'Processing Fee',
   'doc.services.free': 'FREE',
-  'doc.services.hint': 'Select one or more services.',
+  'doc.services.hint': 'Select up to 2 services.',
   'doc.services.selected': 'service selected',
+  'doc.services.selectedPlural': 'services selected',
   'doc.services.required': 'Please select at least one service to continue.',
 
   // Request Again feature
