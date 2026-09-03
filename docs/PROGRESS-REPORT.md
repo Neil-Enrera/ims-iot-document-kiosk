@@ -15,6 +15,12 @@
 
 > **Note:** TASK-BACKEND-012 (Payment API) and TASK-FRONTEND-011 (Payment UI) removed per DEC-008.
 > **Recent Updates (August & September 2026):**
+> - **Unified Service-Configurable Photo Capture for Document Requests & Barangay ID** (`kiosk.component.ts` L2135-2450, L6880-6895, L8585-8735):
+>   - **Direct UI & Workflow Reuse**: Reused the full Barangay ID Photo Capture UI in Document Requests when a service is configured with `Requires Photo Capture` enabled. Includes the 3-column layout (Photo Guidelines card, Camera Viewport with ESP32-CAM MJPEG Stream / WebCam live stream and 90° clockwise rotation, face positioning guide, photo blur/darkness quality check, and Helpful Photo Tips card).
+>   - **Expected Flow Enforcement**: Flow follows `Select Service → Application Form → Photo Capture → Review → Submit` when `requires_photo` is ON, and `Select Service → Application Form → Review → Submit` when `requires_photo` is OFF.
+>   - **Multi-Service Photo Reuse**: When multiple services requiring photos are selected in the same transaction, the captured photo is automatically shared across the transaction so the resident does not need to pose repeatedly.
+>   - **Seamless Navigation & State Management**: Supports full two-way navigation (`goBack`, `confirmPhoto`, `retakePhoto`, `retryPhotoCamera`, `switchCameraMode`) and camera resource cleanup.
+>   - **Verification**: Verified zero TypeScript or Angular compiler errors across both `kiosk-app` and `admin-panel` production builds (`npm run build:kiosk`, `npm run build:admin`).
 > - **Enhanced Configurable Document Request & Generation Architecture with Real-Time Mapping Audit & Validation** (`placeholder.engine.js`, `document.service.js`, `document.controller.js`, `service-form.component.ts`, `placeholder-engine.test.js`):
 >   - **End-to-End Dynamic Service Support**: Ensured any new or existing service configured by the Administrator (custom form fields, DOCX template with arbitrary placeholders, explicit mappings) generates documents and previews dynamically without code changes or hardcoded conditionals.
 >   - **Comprehensive Configuration Audit Engine**: Added `auditServiceConfiguration()` to the placeholder engine which analyzes application fields against template placeholders and explicit mappings to flag unmapped application fields, unmapped template placeholders, and missing required mappings.
