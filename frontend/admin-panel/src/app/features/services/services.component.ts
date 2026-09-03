@@ -1,4 +1,5 @@
 import { Component, OnInit, signal } from '@angular/core';
+import { CommonModule, DecimalPipe } from '@angular/common';
 import { Observable, of } from 'rxjs';
 import { ServiceService } from '../../shared/services';
 import { Service } from '../../shared/interfaces/api.interfaces';
@@ -14,7 +15,7 @@ import { ServiceFormComponent } from './service-form.component';
 @Component({
   selector: 'app-services',
   standalone: true,
-  imports: [TableComponent, ButtonComponent, CardComponent, InputComponent, PaginationComponent, ModalComponent, ConfirmDialogComponent, ServiceFormComponent],
+  imports: [CommonModule, DecimalPipe, TableComponent, ButtonComponent, CardComponent, InputComponent, PaginationComponent, ModalComponent, ConfirmDialogComponent, ServiceFormComponent],
   template: `
     <div>
       <div class="flex justify-between items-center mb-6">
@@ -33,31 +34,39 @@ import { ServiceFormComponent } from './service-form.component';
           [loading]="loading()"
           trackBy="service_id"
           emptyMessage="No services found"
-          [cellTemplates]="{ service_name: nameCell, is_active: activeCell }"
-          [rowActionsTemplate]="rowActions"
+          [cellTemplates]="{ 
+            service_name: nameCell, 
+            description: descCell, 
+            processing_fee: feeCell, 
+            requires_photo: photoCell, 
+            is_active: activeCell 
+          }"
           (onRowClick)="openEditForm($event)">
           <ng-template #nameCell let-row="row">
             <span class="text-sm font-semibold text-slate-900">
               {{ row.service_name }}
             </span>
           </ng-template>
-          <ng-template #activeCell let-value>
-            <span
-              [class]="value ? 'inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200' : 'inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-500 border border-slate-200'">
-              {{ value ? 'Active' : 'Inactive' }}
+          <ng-template #descCell let-value>
+            <div class="max-w-xl line-clamp-2 text-xs text-slate-600 font-normal whitespace-normal leading-relaxed" [title]="value || ''">
+              {{ value || 'No description provided' }}
+            </div>
+          </ng-template>
+          <ng-template #feeCell let-value>
+            <span class="text-sm font-bold text-slate-800">
+              ₱{{ (value || 0) | number: '1.2-2' }}
             </span>
           </ng-template>
-          <ng-template #rowActions let-service>
-            <div class="flex justify-end gap-3">
-              <button
-                type="button"
-                (click)="openEditForm(service); $event.stopPropagation()"
-                class="text-orange-600 hover:text-orange-800 font-semibold text-sm transition">Edit</button>
-              <button
-                type="button"
-                (click)="openDeleteConfirm(service); $event.stopPropagation()"
-                class="text-rose-600 hover:text-rose-800 font-semibold text-sm transition">Delete</button>
-            </div>
+          <ng-template #photoCell let-value>
+            <span [class]="value ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200' : 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-50 text-slate-500 border border-slate-200'">
+              {{ value ? 'Yes' : 'No' }}
+            </span>
+          </ng-template>
+          <ng-template #activeCell let-value>
+            <span
+              [class]="value ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200' : 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-500 border border-slate-200'">
+              {{ value ? 'Active' : 'Inactive' }}
+            </span>
           </ng-template>
         </app-table>
 
@@ -111,11 +120,11 @@ export class ServicesComponent implements OnInit {
   deletingService = signal<Service | null>(null);
 
   columns: TableColumn[] = [
-    { key: 'service_name', label: 'Service Name', sortable: true },
-    { key: 'description', label: 'Description' },
-    { key: 'processing_fee', label: 'Fee', align: 'right', sortable: true },
-    { key: 'requires_photo', label: 'Photo Required' },
-    { key: 'is_active', label: 'Status' }
+    { key: 'service_name', label: 'Service Name', sortable: true, width: '24%' },
+    { key: 'description', label: 'Description', width: '42%' },
+    { key: 'processing_fee', label: 'Fee', align: 'right', sortable: true, width: '12%' },
+    { key: 'requires_photo', label: 'Photo Required', align: 'center', width: '11%' },
+    { key: 'is_active', label: 'Status', align: 'center', width: '11%' }
   ];
 
   constructor(private serviceService: ServiceService) {}
