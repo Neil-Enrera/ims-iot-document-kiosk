@@ -22,8 +22,8 @@
 // Wi-Fi Settings
 // =========================
 
-const char* WIFI_SSID     = "GlobeMyBusiness_86692";
-const char* WIFI_PASSWORD = "LN43056BD94";
+const char* WIFI_SSID     = "HUAWEI-2.4G-n82P";
+const char* WIFI_PASSWORD = "j2JFAcy4";
 
 // Wi-Fi reconnect timing
 unsigned long lastWiFiCheck = 0;
@@ -37,7 +37,7 @@ const unsigned long WIFI_CHECK_INTERVAL = 10000; // 10 seconds
 // for WebSocket connections on this host:port at path /ws.
 // The ESP8266 connects as an "arduino" type client.
 
-const char* KIOSK_SERVER_HOST = "192.168.254.109";
+const char* KIOSK_SERVER_HOST = "192.168.100.102";
 const uint16_t KIOSK_SERVER_PORT = 3001;
 const char* KIOSK_SERVER_PATH = "/ws?type=arduino";
 

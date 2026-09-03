@@ -12,7 +12,7 @@ const restrictStatusDisplayToLan = (req, res, next) => {
     return res.status(403).json({
       success: false,
       error: 'FORBIDDEN_ORIGIN',
-      message: 'Access Restricted: The Status Display board is only accessible via the authorized Barangay LAN address (http://192.168.254.109:4201/status-display).'
+      message: 'Access Restricted: The Status Display board is only accessible via the authorized Barangay LAN address (http://192.168.100.102:4201/status-display).'
     });
   }
 

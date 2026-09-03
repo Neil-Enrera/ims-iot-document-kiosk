@@ -255,7 +255,7 @@ export class StatusDisplayComponent implements OnInit, OnDestroy {
   loading = signal(true);
   isRestrictedAccess = signal<boolean>(false);
 
-  readonly lanStatusUrl = 'http://192.168.254.109:4201/status-display';
+  readonly lanStatusUrl = 'http://192.168.100.102:4201/status-display';
 
   private eventSource: EventSource | null = null;
   private reconnectTimer: any;
