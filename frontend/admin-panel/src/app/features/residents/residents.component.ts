@@ -306,7 +306,6 @@ import { ResidentFormComponent } from './resident-form.component';
                 <div><span class="text-slate-400 font-medium block">Place of Birth</span><span class="font-bold text-slate-800">{{ res.birth_place || '-' }}</span></div>
                 <div><span class="text-slate-400 font-medium block">Gender</span><span class="font-bold text-slate-800 capitalize">{{ res.gender || '-' }}</span></div>
                 <div><span class="text-slate-400 font-medium block">Civil Status</span><span class="font-bold text-slate-800">{{ res.civil_status || '-' }}</span></div>
-                <div><span class="text-slate-400 font-medium block">Blood Type</span><span class="font-bold text-slate-800">{{ res.blood_type || '-' }}</span></div>
                 <div><span class="text-slate-400 font-medium block">Occupation</span><span class="font-bold text-slate-800">{{ res.occupation || '-' }}</span></div>
                 <div><span class="text-slate-400 font-medium block">Contact Number</span><span class="font-bold text-slate-800">{{ res.contact_number || '-' }}</span></div>
                 <div><span class="text-slate-400 font-medium block">Email</span><span class="font-bold text-slate-800">{{ res.email || '-' }}</span></div>

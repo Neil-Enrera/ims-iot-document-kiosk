@@ -363,6 +363,19 @@ import { TranslationService, KioskLanguage } from '../../i18n/translation.servic
                            class="w-full px-3.5 py-2.5 text-sm font-semibold rounded-xl border border-slate-300 focus:border-[#F97316] focus:ring-2 focus:ring-[#F97316]/20 outline-none transition" />
                   </div>
                   <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">{{ t('profile.gender') || t('profile.sex') || 'Gender' }}</label>
+                    <select [(ngModel)]="editForm.gender"
+                            class="w-full px-3.5 py-2.5 text-sm font-semibold rounded-xl border border-slate-300 focus:border-[#F97316] focus:ring-2 focus:ring-[#F97316]/20 outline-none transition bg-white">
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">{{ t('profile.birthPlace') || 'Place of Birth' }}</label>
+                    <input type="text" [(ngModel)]="editForm.birth_place" placeholder="City / Municipality, Province"
+                           class="w-full px-3.5 py-2.5 text-sm font-semibold rounded-xl border border-slate-300 focus:border-[#F97316] focus:ring-2 focus:ring-[#F97316]/20 outline-none transition" />
+                  </div>
+                  <div>
                     <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">{{ t('profile.civilStatus') }}</label>
                     <select [(ngModel)]="editForm.civil_status"
                             class="w-full px-3.5 py-2.5 text-sm font-semibold rounded-xl border border-slate-300 focus:border-[#F97316] focus:ring-2 focus:ring-[#F97316]/20 outline-none transition bg-white">
@@ -568,6 +581,8 @@ export class ResidentProfileComponent implements OnInit, OnDestroy {
     this.editForm = {
       contact_number: r?.contact_number || '',
       email: r?.email || '',
+      gender: r?.gender || 'Male',
+      birth_place: r?.birth_place || '',
       civil_status: r?.civil_status || 'Single',
       occupation: r?.occupation || '',
       subdivision: r?.subdivision || '',
@@ -606,6 +621,8 @@ export class ResidentProfileComponent implements OnInit, OnDestroy {
     const requestedChanges: Record<string, any> = {
       contact_number: this.editForm.contact_number || null,
       email: this.editForm.email || null,
+      gender: this.editForm.gender || this._resident.gender,
+      birth_place: this.editForm.birth_place || null,
       civil_status: this.editForm.civil_status || this._resident.civil_status,
       occupation: this.editForm.occupation || null,
       subdivision: this.editForm.subdivision || null,

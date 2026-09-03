@@ -568,11 +568,27 @@ const stringify = (value) => {
 // Classification / validation
 // ------------------------------------------------------------------
 
+const parseArray = (val) => {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  if (typeof val === 'string') {
+    try {
+      const parsed = JSON.parse(val);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+};
+
 // Classify every tag in the template: known (library), mapped (explicit),
 // or unknown (will render blank unless it matches a form field).
 const classifyTags = (tags, service) => {
-  const formKeys = new Set((service?.form_fields || []).map((f) => normalize(f.key)).filter(Boolean));
-  const mapped = new Set((service?.document_mappings || []).map((m) => normalize(m.placeholder)));
+  const formFields = parseArray(service?.form_fields);
+  const mappings = parseArray(service?.document_mappings);
+  const formKeys = new Set(formFields.map((f) => normalize(f?.key || f)).filter(Boolean));
+  const mapped = new Set(mappings.map((m) => normalize(m?.placeholder || m)).filter(Boolean));
   const known = [];
   const unknown = [];
   const used = [];
@@ -593,16 +609,18 @@ const classifyTags = (tags, service) => {
 const auditServiceConfiguration = (service, tags = []) => {
   const templateTags = [...new Set((tags || []).map(normalize).filter(Boolean))];
   const templateSet = new Set(templateTags);
-  const mappings = Array.isArray(service?.document_mappings) ? service.document_mappings : [];
+  const mappings = parseArray(service?.document_mappings);
   const mappedFieldKeys = new Set(
     mappings
-      .filter((m) => m.source === 'application')
+      .filter((m) => m && m.source === 'application')
       .map((m) => normalize(m.field || m.placeholder))
+      .filter(Boolean)
   );
 
-  const formFields = Array.isArray(service?.form_fields) ? service.form_fields : [];
+  const formFields = parseArray(service?.form_fields);
   const unmappedFormFields = formFields.filter((f) => {
-    const normKey = normalize(f.key);
+    if (!f) return false;
+    const normKey = normalize(f.key || f);
     return !templateSet.has(normKey) && !mappedFieldKeys.has(normKey);
   });
 
@@ -619,7 +637,7 @@ const auditServiceConfiguration = (service, tags = []) => {
   }
 
   if (unmappedFormFields.length) {
-    const fieldLabels = unmappedFormFields.map((f) => `"${f.label || f.key}"`).join(', ');
+    const fieldLabels = unmappedFormFields.map((f) => `"${f.label || f.key || f}"`).join(', ');
     warnings.push(`${unmappedFormFields.length} application field(s) are not mapped to the document template: ${fieldLabels}. Submitted values for these fields will be saved with the request but will not appear in the generated DOCX.`);
   }
 
@@ -642,7 +660,7 @@ const buildWarnings = (tags, service) => {
 // Fill data for docxtemplater from the tags found in the template.
 const apply = ({ templateTags, service, context }) => {
   const tags = [...new Set((templateTags || []).map(normalize).filter(Boolean))];
-  const mappings = Array.isArray(service?.document_mappings) ? service.document_mappings : [];
+  const mappings = parseArray(service?.document_mappings);
   const data = {};
   const unknown = [];
   const missingValues = [];
