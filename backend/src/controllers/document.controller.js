@@ -1,4 +1,5 @@
 const documentService = require('../services/document.service');
+const auditRepository = require('../repositories/audit.repository');
 const { successResponse, errorResponse, createdResponse } = require('../utils/apiResponse');
 
 const generate = async (req, res) => {
@@ -15,6 +16,14 @@ const generate = async (req, res) => {
     if (keepPrefix) {
       const removed = await documentService.pruneOldGenerations(req.params.id, keepPrefix);
       if (removed > 0) result.data.replaced = removed;
+    }
+    if (req.user) {
+      auditRepository.log({
+        userId: req.user.userId,
+        action: `Generated document for request #${req.params.id}`,
+        module: 'Documents',
+        ipAddress: req.ip
+      });
     }
     return createdResponse(res, result.message, result.data);
   } catch (error) {
@@ -78,6 +87,14 @@ const review = async (req, res) => {
       remarks: req.body.remarks
     });
     if (!result.success) return errorResponse(res, 400, result.message);
+    if (req.user) {
+      auditRepository.log({
+        userId: req.user.userId,
+        action: `Reviewed document #${req.params.documentId} (Status: ${req.params.status})`,
+        module: 'Documents',
+        ipAddress: req.ip
+      });
+    }
     return successResponse(res, result.message, result.data);
   } catch (error) {
     console.error('Document review error:', error);
@@ -89,6 +106,14 @@ const remove = async (req, res) => {
   try {
     const result = await documentService.deleteDocument(req.params.documentId);
     if (!result.success) return errorResponse(res, 404, result.message);
+    if (req.user) {
+      auditRepository.log({
+        userId: req.user.userId,
+        action: `Deleted generated document #${req.params.documentId}`,
+        module: 'Documents',
+        ipAddress: req.ip
+      });
+    }
     return successResponse(res, result.message, result.data);
   } catch {
     return errorResponse(res, 500, 'Internal server error.');

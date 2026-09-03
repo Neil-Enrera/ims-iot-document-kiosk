@@ -54,7 +54,7 @@ const preview = async (req, res) => {
 
 const approve = async (req, res) => {
   try {
-    const result = await applicationService.approveApplication(req.params.id, req.user.userId, req.body.remarks);
+    const result = await applicationService.approveApplication(req.params.id, req.user.userId, req.body.remarks, req.ip);
     if (!result.success) return errorResponse(res, 400, result.message);
     return successResponse(res, result.message, result.data);
   } catch (error) {
@@ -65,7 +65,7 @@ const approve = async (req, res) => {
 
 const reject = async (req, res) => {
   try {
-    const result = await applicationService.rejectApplication(req.params.id, req.user.userId, req.body.remarks);
+    const result = await applicationService.rejectApplication(req.params.id, req.user.userId, req.body.remarks, req.ip);
     if (!result.success) return errorResponse(res, 400, result.message);
     return successResponse(res, result.message, result.data);
   } catch (error) {

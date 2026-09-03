@@ -42,7 +42,14 @@ const create = async (req, res) => {
       return errorResponse(res, 400, result.message);
     }
     if (req.user) {
-      auditRepository.log({ userId: req.user.userId, action: 'Created resident', module: 'Residents', ipAddress: req.ip });
+      const resCode = result.data?.resident_code || '';
+      const name = `${result.data?.first_name || ''} ${result.data?.last_name || ''}`.trim();
+      auditRepository.log({
+        userId: req.user.userId,
+        action: `Created resident record #${result.data?.resident_id} (${resCode}) ${name}`,
+        module: 'Residents',
+        ipAddress: req.ip
+      });
     }
     return createdResponse(res, result.message, result.data);
   } catch {
@@ -57,7 +64,14 @@ const update = async (req, res) => {
       return errorResponse(res, 404, result.message);
     }
     if (req.user) {
-      auditRepository.log({ userId: req.user.userId, action: `Updated resident #${req.params.id}`, module: 'Residents', ipAddress: req.ip });
+      const resCode = result.data?.resident_code || '';
+      const name = `${result.data?.first_name || ''} ${result.data?.last_name || ''}`.trim();
+      auditRepository.log({
+        userId: req.user.userId,
+        action: `Updated resident profile #${req.params.id} (${resCode}) ${name}`,
+        module: 'Residents',
+        ipAddress: req.ip
+      });
     }
     return successResponse(res, result.message, result.data);
   } catch {
@@ -72,7 +86,14 @@ const archive = async (req, res) => {
       return errorResponse(res, 404, result.message);
     }
     if (req.user) {
-      auditRepository.log({ userId: req.user.userId, action: `Archived resident #${req.params.id}`, module: 'Residents', ipAddress: req.ip });
+      const resCode = result.data?.resident_code || '';
+      const name = `${result.data?.first_name || ''} ${result.data?.last_name || ''}`.trim();
+      auditRepository.log({
+        userId: req.user.userId,
+        action: `Archived resident #${req.params.id} (${resCode}) ${name}`,
+        module: 'Residents',
+        ipAddress: req.ip
+      });
     }
     return successResponse(res, result.message, result.data);
   } catch {
@@ -87,7 +108,14 @@ const restore = async (req, res) => {
       return errorResponse(res, 404, result.message);
     }
     if (req.user) {
-      auditRepository.log({ userId: req.user.userId, action: `Restored resident #${req.params.id}`, module: 'Residents', ipAddress: req.ip });
+      const resCode = result.data?.resident_code || '';
+      const name = `${result.data?.first_name || ''} ${result.data?.last_name || ''}`.trim();
+      auditRepository.log({
+        userId: req.user.userId,
+        action: `Restored resident #${req.params.id} (${resCode}) ${name}`,
+        module: 'Residents',
+        ipAddress: req.ip
+      });
     }
     return successResponse(res, result.message, result.data);
   } catch {
@@ -102,7 +130,12 @@ const remove = async (req, res) => {
       return errorResponse(res, 404, result.message);
     }
     if (req.user) {
-      auditRepository.log({ userId: req.user.userId, action: `Deleted resident #${req.params.id}`, module: 'Residents', ipAddress: req.ip });
+      auditRepository.log({
+        userId: req.user.userId,
+        action: `Permanently deleted resident #${req.params.id}`,
+        module: 'Residents',
+        ipAddress: req.ip
+      });
     }
     return successResponse(res, result.message, result.data);
   } catch {

@@ -303,6 +303,8 @@ export class AuditComponent implements OnInit {
     'Residents',
     'RFID',
     'Barangay ID',
+    'BarangayID',
+    'Documents',
     'Settings',
     'Users',
     'Services',
@@ -435,6 +437,7 @@ export class AuditComponent implements OnInit {
     if (mod.includes('user')) return 'bg-indigo-100 text-indigo-800 border border-indigo-200';
     if (mod.includes('service')) return 'bg-rose-100 text-rose-800 border border-rose-200';
     if (mod.includes('kiosk')) return 'bg-orange-100 text-orange-800 border border-orange-200';
+    if (mod.includes('doc')) return 'bg-cyan-100 text-cyan-800 border border-cyan-200';
     return 'bg-slate-100 text-slate-800 border border-slate-200';
   }
 

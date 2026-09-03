@@ -34,9 +34,10 @@ const create = async (req, res) => {
   try {
     const result = await serviceService.createService(req.body);
     if (!result.success) return errorResponse(res, 400, result.message);
+    const svcName = result.data?.service_name || req.body.serviceName || req.body.service_name;
     auditRepository.log({
       userId: req.user?.userId,
-      action: `Created service '${req.body.serviceName || req.body.service_name}'`,
+      action: `Created service #${result.data?.service_id || ''} '${svcName}' (Fee: ₱${Number(req.body.fee || req.body.processing_fee || 0).toFixed(2)})`,
       module: 'Services',
       ipAddress: req.ip
     });
@@ -50,9 +51,17 @@ const update = async (req, res) => {
   try {
     const result = await serviceService.updateService(req.params.id, req.body);
     if (!result.success) return errorResponse(res, 400, result.message);
+    const svcName = result.data?.service_name || req.body.serviceName || '';
+    const updatedParts = [];
+    if (req.body.form_fields !== undefined || req.body.formFields !== undefined) updatedParts.push('form fields');
+    if (req.body.requirements !== undefined) updatedParts.push('requirements');
+    if (req.body.placeholder_mappings !== undefined || req.body.placeholderMappings !== undefined) updatedParts.push('placeholder mappings');
+    if (req.body.processing_fee !== undefined || req.body.fee !== undefined) updatedParts.push('processing fee');
+    if (req.body.description !== undefined) updatedParts.push('description');
+    const partsDesc = updatedParts.length > 0 ? ` [Modified: ${updatedParts.join(', ')}]` : '';
     auditRepository.log({
       userId: req.user?.userId,
-      action: `Updated service #${req.params.id}`,
+      action: `Updated service #${req.params.id} '${svcName}'${partsDesc}`,
       module: 'Services',
       ipAddress: req.ip
     });
@@ -66,9 +75,10 @@ const changeStatus = async (req, res) => {
   try {
     const result = await serviceService.changeStatus(req.params.id, req.body.isActive);
     if (!result.success) return errorResponse(res, 404, result.message);
+    const svcName = result.data?.service_name || '';
     auditRepository.log({
       userId: req.user?.userId,
-      action: `Changed status of service #${req.params.id} to ${req.body.isActive ? 'Active' : 'Inactive'}`,
+      action: `Changed status of service #${req.params.id} '${svcName}' to ${req.body.isActive ? 'Active' : 'Inactive'}`,
       module: 'Services',
       ipAddress: req.ip
     });
@@ -82,9 +92,10 @@ const uploadTemplate = async (req, res) => {
   try {
     const result = await serviceService.uploadTemplate(req.params.id, req.file);
     if (!result.success) return errorResponse(res, 400, result.message);
+    const svcName = result.data?.service_name || '';
     auditRepository.log({
       userId: req.user?.userId,
-      action: `Uploaded template for service #${req.params.id}`,
+      action: `Uploaded DOCX template for service #${req.params.id} '${svcName}': ${req.file?.originalname || 'template.docx'}`,
       module: 'Services',
       ipAddress: req.ip
     });
@@ -99,9 +110,10 @@ const removeTemplate = async (req, res) => {
   try {
     const result = await serviceService.removeTemplate(req.params.id);
     if (!result.success) return errorResponse(res, 404, result.message);
+    const svcName = result.data?.service_name || '';
     auditRepository.log({
       userId: req.user?.userId,
-      action: `Removed template for service #${req.params.id}`,
+      action: `Removed DOCX template for service #${req.params.id} '${svcName}'`,
       module: 'Services',
       ipAddress: req.ip
     });

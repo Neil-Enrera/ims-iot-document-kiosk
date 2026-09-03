@@ -103,7 +103,7 @@ const createApplication = async (data, ipAddress) => {
   return { success: true, message: 'Barangay ID application submitted successfully.', data: application };
 };
 
-const approveApplication = async (applicationId, userId, remarks) => {
+const approveApplication = async (applicationId, userId, remarks, ipAddress) => {
   const application = await applicationRepository.findById(applicationId);
   if (!application) {
     return { success: false, message: 'Application not found.' };
@@ -195,7 +195,7 @@ const approveApplication = async (applicationId, userId, remarks) => {
       userId,
       action: `Approved Barangay ID application #${applicationId} -> resident ${residentCode} (ID ${idNumber})`,
       module: 'BarangayID',
-      ipAddress: null
+      ipAddress: ipAddress || '127.0.0.1'
     });
   } catch (auditError) {
     console.error('Failed to create approval audit log:', auditError);
@@ -212,7 +212,7 @@ const approveApplication = async (applicationId, userId, remarks) => {
   return { success: true, message: 'Application approved and resident created.', data: { application: finalApplication, resident } };
 };
 
-const rejectApplication = async (applicationId, userId, remarks) => {
+const rejectApplication = async (applicationId, userId, remarks, ipAddress) => {
   const application = await applicationRepository.findById(applicationId);
   if (!application) {
     return { success: false, message: 'Application not found.' };
@@ -230,7 +230,7 @@ const rejectApplication = async (applicationId, userId, remarks) => {
       userId,
       action: `Rejected Barangay ID application #${applicationId}`,
       module: 'BarangayID',
-      ipAddress: null
+      ipAddress: ipAddress || '127.0.0.1'
     });
   } catch (auditError) {
     console.error('Failed to create rejection audit log:', auditError);

@@ -36,7 +36,7 @@ const findAll = async ({ search, module, userId, dateFrom, dateTo, page = 1, lim
       r.role_name
     FROM audit_logs a 
     LEFT JOIN users u ON a.user_id = u.user_id
-    LEFT JOIN roles r ON u.role_id = r.role_id
+    LEFT JOIN user_roles r ON u.role_id = r.role_id
   `;
   let countQuery = `
     SELECT COUNT(*) AS total 
@@ -107,7 +107,7 @@ const findById = async (auditLogId) => {
       r.role_name
     FROM audit_logs a 
     LEFT JOIN users u ON a.user_id = u.user_id
-    LEFT JOIN roles r ON u.role_id = r.role_id
+    LEFT JOIN user_roles r ON u.role_id = r.role_id
     WHERE a.audit_log_id = ?
   `, [auditLogId]);
   return rows[0] || null;

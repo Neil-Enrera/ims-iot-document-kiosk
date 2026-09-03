@@ -29,9 +29,10 @@ const register = async (req, res) => {
   try {
     const result = await rfidService.registerCard(req.body);
     if (!result.success) return errorResponse(res, 400, result.message);
+    const uid = result.data?.card_uid || req.body.cardUid || req.body.rfidUid || '';
     auditRepository.log({
       userId: req.user?.userId,
-      action: `Registered RFID card (UID: ${req.body.rfidUid})`,
+      action: `Registered RFID card (UID: ${uid})`,
       module: 'RFID',
       ipAddress: req.ip
     });
@@ -45,9 +46,10 @@ const assign = async (req, res) => {
   try {
     const result = await rfidService.assignCard(req.body);
     if (!result.success) return errorResponse(res, 400, result.message);
+    const uid = req.body.cardUid || req.body.rfidUid || '';
     auditRepository.log({
       userId: req.user?.userId,
-      action: `Assigned RFID card (UID: ${req.body.rfidUid}) to resident #${req.body.residentId}`,
+      action: `Assigned RFID card (UID: ${uid}) to resident #${req.body.residentId}`,
       module: 'RFID',
       ipAddress: req.ip
     });

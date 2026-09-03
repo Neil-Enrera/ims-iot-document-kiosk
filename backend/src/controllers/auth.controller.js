@@ -12,13 +12,19 @@ const login = async (req, res) => {
 
     const result = await authService.login(identifier, password);
     if (!result.success) {
+      auditRepository.log({
+        userId: null,
+        action: `Failed login attempt for identifier: ${identifier} (${result.message})`,
+        module: 'Authentication',
+        ipAddress: req.ip
+      });
       return errorResponse(res, 401, result.message);
     }
 
     if (result.data?.user) {
       auditRepository.log({
         userId: result.data.user.userId || result.data.user.user_id,
-        action: `User logged in: ${identifier}`,
+        action: `User logged in directly: ${identifier}`,
         module: 'Authentication',
         ipAddress: req.ip
       });
@@ -40,13 +46,19 @@ const verifyLoginOtp = async (req, res) => {
 
     const result = await authService.verifyLoginOtp(email, code, tempToken);
     if (!result.success) {
+      auditRepository.log({
+        userId: null,
+        action: `Failed OTP verification for user: ${email} (${result.message})`,
+        module: 'Authentication',
+        ipAddress: req.ip
+      });
       return errorResponse(res, 400, result.message);
     }
 
     if (result.data?.user) {
       auditRepository.log({
         userId: result.data.user.userId || result.data.user.user_id,
-        action: `User authenticated via OTP: ${email}`,
+        action: `User logged in successfully via OTP: ${email}`,
         module: 'Authentication',
         ipAddress: req.ip
       });
@@ -131,6 +143,12 @@ const resetPassword = async (req, res) => {
     if (!result.success) {
       return errorResponse(res, 400, result.message);
     }
+    auditRepository.log({
+      userId: null,
+      action: `Password successfully reset for account: ${email}`,
+      module: 'Authentication',
+      ipAddress: req.ip
+    });
     return successResponse(res, result.message);
   } catch (err) {
     console.error('resetPassword controller error:', err);
@@ -138,4 +156,20 @@ const resetPassword = async (req, res) => {
   }
 };
 
-module.exports = { login, verifyLoginOtp, resendLoginOtp, getMe, forgotPassword, verifyResetCode, resetPassword };
+const logout = async (req, res) => {
+  try {
+    if (req.user) {
+      auditRepository.log({
+        userId: req.user.userId,
+        action: `User logged out: ${req.user.username || req.user.email || 'User #' + req.user.userId}`,
+        module: 'Authentication',
+        ipAddress: req.ip
+      });
+    }
+    return successResponse(res, 'Logged out successfully.');
+  } catch {
+    return errorResponse(res, 500, 'Internal server error.');
+  }
+};
+
+module.exports = { login, verifyLoginOtp, resendLoginOtp, getMe, forgotPassword, verifyResetCode, resetPassword, logout };

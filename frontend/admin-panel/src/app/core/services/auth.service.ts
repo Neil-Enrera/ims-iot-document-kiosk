@@ -75,6 +75,13 @@ export class AuthService {
   }
 
   logout() {
+    const token = this.getToken();
+    if (token) {
+      this.http.post(`${this.API_URL}/auth/logout`, {}).subscribe({
+        next: () => {},
+        error: () => {}
+      });
+    }
     if (this.isBrowser) localStorage.removeItem('token');
     this.currentUser.set(null);
     this.router.navigate(['/login']);

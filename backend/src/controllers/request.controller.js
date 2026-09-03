@@ -41,7 +41,14 @@ const create = async (req, res) => {
     const result = await requestService.createRequest(req.body);
     if (!result.success) return errorResponse(res, 400, result.message);
     if (req.user) {
-      auditRepository.log({ userId: req.user.userId, action: 'Created request', module: 'Requests', ipAddress: req.ip });
+      const reqNum = result.data?.tracking_number || result.data?.request_number || `#${result.data?.request_id || ''}`;
+      const svcName = result.data?.service_name ? ` (${result.data.service_name})` : '';
+      auditRepository.log({
+        userId: req.user.userId,
+        action: `Created document request ${reqNum}${svcName}`,
+        module: 'Requests',
+        ipAddress: req.ip
+      });
     }
     broadcastStatusDisplayUpdate().catch(() => {});
     return createdResponse(res, result.message, result.data);
@@ -54,6 +61,14 @@ const update = async (req, res) => {
   try {
     const result = await requestService.updateRequest(req.params.id, req.body, req.user.userId);
     if (!result.success) return errorResponse(res, 400, result.message);
+    if (req.user) {
+      auditRepository.log({
+        userId: req.user.userId,
+        action: `Updated details and form data for request #${req.params.id}`,
+        module: 'Requests',
+        ipAddress: req.ip
+      });
+    }
     sseManager.broadcastEvent('request-updated', { requestId: parseInt(req.params.id), data: result.data });
     broadcastStatusDisplayUpdate().catch(() => {});
     return successResponse(res, result.message, result.data);
