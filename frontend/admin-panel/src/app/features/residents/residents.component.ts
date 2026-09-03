@@ -2,7 +2,9 @@ import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DatePipe, CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { ResidentService, RfidService, RequestService, ApplicationService, ResidentUpdateService } from '../../shared/services';
+import { NotificationService } from '../notifications/notification.service';
 import { Resident } from '../../shared/interfaces/api.interfaces';
 import { TableComponent, TableColumn } from '../../shared/components/table.component';
 import { ButtonComponent } from '../../shared/components/button.component';
@@ -521,6 +523,7 @@ export class ResidentsComponent implements OnInit, OnDestroy {
   residentApplications = signal<any[]>([]);
   newCardUid = '';
   private ws: WebSocket | null = null;
+  private sseSubscription: Subscription | null = null;
 
   // Information Update Requests state
   updateRequests = signal<any[]>([]);
@@ -617,6 +620,7 @@ export class ResidentsComponent implements OnInit, OnDestroy {
     private requestService: RequestService,
     private applicationService: ApplicationService,
     private residentUpdateService: ResidentUpdateService,
+    private notificationService: NotificationService,
     private route: ActivatedRoute,
     private router: Router
   ) { }
@@ -645,10 +649,29 @@ export class ResidentsComponent implements OnInit, OnDestroy {
     });
     this.loadResidents();
     this.loadPendingCount();
+
+    // Listen to real-time SSE updates for resident and application events
+    this.sseSubscription = this.notificationService.sse$.subscribe(event => {
+      if (event?.type?.startsWith('resident-') || event?.type?.startsWith('application-')) {
+        this.loadResidents();
+        this.loadPendingCount();
+        if (this.mainTab() === 'updates') {
+          this.loadUpdateRequests();
+        }
+        const openResId = this.selectedResident()?.resident_id;
+        if (openResId) {
+          this.fetchFreshResident(openResId);
+        }
+      }
+    });
   }
 
   ngOnDestroy() {
     this.disconnectRfidScanner();
+    if (this.sseSubscription) {
+      this.sseSubscription.unsubscribe();
+      this.sseSubscription = null;
+    }
   }
 
   setMainTab(tab: 'residents' | 'updates') {
@@ -791,16 +814,32 @@ export class ResidentsComponent implements OnInit, OnDestroy {
     this.selectedUpdateRequest.set(null);
   }
 
+  fetchFreshResident(residentId: number) {
+    if (!residentId) return;
+    this.residentService.getById(residentId).subscribe({
+      next: (res: any) => {
+        if (res?.data) {
+          this.selectedResident.set(res.data);
+          this.residents.update(list => list.map(r => r.resident_id === residentId ? { ...r, ...res.data } : r));
+        }
+      },
+      error: (err) => console.error('Error fetching fresh resident record:', err)
+    });
+  }
+
   approveUpdateRequest() {
     const req = this.selectedUpdateRequest();
     if (!req) return;
     this.isReviewing.set(true);
     this.residentUpdateService.approve(req.request_id, this.reviewNotes).subscribe({
-      next: () => {
+      next: (res: any) => {
         this.isReviewing.set(false);
         this.closeUpdateRequestDetail();
         this.loadUpdateRequests();
         this.loadResidents();
+        if (req.resident_id) {
+          this.fetchFreshResident(req.resident_id);
+        }
         alert('Information update request has been approved. Resident record updated successfully!');
       },
       error: (err: any) => {
@@ -867,6 +906,7 @@ export class ResidentsComponent implements OnInit, OnDestroy {
     this.selectedRow.set(resident);
     this.showDetails.set(true);
     this.activeTab.set('bio');
+    this.fetchFreshResident(resident.resident_id);
     this.loadResidentRfid(resident);
     this.loadResidentHistory(resident);
   }
@@ -896,20 +936,25 @@ export class ResidentsComponent implements OnInit, OnDestroy {
   onFormSubmit(formData: any) {
     this.saving.set(true);
     if (this.editingResident()) {
-      this.residentService.update(this.editingResident()!.resident_id, formData).subscribe({
+      const resId = this.editingResident()!.resident_id;
+      this.residentService.update(resId, formData).subscribe({
         next: () => {
           this.saving.set(false);
           this.closeForm();
           this.loadResidents();
+          this.fetchFreshResident(resId);
         },
         error: () => this.saving.set(false)
       });
     } else {
       this.residentService.create(formData).subscribe({
-        next: () => {
+        next: (createdRes: any) => {
           this.saving.set(false);
           this.closeForm();
           this.loadResidents();
+          if (createdRes?.data?.resident_id) {
+            this.fetchFreshResident(createdRes.data.resident_id);
+          }
         },
         error: () => this.saving.set(false)
       });

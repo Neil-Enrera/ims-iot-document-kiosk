@@ -2,6 +2,7 @@ const residentUpdateRepo = require('../repositories/resident-update.repository')
 const residentRepo = require('../repositories/resident.repository');
 const auditRepo = require('../repositories/audit.repository');
 const notificationService = require('./notification.service');
+const sseManager = require('./notification-sse');
 
 const submitRequest = async ({ residentId, requestedChanges, reason, ipAddress }) => {
   const resident = await residentRepo.findById(residentId);
@@ -103,6 +104,20 @@ const approveRequest = async (requestId, userId, reviewNotes, ipAddress) => {
   });
 
   const updatedResident = await residentRepo.findById(request.resident_id);
+
+  try {
+    sseManager.broadcastEvent('resident-updated', {
+      residentId: request.resident_id,
+      requestId
+    });
+    sseManager.broadcastEvent('resident-update-approved', {
+      residentId: request.resident_id,
+      requestId
+    });
+  } catch (sseErr) {
+    console.error('SSE broadcast error on approve resident update:', sseErr);
+  }
+
   return {
     success: true,
     message: 'Resident update request approved and resident record successfully updated in database.',
@@ -132,6 +147,15 @@ const rejectRequest = async (requestId, userId, reviewNotes, ipAddress) => {
     module: 'Residents',
     ipAddress: ipAddress || '127.0.0.1'
   });
+
+  try {
+    sseManager.broadcastEvent('resident-update-rejected', {
+      residentId: request.resident_id,
+      requestId
+    });
+  } catch (sseErr) {
+    console.error('SSE broadcast error on reject resident update:', sseErr);
+  }
 
   return {
     success: true,
