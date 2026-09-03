@@ -48,7 +48,7 @@ import { UserFormComponent } from './user-form.component';
             </span>
           </ng-template>
           <ng-template #statusCell let-row="row">
-            <span [class]="'px-2.5 py-1 rounded-full text-xs font-bold border ' + (row.status === 'Active' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-red-50 text-red-800 border-red-200')">
+            <span [class]="'px-2.5 py-1 rounded-full text-xs font-bold border ' + (isUserActive(row.status) ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-red-50 text-red-800 border-red-200')">
               {{ row.status }}
             </span>
           </ng-template>
@@ -74,7 +74,7 @@ import { UserFormComponent } from './user-form.component';
                 <h3 class="text-lg font-bold text-gray-900">{{ usr.first_name }} {{ usr.last_name }}</h3>
                 <p class="text-sm text-gray-500">Username: {{ usr.username }}</p>
               </div>
-              <span [class]="'px-3 py-1 rounded-full text-xs font-semibold ' + (usr.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800')">{{ usr.status }}</span>
+              <span [class]="'px-3 py-1 rounded-full text-xs font-semibold border ' + (isUserActive(usr.status) ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-red-50 text-red-800 border-red-200')">{{ usr.status }}</span>
             </div>
 
             <div class="grid grid-cols-2 gap-4 text-sm">
@@ -153,6 +153,10 @@ export class UsersComponent implements OnInit {
   ];
 
   constructor(private userService: UserService) {}
+
+  isUserActive(status?: string): boolean {
+    return (status || '').toUpperCase() === 'ACTIVE';
+  }
 
   ngOnInit() { this.loadUsers(); }
 
