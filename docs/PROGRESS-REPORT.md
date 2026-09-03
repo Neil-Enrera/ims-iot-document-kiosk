@@ -15,6 +15,12 @@
 
 > **Note:** TASK-BACKEND-012 (Payment API) and TASK-FRONTEND-011 (Payment UI) removed per DEC-008.
 > **Recent Updates (August & September 2026):**
+> - **Upgraded Kiosk Session Inactivity Timeout with User Activity Listeners & Warning Countdown** (`kiosk.component.ts` L5480-5530, L5605-5615, L5875-5885, L9045-9125, `en.ts`, `fil.ts`):
+>   - **Root Cause Identified**: The previous timeout was a blind `setTimeout` scheduled only on major step transitions, without listening to user interactions (clicks, touches, keyboard input, typing, scrolling). Residents actively typing on form pages were prematurely kicked back to the landing page mid-application.
+>   - **Meaningful Activity Listeners**: Added global `@HostListener` window listeners (`click`, `touchstart`, `pointerdown`, `keydown`, `input`, `scroll`) that automatically reset the idle timer on real user activity.
+>   - **Configurable Timeout & Warning Countdown**: Integrated `kiosk_idle_timeout` system setting. Displays a high-visibility warning modal with animated countdown ("Are you still there?") before session expiration, with an "I'm still here" button that instantly resumes and resets the session.
+>   - **Safe Lifecycle & Landing Protection**: No timer runs while on the idle landing page (`mode() === 'home'`). Only temporary/unsaved session drafts are cleared when a timeout actually occurs, leaving permanent resident records intact.
+>   - **Verification**: Verified clean build via `npm run build:kiosk` with 0 errors.
 > - **Resolved Kiosk Document Request Stale Form Data on Back / Request Abandonment** (`kiosk.component.ts` L5965-5995, L6225-6365, L7560-7570, L8725-8815):
 >   - **Root Cause Identified**: Temporary form entries stashed into `serviceForms` and `formValues` during intermediate step validations were retained across request cycles and reloaded by `loadServiceForm()`, causing backed-out or abandoned inputs to linger when returning to the request flow.
 >   - **Lifecycle-Specific Request Session Reset**: Implemented `clearDocumentRequestSession()` to reset temporary request drafts (`serviceForms`, `servicePhotos`, `formValues`, `formErrors`, `capturedPhoto`, `reusedRequestInfo`) when the resident backs out of the active request (e.g. from `requirements` to `services`, `services` to `welcome`, or deselecting a service).
