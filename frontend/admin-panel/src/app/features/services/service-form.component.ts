@@ -422,9 +422,15 @@ const APPLICATION_COMMON_FIELDS = [
         <p class="text-sm text-red-500">{{ serverError }}</p>
       }
 
-      <div class="flex justify-end gap-3 pt-4 border-t">
-        <app-button variant="secondary" (onClick)="onCancel.emit()">Cancel</app-button>
-        <app-button variant="primary" type="submit" [loading]="loading">{{ editMode ? 'Update' : 'Create' }}</app-button>
+      <div class="flex justify-between items-center pt-4 border-t">
+        <div>
+          @if (editMode && service) {
+            <app-button variant="danger" type="button" (onClick)="onDelete.emit(service)">Remove</app-button>
+          }
+        </div>
+        <div class="flex gap-3">
+          <app-button variant="primary" type="submit" [loading]="loading">{{ editMode ? 'Update' : 'Create' }}</app-button>
+        </div>
       </div>
     </form>
 
@@ -441,6 +447,7 @@ export class ServiceFormComponent implements OnChanges, OnInit {
   @Input() service: Service | null = null;
   @Input() loading = false;
   @Output() onSave = new EventEmitter<any>();
+  @Output() onDelete = new EventEmitter<Service>();
   @Output() onCancel = new EventEmitter<void>();
 
   FIELD_TYPES = FIELD_TYPES;

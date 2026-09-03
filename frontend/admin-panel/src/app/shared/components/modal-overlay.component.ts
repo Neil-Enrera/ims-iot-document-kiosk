@@ -31,10 +31,11 @@ import { CommonModule } from '@angular/common';
           (click)="$event.stopPropagation()">
           
           <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50/50">
-            <h3 id="modal-title" class="text-lg font-semibold text-gray-800">{{ title }}</h3>
+            <h3 id="modal-title" class="text-lg font-bold text-gray-800 leading-none">{{ title }}</h3>
             <button 
+              type="button"
               (click)="onClose.emit()" 
-              class="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-lg hover:bg-gray-200"
+              class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-200/70 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300"
               aria-label="Close modal">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
