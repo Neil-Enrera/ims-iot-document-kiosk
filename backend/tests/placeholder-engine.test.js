@@ -142,6 +142,49 @@ describe('Placeholder resolution', () => {
     assert.deepStrictEqual(unknown, ['mystery_tag']);
     assert.ok(!('mystery_tag' in data));
   });
+
+  it('falls back to resident record when mapping source is application but field is absent in form_data', () => {
+    // Registered resident submitted only purpose & block, but mapping says source: application, field: full_name
+    const regReqCtx = engine.buildContext({
+      request: { request_number: 'REQ-00008', form_data: { purpose: 'Postal ID', block: '15' } },
+      resident: { first_name: 'Neil Andrei', last_name: 'Enrera', birth_date: '2003-09-22' },
+      service: { service_name: 'Barangay Clearance' },
+      barangay,
+      processedBy: 'Admin'
+    });
+    const mappings = [{ placeholder: 'full_name', source: 'application', field: 'full_name' }];
+    assert.strictEqual(engine.resolve('full_name', regReqCtx, mappings), 'Neil Andrei Enrera');
+  });
+
+  it('falls back to application form_data when mapping source is resident but resident DB record is empty (guest)', () => {
+    const guestCtx = engine.buildContext({
+      request: { form_data: { _guest: { full_name: 'Guest Juan Dela Cruz', birth_date: '2000-01-01' } } },
+      resident: {},
+      service: { service_name: 'Barangay Clearance' },
+      barangay,
+      processedBy: 'Admin'
+    });
+    const mappings = [{ placeholder: 'full_name', source: 'resident', field: 'full_name' }];
+    assert.strictEqual(engine.resolve('full_name', guestCtx, mappings), 'Guest Juan Dela Cruz');
+  });
+
+  it('correctly resolves date part tags even when mapped to system current_date', () => {
+    const nowCtx = engine.buildContext({
+      request: { request_number: 'REQ-00008' },
+      resident,
+      service,
+      barangay,
+      now: new Date('2026-09-03T16:00:00')
+    });
+    const mappings = [
+      { placeholder: 'day', source: 'system', field: 'current_date' },
+      { placeholder: 'month', source: 'system', field: 'current_date' },
+      { placeholder: 'year', source: 'system', field: 'current_date' }
+    ];
+    assert.strictEqual(engine.resolve('day', nowCtx, mappings), '3');
+    assert.strictEqual(engine.resolve('month', nowCtx, mappings), 'September');
+    assert.strictEqual(engine.resolve('year', nowCtx, mappings), '2026');
+  });
 });
 
 describe('Placeholder validation', () => {

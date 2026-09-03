@@ -15,6 +15,12 @@
 
 > **Note:** TASK-BACKEND-012 (Payment API) and TASK-FRONTEND-011 (Payment UI) removed per DEC-008.
 > **Recent Updates (August & September 2026):**
+> - **Fixed Document Preview & Generation Placeholder Mapping Bug** (`placeholder.engine.js`, `service-form.component.ts`, `025-update-service-document-mappings.sql`, `placeholder-engine.test.js`):
+>   - **Bidirectional Mapping Resolution & Fallback Pipeline**: Fixed root cause where document requests in "Under Review" (and other statuses) for registered residents rendered blank full names when service mappings pointed to `source: "application"`. Added graceful fallback across `ctx.resident`, `ctx.application`, and master library resolvers.
+>   - **Date Part Resolution**: Resolved date part placeholders (`{{day}}`, `{{month}}`, `{{year}}`) to their proper discrete tokens (`3`, `September`, `2026`) even when mapped as system date fields.
+>   - **Complete Field Hardening**: Hardened all demographics (`first_name`, `middle_name`, `last_name`, `suffix`, `civil_status`, `gender`, `age`, `birth_date`, `birth_place`, `nationality`, `religion`, `occupation`, `blood_type`, `contact_number`, `email`), address fields (`house_number`, `block`, `lot`, `street`, `subdivision`, `purok_zone`, `sitio`, `address`), and control numbers across registered resident, guest, and application form records.
+>   - **Admin Service Form Options**: Expanded `RESIDENT_FIELDS` and `SYSTEM_FIELDS` in the Service Form builder to include discrete address, demographic, and date part options.
+>   - **Verification**: Verified 17/17 passing tests in `placeholder-engine.test.js`, successful DOCX generation on Request 147 (Under Review), and 0 compile errors on `admin-panel` and `kiosk-app`.
 > - **Implemented RFID-Based "Request Again" Feature for Registered Residents** (`transaction.repository.js`, `kiosk.controller.js`, `kiosk.routes.js`, `kiosk.service.ts`, `kiosk.component.ts`, `en.ts`, `fil.ts`, `previous-requests.test.js`):
 >   - **RFID Resident Verification**: Scoped exclusively to verified residents with an active RFID session (`resident() && rfidCard()`). Guests or unverified sessions are excluded.
 >   - **Service-Specific Transaction History Query**: When selecting a service, queries previous requests strictly filtered by `(resident_id, service_id)` through `GET /api/v1/kiosk/residents/:id/previous-requests?service_id=X`.

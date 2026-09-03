@@ -88,7 +88,13 @@ const computeAge = (birthDate) => {
   return (age >= 1 && age <= 125) ? String(age) : '';
 };
 
-const composeFullName = (r) => [r.first_name, r.middle_name, r.last_name, r.suffix].filter(Boolean).join(' ').trim();
+const composeFullName = (r) => {
+  if (!r) return '';
+  if (r.first_name && r.last_name) {
+    return [r.first_name, r.middle_name, r.last_name, r.suffix].filter(Boolean).join(' ').trim();
+  }
+  return pick(r.full_name, r.fullname, r.name, r.complete_name, [r.first_name, r.middle_name, r.last_name, r.suffix].filter(Boolean).join(' ').trim());
+};
 
 // ------------------------------------------------------------------
 // Placeholder registry
@@ -106,150 +112,261 @@ const PLACEHOLDERS = [
     key: 'full_name', category: 'resident', source: 'resident', label: 'Full name',
     aliases: ['fullname', 'name', 'resident_name', 'complete_name'],
     description: "Resident's complete name (first, middle, last, suffix).",
-    resolve: (ctx) => composeFullName(ctx.resident) || pick(ctx.application.full_name, ctx.application.fullname, ctx.application.name)
+    resolve: (ctx) => composeFullName(ctx.resident) || pick(
+      ctx.application?.full_name,
+      ctx.application?.fullname,
+      ctx.application?.name,
+      ctx.application?.complete_name,
+      [ctx.application?.first_name, ctx.application?.middle_name, ctx.application?.last_name, ctx.application?.suffix].filter(Boolean).join(' ').trim()
+    )
   },
-  { key: 'first_name', category: 'resident', source: 'resident', label: 'First name', aliases: ['firstname'], description: "Resident's first name.", resolve: (c) => c.resident.first_name || '' },
-  { key: 'middle_name', category: 'resident', source: 'resident', label: 'Middle name', aliases: ['middlename'], description: "Resident's middle name.", resolve: (c) => c.resident.middle_name || '' },
-  { key: 'last_name', category: 'resident', source: 'resident', label: 'Last name', aliases: ['lastname', 'surname'], description: "Resident's last name.", resolve: (c) => c.resident.last_name || '' },
-  { key: 'suffix', category: 'resident', source: 'resident', label: 'Suffix', aliases: ['name_suffix'], description: 'Name suffix (Jr., Sr., III).', resolve: (c) => c.resident.suffix || '' },
-  { key: 'gender', category: 'resident', source: 'resident', label: 'Gender', aliases: ['sex'], description: "Resident's gender.", resolve: (c) => c.resident.gender || '' },
-  { key: 'civil_status', category: 'resident', source: 'resident', label: 'Civil status', aliases: ['civilstatus', 'marital_status'], description: "Resident's civil status (Single, Married, etc.).", resolve: (c) => pick(c.resident.civil_status, c.application.civil_status) },
-  { key: 'birth_date', category: 'resident', source: 'resident', label: 'Birth date', aliases: ['birthdate', 'date_of_birth', 'dob'], description: "Resident's birth date.", resolve: (c) => formatDate(getBirthDate(c)) },
-  { key: 'age', category: 'resident', source: 'resident', label: 'Age', aliases: ['age_years'], description: "Resident's age computed from birth date.", resolve: (c) => pick(computeAge(getBirthDate(c)), c.application.age) },
-  { key: 'birth_place', category: 'resident', source: 'resident', label: 'Birth place', aliases: ['place_of_birth', 'birthplace'], description: "Resident's place of birth.", resolve: (c) => pick(c.resident.birth_place, c.resident.place_of_birth, c.application.place_of_birth, c.application.birth_place, c.application.birthPlace) },
-  { key: 'nationality', category: 'resident', source: 'resident', label: 'Nationality', aliases: ['citizenship'], description: "Resident's nationality.", resolve: (c) => pick(c.resident.nationality, c.application.nationality) || 'Filipino' },
-  { key: 'religion', category: 'resident', source: 'resident', label: 'Religion', aliases: ['religious_affiliation'], description: "Resident's religion.", resolve: (c) => pick(c.resident.religion, c.application.religion) },
-  { key: 'occupation', category: 'resident', source: 'resident', label: 'Occupation', aliases: ['profession', 'employment'], description: "Resident's occupation.", resolve: (c) => pick(c.resident.occupation, c.application.occupation) },
-  { key: 'contact_number', category: 'resident', source: 'resident', label: 'Contact number', aliases: ['contact', 'phone', 'mobile', 'telephone', 'contact_no'], description: "Resident's contact number.", resolve: (c) => pick(c.resident.contact_number, c.application.contact_number) },
-  { key: 'email', category: 'resident', source: 'resident', label: 'Email address', aliases: ['email_address'], description: "Resident's email address.", resolve: (c) => pick(c.resident.email, c.application.email) },
-  { key: 'resident_code', category: 'resident', source: 'resident', label: 'Resident ID', aliases: ['resident_id', 'resident_no', 'residents_code'], description: "Resident's system ID / resident code.", resolve: (c) => c.resident.resident_code || '' },
-  { key: 'blood_type', category: 'resident', source: 'resident', label: 'Blood type', aliases: ['bloodtype'], description: "Resident's blood type.", resolve: (c) => c.resident.blood_type || '' },
+  {
+    key: 'first_name', category: 'resident', source: 'resident', label: 'First name', aliases: ['firstname'],
+    description: "Resident's first name.",
+    resolve: (c) => pick(c.resident?.first_name, c.application?.first_name, c.application?.firstName)
+  },
+  {
+    key: 'middle_name', category: 'resident', source: 'resident', label: 'Middle name', aliases: ['middlename'],
+    description: "Resident's middle name.",
+    resolve: (c) => pick(c.resident?.middle_name, c.application?.middle_name, c.application?.middleName)
+  },
+  {
+    key: 'last_name', category: 'resident', source: 'resident', label: 'Last name', aliases: ['lastname', 'surname'],
+    description: "Resident's last name.",
+    resolve: (c) => pick(c.resident?.last_name, c.application?.last_name, c.application?.lastName, c.application?.surname)
+  },
+  {
+    key: 'suffix', category: 'resident', source: 'resident', label: 'Suffix', aliases: ['name_suffix'],
+    description: 'Name suffix (Jr., Sr., III).',
+    resolve: (c) => pick(c.resident?.suffix, c.application?.suffix, c.application?.name_suffix)
+  },
+  {
+    key: 'gender', category: 'resident', source: 'resident', label: 'Gender', aliases: ['sex'],
+    description: "Resident's gender.",
+    resolve: (c) => pick(c.resident?.gender, c.resident?.sex, c.application?.gender, c.application?.sex)
+  },
+  {
+    key: 'civil_status', category: 'resident', source: 'resident', label: 'Civil status', aliases: ['civilstatus', 'marital_status'],
+    description: "Resident's civil status (Single, Married, etc.).",
+    resolve: (c) => pick(c.resident?.civil_status, c.application?.civil_status, c.application?.civilStatus, c.application?.marital_status)
+  },
+  {
+    key: 'birth_date', category: 'resident', source: 'resident', label: 'Birth date', aliases: ['birthdate', 'date_of_birth', 'dob'],
+    description: "Resident's birth date.",
+    resolve: (c) => formatDate(getBirthDate(c))
+  },
+  {
+    key: 'age', category: 'resident', source: 'resident', label: 'Age', aliases: ['age_years'],
+    description: "Resident's age computed from birth date.",
+    resolve: (c) => pick(computeAge(getBirthDate(c)), c.application?.age, c.resident?.age)
+  },
+  {
+    key: 'birth_place', category: 'resident', source: 'resident', label: 'Birth place', aliases: ['place_of_birth', 'birthplace'],
+    description: "Resident's place of birth.",
+    resolve: (c) => pick(c.resident?.birth_place, c.resident?.place_of_birth, c.application?.place_of_birth, c.application?.birth_place, c.application?.birthPlace)
+  },
+  {
+    key: 'nationality', category: 'resident', source: 'resident', label: 'Nationality', aliases: ['citizenship'],
+    description: "Resident's nationality.",
+    resolve: (c) => pick(c.resident?.nationality, c.resident?.citizenship, c.application?.nationality, c.application?.citizenship) || 'Filipino'
+  },
+  {
+    key: 'religion', category: 'resident', source: 'resident', label: 'Religion', aliases: ['religious_affiliation'],
+    description: "Resident's religion.",
+    resolve: (c) => pick(c.resident?.religion, c.application?.religion, c.application?.religious_affiliation)
+  },
+  {
+    key: 'occupation', category: 'resident', source: 'resident', label: 'Occupation', aliases: ['profession', 'employment'],
+    description: "Resident's occupation.",
+    resolve: (c) => pick(c.resident?.occupation, c.application?.occupation, c.application?.profession, c.application?.employment)
+  },
+  {
+    key: 'contact_number', category: 'resident', source: 'resident', label: 'Contact number', aliases: ['contact', 'phone', 'mobile', 'telephone', 'contact_no'],
+    description: "Resident's contact number.",
+    resolve: (c) => pick(c.resident?.contact_number, c.application?.contact_number, c.application?.contact, c.application?.phone, c.application?.mobile, c.application?.contact_no)
+  },
+  {
+    key: 'email', category: 'resident', source: 'resident', label: 'Email address', aliases: ['email_address'],
+    description: "Resident's email address.",
+    resolve: (c) => pick(c.resident?.email, c.application?.email, c.application?.email_address)
+  },
+  {
+    key: 'resident_code', category: 'resident', source: 'resident', label: 'Resident ID', aliases: ['resident_id', 'resident_no', 'residents_code'],
+    description: "Resident's system ID / resident code.",
+    resolve: (c) => pick(c.resident?.resident_code, c.resident?.resident_id, c.application?.resident_code, c.application?.resident_id)
+  },
+  {
+    key: 'blood_type', category: 'resident', source: 'resident', label: 'Blood type', aliases: ['bloodtype'],
+    description: "Resident's blood type.",
+    resolve: (c) => pick(c.resident?.blood_type, c.application?.blood_type, c.application?.bloodtype)
+  },
 
   // ---------------- Address Information ----------------
   {
     key: 'house_number', category: 'address', source: 'resident', label: 'House number', aliases: ['house_no', 'housenumber', 'house'],
     description: 'House or building number.',
-    resolve: (c) => pick(c.resident.house_number, c.application.house_number, c.application.house_no)
+    resolve: (c) => pick(c.resident?.house_number, c.application?.house_number, c.application?.house_no, c.application?.housenumber)
   },
   {
     key: 'block', category: 'address', source: 'resident', label: 'Block number', aliases: ['blk', 'block_no', 'block_number'],
     description: 'Block number from address / application.',
-    resolve: (c) => pick(c.resident.block, c.application.block, c.application.Block, c.application.blk)
+    resolve: (c) => pick(c.resident?.block, c.application?.block, c.application?.Block, c.application?.blk, c.application?.block_no, c.application?.block_number)
   },
   {
     key: 'lot', category: 'address', source: 'resident', label: 'Lot number', aliases: ['lot_no', 'lot_number'],
     description: 'Lot number from address / application.',
-    resolve: (c) => pick(c.resident.lot, c.application.lot, c.application.Lot)
+    resolve: (c) => pick(c.resident?.lot, c.application?.lot, c.application?.Lot, c.application?.lot_no, c.application?.lot_number)
   },
   {
     key: 'street', category: 'address', source: 'resident', label: 'Street', aliases: ['street_name', 'st'],
     description: 'Street name.',
-    resolve: (c) => pick(c.resident.street, c.application.street, c.application.street_name)
+    resolve: (c) => pick(c.resident?.street, c.application?.street, c.application?.Street, c.application?.street_name, c.application?.st)
   },
   {
     key: 'subdivision', category: 'address', source: 'resident', label: 'Subdivision', aliases: ['subd', 'subdivision_name', 'village'],
     description: 'Subdivision or village name.',
-    resolve: (c) => pick(c.resident.subdivision, c.application.subdivision, c.application.Subdivision)
+    resolve: (c) => pick(c.resident?.subdivision, c.application?.subdivision, c.application?.Subdivision, c.application?.subd, c.application?.village)
   },
   {
     key: 'purok_zone', category: 'address', source: 'resident', label: 'Purok / Zone', aliases: ['purok', 'zone', 'purok_zone_no'],
     description: 'Purok or zone number.',
-    resolve: (c) => pick(c.resident.purok_zone, c.application.purok_zone, c.application.zone, c.application.purok)
+    resolve: (c) => pick(c.resident?.purok_zone, c.application?.purok_zone, c.application?.purok, c.application?.zone, c.application?.purok_zone_no)
   },
-  { key: 'sitio', category: 'address', source: 'resident', label: 'Sitio', aliases: ['sitio_name'], description: 'Sitio name.', resolve: (c) => pick(c.resident.sitio, c.application.sitio) },
-  { key: 'barangay', category: 'address', source: 'barangay', label: 'Barangay', aliases: ['brgy', 'barangay_name'], description: 'Barangay name.', resolve: (c) => c.barangay?.barangay_name || '' },
+  {
+    key: 'sitio', category: 'address', source: 'resident', label: 'Sitio', aliases: ['sitio_name'],
+    description: 'Sitio name.',
+    resolve: (c) => pick(c.resident?.sitio, c.application?.sitio, c.application?.sitio_name)
+  },
+  {
+    key: 'barangay', category: 'address', source: 'barangay', label: 'Barangay', aliases: ['brgy', 'barangay_name'],
+    description: 'Barangay name.',
+    resolve: (c) => pick(c.barangay?.barangay_name, c.resident?.barangay_name, c.application?.barangay_name, c.application?.barangay) || 'San Manuel'
+  },
   {
     key: 'municipality', category: 'address', source: 'barangay', label: 'Municipality / City', aliases: ['municipality_city', 'city_municipality'],
     description: 'Municipality or city.',
-    resolve: (c) => c.barangay?.city || ''
+    resolve: (c) => pick(c.barangay?.city, c.resident?.municipality, c.application?.municipality, c.application?.city) || 'City of San Jose del Monte'
   },
-  { key: 'city', category: 'address', source: 'barangay', label: 'City', aliases: ['city_name', 'municipality_city_name'], description: 'City name.', resolve: (c) => c.barangay?.city || '' },
-  { key: 'province', category: 'address', source: 'barangay', label: 'Province', aliases: ['province_name'], description: 'Province name.', resolve: (c) => c.barangay?.province || '' },
-  { key: 'zip_code', category: 'address', source: 'barangay', label: 'ZIP code', aliases: ['zip', 'postal_code', 'zipcode'], description: 'ZIP / postal code.', resolve: (c) => c.barangay?.zipcode || '' },
+  {
+    key: 'city', category: 'address', source: 'barangay', label: 'City', aliases: ['city_name', 'municipality_city_name'],
+    description: 'City name.',
+    resolve: (c) => pick(c.barangay?.city, c.resident?.municipality, c.application?.city, c.application?.municipality) || 'City of San Jose del Monte'
+  },
+  {
+    key: 'province', category: 'address', source: 'barangay', label: 'Province', aliases: ['province_name'],
+    description: 'Province name.',
+    resolve: (c) => pick(c.barangay?.province, c.resident?.province, c.application?.province) || 'Bulacan'
+  },
+  {
+    key: 'zip_code', category: 'address', source: 'barangay', label: 'ZIP code', aliases: ['zip', 'postal_code', 'zipcode'],
+    description: 'ZIP / postal code.',
+    resolve: (c) => pick(c.barangay?.zipcode, c.resident?.zip_code, c.application?.zip_code, c.application?.zipcode) || '3023'
+  },
   {
     key: 'address', category: 'address', source: 'resident', label: 'Complete address', aliases: ['complete_address', 'full_address', 'address_line', 'permanent_address'],
     description: "Resident's complete address (or barangay address as fallback).",
     resolve: (c) => {
-      const a = c.resident;
-      const composed = [a.house_number, a.street, a.purok_zone, a.sitio].filter(Boolean).join(' ');
-      const addr = pick(composed, a.address_line);
-      const rest = [c.barangay?.barangay_name, c.barangay?.city, c.barangay?.province].filter(Boolean).join(', ');
-      return pick(addr, [addr, rest].filter(Boolean).join(', '));
+      const a = c.resident || {};
+      const app = c.application || {};
+      const blockVal = pick(a.block, app.block, app.Block);
+      const lotVal = pick(a.lot, app.lot, app.Lot);
+      const streetVal = pick(a.street, app.street, app.Street);
+      const subdVal = pick(a.subdivision, app.subdivision, app.Subdivision);
+      const composedDiscrete = [
+        pick(a.house_number, app.house_number),
+        blockVal ? `Blk ${blockVal}` : '',
+        lotVal ? `Lot ${lotVal}` : '',
+        streetVal,
+        subdVal,
+        pick(a.purok_zone, app.purok_zone, app.purok),
+        pick(a.sitio, app.sitio)
+      ].filter(Boolean).join(', ');
+
+      const explicitAddr = pick(a.address_line, a.address, app.address, app.address_line, app.complete_address, app.full_address);
+      const chosen = pick(explicitAddr, composedDiscrete);
+      const brgyName = c.barangay?.barangay_name || 'San Manuel';
+      const city = c.barangay?.city || 'City of San Jose del Monte';
+      const province = c.barangay?.province || 'Bulacan';
+      const rest = [brgyName, city, province].filter(Boolean).join(', ');
+      if (chosen && rest && !chosen.toLowerCase().includes(brgyName.toLowerCase())) {
+        return `${chosen}, ${rest}`;
+      }
+      return pick(chosen, rest);
     }
   },
 
   // ---------------- Document Information ----------------
-  { key: 'request_number', category: 'document', source: 'system', label: 'Request number', aliases: ['request_no', 'req_no'], description: 'Request tracking number.', resolve: (c) => c.request.request_number || '' },
-  { key: 'control_number', category: 'document', source: 'system', label: 'Control number', aliases: ['control_no', 'ctrl_no'], description: 'Document control number (same as request number).', resolve: (c) => c.request.request_number || '' },
+  { key: 'request_number', category: 'document', source: 'system', label: 'Request number', aliases: ['request_no', 'req_no'], description: 'Request tracking number.', resolve: (c) => c.request?.request_number || '' },
+  { key: 'control_number', category: 'document', source: 'system', label: 'Control number', aliases: ['control_no', 'ctrl_no'], description: 'Document control number (same as request number).', resolve: (c) => pick(c.request?.request_number, c.request?.control_number, c.application?.control_number, c.application?.control_no) },
   { key: 'document_type', category: 'document', source: 'system', label: 'Document type', aliases: ['document_title', 'certificate_type'], description: 'Service / document type name.', resolve: (c) => c.service?.service_name || '' },
   {
     key: 'purpose', category: 'document', source: 'application', label: 'Purpose', aliases: ['request_purpose', 'purpose_of_request', 'purpose_of_document'],
     description: 'Purpose stated on the application.',
-    resolve: (c) => pick(c.request.purpose, c.application.purpose, c.application.Purpose)
+    resolve: (c) => pick(c.request?.purpose, c.application?.purpose, c.application?.Purpose, c.application?.request_purpose, c.application?.purpose_of_request)
   },
   {
     key: 'relative_name', category: 'document', source: 'application', label: 'Relative / Beneficiary name', aliases: ['beneficiary_name', 'relative', 'beneficiary'],
     description: 'Name of relative or beneficiary.',
-    resolve: (c) => pick(c.application.relative_name, c.application.beneficiary_name)
+    resolve: (c) => pick(c.application?.relative_name, c.application?.beneficiary_name, c.application?.relative, c.application?.beneficiary)
   },
   {
     key: 'applicant_name', category: 'document', source: 'application', label: 'Applicant / Company name', aliases: ['company_name', 'contractor_name', 'authorized_person'],
     description: 'Applicant or authorized company name.',
-    resolve: (c) => pick(c.application.applicant_name, c.application.company_name, composeFullName(c.resident))
+    resolve: (c) => pick(c.application?.applicant_name, c.application?.company_name, composeFullName(c.resident))
   },
   {
     key: 'office_address', category: 'document', source: 'application', label: 'Office address', aliases: ['company_address', 'business_address'],
     description: 'Office or business address.',
-    resolve: (c) => pick(c.application.office_address, c.application.business_address, c.resident.address_line)
+    resolve: (c) => pick(c.application?.office_address, c.application?.business_address, c.resident?.address_line)
   },
   {
     key: 'activity_type', category: 'document', source: 'application', label: 'Permit activity type', aliases: ['activity', 'scope_of_work'],
     description: 'Scope or activity authorized by permit (e.g. EXCAVATION/INSTALLATION).',
-    resolve: (c) => pick(c.application.activity_type, c.application.scope_of_work) || 'EXCAVATION/INSTALLATION/REPLACEMENT'
+    resolve: (c) => pick(c.application?.activity_type, c.application?.scope_of_work) || 'EXCAVATION/INSTALLATION/REPLACEMENT'
   },
   {
     key: 'quantity_description', category: 'document', source: 'application', label: 'Quantity / Item description', aliases: ['quantity', 'items_description'],
     description: 'Quantity or item description (e.g. 5 CONCRETE).',
-    resolve: (c) => pick(c.application.quantity_description, c.application.quantity)
+    resolve: (c) => pick(c.application?.quantity_description, c.application?.quantity)
   },
   {
     key: 'requested_by', category: 'document', source: 'application', label: 'Requested by', aliases: ['requestor', 'requestor_name'],
     description: 'Person or representative who requested the permit.',
-    resolve: (c) => pick(c.application.requested_by, c.application.requestor, composeFullName(c.resident))
+    resolve: (c) => pick(c.application?.requested_by, c.application?.requestor, composeFullName(c.resident))
   },
   {
     key: 'amount_paid', category: 'document', source: 'system', label: 'Amount paid', aliases: ['fee', 'processing_fee', 'amount'],
     description: 'Service fee or amount paid.',
-    resolve: (c) => pick(c.request.amount_paid, c.service.processing_fee, c.application.amount_paid) || '0.00'
+    resolve: (c) => pick(c.request?.amount_paid, c.service?.processing_fee, c.application?.amount_paid) || '0.00'
   },
   {
     key: 'or_number', category: 'document', source: 'application', label: 'OR Number', aliases: ['or_no', 'official_receipt_number', 'receipt_number'],
     description: 'Official receipt number.',
-    resolve: (c) => pick(c.request.or_number, c.application.or_number, c.application.or_no)
+    resolve: (c) => pick(c.request?.or_number, c.application?.or_number, c.application?.or_no)
   },
   {
     key: 'or_date', category: 'document', source: 'system', label: 'OR Date', aliases: ['receipt_date'],
     description: 'Official receipt issuance date.',
-    resolve: (c) => formatDate(c.request.or_date || c.system.date)
+    resolve: (c) => formatDate(c.request?.or_date || c.system.date)
   },
-  { key: 'date_requested', category: 'document', source: 'system', label: 'Date requested', aliases: ['request_date', 'date_filed'], description: 'Date the request was filed.', resolve: (c) => formatDate(c.request.request_date) },
-  { key: 'date_approved', category: 'document', source: 'system', label: 'Date approved', aliases: ['approval_date', 'date_of_approval'], description: 'Date the request was approved / reviewed.', resolve: (c) => formatDate(c.request.reviewed_date) || formatDate(c.request.date_approved) },
+  { key: 'date_requested', category: 'document', source: 'system', label: 'Date requested', aliases: ['request_date', 'date_filed'], description: 'Date the request was filed.', resolve: (c) => formatDate(c.request?.request_date) },
+  { key: 'date_approved', category: 'document', source: 'system', label: 'Date approved', aliases: ['approval_date', 'date_of_approval'], description: 'Date the request was approved / reviewed.', resolve: (c) => formatDate(c.request?.reviewed_date) || formatDate(c.request?.date_approved) },
   { key: 'date_issued', category: 'document', source: 'system', label: 'Date issued', aliases: ['issue_date', 'issued_date', 'date_of_issuance'], description: 'Date the document was generated.', resolve: (c) => formatDate(c.system.date) },
   {
     key: 'expiration_date', category: 'document', source: 'system', label: 'Expiration date', aliases: ['expiry_date', 'valid_until', 'date_expires'],
     description: 'Document expiration / claim-window expiry.',
-    resolve: (c) => formatDate(c.request.expires_at) || formatDate(c.application.expiration_date) || ''
+    resolve: (c) => formatDate(c.request?.expires_at) || formatDate(c.application?.expiration_date) || ''
   },
   { key: 'processing_officer', category: 'document', source: 'system', label: 'Processing officer', aliases: ['processed_by', 'processing_staff', 'officer'], description: 'Staff who processed the document.', resolve: (c) => c.processedBy || '' },
   { key: 'approving_official', category: 'document', source: 'barangay', label: 'Approving official', aliases: ['approving_officer', 'signatory', 'official_name'], description: 'Official who signs/approves (e.g. Barangay Captain).', resolve: (c) => c.barangay?.captain_name || '' },
   { key: 'official_position', category: 'document', source: 'system', label: 'Official position', aliases: ['official_title', 'position'], description: 'Position of the approving official.', resolve: () => 'Barangay Captain' },
-  { key: 'remarks', category: 'document', source: 'application', label: 'Remarks', aliases: ['notes', 'additional_remarks'], description: 'Remarks on the request.', resolve: (c) => pick(c.request.remarks, c.application.remarks) },
+  { key: 'remarks', category: 'document', source: 'application', label: 'Remarks', aliases: ['notes', 'additional_remarks'], description: 'Remarks on the request.', resolve: (c) => pick(c.request?.remarks, c.application?.remarks) },
   { key: 'qr_code', category: 'document', source: 'system', label: 'QR code value', future: true, description: 'QR code payload (planned).', resolve: () => '' },
   { key: 'verification_code', category: 'document', source: 'system', label: 'Verification code', future: true, description: 'Document verification code (planned).', resolve: () => '' },
 
   // ---------------- Barangay Information ----------------
-  { key: 'barangay_name', category: 'barangay', source: 'barangay', label: 'Barangay name', aliases: ['brgy_name'], description: 'Name of the barangay.', resolve: (c) => c.barangay?.barangay_name || '' },
-  { key: 'barangay_address', category: 'barangay', source: 'barangay', label: 'Barangay address', aliases: ['barangay_location', 'hall_address'], description: 'Address of the barangay hall.', resolve: (c) => pick(c.barangay?.address, c.application.barangay_address) || '' },
+  { key: 'barangay_name', category: 'barangay', source: 'barangay', label: 'Barangay name', aliases: ['brgy_name'], description: 'Name of the barangay.', resolve: (c) => c.barangay?.barangay_name || 'San Manuel' },
+  { key: 'barangay_address', category: 'barangay', source: 'barangay', label: 'Barangay address', aliases: ['barangay_location', 'hall_address'], description: 'Address of the barangay hall.', resolve: (c) => pick(c.barangay?.address, c.application?.barangay_address) || '' },
   { key: 'barangay_contact_number', category: 'barangay', source: 'barangay', label: 'Barangay contact number', aliases: ['brgy_contact', 'barangay_contact', 'brgy_contact_number'], description: 'Barangay contact number.', resolve: (c) => c.barangay?.contact_number || '' },
   { key: 'barangay_email', category: 'barangay', source: 'barangay', label: 'Barangay email', aliases: ['brgy_email'], description: 'Barangay email address.', resolve: (c) => c.barangay?.email || '' },
   { key: 'barangay_captain', category: 'barangay', source: 'barangay', label: 'Barangay captain', aliases: ['captain', 'brgy_captain', 'punong_barangay'], description: 'Barangay captain name.', resolve: (c) => c.barangay?.captain_name || '' },
@@ -259,19 +376,19 @@ const PLACEHOLDERS = [
   // ---------------- System Information ----------------
   { key: 'current_date', category: 'system', source: 'system', label: 'Current date', aliases: ['today', 'todays_date'], description: "Today's date (e.g. August 6, 2026).", resolve: (c) => formatDate(c.system.date) },
   { key: 'current_time', category: 'system', source: 'system', label: 'Current time', aliases: ['time', 'now_time'], description: "Today's time (HH:MM).", resolve: (c) => c.system.time },
-  { key: 'current_year', category: 'system', source: 'system', label: 'Current year', aliases: ['year_now', 'year'], description: "Current year (e.g. 2026).", resolve: (c) => String(c.system.date.getFullYear()) },
-  { key: 'current_month', category: 'system', source: 'system', label: 'Current month', aliases: ['month_now', 'month'], description: "Current month name (e.g. August).", resolve: (c) => MONTHS[c.system.date.getMonth()] },
+  { key: 'current_year', category: 'system', source: 'system', label: 'Current year', aliases: ['year_now'], description: "Current year (e.g. 2026).", resolve: (c) => String(c.system.date.getFullYear()) },
+  { key: 'current_month', category: 'system', source: 'system', label: 'Current month', aliases: ['month_now'], description: "Current month name (e.g. August).", resolve: (c) => MONTHS[c.system.date.getMonth()] },
   { key: 'day', category: 'system', source: 'system', label: 'Day of month', aliases: ['day_of_month', 'current_day'], description: "Day of the month (e.g. 6).", resolve: (c) => String(c.system.date.getDate()) },
   { key: 'month', category: 'system', source: 'system', label: 'Month name', description: "Month name (e.g. August).", resolve: (c) => MONTHS[c.system.date.getMonth()] },
   { key: 'year', category: 'system', source: 'system', label: 'Year', description: "Year (e.g. 2026).", resolve: (c) => String(c.system.date.getFullYear()) },
   { key: 'day_of_week', category: 'system', source: 'system', label: 'Day of the week', aliases: ['weekday'], description: "Today's weekday (e.g. Thursday).", resolve: (c) => WEEKDAYS[c.system.date.getDay()] },
 
   // ---------------- Barangay ID Information ----------------
-  { key: 'id_number', category: 'barangay_id', source: 'application', label: 'Barangay ID number', aliases: ['barangay_id_number', 'brgy_id_no', 'id_no'], description: 'Barangay ID number (from the application form).', resolve: (c) => pick(c.application.id_number, c.application.barangay_id_number) || '' },
+  { key: 'id_number', category: 'barangay_id', source: 'application', label: 'Barangay ID number', aliases: ['barangay_id_number', 'brgy_id_no', 'id_no'], description: 'Barangay ID number (from the application form).', resolve: (c) => pick(c.application?.id_number, c.application?.barangay_id_number) || '' },
   { key: 'id_issued', category: 'barangay_id', source: 'system', label: 'ID issue date', aliases: ['id_date_issued'], description: 'ID issue date (same as date issued).', resolve: (c) => formatDate(c.system.date) },
-  { key: 'id_expiration', category: 'barangay_id', source: 'application', label: 'ID expiration date', aliases: ['id_expiry', 'barangay_id_expiration'], description: 'ID expiration date (from application).', resolve: (c) => pick(formatDate(c.application.id_expiration), c.application.expiration_date) || '' },
+  { key: 'id_expiration', category: 'barangay_id', source: 'application', label: 'ID expiration date', aliases: ['id_expiry', 'barangay_id_expiration'], description: 'ID expiration date (from application).', resolve: (c) => pick(formatDate(c.application?.id_expiration), c.application?.expiration_date) || '' },
   { key: 'id_type', category: 'barangay_id', source: 'system', label: 'ID type', description: 'Type of ID document.', resolve: () => 'Barangay ID' },
-  { key: 'rfid_uid', category: 'barangay_id', source: 'application', label: 'RFID UID', future: true, description: 'RFID tag UID (planned).', resolve: (c) => c.application.rfid_uid || '' },
+  { key: 'rfid_uid', category: 'barangay_id', source: 'application', label: 'RFID UID', future: true, description: 'RFID tag UID (planned).', resolve: (c) => c.application?.rfid_uid || '' },
   { key: 'resident_photo', category: 'barangay_id', source: 'resident', label: 'Resident photo', future: true, description: 'Resident photo (image embedding planned).', resolve: () => '' }
 ];
 
@@ -325,10 +442,22 @@ const buildContext = ({ request, resident, service, barangay, processedBy, now }
 
   let effResident = resident || {};
   if ((!resident || Object.keys(resident).length === 0) && guestData) {
+    let gFirst = guestData.first_name || '';
+    let gLast = guestData.last_name || '';
+    if (!gFirst && !gLast && guestData.full_name) {
+      const parts = String(guestData.full_name).trim().split(/\s+/);
+      if (parts.length > 1) {
+        gFirst = parts.slice(0, -1).join(' ');
+        gLast = parts[parts.length - 1];
+      } else {
+        gFirst = parts[0] || '';
+      }
+    }
     effResident = {
-      first_name: guestData.first_name || (guestData.full_name ? guestData.full_name.split(' ')[0] : ''),
+      full_name: guestData.full_name || '',
+      first_name: gFirst,
       middle_name: guestData.middle_name || '',
-      last_name: guestData.last_name || '',
+      last_name: gLast,
       suffix: guestData.suffix || '',
       birth_date: guestData.birth_date || '',
       birth_place: guestData.birth_place || '',
@@ -375,28 +504,56 @@ const resolve = (tag, ctx, explicitMappings) => {
   // 1. Explicit per-service mapping overrides the library (admin choice).
   if (Array.isArray(explicitMappings) && explicitMappings.length) {
     const m = explicitMappings.find((x) => normalize(x.placeholder) === norm);
-    if (m) return resolveMapping(m, ctx);
+    if (m) {
+      const mappedVal = resolveMapping(m, ctx);
+      if (mappedVal !== '') return mappedVal;
+    }
   }
   // 2. Library placeholder (by key or alias).
   const entry = find(norm);
-  if (entry) return stringify(entry.resolve(ctx));
-  // 3. Generic application form fallback: tag matches a form field.
-  if (ctx.application && ctx.application[norm] !== undefined) return stringify(ctx.application[norm]);
+  if (entry) {
+    const libraryVal = stringify(entry.resolve(ctx));
+    if (libraryVal !== '') return libraryVal;
+  }
+  // 3. Generic application form or resident fallback: tag matches a field directly.
+  if (ctx.application && ctx.application[norm] !== undefined && ctx.application[norm] !== null && String(ctx.application[norm]).trim() !== '') {
+    return stringify(ctx.application[norm]);
+  }
+  if (ctx.resident && ctx.resident[norm] !== undefined && ctx.resident[norm] !== null && String(ctx.resident[norm]).trim() !== '') {
+    return stringify(ctx.resident[norm]);
+  }
   return '';
 };
 
 const resolveMapping = (mapping, ctx) => {
   const field = mapping.field || mapping.placeholder;
+  const placeholder = mapping.placeholder || field;
+  const normField = normalize(field);
+  const normPlaceholder = normalize(placeholder);
+
   let value = '';
   if (mapping.source === 'resident') {
-    const entry = find(field) || find(normalize(field));
-    value = entry ? entry.resolve(ctx) : ctx.resident[field];
+    const entry = find(normField) || find(normPlaceholder);
+    value = entry ? entry.resolve(ctx) : (ctx.resident?.[field] ?? ctx.resident?.[normField]);
+    if (value === undefined || value === null || String(value).trim() === '') {
+      value = ctx.application?.[field] ?? ctx.application?.[normField];
+    }
   } else if (mapping.source === 'application') {
-    value = ctx.application[field];
+    value = ctx.application?.[field] ?? ctx.application?.[normField];
+    if (value === undefined || value === null || String(value).trim() === '') {
+      const entry = find(normField) || find(normPlaceholder);
+      if (entry) {
+        value = entry.resolve(ctx);
+      } else {
+        value = ctx.resident?.[field] ?? ctx.resident?.[normField];
+      }
+    }
   } else if (mapping.source === 'system') {
-    const entry = find(field) || find(normalize(field));
-    value = entry ? entry.resolve(ctx) : (ctx.request[field] ?? '');
+    const isDatePart = ['day', 'month', 'year', 'day_of_week'].includes(normPlaceholder);
+    const entry = (isDatePart ? find(normPlaceholder) : null) || find(normField) || find(normPlaceholder);
+    value = entry ? entry.resolve(ctx) : (ctx.request?.[field] ?? ctx.request?.[normField] ?? '');
   }
+
   return stringify(value);
 };
 

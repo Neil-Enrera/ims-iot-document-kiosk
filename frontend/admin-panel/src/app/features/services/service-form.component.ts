@@ -63,8 +63,19 @@ const RESIDENT_FIELDS: { value: string; label: string }[] = [
   { value: 'suffix', label: 'Suffix' },
   { value: 'birth_date', label: 'Birth Date' },
   { value: 'age', label: 'Age (auto-computed from birth date)' },
+  { value: 'birth_place', label: 'Place of Birth' },
+  { value: 'nationality', label: 'Nationality' },
+  { value: 'religion', label: 'Religion' },
+  { value: 'occupation', label: 'Occupation' },
   { value: 'gender', label: 'Gender' },
   { value: 'civil_status', label: 'Civil Status' },
+  { value: 'house_number', label: 'House Number' },
+  { value: 'block', label: 'Block' },
+  { value: 'lot', label: 'Lot' },
+  { value: 'street', label: 'Street' },
+  { value: 'subdivision', label: 'Subdivision' },
+  { value: 'purok_zone', label: 'Purok / Zone' },
+  { value: 'sitio', label: 'Sitio' },
   { value: 'address_line', label: 'Address' },
   { value: 'contact_number', label: 'Contact Number' },
   { value: 'email', label: 'Email' },
@@ -76,15 +87,21 @@ const RESIDENT_FIELDS: { value: string; label: string }[] = [
 
 const SYSTEM_FIELDS: { value: string; label: string }[] = [
   { value: 'request_number', label: 'Request Number' },
+  { value: 'control_number', label: 'Control Number' },
   { value: 'current_date', label: 'Current / Issued Date' },
+  { value: 'day', label: 'Day of Month (e.g. 6)' },
+  { value: 'month', label: 'Month Name (e.g. August)' },
+  { value: 'year', label: 'Year (e.g. 2026)' },
+  { value: 'day_of_week', label: 'Day of Week (e.g. Thursday)' },
   { value: 'barangay_name', label: 'Barangay Name' },
   { value: 'city_name', label: 'City Name' },
-  { value: 'processed_by', label: 'Processed By (Staff)' }
+  { value: 'processed_by', label: 'Processed By (Staff)' },
+  { value: 'barangay_captain', label: 'Barangay Captain' }
 ];
 
 const APPLICATION_COMMON_FIELDS = [
-  'purpose', 'remarks', 'office_address', 'business_name', 'pole_type',
-  'street', 'requestor_name', 'full_name', 'address'
+  'purpose', 'relative_name', 'remarks', 'office_address', 'business_name', 'pole_type',
+  'block', 'lot', 'street', 'subdivision', 'requestor_name', 'full_name', 'address'
 ];
 
 @Component({
