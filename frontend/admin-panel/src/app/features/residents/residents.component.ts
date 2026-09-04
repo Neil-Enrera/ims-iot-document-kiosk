@@ -14,6 +14,7 @@ import { PaginationComponent } from '../../shared/components/pagination.componen
 import { ModalComponent } from '../../shared/components/modal.component';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.component';
 import { ResidentFormComponent } from './resident-form.component';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-residents',
@@ -102,8 +103,12 @@ import { ResidentFormComponent } from './resident-form.component';
 
           <ng-template #nameCell let-value let-row="row">
             <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-full bg-orange-100 border border-orange-200 text-orange-700 font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
-                {{ getInitials(row) }}
+              <div class="w-9 h-9 rounded-full bg-orange-100 border border-orange-200 text-orange-700 font-bold text-xs flex items-center justify-center shrink-0 shadow-xs overflow-hidden">
+                @if (row.photo && !row._photoError) {
+                  <img [src]="photoUrl(row.photo)" (error)="row._photoError = true" alt="Photo" class="w-full h-full object-cover">
+                } @else {
+                  {{ getInitials(row) }}
+                }
               </div>
               <div class="min-w-0">
                 <p class="font-semibold text-slate-900 text-sm leading-tight truncate">{{ formatResidentName(row) }}</p>
@@ -239,9 +244,9 @@ import { ResidentFormComponent } from './resident-form.component';
             <!-- Header Card -->
             <div class="bg-gradient-to-r from-orange-50 to-orange-100/60 border border-orange-200 rounded-xl p-4 flex items-center justify-between">
               <div class="flex items-center gap-4">
-                <div class="w-14 h-14 rounded-full bg-white border-2 border-orange-300 shadow-sm flex items-center justify-center text-orange-600 font-extrabold text-lg shrink-0 overflow-hidden">
-                  @if (res.photo) {
-                    <img [src]="res.photo" alt="Photo" class="w-full h-full object-cover">
+                <div class="w-16 h-16 rounded-full bg-white border-2 border-orange-300 shadow-sm flex items-center justify-center text-orange-600 font-extrabold text-lg shrink-0 overflow-hidden">
+                  @if (res.photo && !res._modalPhotoError) {
+                    <img [src]="photoUrl(res.photo)" (error)="res._modalPhotoError = true" alt="Photo" class="w-full h-full object-cover">
                   } @else {
                     {{ getInitials(res) }}
                   }
@@ -501,6 +506,20 @@ import { ResidentFormComponent } from './resident-form.component';
   `
 })
 export class ResidentsComponent implements OnInit, OnDestroy {
+  private readonly assetBase = environment.apiUrl.replace(/\/api\/v1\/?$/, '');
+
+  photoUrl(path: string | null | undefined): string {
+    if (!path) return '';
+    if (/^(https?:|data:|blob:)/i.test(path)) {
+      return path;
+    }
+    const clean = path.replace(/^\/+/, '');
+    if (clean.startsWith('uploads/')) {
+      return `${this.assetBase}/${clean}`;
+    }
+    return `${this.assetBase}/uploads/${clean}`;
+  }
+
   mainTab = signal<'residents' | 'updates'>('residents');
 
   residents = signal<Resident[]>([]);
