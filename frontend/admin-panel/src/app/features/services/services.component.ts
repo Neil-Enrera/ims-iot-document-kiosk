@@ -18,8 +18,11 @@ import { ServiceFormComponent } from './service-form.component';
   imports: [CommonModule, DecimalPipe, TableComponent, ButtonComponent, CardComponent, InputComponent, PaginationComponent, ModalComponent, ConfirmDialogComponent, ServiceFormComponent],
   template: `
     <div>
-      <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold text-gray-800">Services</h1>
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-800">Services</h1>
+          <p class="text-sm text-slate-500 mt-1">Configure barangay document services, fees, template placeholders, and dynamic application form fields.</p>
+        </div>
         <app-button variant="primary" (onClick)="openCreateForm()">+ Add Service</app-button>
       </div>
 
