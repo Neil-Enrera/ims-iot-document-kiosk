@@ -106,7 +106,7 @@ const barangayIdApplicationValidation = [
   body('occupation').optional().trim().isLength({ max: 100 }).withMessage('Occupation must not exceed 100 characters.'),
   body('bloodType').optional().trim().isLength({ max: 10 }).withMessage('Blood type must not exceed 10 characters.'),
   body('addressLine').trim().notEmpty().withMessage('Address is required.').isLength({ min: 5, max: 255 }).withMessage('Address must be between 5 and 255 characters.'),
-  body('contactNumber').optional().trim().custom(val => {
+  body('contactNumber').optional({ values: 'falsy' }).trim().custom(val => {
     if (!val) return true;
     const clean = String(val).replace(/[\s\-()]/g, '');
     if (!/^(09\d{9}|\+639\d{9})$/.test(clean)) {
@@ -120,7 +120,7 @@ const barangayIdApplicationValidation = [
     .trim()
     .isLength({ max: 100 }).withMessage('Emergency contact name must not exceed 100 characters.')
     .matches(/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/).withMessage('Emergency contact name must contain letters only.'),
-  body('emergencyContactNumber').optional().trim().custom(val => {
+  body('emergencyContactNumber').optional({ values: 'falsy' }).trim().custom(val => {
     if (!val) return true;
     const clean = String(val).replace(/[\s\-()]/g, '');
     if (!/^(09\d{9}|\+639\d{9})$/.test(clean)) {

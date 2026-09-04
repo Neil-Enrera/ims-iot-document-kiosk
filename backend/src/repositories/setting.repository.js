@@ -16,7 +16,12 @@ const findByKey = async (key) => {
 };
 
 const update = async (key, value, updatedBy) => {
-  await pool.query('UPDATE system_settings SET setting_value = ?, updated_by = ? WHERE setting_key = ?', [value, updatedBy, key]);
+  let validUserId = null;
+  if (updatedBy) {
+    const [[user]] = await pool.query('SELECT user_id FROM users WHERE user_id = ?', [updatedBy]);
+    if (user) validUserId = user.user_id;
+  }
+  await pool.query('UPDATE system_settings SET setting_value = ?, updated_by = ? WHERE setting_key = ?', [value, validUserId, key]);
 };
 
 module.exports = { findAll, findByCategory, findByKey, update };

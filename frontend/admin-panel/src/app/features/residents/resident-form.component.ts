@@ -230,9 +230,15 @@ export class ResidentFormComponent implements OnInit, OnChanges {
     if (this.form.birthDate) {
       const birth = new Date(this.form.birthDate);
       const today = new Date();
-      today.setHours(23, 59, 59, 999);
-      if (isNaN(birth.getTime()) || birth > today || birth.getFullYear() < (today.getFullYear() - 125)) {
-        this.errors['birthDate'] = 'Birth date must be a valid past date.';
+      let age = today.getFullYear() - birth.getFullYear();
+      const m = today.getMonth() - birth.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+        age--;
+      }
+      if (isNaN(birth.getTime()) || birth > today || age > 125) {
+        this.errors['birthDate'] = 'Birth date must be a valid date within the last 125 years.';
+      } else if (age < 1) {
+        this.errors['birthDate'] = 'Birth date is invalid. Resident must be at least 1 year old (cannot be born in the current year or month).';
       }
     }
 

@@ -657,6 +657,7 @@ const savePhoto = async (requestId, photo) => {
 module.exports = {
   submitTransaction,
   evaluateResidentPolicy,
+  validateServiceFormData,
   validateGuestInput,
   buildGuestSnapshot,
   mergeGuestFormData,

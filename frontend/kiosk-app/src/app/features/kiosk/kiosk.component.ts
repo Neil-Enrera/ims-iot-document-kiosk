@@ -7494,7 +7494,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     const isPhone = this.isFieldPhone(field);
     if (isPhone) {
       const cleanPhone = valStr.replace(/[\s\-()]/g, '');
-      if (!/^(09\d{9}|\+639\d{9}|\d{7,11})$/.test(cleanPhone)) {
+      if (!/^(09\d{9}|\+639\d{9})$/.test(cleanPhone)) {
         return this.t('err.invalidPhone', { field: label });
       }
     }
@@ -7585,7 +7585,7 @@ export class KioskComponent implements OnInit, OnDestroy {
       this.triggerGuestDobError(3000);
       return;
     }
-    if (!cleanPhone || !/^(09\d{9}|\+639\d{9}|\d{7,11})$/.test(cleanPhone)) {
+    if (!cleanPhone || !/^(09\d{9}|\+639\d{9})$/.test(cleanPhone)) {
       this.triggerFormError(this.t('err.invalidPhone', { field: this.t('doc.guestInfo.contact') || 'Contact Number' }), 3000);
       return;
     }
@@ -7628,7 +7628,7 @@ export class KioskComponent implements OnInit, OnDestroy {
       }
       case 'contactNumber': {
         const clean = (g.contactNumber || '').trim().replace(/[\s\-()]/g, '');
-        return !clean || !/^(09\d{9}|\+639\d{9}|\d{7,11})$/.test(clean);
+        return !clean || !/^(09\d{9}|\+639\d{9})$/.test(clean);
       }
       case 'email':
         return !!(g.email && g.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(g.email.trim()));
@@ -7666,7 +7666,7 @@ export class KioskComponent implements OnInit, OnDestroy {
         return !f.addressLine.trim() || f.addressLine.trim().length < 5 || f.addressLine.length > 255;
       case 'contactNumber': {
         const clean = f.contactNumber.trim().replace(/[\s\-()]/g, '');
-        return !clean || !/^(09\d{9}|\+639\d{9}|\d{7,11})$/.test(clean);
+        return !clean || !/^(09\d{9}|\+639\d{9})$/.test(clean);
       }
       case 'email':
         return !!(f.email && f.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim()));
@@ -7674,7 +7674,7 @@ export class KioskComponent implements OnInit, OnDestroy {
         return !f.emergencyContactName.trim() || f.emergencyContactName.length > 100 || !/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(f.emergencyContactName.trim());
       case 'emergencyContactNumber': {
         const clean = f.emergencyContactNumber.trim().replace(/[\s\-()]/g, '');
-        return !clean || !/^(09\d{9}|\+639\d{9}|\d{7,11})$/.test(clean);
+        return !clean || !/^(09\d{9}|\+639\d{9})$/.test(clean);
       }
       default:
         return false;
@@ -7746,12 +7746,20 @@ export class KioskComponent implements OnInit, OnDestroy {
         this.triggerFormError(this.t('err.bar.address'), 3000);
         return;
       }
-      if (!cleanPhone || !/^(09\d{9}|\+639\d{9}|\d{7,11})$/.test(cleanPhone)) {
+      if (!cleanPhone || !/^(09\d{9}|\+639\d{9})$/.test(cleanPhone)) {
         this.triggerFormError(this.t('err.invalidPhone', { field: this.t('bar.form.contact') || 'Contact Number' }), 3000);
         return;
       }
       if (f.email && f.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim())) {
         this.triggerFormError(this.t('err.invalidEmail', { field: this.t('bar.form.email') || 'Email' }), 3000);
+        return;
+      }
+      if (f.emergencyContactName && f.emergencyContactName.trim() && !/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(f.emergencyContactName.trim())) {
+        this.triggerFormError(this.t('err.invalidName', { field: this.t('bar.form.emergencyName') || 'Emergency Contact Name' }), 3000);
+        return;
+      }
+      if (cleanEmPhone && !/^(09\d{9}|\+639\d{9})$/.test(cleanEmPhone)) {
+        this.triggerFormError(this.t('err.invalidPhone', { field: this.t('bar.form.emergencyContact') || 'Emergency Contact Number' }), 3000);
         return;
       }
     }

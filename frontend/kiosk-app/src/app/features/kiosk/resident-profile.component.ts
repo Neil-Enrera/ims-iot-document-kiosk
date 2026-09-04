@@ -613,9 +613,25 @@ export class ResidentProfileComponent implements OnInit, OnDestroy {
     }
 
     if (!this.updateReason || !this.updateReason.trim()) {
-      this.reasonError.set(this.t('profile.reasonRequired'));
+      this.reasonError.set(this.t('profile.reasonRequired') || 'Please provide a reason for the update request.');
       return;
     }
+
+    if (this.editForm.contact_number && this.editForm.contact_number.trim()) {
+      const cleanPhone = this.editForm.contact_number.trim().replace(/[\s\-()]/g, '');
+      if (!/^(09\d{9}|\+639\d{9})$/.test(cleanPhone)) {
+        this.reasonError.set('Contact number must be a valid 11-digit mobile number (e.g. 09123456789).');
+        return;
+      }
+    }
+
+    if (this.editForm.email && this.editForm.email.trim()) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.editForm.email.trim())) {
+        this.reasonError.set('Please provide a valid email address.');
+        return;
+      }
+    }
+
     this.reasonError.set('');
 
     const requestedChanges: Record<string, any> = {
