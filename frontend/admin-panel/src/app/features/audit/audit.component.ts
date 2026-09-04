@@ -57,7 +57,7 @@ import { ModalComponent } from '../../shared/components/modal.component';
           <div class="lg:col-span-1">
             <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Search</label>
             <app-input
-              placeholder="Search user, action, IP..."
+              placeholder="Search user, action, module..."
               [value]="search()"
               (valueChange)="onSearch($event)" />
           </div>
@@ -121,7 +121,6 @@ import { ModalComponent } from '../../shared/components/modal.component';
             user_name: userCell,
             module: moduleCell,
             action: actionCell,
-            ip_address: ipCell,
             created_at: dateCell
           }"
           (onRowClick)="onRowClick($event)"
@@ -163,13 +162,6 @@ import { ModalComponent } from '../../shared/components/modal.component';
           <ng-template #actionCell let-row="row">
             <span class="text-sm font-medium text-slate-800 break-words">
               {{ row.action }}
-            </span>
-          </ng-template>
-
-          <!-- IP Address Cell -->
-          <ng-template #ipCell let-row="row">
-            <span class="font-mono text-xs text-slate-600 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
-              {{ row.ip_address || '—' }}
             </span>
           </ng-template>
 
@@ -261,20 +253,12 @@ import { ModalComponent } from '../../shared/components/modal.component';
               </div>
             </div>
 
-            <!-- Metadata & Network Section -->
-            <div class="grid grid-cols-2 gap-3 p-4 rounded-xl border border-slate-200 bg-white">
-              <div>
-                <p class="text-xs font-bold uppercase tracking-wider text-slate-500">IP Address</p>
-                <p class="font-mono text-xs font-semibold text-slate-800 mt-1 bg-slate-50 px-2.5 py-1 rounded border border-slate-200 inline-block">
-                  {{ log.ip_address || 'N/A' }}
-                </p>
-              </div>
-              <div>
-                <p class="text-xs font-bold uppercase tracking-wider text-slate-500">User ID Reference</p>
-                <p class="text-xs font-semibold text-slate-800 mt-1">
-                  User #{{ log.user_id }}
-                </p>
-              </div>
+            <!-- Metadata Section -->
+            <div class="p-4 rounded-xl border border-slate-200 bg-white">
+              <p class="text-xs font-bold uppercase tracking-wider text-slate-500">User ID Reference</p>
+              <p class="text-xs font-semibold text-slate-800 mt-1">
+                User #{{ log.user_id }}
+              </p>
             </div>
 
             <!-- Footer Action -->
@@ -319,7 +303,6 @@ export class AuditComponent implements OnInit {
     { key: 'user_name', label: 'User / Actor' },
     { key: 'module', label: 'Module', sortable: true },
     { key: 'action', label: 'Action Performed', sortable: true },
-    { key: 'ip_address', label: 'IP Address' },
     { key: 'created_at', label: 'Date & Time', sortable: true }
   ];
 
@@ -445,15 +428,14 @@ export class AuditComponent implements OnInit {
     const currentLogs = this.logs();
     if (!currentLogs || currentLogs.length === 0) return;
 
-    const headers = ['Log ID', 'Timestamp', 'User', 'Role', 'Module', 'Action', 'IP Address'];
+    const headers = ['Log ID', 'Timestamp', 'User', 'Role', 'Module', 'Action'];
     const rows = currentLogs.map(l => [
       l.audit_log_id,
       `"${new Date(l.created_at).toLocaleString()}"`,
       `"${(l.user_name || l.username || 'System').replace(/"/g, '""')}"`,
       `"${(l.role_name || '').replace(/"/g, '""')}"`,
       `"${(l.module || 'System').replace(/"/g, '""')}"`,
-      `"${(l.action || '').replace(/"/g, '""')}"`,
-      `"${l.ip_address || ''}"`
+      `"${(l.action || '').replace(/"/g, '""')}"`
     ]);
 
     const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n');
