@@ -395,27 +395,6 @@ import { environment } from '../../../environments/environment';
                           </div>
                         </div>
 
-                        <!-- Workflow Progression Stepper -->
-                        <div class="bg-slate-50/90 rounded-xl p-2.5 border border-slate-100">
-                          <div class="flex items-center justify-between text-[10px] font-semibold text-slate-500">
-                            <span [class]="getMiniStepClass(req.status_id, 1)">1. Submitted</span>
-                            <span>→</span>
-                            <span [class]="getMiniStepClass(req.status_id, 4)">2. Under Review</span>
-                            <span>→</span>
-                            @if (req.status_id === 8) {
-                              <span class="text-rose-600 font-bold flex items-center gap-0.5">✕ Rejected</span>
-                            } @else {
-                              <span [class]="getMiniStepClass(req.status_id, 4)">3. Approved</span>
-                            }
-                            <span>→</span>
-                            <span [class]="getMiniStepClass(req.status_id, 5)">4. Generated</span>
-                            <span>→</span>
-                            <span [class]="getMiniStepClass(req.status_id, 6)">5. Ready</span>
-                            <span>→</span>
-                            <span [class]="getMiniStepClass(req.status_id, 7)">6. Released</span>
-                          </div>
-                        </div>
-
                         <!-- Key Transaction Dates & Staff Information -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1 border-t border-slate-100 text-slate-600">
                           <div>
@@ -541,42 +520,6 @@ import { environment } from '../../../environments/environment';
                 </div>
               </div>
             }
-
-            <!-- Workflow Stepper Indicator -->
-            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4">
-              <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-3">Workflow Progression</p>
-              <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-center">
-                <div [class]="'p-2.5 rounded-xl border flex flex-col items-center ' + getFullStepperItemClass(tx.status_id, 1)">
-                  <span class="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center mb-1" [class]="getFullStepperBadgeClass(tx.status_id, 1)">1</span>
-                  <span class="text-[11px] font-bold">Submitted</span>
-                </div>
-                <div [class]="'p-2.5 rounded-xl border flex flex-col items-center ' + getFullStepperItemClass(tx.status_id, 4)">
-                  <span class="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center mb-1" [class]="getFullStepperBadgeClass(tx.status_id, 4)">2</span>
-                  <span class="text-[11px] font-bold">Under Review</span>
-                </div>
-                <div [class]="'p-2.5 rounded-xl border flex flex-col items-center ' + (tx.status_id === 8 ? 'bg-rose-50 border-rose-200 text-rose-700 font-bold' : getFullStepperItemClass(tx.status_id, 4))">
-                  @if (tx.status_id === 8) {
-                    <span class="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center mb-1 bg-rose-600 text-white">✕</span>
-                    <span class="text-[11px] font-bold text-rose-700">Rejected</span>
-                  } @else {
-                    <span class="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center mb-1" [class]="getFullStepperBadgeClass(tx.status_id, 4)">3</span>
-                    <span class="text-[11px] font-bold">Approved</span>
-                  }
-                </div>
-                <div [class]="'p-2.5 rounded-xl border flex flex-col items-center ' + getFullStepperItemClass(tx.status_id, 5)">
-                  <span class="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center mb-1" [class]="getFullStepperBadgeClass(tx.status_id, 5)">4</span>
-                  <span class="text-[11px] font-bold">Doc Generated</span>
-                </div>
-                <div [class]="'p-2.5 rounded-xl border flex flex-col items-center ' + getFullStepperItemClass(tx.status_id, 6)">
-                  <span class="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center mb-1" [class]="getFullStepperBadgeClass(tx.status_id, 6)">5</span>
-                  <span class="text-[11px] font-bold">Ready Release</span>
-                </div>
-                <div [class]="'p-2.5 rounded-xl border flex flex-col items-center ' + getFullStepperItemClass(tx.status_id, 7)">
-                  <span class="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center mb-1" [class]="getFullStepperBadgeClass(tx.status_id, 7)">6</span>
-                  <span class="text-[11px] font-bold">Released</span>
-                </div>
-              </div>
-            </div>
 
             <!-- Complete Transaction Details Grid -->
             <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs space-y-3">
@@ -1482,48 +1425,6 @@ export class ResidentsComponent implements OnInit, OnDestroy {
   cleanRejectionReason(remarks: string | null | undefined): string {
     if (!remarks) return 'No reason provided.';
     return remarks.replace(/^Rejection reason:\s*/i, '').trim() || 'No reason provided.';
-  }
-
-  getMiniStepClass(currentStatusId: number, stepId: number): string {
-    if (currentStatusId === 8 || currentStatusId === 9) return 'text-slate-400';
-    const order = [1, 2, 3, 4, 5, 6, 7];
-    const currentIndex = order.indexOf(currentStatusId);
-    const stepIndex = order.indexOf(stepId);
-    if (currentStatusId === stepId) return 'text-orange-600 font-bold';
-    if (currentIndex >= stepIndex) return 'text-emerald-600 font-semibold';
-    return 'text-slate-400';
-  }
-
-  getFullStepperItemClass(currentStatusId: number, stepId: number): string {
-    if (currentStatusId === 8 || currentStatusId === 9) {
-      return 'bg-slate-50 border-slate-200 text-slate-400';
-    }
-    const order = [1, 2, 3, 4, 5, 6, 7];
-    const currentIndex = order.indexOf(currentStatusId);
-    const stepIndex = order.indexOf(stepId);
-    if (currentStatusId === stepId) {
-      return 'bg-orange-50 border-orange-300 text-orange-800 font-bold shadow-xs ring-2 ring-orange-200';
-    }
-    if (currentIndex >= stepIndex) {
-      return 'bg-emerald-50/60 border-emerald-200 text-emerald-800 font-semibold';
-    }
-    return 'bg-slate-50 border-slate-200 text-slate-400';
-  }
-
-  getFullStepperBadgeClass(currentStatusId: number, stepId: number): string {
-    if (currentStatusId === 8 || currentStatusId === 9) {
-      return 'bg-slate-200 text-slate-600';
-    }
-    const order = [1, 2, 3, 4, 5, 6, 7];
-    const currentIndex = order.indexOf(currentStatusId);
-    const stepIndex = order.indexOf(stepId);
-    if (currentStatusId === stepId) {
-      return 'bg-orange-600 text-white';
-    }
-    if (currentIndex >= stepIndex) {
-      return 'bg-emerald-600 text-white';
-    }
-    return 'bg-slate-200 text-slate-500';
   }
 
   hasFormData(formData: any): boolean {
