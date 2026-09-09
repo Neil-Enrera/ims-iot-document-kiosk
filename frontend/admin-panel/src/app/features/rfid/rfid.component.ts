@@ -152,8 +152,8 @@ import { environment } from '../../../environments/environment';
         }
       </app-card>
 
-      <!-- Resident Profile & RFID Registration Modal -->
-      <app-modal [open]="showModal()" title="Resident Profile & RFID Registration" (onClose)="closeModal()" containerClass="max-w-3xl">
+      <!-- Registration Card Modal -->
+      <app-modal [open]="showModal()" title="Registration Card" (onClose)="closeModal()" containerClass="max-w-3xl">
         @if (selectedResident(); as res) {
           <div class="space-y-4">
             <!-- Header Card (Matching Resident Profile style) -->
@@ -252,7 +252,7 @@ import { environment } from '../../../environments/environment';
                       />
                     </div>
                     <div>
-                      <label class="block text-xs font-bold text-slate-700 mb-1">Expiration Date <span class="text-slate-400 font-normal">(Optional)</span></label>
+                      <label class="block text-xs font-bold text-slate-700 mb-1">Expiration Date <span class="text-slate-400 font-normal">(Default 3 Years, Editable)</span></label>
                       <input
                         type="date"
                         [value]="regExpirationDate()"
@@ -354,17 +354,6 @@ import { environment } from '../../../environments/environment';
                 </div>
               }
             </div>
-
-            <!-- Modal Footer -->
-            <div class="flex items-center justify-end pt-3 border-t border-slate-100">
-              <button
-                type="button"
-                (click)="closeModal()"
-                class="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
-              >
-                Close
-              </button>
-            </div>
           </div>
         }
       </app-modal>
@@ -385,7 +374,7 @@ export class RfidComponent implements OnInit, OnDestroy {
   showModal = signal(false);
   selectedResident = signal<RfidCard | null>(null);
   regCardUid = signal('');
-  regExpirationDate = signal('');
+  regExpirationDate = signal(this.computeDefaultExpiry());
   regError = signal('');
   registering = signal(false);
   updating = signal(false);
@@ -400,6 +389,15 @@ export class RfidComponent implements OnInit, OnDestroy {
 
   private sseSubscription: any = null;
   private readonly assetBase = environment.apiUrl.replace(/\/api\/v1$/, '');
+
+  private computeDefaultExpiry(): string {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() + 3);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
 
   constructor(
     private rfidService: RfidService,
@@ -501,7 +499,7 @@ export class RfidComponent implements OnInit, OnDestroy {
   openModalWithCard(card: RfidCard) {
     this.selectedResident.set({ ...card });
     this.regCardUid.set('');
-    this.regExpirationDate.set('');
+    this.regExpirationDate.set(this.computeDefaultExpiry());
     this.regError.set('');
     this.showModal.set(true);
 
@@ -555,7 +553,7 @@ export class RfidComponent implements OnInit, OnDestroy {
     this.showModal.set(false);
     this.selectedResident.set(null);
     this.regCardUid.set('');
-    this.regExpirationDate.set('');
+    this.regExpirationDate.set(this.computeDefaultExpiry());
     this.regError.set('');
   }
 
