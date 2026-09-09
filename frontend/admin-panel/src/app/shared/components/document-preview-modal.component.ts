@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter, AfterViewChecked, ViewChild, ElementRef, signal, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { renderAsync } from 'docx-preview';
+import { DocumentPdfExportService } from '../services';
 
 @Component({
   selector: 'app-document-preview-modal',
@@ -38,13 +39,21 @@ import { renderAsync } from 'docx-preview';
               <button
                 type="button"
                 (click)="downloadPdf()"
-                [disabled]="rendering() || (!blob && !blobUrl)"
-                title="Download as PDF / Save as PDF"
+                [disabled]="rendering() || (!blob && !blobUrl) || downloadingPdf()"
+                title="Download as PDF file"
                 class="h-9 px-3 flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-xs font-bold hover:bg-rose-100 disabled:opacity-40 transition cursor-pointer">
-                <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                </svg>
-                <span>PDF</span>
+                @if (downloadingPdf()) {
+                  <svg class="animate-spin h-3.5 w-3.5 text-rose-600" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                  </svg>
+                  <span>Downloading...</span>
+                } @else {
+                  <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                  </svg>
+                  <span>PDF</span>
+                }
               </button>
 
               <button
@@ -146,11 +155,14 @@ export class DocumentPreviewModalComponent implements AfterViewChecked, OnChange
   rendering = signal(false);
   error = signal('');
   zoom = signal(1);
+  downloadingPdf = signal(false);
 
   private fitRatio = 1;
   private userAdjusted = false;
 
   private renderedKey: string | Blob | null = null;
+
+  constructor(private pdfExportService: DocumentPdfExportService) {}
 
   // Reset the render state whenever the modal closes or a new document arrives.
   // Closing destroys the container (the @if block) and clears renderedKey, so the
@@ -160,6 +172,7 @@ export class DocumentPreviewModalComponent implements AfterViewChecked, OnChange
       this.renderedKey = null;
       this.error.set('');
       this.rendering.set(false);
+      this.downloadingPdf.set(false);
       this.resetZoomState();
     }
     if (changes['blob'] || changes['blobUrl']) {
@@ -199,9 +212,12 @@ export class DocumentPreviewModalComponent implements AfterViewChecked, OnChange
     });
   }
 
-  downloadPdf() {
+  async downloadPdf() {
     if (!this.blob && !this.blobUrl) return;
-    this.loadBlob().then(b => {
+    this.downloadingPdf.set(true);
+
+    try {
+      const b = await this.loadBlob();
       if (b.type === 'application/pdf') {
         const url = URL.createObjectURL(b);
         const a = document.createElement('a');
@@ -212,11 +228,16 @@ export class DocumentPreviewModalComponent implements AfterViewChecked, OnChange
         a.click();
         a.remove();
         URL.revokeObjectURL(url);
+      } else if (this.container?.nativeElement) {
+        await this.pdfExportService.exportElementToPdf(this.container.nativeElement, this.title || 'document');
       } else {
-        // Trigger high-fidelity print / save as PDF
-        this.print();
+        await this.pdfExportService.convertDocxToPdf(b, this.title || 'document');
       }
-    });
+    } catch (err) {
+      console.error('PDF export error:', err);
+    } finally {
+      this.downloadingPdf.set(false);
+    }
   }
 
   print() {

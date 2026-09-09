@@ -320,3 +320,6 @@ export class BarangayService {
     return this.api.get<any>(`/barangays/${id}`);
   }
 }
+
+export * from './document-pdf-export.service';
+
