@@ -44,7 +44,6 @@ interface StatusOption {
     CardComponent,
     InputComponent,
     PaginationComponent,
-    ButtonComponent,
     ModalComponent,
     RequestFormComponent,
     DocumentPreviewModalComponent
@@ -57,7 +56,6 @@ interface StatusOption {
           <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Document Requests</h1>
           <p class="text-sm text-slate-500 mt-1">Monitor, review, and process resident document service requests through the official workflow.</p>
         </div>
-        <app-button variant="primary" (onClick)="showForm.set(true)">+ New Request</app-button>
       </div>
 
       <app-card>

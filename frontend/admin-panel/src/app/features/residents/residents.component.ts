@@ -27,9 +27,6 @@ import { environment } from '../../../environments/environment';
           <h1 class="text-2xl font-bold text-gray-800">Residents</h1>
           <p class="text-sm text-slate-500 mt-1">Manage and view all registered residents and profile update requests.</p>
         </div>
-        @if (mainTab() === 'residents') {
-          <app-button variant="primary" (onClick)="openCreateForm()">+ Add Resident</app-button>
-        }
       </div>
 
       <!-- Main Navigation Tabs -->
@@ -300,7 +297,7 @@ import { environment } from '../../../environments/environment';
                 [class.text-slate-400]="activeTab() !== 'history'"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                Requests & ID
+                Transaction History
               </button>
             </div>
 
