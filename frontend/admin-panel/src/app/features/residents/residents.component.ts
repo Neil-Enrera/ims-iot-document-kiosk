@@ -3,7 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { DatePipe, CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
-import { ResidentService, RfidService, RequestService, ApplicationService, ResidentUpdateService } from '../../shared/services';
+import { ResidentService, RfidService, RequestService, ApplicationService, ResidentUpdateService, DocumentService } from '../../shared/services';
 import { NotificationService } from '../notifications/notification.service';
 import { Resident } from '../../shared/interfaces/api.interfaces';
 import { TableComponent, TableColumn } from '../../shared/components/table.component';
@@ -13,13 +13,14 @@ import { InputComponent } from '../../shared/components/input.component';
 import { PaginationComponent } from '../../shared/components/pagination.component';
 import { ModalComponent } from '../../shared/components/modal.component';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.component';
+import { DocumentPreviewModalComponent } from '../../shared/components/document-preview-modal.component';
 import { ResidentFormComponent } from './resident-form.component';
 import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-residents',
   standalone: true,
-  imports: [CommonModule, FormsModule, TableComponent, ButtonComponent, CardComponent, InputComponent, PaginationComponent, ModalComponent, ConfirmDialogComponent, ResidentFormComponent, DatePipe],
+  imports: [CommonModule, FormsModule, TableComponent, ButtonComponent, CardComponent, InputComponent, PaginationComponent, ModalComponent, ConfirmDialogComponent, DocumentPreviewModalComponent, ResidentFormComponent, DatePipe],
   template: `
     <div>
       <div class="flex justify-between items-center mb-5">
@@ -441,12 +442,30 @@ import { environment } from '../../../environments/environment';
                           }
                         </div>
 
-                        <!-- Action Link -->
-                        <div class="flex items-center justify-end text-[11px] font-bold text-orange-600 group-hover:text-orange-700 gap-1 pt-1">
-                          <span>View full transaction details</span>
-                          <svg class="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-                          </svg>
+                        <!-- Action Links -->
+                        <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+                          @if (req.status_id >= 4 && req.status_id !== 8 && req.status_id !== 9) {
+                            <button
+                              type="button"
+                              (click)="$event.stopPropagation(); previewTransactionDoc(req)"
+                              class="text-[11px] font-bold text-orange-600 hover:text-orange-800 hover:underline flex items-center gap-1 cursor-pointer"
+                            >
+                              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                              </svg>
+                              <span>Preview Document</span>
+                            </button>
+                          } @else {
+                            <span></span>
+                          }
+
+                          <div class="flex items-center text-[11px] font-bold text-slate-500 group-hover:text-orange-600 gap-1">
+                            <span>View details</span>
+                            <svg class="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                            </svg>
+                          </div>
                         </div>
                       </div>
                     }
@@ -640,7 +659,28 @@ import { environment } from '../../../environments/environment';
               }
             </div>
 
-            <div class="flex justify-end pt-2 border-t border-slate-100">
+            <div class="flex items-center justify-between pt-3 border-t border-slate-100">
+              @if (tx.status_id >= 4 && tx.status_id !== 8 && tx.status_id !== 9) {
+                <button
+                  type="button"
+                  [disabled]="previewDocumentLoading()"
+                  (click)="previewTransactionDoc(tx)"
+                  class="px-4 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-bold text-xs shadow-xs transition flex items-center gap-2 cursor-pointer"
+                >
+                  @if (previewDocumentLoading()) {
+                    <span class="inline-block animate-spin w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full"></span>
+                    <span>Loading Preview...</span>
+                  } @else {
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                    <span>Preview Document</span>
+                  }
+                </button>
+              } @else {
+                <span></span>
+              }
               <app-button variant="secondary" (onClick)="closeTransactionModal()">Close</app-button>
             </div>
           </div>
@@ -782,6 +822,14 @@ import { environment } from '../../../environments/environment';
           (onConfirm)="confirmRestore()"
         />
       }
+
+      <!-- Document Preview Modal -->
+      <app-document-preview-modal
+        [open]="showDocumentPreview()"
+        [title]="previewDocumentTitle"
+        [blob]="previewDocumentBlob"
+        (onClose)="closeDocumentPreview()"
+      />
     </div>
   `
 })
@@ -823,6 +871,10 @@ export class ResidentsComponent implements OnInit, OnDestroy {
   selectedTransaction = signal<any | null>(null);
   showTransactionModal = signal(false);
   transactionLoadingDetail = signal(false);
+  showDocumentPreview = signal(false);
+  previewDocumentTitle = '';
+  previewDocumentBlob: Blob | null = null;
+  previewDocumentLoading = signal(false);
   newCardUid = '';
   private ws: WebSocket | null = null;
   private sseSubscription: Subscription | null = null;
@@ -922,6 +974,7 @@ export class ResidentsComponent implements OnInit, OnDestroy {
     private requestService: RequestService,
     private applicationService: ApplicationService,
     private residentUpdateService: ResidentUpdateService,
+    private documentService: DocumentService,
     private notificationService: NotificationService,
     private route: ActivatedRoute,
     private router: Router
@@ -1373,6 +1426,83 @@ export class ResidentsComponent implements OnInit, OnDestroy {
   closeTransactionModal() {
     this.showTransactionModal.set(false);
     this.selectedTransaction.set(null);
+  }
+
+  previewTransactionDoc(req: any) {
+    if (!req?.request_id) return;
+    if (this.previewDocumentLoading()) return;
+    this.previewDocumentLoading.set(true);
+    this.previewDocumentTitle = `${req.service_name || 'Document'} — ${req.request_number || ''}`;
+    this.previewDocumentBlob = null;
+
+    // 1. Check if a generated document already exists
+    this.documentService.list(req.request_id).subscribe({
+      next: (res) => {
+        const docs = res.data || [];
+        if (docs.length > 0) {
+          const latest = docs[docs.length - 1];
+          this.previewDocumentTitle = latest.file_name || `${req.service_name} — ${req.request_number}`;
+          this.documentService.fetchBlob(req.request_id, latest.document_id).subscribe({
+            next: (blob) => {
+              this.previewDocumentBlob = blob;
+              this.previewDocumentLoading.set(false);
+              this.showDocumentPreview.set(true);
+            },
+            error: () => {
+              this.previewDocumentLoading.set(false);
+              alert('Could not load the generated document preview.');
+            }
+          });
+        } else {
+          // 2. Generate and preview
+          this.documentService.generate(req.request_id).subscribe({
+            next: () => {
+              this.documentService.list(req.request_id).subscribe({
+                next: (listRes) => {
+                  const genDocs = listRes.data || [];
+                  if (genDocs.length > 0) {
+                    const gen = genDocs[genDocs.length - 1];
+                    this.previewDocumentTitle = gen.file_name || `${req.service_name} — ${req.request_number}`;
+                    this.documentService.fetchBlob(req.request_id, gen.document_id).subscribe({
+                      next: (blob) => {
+                        this.previewDocumentBlob = blob;
+                        this.previewDocumentLoading.set(false);
+                        this.showDocumentPreview.set(true);
+                      },
+                      error: () => {
+                        this.previewDocumentLoading.set(false);
+                        alert('Could not load the generated document preview.');
+                      }
+                    });
+                  } else {
+                    this.previewDocumentLoading.set(false);
+                    alert('No document template was produced.');
+                  }
+                },
+                error: () => {
+                  this.previewDocumentLoading.set(false);
+                  alert('Failed to list generated document.');
+                }
+              });
+            },
+            error: (err) => {
+              this.previewDocumentLoading.set(false);
+              alert(err.error?.message || 'A document template is not yet available for this request.');
+            }
+          });
+        }
+      },
+      error: () => {
+        this.previewDocumentLoading.set(false);
+        alert('Failed to check documents for this request.');
+      }
+    });
+  }
+
+  closeDocumentPreview() {
+    this.showDocumentPreview.set(false);
+    this.previewDocumentBlob = null;
+    this.previewDocumentTitle = '';
   }
 
   getStatusBadgeClass(statusId: number): string {
