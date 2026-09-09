@@ -464,7 +464,6 @@ import { environment } from '../../../environments/environment';
             }
 
             <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
-              <app-button variant="secondary" (onClick)="openEditForm(res)">Edit Profile</app-button>
               <app-button variant="secondary" (onClick)="closeDetails()">Close</app-button>
             </div>
           </div>
