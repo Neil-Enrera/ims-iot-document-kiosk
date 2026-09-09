@@ -490,30 +490,53 @@ type ApplicationRow = BarangayIdApplication & { full_name: string; _photoError?:
       </app-modal>
 
       <!-- Image Preview / Lightbox Modal -->
-      <app-modal [open]="previewImageModal()" [title]="previewImageTitle()" (onClose)="closeImagePreview()" containerClass="max-w-2xl">
-        <div class="flex flex-col items-center justify-center p-2">
-          <div class="w-full max-h-[70vh] flex items-center justify-center bg-slate-950/5 rounded-2xl p-4 border border-slate-200/80 overflow-hidden">
-            <img
-              [src]="previewImageUrl()"
-              [alt]="previewImageTitle()"
-              class="max-h-[60vh] max-w-full object-contain rounded-lg shadow-sm"
-            />
+      <app-modal [open]="previewImageModal()" [title]="previewImageTitle()" (onClose)="closeImagePreview()" containerClass="max-w-3xl">
+        <div class="flex flex-col items-center justify-center p-2 gap-3">
+          <!-- Toolbar with Zoom Controls -->
+          <div class="w-full flex items-center justify-between px-3.5 py-2 bg-slate-100/80 rounded-xl border border-slate-200">
+            <span class="text-xs font-semibold text-slate-600 truncate max-w-[200px] sm:max-w-sm">{{ previewImageTitle() }}</span>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                (click)="zoomOutImage()"
+                class="w-8 h-8 rounded-lg bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-sm flex items-center justify-center transition shadow-xs cursor-pointer"
+                title="Zoom Out">
+                −
+              </button>
+              <button
+                type="button"
+                (click)="resetImageZoom()"
+                class="h-8 px-2.5 rounded-lg bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold tabular-nums flex items-center justify-center transition shadow-xs cursor-pointer"
+                title="Reset Zoom (100%)">
+                {{ imageZoomPercent() }}
+              </button>
+              <button
+                type="button"
+                (click)="zoomInImage()"
+                class="w-8 h-8 rounded-lg bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-sm flex items-center justify-center transition shadow-xs cursor-pointer"
+                title="Zoom In">
+                +
+              </button>
+            </div>
           </div>
-          <div class="flex items-center justify-between w-full mt-4 pt-3 border-t border-slate-100">
-            <a
-              [href]="previewImageUrl()"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-              </svg>
-              Open Original
-            </a>
+
+          <!-- Image Container with Pan / Scrollable Zoom Box -->
+          <div class="w-full h-[60vh] max-h-[550px] flex items-center justify-center bg-slate-950/5 rounded-2xl p-4 border border-slate-200/80 overflow-auto">
+            <div class="min-w-full min-h-full flex items-center justify-center transition-transform duration-150 origin-center" [style.transform]="'scale(' + imageZoom() + ')'">
+              <img
+                [src]="previewImageUrl()"
+                [alt]="previewImageTitle()"
+                class="max-h-[50vh] max-w-full object-contain rounded-lg shadow-sm select-none"
+              />
+            </div>
+          </div>
+
+          <!-- Footer with Close button only -->
+          <div class="flex items-center justify-end w-full pt-1">
             <button
               type="button"
               (click)="closeImagePreview()"
-              class="px-4 py-1.5 rounded-lg text-xs font-semibold bg-orange-600 hover:bg-orange-700 text-white shadow-xs transition cursor-pointer">
+              class="px-5 py-2 rounded-xl text-xs font-semibold bg-orange-600 hover:bg-orange-700 text-white shadow-xs transition cursor-pointer">
               Close
             </button>
           </div>
@@ -794,8 +817,27 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
     return `${this.assetBase}/uploads/${path}`;
   }
 
+  imageZoom = signal(1);
+
+  imageZoomPercent(): string {
+    return Math.round(this.imageZoom() * 100) + '%';
+  }
+
+  zoomInImage() {
+    this.imageZoom.set(Math.min(4, Math.round((this.imageZoom() + 0.25) * 100) / 100));
+  }
+
+  zoomOutImage() {
+    this.imageZoom.set(Math.max(0.5, Math.round((this.imageZoom() - 0.25) * 100) / 100));
+  }
+
+  resetImageZoom() {
+    this.imageZoom.set(1);
+  }
+
   openImagePreview(url: string, title: string) {
     if (!url) return;
+    this.imageZoom.set(1);
     this.previewImageUrl.set(url);
     this.previewImageTitle.set(title);
     this.previewImageModal.set(true);
@@ -805,6 +847,7 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
     this.previewImageModal.set(false);
     this.previewImageUrl.set('');
     this.previewImageTitle.set('');
+    this.imageZoom.set(1);
   }
 
   onDatePresetChange(preset: string) {
