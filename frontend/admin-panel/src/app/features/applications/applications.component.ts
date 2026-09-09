@@ -18,7 +18,7 @@ import { DocumentPreviewModalComponent } from '../../shared/components/document-
 import { ServiceFormComponent } from '../services/service-form.component';
 import { environment } from '../../../environments/environment';
 
-type ApplicationRow = BarangayIdApplication & { full_name: string };
+type ApplicationRow = BarangayIdApplication & { full_name: string; _photoError?: boolean };
 
 @Component({
   selector: 'app-applications',
@@ -171,9 +171,20 @@ type ApplicationRow = BarangayIdApplication & { full_name: string };
           <!-- APPLICANT Template -->
           <ng-template #applicantCell let-row="row">
             <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-full bg-orange-100 text-orange-700 font-bold text-xs flex items-center justify-center shrink-0 border border-orange-200 shadow-xs">
-                {{ getInitials(row.full_name) }}
-              </div>
+              @if (imageUrl(row.photo) && !row._photoError) {
+                <img
+                  [src]="imageUrl(row.photo)"
+                  (error)="row._photoError = true"
+                  (click)="$event.stopPropagation(); openImagePreview(imageUrl(row.photo), row.full_name + ' — Photo')"
+                  alt="Photo"
+                  title="Click to view full photo"
+                  class="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-orange-200 shadow-xs cursor-pointer hover:scale-110 hover:ring-2 hover:ring-orange-400 transition-all"
+                />
+              } @else {
+                <div class="w-9 h-9 rounded-full bg-orange-100 text-orange-700 font-bold text-xs flex items-center justify-center shrink-0 border border-orange-200 shadow-xs">
+                  {{ getInitials(row.full_name) }}
+                </div>
+              }
               <div class="leading-tight min-w-0">
                 <p class="font-semibold text-slate-900 text-sm truncate">{{ row.full_name }}</p>
                 <p class="text-[11px] text-slate-400 capitalize">{{ row.gender ? row.gender.toLowerCase() : '' }}{{ row.civil_status ? ' · ' + row.civil_status.toLowerCase() : '' }}</p>
@@ -235,11 +246,35 @@ type ApplicationRow = BarangayIdApplication & { full_name: string };
               <!-- Photo and Signature -->
               <div class="grid grid-cols-2 gap-4">
                 <div class="space-y-1.5">
-                  <p class="text-[11px] font-bold uppercase tracking-wide text-gray-400">Applicant Photo</p>
+                  <div class="flex items-center justify-between">
+                    <p class="text-[11px] font-bold uppercase tracking-wide text-gray-400">Applicant Photo</p>
+                    @if (imageUrl(app.photo)) {
+                      <button
+                        type="button"
+                        (click)="openImagePreview(imageUrl(app.photo), app.full_name + ' — Applicant Photo')"
+                        class="text-[11px] font-semibold text-orange-600 hover:text-orange-700 flex items-center gap-1 cursor-pointer">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/>
+                        </svg>
+                        View Photo
+                      </button>
+                    }
+                  </div>
                   @if (imageUrl(app.photo)) {
-                    <img [src]="imageUrl(app.photo)" alt="Applicant photo"
-                         class="w-full h-40 object-cover rounded-xl border border-gray-200 bg-gray-50"
-                         (error)="$any($event.target).style.display='none'">
+                    <div
+                      class="relative group cursor-pointer overflow-hidden rounded-xl border border-gray-200 bg-gray-50 shadow-xs transition hover:border-orange-300"
+                      (click)="openImagePreview(imageUrl(app.photo), app.full_name + ' — Applicant Photo')"
+                      title="Click to view full photo">
+                      <img [src]="imageUrl(app.photo)" alt="Applicant photo"
+                           class="w-full h-40 object-cover group-hover:scale-105 transition duration-200"
+                           (error)="$any($event.target).style.display='none'">
+                      <div class="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-semibold gap-1.5 backdrop-blur-[1px]">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                        Click to enlarge
+                      </div>
+                    </div>
                   } @else {
                     <div class="w-full h-40 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 flex flex-col items-center justify-center gap-1">
                       <svg class="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -250,11 +285,35 @@ type ApplicationRow = BarangayIdApplication & { full_name: string };
                   }
                 </div>
                 <div class="space-y-1.5">
-                  <p class="text-[11px] font-bold uppercase tracking-wide text-gray-400">Signature Specimen</p>
+                  <div class="flex items-center justify-between">
+                    <p class="text-[11px] font-bold uppercase tracking-wide text-gray-400">Signature Specimen</p>
+                    @if (imageUrl(app.signature)) {
+                      <button
+                        type="button"
+                        (click)="openImagePreview(imageUrl(app.signature), app.full_name + ' — Signature Specimen')"
+                        class="text-[11px] font-semibold text-orange-600 hover:text-orange-700 flex items-center gap-1 cursor-pointer">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/>
+                        </svg>
+                        View Signature
+                      </button>
+                    }
+                  </div>
                   @if (imageUrl(app.signature)) {
-                    <img [src]="imageUrl(app.signature)" alt="Applicant signature"
-                         class="w-full h-40 object-contain rounded-xl border border-gray-200 bg-white p-2"
-                         (error)="$any($event.target).style.display='none'">
+                    <div
+                      class="relative group cursor-pointer overflow-hidden rounded-xl border border-gray-200 bg-white p-2 shadow-xs transition hover:border-orange-300"
+                      (click)="openImagePreview(imageUrl(app.signature), app.full_name + ' — Signature Specimen')"
+                      title="Click to view full signature">
+                      <img [src]="imageUrl(app.signature)" alt="Applicant signature"
+                           class="w-full h-40 object-contain group-hover:scale-105 transition duration-200"
+                           (error)="$any($event.target).style.display='none'">
+                      <div class="absolute inset-0 bg-slate-900/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-slate-800 text-xs font-semibold gap-1.5 bg-white/70 backdrop-blur-[1px]">
+                        <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                        Click to enlarge
+                      </div>
+                    </div>
                   } @else {
                     <div class="w-full h-40 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 flex flex-col items-center justify-center gap-1">
                       <svg class="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -429,6 +488,37 @@ type ApplicationRow = BarangayIdApplication & { full_name: string };
           </div>
         }
       </app-modal>
+
+      <!-- Image Preview / Lightbox Modal -->
+      <app-modal [open]="previewImageModal()" [title]="previewImageTitle()" (onClose)="closeImagePreview()" containerClass="max-w-2xl">
+        <div class="flex flex-col items-center justify-center p-2">
+          <div class="w-full max-h-[70vh] flex items-center justify-center bg-slate-950/5 rounded-2xl p-4 border border-slate-200/80 overflow-hidden">
+            <img
+              [src]="previewImageUrl()"
+              [alt]="previewImageTitle()"
+              class="max-h-[60vh] max-w-full object-contain rounded-lg shadow-sm"
+            />
+          </div>
+          <div class="flex items-center justify-between w-full mt-4 pt-3 border-t border-slate-100">
+            <a
+              [href]="previewImageUrl()"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+              </svg>
+              Open Original
+            </a>
+            <button
+              type="button"
+              (click)="closeImagePreview()"
+              class="px-4 py-1.5 rounded-lg text-xs font-semibold bg-orange-600 hover:bg-orange-700 text-white shadow-xs transition cursor-pointer">
+              Close
+            </button>
+          </div>
+        </div>
+      </app-modal>
     </div>
   `
 })
@@ -450,6 +540,10 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
 
   showActionConfirm = signal(false);
   pendingAction = signal<'approve' | 'reject' | null>(null);
+
+  previewImageModal = signal(false);
+  previewImageUrl = signal<string>('');
+  previewImageTitle = signal<string>('');
 
   showCardPreview = signal(false);
   cardPreviewTitle = signal('Barangay ID Card');
@@ -693,7 +787,24 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
   }
 
   imageUrl(path: string | null): string {
-    return path ? `${this.assetBase}/uploads/${path}` : '';
+    if (!path) return '';
+    if (path.startsWith('data:') || path.startsWith('http://') || path.startsWith('https://') || path.startsWith('/')) {
+      return path;
+    }
+    return `${this.assetBase}/uploads/${path}`;
+  }
+
+  openImagePreview(url: string, title: string) {
+    if (!url) return;
+    this.previewImageUrl.set(url);
+    this.previewImageTitle.set(title);
+    this.previewImageModal.set(true);
+  }
+
+  closeImagePreview() {
+    this.previewImageModal.set(false);
+    this.previewImageUrl.set('');
+    this.previewImageTitle.set('');
   }
 
   onDatePresetChange(preset: string) {
