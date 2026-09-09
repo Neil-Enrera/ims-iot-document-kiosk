@@ -235,7 +235,7 @@ import { environment } from '../../../environments/environment';
       }
 
       <!-- Resident Details Modal -->
-      <app-modal [open]="showDetails()" title="Resident Profile" (onClose)="closeDetails()" containerClass="max-w-2xl">
+      <app-modal [open]="showDetails()" title="Resident Profile" (onClose)="closeDetails()" containerClass="max-w-3xl">
         @if (selectedResident(); as res) {
           <div class="space-y-4">
             <!-- Header Card -->
@@ -298,6 +298,9 @@ import { environment } from '../../../environments/environment';
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 Transaction History
+                @if (residentRequests().length > 0) {
+                  <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-orange-100 text-orange-800">{{ residentRequests().length }}</span>
+                }
               </button>
             </div>
 
@@ -339,19 +342,144 @@ import { environment } from '../../../environments/environment';
             }
 
             @if (activeTab() === 'history') {
-              <div class="space-y-2">
-                @if (residentRequests().length > 0) {
-                  @for (req of residentRequests(); track req.request_id) {
-                    <div class="p-2.5 bg-slate-50 border border-slate-100 rounded-lg flex items-center justify-between text-xs">
-                      <div>
-                        <p class="font-bold text-slate-800">{{ req.service_name }}</p>
-                        <p class="text-slate-400 font-mono text-[11px]">{{ req.tracking_number }}</p>
+              <div class="space-y-3">
+                <div class="flex items-center justify-between px-1">
+                  <span class="text-xs font-bold text-slate-700 uppercase tracking-wide flex items-center gap-1.5">
+                    <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Previous Document Transactions ({{ residentRequests().length }})
+                  </span>
+                  <span class="text-[11px] text-slate-400">Click any transaction to view full details</span>
+                </div>
+
+                @if (historyLoading()) {
+                  <div class="py-10 text-center text-xs text-slate-500">
+                    <div class="inline-block animate-spin w-5 h-5 border-2 border-orange-500 border-t-transparent rounded-full mb-2"></div>
+                    <p>Loading transaction history...</p>
+                  </div>
+                } @else if (residentRequests().length > 0) {
+                  <div class="space-y-3 max-h-[440px] overflow-y-auto pr-1">
+                    @for (req of residentRequests(); track req.request_id) {
+                      <div
+                        (click)="openTransactionDetail(req)"
+                        class="group p-4 bg-white hover:bg-orange-50/20 border border-slate-200 hover:border-orange-300 rounded-2xl shadow-2xs transition-all cursor-pointer text-xs space-y-3"
+                      >
+                        <!-- Card Header -->
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                          <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-xl bg-orange-100/80 text-orange-700 flex items-center justify-center shrink-0 font-bold">
+                              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                              </svg>
+                            </div>
+                            <div>
+                              <h4 class="font-bold text-slate-900 group-hover:text-orange-600 transition-colors text-sm leading-tight">
+                                {{ req.service_name }}
+                              </h4>
+                              <div class="flex items-center gap-2 mt-0.5">
+                                <span class="font-mono text-[11px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded">{{ req.request_number }}</span>
+                                @if (req.processing_fee !== undefined && req.processing_fee !== null) {
+                                  <span class="text-[11px] text-slate-500 font-semibold">Fee: ₱{{ req.processing_fee | number:'1.2-2' }}</span>
+                                }
+                              </div>
+                            </div>
+                          </div>
+
+                          <!-- Current Status Badge -->
+                          <div>
+                            <span [class]="'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ' + getStatusBadgeClass(req.status_id)">
+                              <span class="w-1.5 h-1.5 rounded-full" [class]="getStatusDotClass(req.status_id)"></span>
+                              {{ req.status_name }}
+                            </span>
+                          </div>
+                        </div>
+
+                        <!-- Workflow Progression Stepper -->
+                        <div class="bg-slate-50/90 rounded-xl p-2.5 border border-slate-100">
+                          <div class="flex items-center justify-between text-[10px] font-semibold text-slate-500">
+                            <span [class]="getMiniStepClass(req.status_id, 1)">1. Submitted</span>
+                            <span>→</span>
+                            <span [class]="getMiniStepClass(req.status_id, 4)">2. Under Review</span>
+                            <span>→</span>
+                            @if (req.status_id === 8) {
+                              <span class="text-rose-600 font-bold flex items-center gap-0.5">✕ Rejected</span>
+                            } @else {
+                              <span [class]="getMiniStepClass(req.status_id, 4)">3. Approved</span>
+                            }
+                            <span>→</span>
+                            <span [class]="getMiniStepClass(req.status_id, 5)">4. Generated</span>
+                            <span>→</span>
+                            <span [class]="getMiniStepClass(req.status_id, 6)">5. Ready</span>
+                            <span>→</span>
+                            <span [class]="getMiniStepClass(req.status_id, 7)">6. Released</span>
+                          </div>
+                        </div>
+
+                        <!-- Key Transaction Dates & Staff Information -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1 border-t border-slate-100 text-slate-600">
+                          <div>
+                            <span class="text-slate-400 font-medium block text-[10px]">Date Requested:</span>
+                            <span class="font-bold text-slate-800">{{ req.request_date | date:'MMM d, y, h:mm a' }}</span>
+                          </div>
+
+                          @if (req.status_id === 7) {
+                            <!-- Released State Info -->
+                            <div class="bg-emerald-50/70 p-2.5 rounded-xl border border-emerald-100 sm:col-span-2">
+                              <div class="flex flex-wrap items-center justify-between gap-1 text-[11px]">
+                                <span class="text-emerald-900 font-bold flex items-center gap-1.5">
+                                  <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                  Released: {{ req.release_date | date:'MMM d, y, h:mm a' }}
+                                </span>
+                                <span class="text-emerald-700 font-medium">Released by: <strong class="text-emerald-900">{{ req.released_by || req.assigned_staff || 'Barangay Staff' }}</strong></span>
+                              </div>
+                            </div>
+                          } @else if (req.status_id === 8) {
+                            <!-- Rejected State Info -->
+                            <div class="bg-rose-50/80 p-2.5 rounded-xl border border-rose-100 sm:col-span-2">
+                              <div class="text-[11px] text-rose-900">
+                                <p class="font-bold flex items-center gap-1.5">
+                                  <svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                  Rejected on: {{ (req.rejected_date || req.reviewed_date) | date:'MMM d, y, h:mm a' }}
+                                  @if (req.rejected_by) {
+                                    <span class="font-normal text-rose-700">by {{ req.rejected_by }}</span>
+                                  }
+                                </p>
+                                <p class="mt-1 text-rose-800"><span class="font-bold">Reason:</span> {{ cleanRejectionReason(req.rejection_reason || req.remarks) }}</p>
+                              </div>
+                            </div>
+                          } @else if (req.approved_date || (req.status_id >= 4 && req.status_id !== 8 && req.status_id !== 9)) {
+                            <!-- Approved / In Processing Info -->
+                            <div>
+                              <span class="text-slate-400 font-medium block text-[10px]">Date Approved / Reviewed:</span>
+                              <span class="font-bold text-slate-800">
+                                {{ (req.approved_date || req.reviewed_date) | date:'MMM d, y, h:mm a' }}
+                                @if (req.approved_by || req.assigned_staff) {
+                                  <span class="text-slate-500 font-normal text-[11px]">({{ req.approved_by || req.assigned_staff }})</span>
+                                }
+                              </span>
+                            </div>
+                          }
+                        </div>
+
+                        <!-- Action Link -->
+                        <div class="flex items-center justify-end text-[11px] font-bold text-orange-600 group-hover:text-orange-700 gap-1 pt-1">
+                          <span>View full transaction details</span>
+                          <svg class="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                          </svg>
+                        </div>
                       </div>
-                      <span class="px-2 py-0.5 rounded font-bold text-[10px] bg-blue-100 text-blue-800">{{ req.status }}</span>
-                    </div>
-                  }
+                    }
+                  </div>
                 } @else {
-                  <p class="text-xs text-slate-500 text-center py-4">No past requests recorded.</p>
+                  <div class="text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                    <svg class="w-10 h-10 text-slate-300 mx-auto mb-2" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <p class="text-xs font-bold text-slate-700">No Transaction History</p>
+                    <p class="text-[11px] text-slate-400 mt-0.5">This resident has not submitted any document requests yet.</p>
+                  </div>
                 }
               </div>
             }
@@ -359,6 +487,219 @@ import { environment } from '../../../environments/environment';
             <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
               <app-button variant="secondary" (onClick)="openEditForm(res)">Edit Profile</app-button>
               <app-button variant="secondary" (onClick)="closeDetails()">Close</app-button>
+            </div>
+          </div>
+        }
+      </app-modal>
+
+      <!-- COMPLETE TRANSACTION DETAILS MODAL -->
+      <app-modal
+        [open]="showTransactionModal()"
+        [title]="'Transaction Details — ' + (selectedTransaction()?.request_number || '')"
+        (onClose)="closeTransactionModal()"
+        containerClass="max-w-2xl sm:max-w-3xl"
+      >
+        @if (selectedTransaction(); as tx) {
+          <div class="space-y-5 text-left text-xs">
+            <!-- Top Banner Summary -->
+            <div class="bg-gradient-to-r from-orange-50 to-amber-50/70 border border-orange-200 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <span class="font-mono text-xs font-bold text-orange-700 bg-orange-100/80 px-2.5 py-1 rounded-md">{{ tx.request_number }}</span>
+                <h3 class="text-base font-bold text-slate-900 mt-1.5">{{ tx.service_name }}</h3>
+                <p class="text-xs text-slate-500">
+                  Resident: <strong class="text-slate-800">{{ tx.resident_name || (selectedResident()?.first_name + ' ' + selectedResident()?.last_name) }}</strong>
+                  · Resident ID: <span class="font-mono font-semibold">{{ tx.resident_code || selectedResident()?.resident_code }}</span>
+                </p>
+              </div>
+              <div>
+                <span [class]="'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-extrabold border ' + getStatusBadgeClass(tx.status_id)">
+                  <span class="w-1.5 h-1.5 rounded-full" [class]="getStatusDotClass(tx.status_id)"></span>
+                  {{ tx.status_name }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Terminal Alerts (If Rejected) -->
+            @if (tx.status_id === 8) {
+              <div class="p-4 rounded-2xl bg-rose-50 border border-rose-200 flex items-start gap-3 text-rose-900">
+                <div class="w-8 h-8 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center shrink-0 mt-0.5">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                  </svg>
+                </div>
+                <div class="flex-1">
+                  <h4 class="text-sm font-bold text-rose-900">Request Rejected</h4>
+                  <p class="text-xs text-rose-700 mt-0.5">
+                    Rejected on {{ (tx.rejected_date || tx.reviewed_date) | date:'MMM d, y, h:mm a' }}
+                    @if (tx.rejected_by) {
+                      <span>by <strong>{{ tx.rejected_by }}</strong></span>
+                    }
+                  </p>
+                  <p class="mt-1 text-xs text-rose-800 font-medium">
+                    <span class="font-bold">Rejection Reason:</span> {{ cleanRejectionReason(tx.rejection_reason || tx.remarks) }}
+                  </p>
+                </div>
+              </div>
+            }
+
+            <!-- Workflow Stepper Indicator -->
+            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+              <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-3">Workflow Progression</p>
+              <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-center">
+                <div [class]="'p-2.5 rounded-xl border flex flex-col items-center ' + getFullStepperItemClass(tx.status_id, 1)">
+                  <span class="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center mb-1" [class]="getFullStepperBadgeClass(tx.status_id, 1)">1</span>
+                  <span class="text-[11px] font-bold">Submitted</span>
+                </div>
+                <div [class]="'p-2.5 rounded-xl border flex flex-col items-center ' + getFullStepperItemClass(tx.status_id, 4)">
+                  <span class="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center mb-1" [class]="getFullStepperBadgeClass(tx.status_id, 4)">2</span>
+                  <span class="text-[11px] font-bold">Under Review</span>
+                </div>
+                <div [class]="'p-2.5 rounded-xl border flex flex-col items-center ' + (tx.status_id === 8 ? 'bg-rose-50 border-rose-200 text-rose-700 font-bold' : getFullStepperItemClass(tx.status_id, 4))">
+                  @if (tx.status_id === 8) {
+                    <span class="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center mb-1 bg-rose-600 text-white">✕</span>
+                    <span class="text-[11px] font-bold text-rose-700">Rejected</span>
+                  } @else {
+                    <span class="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center mb-1" [class]="getFullStepperBadgeClass(tx.status_id, 4)">3</span>
+                    <span class="text-[11px] font-bold">Approved</span>
+                  }
+                </div>
+                <div [class]="'p-2.5 rounded-xl border flex flex-col items-center ' + getFullStepperItemClass(tx.status_id, 5)">
+                  <span class="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center mb-1" [class]="getFullStepperBadgeClass(tx.status_id, 5)">4</span>
+                  <span class="text-[11px] font-bold">Doc Generated</span>
+                </div>
+                <div [class]="'p-2.5 rounded-xl border flex flex-col items-center ' + getFullStepperItemClass(tx.status_id, 6)">
+                  <span class="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center mb-1" [class]="getFullStepperBadgeClass(tx.status_id, 6)">5</span>
+                  <span class="text-[11px] font-bold">Ready Release</span>
+                </div>
+                <div [class]="'p-2.5 rounded-xl border flex flex-col items-center ' + getFullStepperItemClass(tx.status_id, 7)">
+                  <span class="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center mb-1" [class]="getFullStepperBadgeClass(tx.status_id, 7)">6</span>
+                  <span class="text-[11px] font-bold">Released</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Complete Transaction Details Grid -->
+            <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs space-y-3">
+              <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 pb-2 border-b border-slate-100">
+                <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Transaction Information
+              </h4>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div>
+                  <span class="text-slate-400 font-medium block text-[10px]">Document / Service Requested</span>
+                  <span class="font-bold text-slate-900 text-sm">{{ tx.service_name }}</span>
+                </div>
+                <div>
+                  <span class="text-slate-400 font-medium block text-[10px]">Request Number</span>
+                  <span class="font-mono font-bold text-slate-900">{{ tx.request_number }}</span>
+                </div>
+                <div>
+                  <span class="text-slate-400 font-medium block text-[10px]">Date & Time Requested</span>
+                  <span class="font-semibold text-slate-800">{{ tx.request_date | date:'MMM d, y, h:mm a' }}</span>
+                </div>
+                <div>
+                  <span class="text-slate-400 font-medium block text-[10px]">Processing Fee</span>
+                  <span class="font-bold text-slate-900">₱{{ (tx.processing_fee || 0) | number:'1.2-2' }}</span>
+                </div>
+                <div>
+                  <span class="text-slate-400 font-medium block text-[10px]">Date Approved / Reviewed</span>
+                  <span class="font-semibold text-slate-800">
+                    @if (tx.approved_date || tx.reviewed_date) {
+                      {{ (tx.approved_date || tx.reviewed_date) | date:'MMM d, y, h:mm a' }}
+                      @if (tx.approved_by || tx.assigned_staff) {
+                        <span class="text-slate-500 font-normal"> (by {{ tx.approved_by || tx.assigned_staff }})</span>
+                      }
+                    } @else {
+                      <span class="text-slate-400">-</span>
+                    }
+                  </span>
+                </div>
+                <div>
+                  <span class="text-slate-400 font-medium block text-[10px]">Date Released</span>
+                  <span class="font-semibold text-slate-800">
+                    @if (tx.release_date) {
+                      {{ tx.release_date | date:'MMM d, y, h:mm a' }}
+                      @if (tx.released_by || tx.assigned_staff) {
+                        <span class="text-emerald-700 font-bold"> (by {{ tx.released_by || tx.assigned_staff }})</span>
+                      }
+                    } @else {
+                      <span class="text-slate-400">-</span>
+                    }
+                  </span>
+                </div>
+                @if (tx.purpose) {
+                  <div class="sm:col-span-2">
+                    <span class="text-slate-400 font-medium block text-[10px]">Purpose</span>
+                    <span class="font-medium text-slate-800">{{ tx.purpose }}</span>
+                  </div>
+                }
+                @if (tx.remarks && tx.status_id !== 8) {
+                  <div class="sm:col-span-2">
+                    <span class="text-slate-400 font-medium block text-[10px]">Staff Remarks</span>
+                    <span class="font-medium text-slate-700">{{ tx.remarks }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Submitted Form Data (if present) -->
+            @if (tx.form_data && hasFormData(tx.form_data)) {
+              <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs space-y-2">
+                <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 pb-1 border-b border-slate-100">
+                  <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                  </svg>
+                  Submitted Document Form Details
+                </h4>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1">
+                  @for (field of getFormDataEntries(tx.form_data); track field.key) {
+                    <div class="p-2 bg-slate-50 rounded-lg border border-slate-100 flex justify-between gap-2">
+                      <span class="text-slate-500 font-medium">{{ field.label }}:</span>
+                      <span class="font-bold text-slate-900 text-right">{{ field.value }}</span>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Status History Logs / Audit Trail -->
+            <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs space-y-3">
+              <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 pb-1 border-b border-slate-100">
+                <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Status History Audit Trail
+              </h4>
+              @if (transactionLoadingDetail()) {
+                <div class="py-4 text-center text-xs text-slate-400">Loading audit history...</div>
+              } @else if (tx.history && tx.history.length > 0) {
+                <ol class="border-l-2 border-orange-200 space-y-3 pl-4 ml-2">
+                  @for (entry of tx.history; track entry.history_id) {
+                    <li class="text-xs relative">
+                      <span class="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-orange-600 ring-4 ring-white"></span>
+                      <div class="flex items-center gap-2">
+                        <span class="font-bold text-slate-900">{{ entry.status_name }}</span>
+                        <span class="text-[11px] text-slate-400">{{ entry.changed_at | date:'MMM d, y, h:mm a' }}</span>
+                      </div>
+                      <p class="text-xs text-slate-600 mt-0.5">
+                        <span class="font-medium text-slate-700">{{ entry.changed_by_name || 'System / Staff' }}</span>
+                        @if (entry.remarks) {
+                          <span class="text-slate-500 font-normal"> — {{ entry.remarks }}</span>
+                        }
+                      </p>
+                    </li>
+                  }
+                </ol>
+              } @else {
+                <p class="text-xs text-slate-400 italic">No transition history records available.</p>
+              }
+            </div>
+
+            <div class="flex justify-end pt-2 border-t border-slate-100">
+              <app-button variant="secondary" (onClick)="closeTransactionModal()">Close</app-button>
             </div>
           </div>
         }
@@ -536,6 +877,10 @@ export class ResidentsComponent implements OnInit, OnDestroy {
   residentRfidCards = signal<any[]>([]);
   residentRequests = signal<any[]>([]);
   residentApplications = signal<any[]>([]);
+  historyLoading = signal(false);
+  selectedTransaction = signal<any | null>(null);
+  showTransactionModal = signal(false);
+  transactionLoadingDetail = signal(false);
   newCardUid = '';
   private ws: WebSocket | null = null;
   private sseSubscription: Subscription | null = null;
@@ -1047,9 +1392,15 @@ export class ResidentsComponent implements OnInit, OnDestroy {
   }
 
   loadResidentHistory(res: Resident) {
-    this.requestService.getAll({ residentId: res.resident_id }).subscribe({
+    this.historyLoading.set(true);
+    this.requestService.getAll({ residentId: res.resident_id, limit: 100, sortBy: 'request_id', sortOrder: 'DESC' }).subscribe({
       next: (reqRes) => {
         this.residentRequests.set(reqRes.data || []);
+        this.historyLoading.set(false);
+      },
+      error: () => {
+        this.residentRequests.set([]);
+        this.historyLoading.set(false);
       }
     });
     this.applicationService.getAll({ search: res.last_name }).subscribe({
@@ -1058,6 +1409,148 @@ export class ResidentsComponent implements OnInit, OnDestroy {
         this.residentApplications.set(apps);
       }
     });
+  }
+
+  openTransactionDetail(req: any) {
+    this.selectedTransaction.set(req);
+    this.showTransactionModal.set(true);
+    this.transactionLoadingDetail.set(true);
+    this.requestService.getById(req.request_id).subscribe({
+      next: (res) => {
+        if (res.data) {
+          this.selectedTransaction.set(res.data);
+        }
+        this.transactionLoadingDetail.set(false);
+      },
+      error: () => {
+        this.transactionLoadingDetail.set(false);
+      }
+    });
+  }
+
+  closeTransactionModal() {
+    this.showTransactionModal.set(false);
+    this.selectedTransaction.set(null);
+  }
+
+  getStatusBadgeClass(statusId: number): string {
+    switch (statusId) {
+      case 1:
+        return 'bg-blue-50 text-blue-800 border-blue-200';
+      case 2:
+        return 'bg-amber-50 text-amber-800 border-amber-200';
+      case 3:
+        return 'bg-indigo-50 text-indigo-800 border-indigo-200';
+      case 4:
+        return 'bg-purple-50 text-purple-800 border-purple-200';
+      case 5:
+        return 'bg-cyan-50 text-cyan-800 border-cyan-200';
+      case 6:
+        return 'bg-emerald-50 text-emerald-800 border-emerald-200';
+      case 7:
+        return 'bg-teal-50 text-teal-800 border-teal-200';
+      case 8:
+        return 'bg-rose-50 text-rose-800 border-rose-200';
+      case 9:
+        return 'bg-slate-100 text-slate-700 border-slate-300';
+      case 10:
+        return 'bg-orange-50 text-orange-800 border-orange-200';
+      case 11:
+        return 'bg-blue-50 text-blue-800 border-blue-200';
+      default:
+        return 'bg-slate-50 text-slate-800 border-slate-200';
+    }
+  }
+
+  getStatusDotClass(statusId: number): string {
+    switch (statusId) {
+      case 1: return 'bg-blue-500';
+      case 2: return 'bg-amber-500';
+      case 3: return 'bg-indigo-500';
+      case 4: return 'bg-purple-500';
+      case 5: return 'bg-cyan-500';
+      case 6: return 'bg-emerald-500';
+      case 7: return 'bg-teal-500';
+      case 8: return 'bg-rose-500';
+      case 9: return 'bg-slate-400';
+      case 10: return 'bg-orange-500';
+      case 11: return 'bg-blue-500';
+      default: return 'bg-slate-400';
+    }
+  }
+
+  cleanRejectionReason(remarks: string | null | undefined): string {
+    if (!remarks) return 'No reason provided.';
+    return remarks.replace(/^Rejection reason:\s*/i, '').trim() || 'No reason provided.';
+  }
+
+  getMiniStepClass(currentStatusId: number, stepId: number): string {
+    if (currentStatusId === 8 || currentStatusId === 9) return 'text-slate-400';
+    const order = [1, 2, 3, 4, 5, 6, 7];
+    const currentIndex = order.indexOf(currentStatusId);
+    const stepIndex = order.indexOf(stepId);
+    if (currentStatusId === stepId) return 'text-orange-600 font-bold';
+    if (currentIndex >= stepIndex) return 'text-emerald-600 font-semibold';
+    return 'text-slate-400';
+  }
+
+  getFullStepperItemClass(currentStatusId: number, stepId: number): string {
+    if (currentStatusId === 8 || currentStatusId === 9) {
+      return 'bg-slate-50 border-slate-200 text-slate-400';
+    }
+    const order = [1, 2, 3, 4, 5, 6, 7];
+    const currentIndex = order.indexOf(currentStatusId);
+    const stepIndex = order.indexOf(stepId);
+    if (currentStatusId === stepId) {
+      return 'bg-orange-50 border-orange-300 text-orange-800 font-bold shadow-xs ring-2 ring-orange-200';
+    }
+    if (currentIndex >= stepIndex) {
+      return 'bg-emerald-50/60 border-emerald-200 text-emerald-800 font-semibold';
+    }
+    return 'bg-slate-50 border-slate-200 text-slate-400';
+  }
+
+  getFullStepperBadgeClass(currentStatusId: number, stepId: number): string {
+    if (currentStatusId === 8 || currentStatusId === 9) {
+      return 'bg-slate-200 text-slate-600';
+    }
+    const order = [1, 2, 3, 4, 5, 6, 7];
+    const currentIndex = order.indexOf(currentStatusId);
+    const stepIndex = order.indexOf(stepId);
+    if (currentStatusId === stepId) {
+      return 'bg-orange-600 text-white';
+    }
+    if (currentIndex >= stepIndex) {
+      return 'bg-emerald-600 text-white';
+    }
+    return 'bg-slate-200 text-slate-500';
+  }
+
+  hasFormData(formData: any): boolean {
+    if (!formData || typeof formData !== 'object') return false;
+    const keys = Object.keys(formData).filter(k => !k.startsWith('_'));
+    return keys.length > 0;
+  }
+
+  getFormDataEntries(formData: any): { key: string; label: string; value: string }[] {
+    if (!formData || typeof formData !== 'object') return [];
+    const entries: { key: string; label: string; value: string }[] = [];
+    for (const [key, val] of Object.entries(formData)) {
+      if (key.startsWith('_')) continue;
+      const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+      let displayVal = '-';
+      if (val !== null && val !== undefined && val !== '') {
+        if (typeof val === 'boolean') {
+          displayVal = val ? 'Yes' : 'No';
+        } else if (typeof val === 'object') {
+          displayVal = JSON.stringify(val);
+        } else {
+          displayVal = String(val);
+        }
+      }
+      entries.push({ key, label, value: displayVal });
+    }
+    return entries;
   }
 
   connectRfidScanner() {

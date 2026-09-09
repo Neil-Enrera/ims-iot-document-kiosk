@@ -8,7 +8,14 @@ const findAll = async ({ search, statusId, residentId, serviceId, dateFrom, date
       JSON_UNQUOTE(JSON_EXTRACT(rq.form_data, '$._guest.full_name'))
     ) AS resident_name,
     COALESCE(r.resident_code, 'GUEST') AS resident_code,
-    sta.assigned_staff
+    sta.assigned_staff,
+    COALESCE(rq.release_date, rel_staff.release_date_hist) AS release_date,
+    rel_staff.released_by,
+    IF(rq.status_id IN (4, 5, 6, 7), COALESCE(appr_info.approved_date, rq.reviewed_date), NULL) AS approved_date,
+    IF(rq.status_id IN (4, 5, 6, 7), appr_info.approved_by, NULL) AS approved_by,
+    IF(rq.status_id = 8, COALESCE(rej_info.rejected_date, rq.reviewed_date), NULL) AS rejected_date,
+    IF(rq.status_id = 8, rej_info.rejected_by, NULL) AS rejected_by,
+    IF(rq.status_id = 8, COALESCE(rq.remarks, rej_info.rejection_reason_hist), NULL) AS rejection_reason
     FROM requests rq
     JOIN request_statuses rs ON rq.status_id = rs.status_id
     JOIN services s ON rq.service_id = s.service_id
@@ -22,7 +29,40 @@ const findAll = async ({ search, statusId, residentId, serviceId, dateFrom, date
         FROM request_status_history
         GROUP BY request_id
       ) lm ON lm.max_history_id = h.history_id
-    ) sta ON sta.request_id = rq.request_id`;
+    ) sta ON sta.request_id = rq.request_id
+    LEFT JOIN (
+      SELECT h.request_id, CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) AS released_by, h.changed_at AS release_date_hist
+      FROM request_status_history h
+      JOIN users u ON h.changed_by = u.user_id
+      JOIN (
+        SELECT request_id, MAX(history_id) AS max_history_id
+        FROM request_status_history
+        WHERE new_status_id = 7
+        GROUP BY request_id
+      ) lm_rel ON lm_rel.max_history_id = h.history_id
+    ) rel_staff ON rel_staff.request_id = rq.request_id
+    LEFT JOIN (
+      SELECT h.request_id, CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) AS rejected_by, h.remarks AS rejection_reason_hist, h.changed_at AS rejected_date
+      FROM request_status_history h
+      JOIN users u ON h.changed_by = u.user_id
+      JOIN (
+        SELECT request_id, MAX(history_id) AS max_history_id
+        FROM request_status_history
+        WHERE new_status_id = 8
+        GROUP BY request_id
+      ) lm_rej ON lm_rej.max_history_id = h.history_id
+    ) rej_info ON rej_info.request_id = rq.request_id
+    LEFT JOIN (
+      SELECT h.request_id, CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) AS approved_by, h.changed_at AS approved_date
+      FROM request_status_history h
+      JOIN users u ON h.changed_by = u.user_id
+      JOIN (
+        SELECT request_id, MAX(history_id) AS max_history_id
+        FROM request_status_history
+        WHERE new_status_id IN (4, 5, 6)
+        GROUP BY request_id
+      ) lm_appr ON lm_appr.max_history_id = h.history_id
+    ) appr_info ON appr_info.request_id = rq.request_id`;
   let countQuery = 'SELECT COUNT(*) AS total FROM requests rq LEFT JOIN residents r ON rq.resident_id = r.resident_id JOIN services s ON rq.service_id = s.service_id';
   const conditions = [];
   const params = [];
@@ -115,7 +155,14 @@ const findById = async (requestId) => {
         JSON_UNQUOTE(JSON_EXTRACT(rq.form_data, '$._guest.full_name'))
       ) AS resident_name,
       COALESCE(r.resident_code, 'GUEST') AS resident_code, r.contact_number, r.email, r.address_line,
-      sta.assigned_staff
+      sta.assigned_staff,
+      COALESCE(rq.release_date, rel_staff.release_date_hist) AS release_date,
+      rel_staff.released_by,
+      IF(rq.status_id IN (4, 5, 6, 7), COALESCE(appr_info.approved_date, rq.reviewed_date), NULL) AS approved_date,
+      IF(rq.status_id IN (4, 5, 6, 7), appr_info.approved_by, NULL) AS approved_by,
+      IF(rq.status_id = 8, COALESCE(rej_info.rejected_date, rq.reviewed_date), NULL) AS rejected_date,
+      IF(rq.status_id = 8, rej_info.rejected_by, NULL) AS rejected_by,
+      IF(rq.status_id = 8, COALESCE(rq.remarks, rej_info.rejection_reason_hist), NULL) AS rejection_reason
       FROM requests rq
       JOIN request_statuses rs ON rq.status_id = rs.status_id
       JOIN services s ON rq.service_id = s.service_id
@@ -130,6 +177,39 @@ const findById = async (requestId) => {
           GROUP BY request_id
         ) lm ON lm.max_history_id = h.history_id
       ) sta ON sta.request_id = rq.request_id
+      LEFT JOIN (
+        SELECT h.request_id, CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) AS released_by, h.changed_at AS release_date_hist
+        FROM request_status_history h
+        JOIN users u ON h.changed_by = u.user_id
+        JOIN (
+          SELECT request_id, MAX(history_id) AS max_history_id
+          FROM request_status_history
+          WHERE new_status_id = 7
+          GROUP BY request_id
+        ) lm_rel ON lm_rel.max_history_id = h.history_id
+      ) rel_staff ON rel_staff.request_id = rq.request_id
+      LEFT JOIN (
+        SELECT h.request_id, CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) AS rejected_by, h.remarks AS rejection_reason_hist, h.changed_at AS rejected_date
+        FROM request_status_history h
+        JOIN users u ON h.changed_by = u.user_id
+        JOIN (
+          SELECT request_id, MAX(history_id) AS max_history_id
+          FROM request_status_history
+          WHERE new_status_id = 8
+          GROUP BY request_id
+        ) lm_rej ON lm_rej.max_history_id = h.history_id
+      ) rej_info ON rej_info.request_id = rq.request_id
+      LEFT JOIN (
+        SELECT h.request_id, CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) AS approved_by, h.changed_at AS approved_date
+        FROM request_status_history h
+        JOIN users u ON h.changed_by = u.user_id
+        JOIN (
+          SELECT request_id, MAX(history_id) AS max_history_id
+          FROM request_status_history
+          WHERE new_status_id IN (4, 5, 6)
+          GROUP BY request_id
+        ) lm_appr ON lm_appr.max_history_id = h.history_id
+      ) appr_info ON appr_info.request_id = rq.request_id
       WHERE rq.request_id = ?`,
     [requestId]
   );

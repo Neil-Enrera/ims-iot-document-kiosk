@@ -198,6 +198,12 @@ export interface DocumentRequest {
   resident_name: string;
   resident_code: string;
   assigned_staff: string | null;
+  released_by?: string | null;
+  approved_date?: string | null;
+  approved_by?: string | null;
+  rejected_date?: string | null;
+  rejected_by?: string | null;
+  rejection_reason?: string | null;
   history?: RequestStatusHistory[];
 }
 
