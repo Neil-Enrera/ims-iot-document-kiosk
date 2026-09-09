@@ -87,6 +87,27 @@ export interface RfidCard {
   middle_name?: string | null;
   last_name?: string;
   suffix?: string | null;
+  birth_date?: string | null;
+  birth_place?: string | null;
+  gender?: string | null;
+  civil_status?: string | null;
+  occupation?: string | null;
+  blood_type?: string | null;
+  contact_number?: string | null;
+  email?: string | null;
+  address_line?: string;
+  house_number?: string | null;
+  street?: string | null;
+  subdivision?: string | null;
+  block?: string | null;
+  lot?: string | null;
+  purok_zone?: string | null;
+  sitio?: string | null;
+  emergency_contact_name?: string | null;
+  emergency_contact_number?: string | null;
+  photo?: string | null;
+  resident_status?: string;
+  resident_created_at?: string;
   card_uid?: string | null;
   status?: string | null;
   card_status?: string | null;
@@ -95,6 +116,7 @@ export interface RfidCard {
   expiration_date?: string | null;
   created_at?: string;
   resident_name?: string;
+  _modalPhotoError?: boolean;
 }
 
 export type FormFieldType =

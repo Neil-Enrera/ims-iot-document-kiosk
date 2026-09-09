@@ -10,7 +10,14 @@ const findAll = async ({ search, status, residentId, resident_id, page = 1, limi
   const countParams = [];
 
   if (targetResidentId) {
-    query = 'SELECT rc.*, r.first_name, r.middle_name, r.last_name, r.suffix, r.resident_code FROM rfid_cards rc JOIN residents r ON rc.resident_id = r.resident_id';
+    query = `
+      SELECT rc.*, r.first_name, r.middle_name, r.last_name, r.suffix, r.resident_code,
+             r.birth_date, r.birth_place, r.gender, r.civil_status, r.occupation, r.blood_type,
+             r.contact_number, r.email, r.address_line, r.house_number, r.street, r.subdivision,
+             r.block, r.lot, r.purok_zone, r.sitio, r.emergency_contact_name, r.emergency_contact_number,
+             r.photo, r.status AS resident_status, r.created_at AS resident_created_at
+      FROM rfid_cards rc JOIN residents r ON rc.resident_id = r.resident_id
+    `;
     countQuery = 'SELECT COUNT(*) AS total FROM rfid_cards rc JOIN residents r ON rc.resident_id = r.resident_id';
     conditions.push('rc.resident_id = ?');
     params.push(targetResidentId);
@@ -24,8 +31,27 @@ const findAll = async ({ search, status, residentId, resident_id, page = 1, limi
         r.middle_name,
         r.last_name,
         r.suffix,
+        r.birth_date,
+        r.birth_place,
+        r.gender,
+        r.civil_status,
+        r.occupation,
+        r.blood_type,
         r.contact_number,
+        r.email,
+        r.address_line,
+        r.house_number,
+        r.street,
+        r.subdivision,
+        r.block,
+        r.lot,
+        r.purok_zone,
+        r.sitio,
+        r.emergency_contact_name,
+        r.emergency_contact_number,
+        r.photo,
         r.status AS resident_status,
+        r.created_at AS resident_created_at,
         rc.rfid_card_id,
         rc.card_uid,
         rc.status AS card_status,
@@ -147,7 +173,12 @@ const findAll = async ({ search, status, residentId, resident_id, page = 1, limi
 
 const findById = async (rfidCardId) => {
   const [rows] = await pool.query(
-    'SELECT rc.*, r.first_name, r.last_name, r.resident_code FROM rfid_cards rc JOIN residents r ON rc.resident_id = r.resident_id WHERE rc.rfid_card_id = ?',
+    `SELECT rc.*, r.first_name, r.middle_name, r.last_name, r.suffix, r.resident_code,
+            r.birth_date, r.birth_place, r.gender, r.civil_status, r.occupation, r.blood_type,
+            r.contact_number, r.email, r.address_line, r.house_number, r.street, r.subdivision,
+            r.block, r.lot, r.purok_zone, r.sitio, r.emergency_contact_name, r.emergency_contact_number,
+            r.photo, r.status AS resident_status, r.created_at AS resident_created_at
+     FROM rfid_cards rc JOIN residents r ON rc.resident_id = r.resident_id WHERE rc.rfid_card_id = ?`,
     [rfidCardId]
   );
   return rows[0] || null;
