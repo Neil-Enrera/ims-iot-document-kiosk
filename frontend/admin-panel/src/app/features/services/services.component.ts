@@ -86,13 +86,15 @@ import { ServiceFormComponent } from './service-form.component';
 
       <!-- Create/Edit Modal -->
       <app-modal [open]="showForm()" [title]="editingService() ? 'Edit Service' : 'Add Service'" (onClose)="closeForm()" containerClass="max-w-4xl">
-        <app-service-form
-          [service]="editingService()"
-          [loading]="saving()"
-          (onSave)="onSave($event)"
-          (onDelete)="onDeleteFromModal($event)"
-          (onCancel)="closeForm()"
-        />
+        @if (showForm()) {
+          <app-service-form
+            [service]="editingService()"
+            [loading]="saving()"
+            (onSave)="onSave($event)"
+            (onDelete)="onDeleteFromModal($event)"
+            (onCancel)="closeForm()"
+          />
+        }
       </app-modal>
 
       <!-- Delete Confirmation -->

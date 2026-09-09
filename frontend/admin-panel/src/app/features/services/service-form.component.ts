@@ -531,9 +531,37 @@ export class ServiceFormComponent implements OnChanges, OnInit {
     }
   }
 
+  resetForm() {
+    this.editMode = false;
+    this.serverError = '';
+    this.errors = {};
+    this.form = {
+      serviceName: '',
+      description: '',
+      processingFee: '0',
+      requiresPhoto: false,
+      isActive: true,
+      requirementsText: '',
+      formFields: [],
+      documentMappings: []
+    };
+    this.templateFile = null;
+    this.templateRemove = false;
+    this.scanningPlaceholders = false;
+    this.placeholderScanError = '';
+    this.showTemplatePreview = false;
+    this.templatePreviewBlob = null;
+    this.templatePreviewTitle = '';
+    this.detectedPlaceholders = [];
+    this.detectedKnown = [];
+    this.detectedUnknown = [];
+  }
+
   ngOnChanges() {
     if (this.service) {
       this.editMode = true;
+      this.serverError = '';
+      this.errors = {};
       this.form = {
         serviceName: this.service.service_name || '',
         description: this.service.description || '',
@@ -553,11 +581,19 @@ export class ServiceFormComponent implements OnChanges, OnInit {
           field: m.field
         }))
       };
+      this.templateFile = null;
+      this.templateRemove = false;
+      this.scanningPlaceholders = false;
+      this.placeholderScanError = '';
+      this.showTemplatePreview = false;
+      this.templatePreviewBlob = null;
+      this.templatePreviewTitle = '';
+      this.detectedPlaceholders = [];
+      this.detectedKnown = [];
+      this.detectedUnknown = [];
+    } else {
+      this.resetForm();
     }
-    this.templateFile = null;
-    this.templateRemove = false;
-    this.scanningPlaceholders = false;
-    this.placeholderScanError = '';
   }
 
   // ---- Template helpers ----
