@@ -76,7 +76,7 @@ export interface StatusDisplayRequest {
       </div>
     } @else {
       <!-- ================= AUTHORIZED STATUS DISPLAY BOARD (LANDSCAPE-OPTIMIZED) ================= -->
-      <div class="min-h-screen w-full bg-[#f4f6f9] text-slate-900 flex flex-col justify-between font-sans selection:bg-orange-500 selection:text-white p-3 sm:p-5 lg:p-6 gap-3 sm:gap-4">
+      <div class="h-screen w-full bg-[#f4f6f9] text-slate-900 flex flex-col font-sans selection:bg-orange-500 selection:text-white p-3 sm:p-5 lg:p-6 gap-3 sm:gap-4 overflow-hidden">
         
         <!-- ================= TOP HEADER ================= -->
         <header class="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/80 shadow-xs px-5 sm:px-7 py-3 sm:py-4 flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0">
@@ -237,7 +237,7 @@ export interface StatusDisplayRequest {
               </div>
             </div>
 
-            <!-- Panel Content: Landscape Ready Items & Instructions -->
+            <!-- Panel Content: Landscape Ready Items -->
             <div class="flex-1 p-3.5 sm:p-5 overflow-y-auto bg-gradient-to-b from-[#f0fdf4] to-[#ffffff] space-y-3 relative z-10">
               @if (readyForRelease().length === 0) {
                 <div class="h-full min-h-[220px] flex flex-col items-center justify-center p-6 text-center bg-white/80 rounded-2xl border border-dashed border-emerald-200">
@@ -292,37 +292,6 @@ export interface StatusDisplayRequest {
 
                   </div>
                 }
-
-                <!-- Action / Guidance Callout Box -->
-                <div class="bg-white/90 border border-emerald-200/80 rounded-2xl p-4 shadow-2xs grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
-                  <!-- Status Details -->
-                  <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-                        <circle cx="12" cy="12" r="9"/>
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 7v5l3 3"/>
-                      </svg>
-                    </div>
-                    <div class="min-w-0">
-                      <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Status</p>
-                      <p class="text-sm font-black text-emerald-700 uppercase">APPROVED</p>
-                      <p class="text-[11px] font-semibold text-slate-500">{{ formatRequestTime(readyForRelease()[0]) }}</p>
-                    </div>
-                  </div>
-
-                  <!-- Action Instruction -->
-                  <div class="flex items-center gap-3 sm:border-l sm:border-slate-200 sm:pl-3">
-                    <div class="w-9 h-9 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                      </svg>
-                    </div>
-                    <p class="text-xs font-bold text-slate-700 leading-snug">
-                      Please proceed to the Releasing Counter and present your valid ID or Claim Slip.
-                    </p>
-                  </div>
-                </div>
               }
             </div>
 
@@ -335,93 +304,6 @@ export interface StatusDisplayRequest {
           </section>
 
         </main>
-
-        <!-- ================= REMINDER TO RESIDENTS CARD ================= -->
-        <div class="bg-white border border-slate-200/90 rounded-2xl p-3.5 sm:p-4 shadow-xs flex items-center justify-between gap-4 shrink-0">
-          <div class="flex items-center gap-3.5 min-w-0">
-            <div class="w-10 h-10 rounded-full bg-[#ea580c] text-white flex items-center justify-center shrink-0 shadow-2xs">
-              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
-              </svg>
-            </div>
-            <div class="min-w-0">
-              <p class="text-xs font-black uppercase tracking-wider text-[#ea580c]">
-                REMINDER TO RESIDENTS:
-              </p>
-              <p class="text-xs sm:text-sm font-semibold text-slate-700 leading-snug">
-                Please prepare your valid ID or Claim Slip when claiming documents at the releasing counter. If your number is not listed, your request is in queue.
-              </p>
-            </div>
-          </div>
-          <!-- Community Outline Icon -->
-          <div class="hidden md:flex text-orange-300 shrink-0 pr-2">
-            <svg class="w-10 h-10" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-            </svg>
-          </div>
-        </div>
-
-        <!-- ================= BOTTOM INFO BAR ================= -->
-        <footer class="bg-white border border-slate-200/90 rounded-2xl px-4 sm:px-6 py-3 shadow-xs flex flex-wrap items-center justify-between gap-4 text-xs font-semibold text-slate-600 shrink-0">
-          
-          <!-- 1. Privacy Notice -->
-          <div class="flex items-center gap-2">
-            <div class="w-6 h-6 rounded-md bg-orange-50 text-[#ea580c] flex items-center justify-center shrink-0">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-              </svg>
-            </div>
-            <span>For your privacy, only request numbers are displayed.</span>
-          </div>
-
-          <!-- 2. Need Assistance -->
-          <div class="flex items-center gap-2">
-            <div class="w-6 h-6 rounded-full bg-orange-50 text-[#ea580c] flex items-center justify-center shrink-0">
-              <span class="font-black text-xs">?</span>
-            </div>
-            <span><strong>Need Assistance?</strong> Please approach the Barangay Staff.</span>
-          </div>
-
-          <!-- 3. Office Hours -->
-          <div class="flex items-center gap-2">
-            <div class="w-6 h-6 rounded-full bg-orange-50 text-[#ea580c] flex items-center justify-center shrink-0">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="9"/>
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 7v5l3 3"/>
-              </svg>
-            </div>
-            <div>
-              <p class="font-bold text-slate-800">Office Hours</p>
-              <p class="text-[11px] text-slate-500 font-medium">Monday &ndash; Friday 8:00 AM &ndash; 5:00 PM</p>
-            </div>
-          </div>
-
-          <!-- 4. Live Date & Time -->
-          <div class="flex items-center gap-2">
-            <div class="w-6 h-6 rounded-md bg-orange-50 text-[#ea580c] flex items-center justify-center shrink-0">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-              </svg>
-            </div>
-            <div>
-              <p class="text-[11px] text-slate-500 font-medium">{{ now() | date: 'EEEE, MMMM d, yyyy' }}</p>
-              <p class="font-black text-[#ea580c] text-sm tabular-nums">{{ now() | date: 'hh:mm:ss a' }}</p>
-            </div>
-          </div>
-
-          <!-- 5. Manual Refresh Action -->
-          <button
-            type="button"
-            (click)="refreshManual()"
-            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 hover:border-orange-400 hover:text-orange-600 bg-slate-50 hover:bg-orange-50 text-slate-700 font-bold transition shadow-2xs active:scale-95 cursor-pointer"
-          >
-            <svg class="w-3.5 h-3.5 shrink-0" [class.animate-spin]="loading()" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-            </svg>
-            <span>Refresh</span>
-          </button>
-
-        </footer>
 
       </div>
     }
