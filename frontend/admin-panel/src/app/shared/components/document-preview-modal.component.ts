@@ -21,23 +21,63 @@ import { renderAsync } from 'docx-preview';
               <h3 class="text-lg font-bold text-gray-800 truncate">{{ title }}</h3>
               <p class="text-xs text-gray-500 truncate">Scroll to review all pages. Use the controls to adjust the size.</p>
             </div>
-            <div class="flex items-center gap-2 shrink-0" role="toolbar" aria-label="Document zoom controls">
+            <div class="flex items-center gap-2 shrink-0 flex-wrap" role="toolbar" aria-label="Document controls">
+              <!-- Download Formats & Print -->
+              <button
+                type="button"
+                (click)="downloadDocx()"
+                [disabled]="rendering() || (!blob && !blobUrl)"
+                title="Download as Word DOCX document"
+                class="h-9 px-3 flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 text-blue-700 text-xs font-bold hover:bg-blue-100 disabled:opacity-40 transition cursor-pointer">
+                <svg class="w-4 h-4 text-blue-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                </svg>
+                <span>DOCX</span>
+              </button>
+
+              <button
+                type="button"
+                (click)="downloadPdf()"
+                [disabled]="rendering() || (!blob && !blobUrl)"
+                title="Download as PDF / Save as PDF"
+                class="h-9 px-3 flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-xs font-bold hover:bg-rose-100 disabled:opacity-40 transition cursor-pointer">
+                <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <span>PDF</span>
+              </button>
+
+              <button
+                type="button"
+                (click)="print()"
+                [disabled]="rendering() || (!blob && !blobUrl)"
+                title="Print document"
+                class="h-9 px-3 flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white text-slate-700 text-xs font-semibold hover:bg-slate-100 disabled:opacity-40 transition cursor-pointer">
+                <svg class="w-4 h-4 text-slate-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4H7v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                </svg>
+                <span>Print</span>
+              </button>
+
+              <div class="h-5 w-px bg-slate-200 mx-1 hidden sm:block"></div>
+
+              <!-- Zoom Controls -->
               <button
                 type="button"
                 (click)="zoomOut()"
                 title="Zoom out"
                 aria-label="Zoom out"
-                class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-300 text-gray-700 text-lg font-semibold bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-40 disabled:cursor-not-allowed"
+                class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-300 text-gray-700 text-lg font-semibold bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                 [disabled]="zoom() <= MIN_ZOOM">
                 −
               </button>
-              <span class="w-14 text-center text-sm font-semibold text-gray-700 tabular-nums">{{ zoomPercent() }}</span>
+              <span class="w-12 text-center text-xs font-semibold text-gray-700 tabular-nums">{{ zoomPercent() }}</span>
               <button
                 type="button"
                 (click)="zoomIn()"
                 title="Zoom in"
                 aria-label="Zoom in"
-                class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-300 text-gray-700 text-lg font-semibold bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-40 disabled:cursor-not-allowed"
+                class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-300 text-gray-700 text-lg font-semibold bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                 [disabled]="zoom() >= MAX_ZOOM">
                 +
               </button>
@@ -46,13 +86,13 @@ import { renderAsync } from 'docx-preview';
                 (click)="resetZoom()"
                 title="Fit document to width"
                 aria-label="Fit document to width"
-                class="h-9 px-3 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                class="h-9 px-3 rounded-lg border border-gray-300 text-xs font-medium text-gray-700 bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
                 Fit Width
               </button>
               <button
                 type="button"
                 (click)="close()"
-                class="ml-2 w-9 h-9 flex items-center justify-center rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                class="ml-1 w-9 h-9 flex items-center justify-center rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 cursor-pointer"
                 aria-label="Close">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -142,6 +182,92 @@ export class DocumentPreviewModalComponent implements AfterViewChecked, OnChange
     this.renderedKey = null;
     this.resetZoomState();
     this.onClose.emit();
+  }
+
+  downloadDocx() {
+    if (!this.blob && !this.blobUrl) return;
+    this.loadBlob().then(b => {
+      const url = URL.createObjectURL(b);
+      const a = document.createElement('a');
+      a.href = url;
+      const baseName = (this.title || 'document').replace(/\.[^/.]+$/, '');
+      a.download = `${baseName}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+  }
+
+  downloadPdf() {
+    if (!this.blob && !this.blobUrl) return;
+    this.loadBlob().then(b => {
+      if (b.type === 'application/pdf') {
+        const url = URL.createObjectURL(b);
+        const a = document.createElement('a');
+        a.href = url;
+        const baseName = (this.title || 'document').replace(/\.[^/.]+$/, '');
+        a.download = `${baseName}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } else {
+        // Trigger high-fidelity print / save as PDF
+        this.print();
+      }
+    });
+  }
+
+  print() {
+    const container = this.container?.nativeElement;
+    if (!container) return;
+
+    const iframe = container.querySelector('iframe');
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+      return;
+    }
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const styleTags = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
+      .map(node => node.outerHTML)
+      .join('\n');
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${this.title || 'Document'}</title>
+          ${styleTags}
+          <style>
+            @media print {
+              @page { margin: 10mm; size: auto; }
+              body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+              .docx-preview-container { box-shadow: none !important; margin: 0 auto; width: 100% !important; }
+            }
+            body { margin: 0; padding: 10mm; background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .docx-preview-container { box-shadow: none !important; margin: 0 auto; width: 100% !important; }
+          </style>
+        </head>
+        <body>
+          <div class="docx-preview-container">
+            ${container.innerHTML}
+          </div>
+          <script>
+            window.onload = function() {
+              window.focus();
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   }
 
   zoomPercent(): string {

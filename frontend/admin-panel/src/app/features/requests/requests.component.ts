@@ -560,9 +560,18 @@ interface StatusOption {
                         }
                       </div>
 
-                      <div class="flex items-center gap-3 border-t border-slate-200 pt-2 text-xs">
+                      <div class="flex items-center flex-wrap gap-2 sm:gap-3 border-t border-slate-200 pt-2 text-xs">
                         <button type="button" (click)="previewDocument(doc)" class="text-orange-600 font-bold hover:underline cursor-pointer">Preview</button>
-                        <button type="button" (click)="downloadDocument(doc)" [disabled]="doc.approval_status !== 'approved'" class="text-slate-700 font-semibold hover:underline disabled:opacity-40 cursor-pointer">Download</button>
+                        <span class="text-slate-300">|</span>
+                        <button type="button" (click)="downloadDocumentDocx(doc)" [disabled]="doc.approval_status !== 'approved'" title="Download Word DOCX" class="text-slate-700 font-semibold hover:text-blue-600 hover:underline disabled:opacity-40 cursor-pointer flex items-center gap-1">
+                          <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                          <span>DOCX</span>
+                        </button>
+                        <button type="button" (click)="downloadDocumentPdf(doc)" [disabled]="doc.approval_status !== 'approved'" title="Download PDF" class="text-slate-700 font-semibold hover:text-rose-600 hover:underline disabled:opacity-40 cursor-pointer flex items-center gap-1">
+                          <svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                          <span>PDF</span>
+                        </button>
+                        <span class="text-slate-300">|</span>
                         <button type="button" (click)="printDocument(doc)" [disabled]="doc.approval_status !== 'approved'" class="text-slate-700 font-semibold hover:underline disabled:opacity-40 cursor-pointer">Print</button>
                         
                         @if (doc.approval_status === 'pending') {
@@ -1713,6 +1722,10 @@ export class RequestsComponent implements OnInit, OnDestroy {
   }
 
   downloadDocument(doc: GeneratedDocument) {
+    this.downloadDocumentDocx(doc);
+  }
+
+  downloadDocumentDocx(doc: GeneratedDocument) {
     const request = this.selectedRequest();
     if (!request) return;
     this.documentService.fetchBlob(request.request_id, doc.document_id).subscribe({
@@ -1720,20 +1733,52 @@ export class RequestsComponent implements OnInit, OnDestroy {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = doc.file_name;
+        const baseName = (doc.file_name || 'document').replace(/\.[^/.]+$/, '');
+        a.download = `${baseName}.docx`;
         document.body.appendChild(a);
         a.click();
         a.remove();
         URL.revokeObjectURL(url);
       },
       error: () => {
-        this.docError.set('Could not download the document.');
+        this.docError.set('Could not download the DOCX document.');
+      }
+    });
+  }
+
+  downloadDocumentPdf(doc: GeneratedDocument) {
+    const request = this.selectedRequest();
+    if (!request) return;
+    
+    // Check if there is an existing PDF document registered in the request's artifacts
+    const pdfDoc = this.documents().find(d => d.file_type === 'application/pdf' || d.file_name?.toLowerCase().endsWith('.pdf'));
+    const targetDoc = pdfDoc || doc;
+
+    this.documentService.fetchBlob(request.request_id, targetDoc.document_id).subscribe({
+      next: (blob) => {
+        if (blob.type === 'application/pdf' || targetDoc.file_type === 'application/pdf') {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          const baseName = (targetDoc.file_name || 'document').replace(/\.[^/.]+$/, '');
+          a.download = `${baseName}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+        } else {
+          // Open preview modal so admin can view and print / save as PDF
+          this.previewDocument(doc);
+        }
+      },
+      error: () => {
+        this.docError.set('Could not download the PDF document.');
       }
     });
   }
 
   printDocument(doc: GeneratedDocument) {
-    this.openDocument(doc);
+    this.previewDocument(doc);
   }
 
   // --- Document Preview Modal State ---
