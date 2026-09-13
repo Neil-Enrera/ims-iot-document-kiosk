@@ -86,6 +86,10 @@ export class RfidService {
     return this.api.post<any>('/rfid/verify', { rfidUid });
   }
 
+  getByUid(rfidUid: string) {
+    return this.api.get<any>(`/rfid/uid/${encodeURIComponent(rfidUid)}`);
+  }
+
   updateStatus(id: number, status: string) {
     return this.api.patch(`/rfid/${id}/status`, { status });
   }

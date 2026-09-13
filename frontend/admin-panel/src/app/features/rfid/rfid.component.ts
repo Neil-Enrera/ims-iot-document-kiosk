@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, HostListener } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DatePipe, CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -215,15 +215,57 @@ import { environment } from '../../../environments/environment';
                   </p>
 
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label class="block text-xs font-bold text-slate-700 mb-1">Card UID <span class="text-rose-500">*</span></label>
-                      <input
-                        type="text"
-                        [value]="regCardUid()"
-                        (input)="regCardUid.set($any($event.target).value)"
-                        placeholder="e.g. 04A1B2C3D4"
-                        class="w-full h-10 px-3 border border-slate-300 rounded-lg text-sm font-mono text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 shadow-2xs"
-                      />
+                    <div class="space-y-1">
+                      <div class="flex items-center justify-between">
+                        <label class="block text-xs font-bold text-slate-700">
+                          Card UID <span class="text-rose-500">*</span>
+                        </label>
+                        @if (scanDetected()) {
+                          <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 animate-pulse">
+                            <svg class="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                            Auto-detected via USB Reader
+                          </span>
+                        } @else {
+                          <span class="text-[11px] text-slate-400 font-medium flex items-center gap-1">
+                            <svg class="w-3 h-3 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+                            Tap card or type UID
+                          </span>
+                        }
+                      </div>
+                      <div class="relative">
+                        <input
+                          type="text"
+                          [value]="regCardUid()"
+                          (input)="onCardUidInput($any($event.target).value)"
+                          placeholder="e.g. 04A1B2C3D4"
+                          [class]="'w-full h-10 px-3 pr-9 border rounded-lg text-sm font-mono text-slate-900 bg-white focus:outline-none focus:ring-2 shadow-2xs transition ' + (uidStatus()?.type === 'duplicate' ? 'border-rose-400 focus:ring-rose-500 bg-rose-50/20' : (uidStatus()?.type === 'available' ? 'border-emerald-400 focus:ring-emerald-500 bg-emerald-50/20' : 'border-slate-300 focus:ring-orange-500'))"
+                        />
+                        @if (uidChecking()) {
+                          <div class="absolute right-3 top-3">
+                            <div class="w-4 h-4 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+                          </div>
+                        } @else if (uidStatus()?.type === 'available') {
+                          <div class="absolute right-3 top-2.5 text-emerald-600" title="Card UID is available">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                          </div>
+                        } @else if (uidStatus()?.type === 'duplicate') {
+                          <div class="absolute right-3 top-2.5 text-rose-500" title="Card UID already registered">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                          </div>
+                        }
+                      </div>
+
+                      @if (uidStatus()?.type === 'available') {
+                        <p class="text-[11px] text-emerald-700 font-semibold flex items-center gap-1 mt-1">
+                          <svg class="w-3 h-3 text-emerald-600 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                          {{ uidStatus()?.message }}
+                        </p>
+                      } @else if (uidStatus()?.type === 'duplicate') {
+                        <p class="text-[11px] text-rose-600 font-semibold flex items-center gap-1 mt-1">
+                          <svg class="w-3 h-3 text-rose-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                          {{ uidStatus()?.message }}
+                        </p>
+                      }
                     </div>
                     <div>
                       <label class="block text-xs font-bold text-slate-700 mb-1">Expiration Date <span class="text-slate-400 font-normal">(Default 3 Years, Editable)</span></label>
@@ -236,7 +278,7 @@ import { environment } from '../../../environments/environment';
                     </div>
                   </div>
 
-                  @if (regError()) {
+                  @if (regError() && uidStatus()?.type !== 'duplicate') {
                     <p class="text-xs text-rose-600 font-medium flex items-center gap-1">
                       <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                       {{ regError() }}
@@ -388,6 +430,17 @@ export class RfidComponent implements OnInit, OnDestroy {
   registering = signal(false);
   updating = signal(false);
 
+  // USB RFID Reader scanner detection & duplicate validation state
+  scanDetected = signal(false);
+  uidChecking = signal(false);
+  uidStatus = signal<{ type: 'available' | 'duplicate' | 'invalid' | 'self'; message: string } | null>(null);
+
+  private uidCheckTimer: any = null;
+  private scanDetectedTimer: any = null;
+  private scanBuffer: string = '';
+  private lastKeyTime: number = 0;
+  private readonly MAX_KEY_INTERVAL_MS = 65;
+
   columns: TableColumn[] = [
     { key: 'resident_name', label: 'Resident Name', sortable: true },
     { key: 'card_uid', label: 'Card UID', sortable: true },
@@ -510,6 +563,11 @@ export class RfidComponent implements OnInit, OnDestroy {
     this.regCardUid.set('');
     this.regExpirationDate.set(this.computeDefaultExpiry());
     this.regError.set('');
+    this.scanDetected.set(false);
+    this.uidStatus.set(null);
+    this.uidChecking.set(false);
+    this.scanBuffer = '';
+    this.lastKeyTime = 0;
     this.showModal.set(true);
 
     // If card has incomplete resident fields, enrich via residentService
@@ -564,6 +622,128 @@ export class RfidComponent implements OnInit, OnDestroy {
     this.regCardUid.set('');
     this.regExpirationDate.set(this.computeDefaultExpiry());
     this.regError.set('');
+    this.scanDetected.set(false);
+    this.uidStatus.set(null);
+    this.uidChecking.set(false);
+    this.scanBuffer = '';
+    this.lastKeyTime = 0;
+  }
+
+  @HostListener('window:keydown', ['$event'])
+  onWindowKeyDown(event: KeyboardEvent) {
+    if (!this.showModal()) return;
+    const res = this.selectedResident();
+    if (!res || this.isRegistered(res)) return;
+
+    const currentTime = Date.now();
+    const key = event.key;
+
+    // Enter key signals end of USB RFID scanner burst
+    if (key === 'Enter') {
+      const buffer = this.scanBuffer.trim();
+      const timeSinceLastKey = currentTime - this.lastKeyTime;
+
+      // Check if we accumulated a fast scanner burst
+      // Most RFID cards have 4 to 32 hex/decimal chars and keys arrive < 65ms apart
+      if (buffer.length >= 4 && buffer.length <= 32 && timeSinceLastKey <= 150) {
+        event.preventDefault();
+        event.stopPropagation();
+        this.processScannedUid(buffer);
+      }
+      this.scanBuffer = '';
+      this.lastKeyTime = 0;
+      return;
+    }
+
+    // Ignore non-printable modifier/navigation keys
+    if (key.length !== 1) {
+      if (this.lastKeyTime > 0 && currentTime - this.lastKeyTime > this.MAX_KEY_INTERVAL_MS) {
+        this.scanBuffer = '';
+        this.lastKeyTime = 0;
+      }
+      return;
+    }
+
+    // Check interval from previous character
+    if (this.lastKeyTime > 0 && (currentTime - this.lastKeyTime) > this.MAX_KEY_INTERVAL_MS) {
+      // Human typing speed (> 65ms per key) -> reset buffer to start fresh with this key
+      this.scanBuffer = key;
+    } else {
+      this.scanBuffer += key;
+    }
+    this.lastKeyTime = currentTime;
+  }
+
+  processScannedUid(rawUid: string) {
+    const cleanUid = rawUid.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    if (!cleanUid) return;
+
+    this.regCardUid.set(cleanUid);
+    this.scanDetected.set(true);
+    if (this.scanDetectedTimer) clearTimeout(this.scanDetectedTimer);
+    this.scanDetectedTimer = setTimeout(() => this.scanDetected.set(false), 4000);
+
+    this.validateCardUid(cleanUid);
+  }
+
+  onCardUidInput(value: string) {
+    const clean = value.trim();
+    this.regCardUid.set(clean);
+    this.regError.set('');
+    if (this.uidCheckTimer) clearTimeout(this.uidCheckTimer);
+
+    if (!clean) {
+      this.uidStatus.set(null);
+      return;
+    }
+
+    this.uidCheckTimer = setTimeout(() => {
+      this.validateCardUid(clean);
+    }, 350);
+  }
+
+  validateCardUid(uid: string) {
+    const cleanUid = uid.trim();
+    if (!cleanUid) {
+      this.uidStatus.set(null);
+      return;
+    }
+    if (cleanUid.length < 4) {
+      this.uidStatus.set({ type: 'invalid', message: 'Card UID must be at least 4 characters.' });
+      return;
+    }
+
+    this.uidChecking.set(true);
+    this.rfidService.getByUid(cleanUid).subscribe({
+      next: (res) => {
+        this.uidChecking.set(false);
+        if (res?.data?.resident) {
+          const r = res.data.resident;
+          const resName = this.formatResidentName(r);
+          const resCode = r.resident_code || `RES-${r.resident_id}`;
+          const currentRes = this.selectedResident();
+          if (currentRes && currentRes.resident_id === r.resident_id) {
+            this.uidStatus.set({ type: 'self', message: 'This card is currently linked to this resident.' });
+            this.regError.set('');
+          } else {
+            this.uidStatus.set({ type: 'duplicate', message: `Already assigned to ${resName} (${resCode})` });
+            this.regError.set(`Card UID is already assigned to ${resName} (${resCode}). Please use a different card.`);
+          }
+        } else {
+          this.uidStatus.set({ type: 'available', message: 'Card UID is available for registration.' });
+          this.regError.set('');
+        }
+      },
+      error: (err) => {
+        this.uidChecking.set(false);
+        if (err.status === 404) {
+          this.uidStatus.set({ type: 'available', message: 'Card UID is available for registration.' });
+          this.regError.set('');
+        } else {
+          this.uidStatus.set(null);
+        }
+      }
+    });
   }
 
   isRegistered(res: RfidCard): boolean {
@@ -628,6 +808,11 @@ export class RfidComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (this.uidStatus()?.type === 'duplicate') {
+      this.regError.set(this.uidStatus()?.message || 'Cannot register: Card UID is already assigned to another resident.');
+      return;
+    }
+
     this.regError.set('');
     this.registering.set(true);
 
@@ -653,6 +838,8 @@ export class RfidComponent implements OnInit, OnDestroy {
           expiration_date: this.regExpirationDate() || null
         };
         this.selectedResident.set(updated);
+        this.uidStatus.set(null);
+        this.scanDetected.set(false);
         this.loadCards();
       },
       error: (err) => {
