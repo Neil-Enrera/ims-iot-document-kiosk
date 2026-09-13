@@ -170,9 +170,6 @@ import { environment } from '../../../environments/environment';
                   <h3 class="text-base font-bold text-slate-900 leading-snug">{{ formatResidentName(res) }}</h3>
                   <div class="flex flex-wrap items-center gap-2 mt-1">
                     <span class="px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-white border border-orange-200 text-orange-800">{{ res.resident_code || 'No Code' }}</span>
-                    <span [class]="'px-2 py-0.5 rounded-full text-[11px] font-bold border ' + (res.resident_status === 'ACTIVE' || res.resident_status === 'Active' || !res.resident_status ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-red-50 text-red-800 border-red-200')">
-                      {{ res.resident_status || 'Active' }}
-                    </span>
                     @if (isRegistered(res)) {
                       <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1">
                         <svg class="w-3 h-3 text-emerald-600 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
@@ -187,9 +184,14 @@ import { environment } from '../../../environments/environment';
                   </div>
                 </div>
               </div>
-              <div class="text-right">
-                <p class="text-[11px] text-slate-400 font-medium">Approved / Added</p>
-                <p class="text-xs font-semibold text-slate-700 mt-0.5">{{ (res.resident_created_at || res.created_at) | date:'MMM d, y' }}</p>
+              <div class="text-right flex flex-col items-end gap-1">
+                <span [class]="'px-2.5 py-0.5 rounded-full text-[11px] font-bold border ' + (res.resident_status === 'ACTIVE' || res.resident_status === 'Active' || !res.resident_status ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-red-50 text-red-800 border-red-200')">
+                  {{ res.resident_status || 'Active' }}
+                </span>
+                <div>
+                  <p class="text-[11px] text-slate-400 font-medium">Approved / Added</p>
+                  <p class="text-xs font-semibold text-slate-700 mt-0.5">{{ (res.resident_created_at || res.created_at) | date:'MMM d, y' }}</p>
+                </div>
               </div>
             </div>
 
@@ -347,9 +349,15 @@ import { environment } from '../../../environments/environment';
                   </div>
                 }
                 @if (res.emergency_contact_name || res.emergency_contact_number) {
-                  <div class="col-span-2 pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px]">
-                    <div><span class="text-slate-400 font-medium">Emergency Contact:</span> <strong class="text-slate-800">{{ res.emergency_contact_name || '-' }}</strong></div>
-                    <div><span class="text-slate-400 font-medium">Phone:</span> <strong class="text-slate-800">{{ res.emergency_contact_number || '-' }}</strong></div>
+                  <div class="col-span-2 pt-2 border-t border-slate-200/60 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                    <div class="flex items-center gap-1.5">
+                      <span class="text-slate-400 font-medium">Emergency Contact:</span>
+                      <strong class="text-slate-800">{{ res.emergency_contact_name || '-' }}</strong>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                      <span class="text-slate-400 font-medium">Phone:</span>
+                      <strong class="text-slate-800">{{ res.emergency_contact_number || '-' }}</strong>
+                    </div>
                   </div>
                 }
               </div>
