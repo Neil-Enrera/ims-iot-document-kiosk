@@ -156,41 +156,43 @@ import { environment } from '../../../environments/environment';
       <app-modal [open]="showModal()" title="Registration Card" (onClose)="closeModal()" containerClass="max-w-3xl">
         @if (selectedResident(); as res) {
           <div class="space-y-4">
-            <!-- Header Card (Matching Resident Profile style) -->
-            <div class="bg-gradient-to-r from-orange-50 to-orange-100/60 border border-orange-200 rounded-xl p-4 flex items-center justify-between">
-              <div class="flex items-center gap-4">
-                <div class="w-16 h-16 rounded-full bg-white border-2 border-orange-300 shadow-sm flex items-center justify-center text-orange-600 font-extrabold text-lg shrink-0 overflow-hidden">
+            <!-- Header Card -->
+            <div class="bg-[#fff9f3] border border-orange-200 rounded-2xl p-4 flex items-center justify-between">
+              <div class="flex items-center gap-3.5 min-w-0">
+                <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-slate-50 border-2 border-orange-500 p-0.5 shadow-xs flex items-center justify-center text-slate-400 shrink-0 overflow-hidden">
                   @if (res.photo && !res._modalPhotoError) {
-                    <img [src]="photoUrl(res.photo)" (error)="res._modalPhotoError = true" alt="Photo" class="w-full h-full object-cover">
+                    <img [src]="photoUrl(res.photo)" (error)="res._modalPhotoError = true" alt="Photo" class="w-full h-full object-cover rounded-full">
                   } @else {
-                    {{ getInitials(res) }}
+                    <svg class="w-8 h-8 sm:w-9 sm:h-9 text-slate-400" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                    </svg>
                   }
                 </div>
-                <div>
-                  <h3 class="text-base font-bold text-slate-900 leading-snug">{{ formatResidentName(res) }}</h3>
-                  <div class="flex flex-wrap items-center gap-2 mt-1">
-                    <span class="px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-white border border-orange-200 text-orange-800">{{ res.resident_code || 'No Code' }}</span>
+                <div class="min-w-0">
+                  <h3 class="text-base sm:text-lg font-extrabold text-slate-900 leading-snug truncate">{{ formatResidentName(res) }}</h3>
+                  <p class="font-bold text-slate-600 text-xs mt-0.5">{{ res.resident_code || 'No Code' }}</p>
+                  <div class="mt-0.5">
                     @if (isRegistered(res)) {
-                      <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1">
-                        <svg class="w-3 h-3 text-emerald-600 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-                        Card Registered
-                      </span>
+                      <span class="text-emerald-700 font-bold text-xs">Card Registered</span>
                     } @else {
-                      <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1">
-                        <svg class="w-3 h-3 text-amber-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                        Pending RFID Card
-                      </span>
+                      <span class="text-orange-600 font-bold text-xs">Pending Registration</span>
                     }
                   </div>
                 </div>
               </div>
-              <div class="text-right flex flex-col items-end gap-1">
-                <span [class]="'px-2.5 py-0.5 rounded-full text-[11px] font-bold border ' + (res.resident_status === 'ACTIVE' || res.resident_status === 'Active' || !res.resident_status ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-red-50 text-red-800 border-red-200')">
-                  {{ res.resident_status || 'Active' }}
+
+              <div class="text-right flex flex-col items-end gap-2 shrink-0 pl-4 border-l border-orange-200">
+                <span class="px-3 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-100/70 text-emerald-700 border border-emerald-200">
+                  {{ res.resident_status || 'ACTIVE' }}
                 </span>
-                <div>
-                  <p class="text-[11px] text-slate-400 font-medium">Approved / Added</p>
-                  <p class="text-xs font-semibold text-slate-700 mt-0.5">{{ (res.resident_created_at || res.created_at) | date:'MMM d, y' }}</p>
+                <div class="flex items-center gap-1.5 text-xs text-slate-500">
+                  <svg class="w-4 h-4 text-orange-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  </svg>
+                  <div class="text-left">
+                    <span class="text-[10px] text-slate-400 block leading-tight">Registered on</span>
+                    <span class="font-bold text-slate-700 text-xs leading-tight">{{ (res.resident_created_at || res.created_at) | date:'MMM d, y' }}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -336,7 +338,6 @@ import { environment } from '../../../environments/environment';
                 <div><span class="text-slate-400 font-medium block">Gender</span><span class="font-bold text-slate-800 capitalize">{{ res.gender || '-' }}</span></div>
                 <div><span class="text-slate-400 font-medium block">Civil Status</span><span class="font-bold text-slate-800 capitalize">{{ res.civil_status || '-' }}</span></div>
                 <div><span class="text-slate-400 font-medium block">Occupation</span><span class="font-bold text-slate-800">{{ res.occupation || '-' }}</span></div>
-                <div><span class="text-slate-400 font-medium block">Blood Type</span><span class="font-bold text-slate-800">{{ res.blood_type || '-' }}</span></div>
                 <div><span class="text-slate-400 font-medium block">Contact Number</span><span class="font-bold text-slate-800">{{ res.contact_number || '-' }}</span></div>
                 <div><span class="text-slate-400 font-medium block">Email</span><span class="font-bold text-slate-800">{{ res.email || '-' }}</span></div>
                 <div class="col-span-2"><span class="text-slate-400 font-medium block">Complete Address</span><span class="font-bold text-slate-800">{{ formatFullAddress(res) }}</span></div>
