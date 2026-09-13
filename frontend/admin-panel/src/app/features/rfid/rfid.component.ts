@@ -156,166 +156,110 @@ import { environment } from '../../../environments/environment';
       <app-modal [open]="showModal()" title="Registration Card" (onClose)="closeModal()" containerClass="max-w-3xl">
         @if (selectedResident(); as res) {
           <div class="space-y-4">
-            
-            <!-- Top Resident Summary Box -->
-            <div class="bg-gradient-to-r from-orange-50/70 via-orange-50/40 to-white border border-orange-200/90 rounded-2xl p-4 sm:p-4.5 flex items-center justify-between shadow-2xs">
-              <div class="flex items-center gap-4 min-w-0">
-                <div class="w-16 h-16 rounded-full bg-slate-100 border-2 border-orange-300 shadow-xs flex items-center justify-center text-slate-400 font-extrabold text-lg shrink-0 overflow-hidden">
+            <!-- Header Card (Matching Resident Profile style) -->
+            <div class="bg-gradient-to-r from-orange-50 to-orange-100/60 border border-orange-200 rounded-xl p-4 flex items-center justify-between">
+              <div class="flex items-center gap-4">
+                <div class="w-16 h-16 rounded-full bg-white border-2 border-orange-300 shadow-sm flex items-center justify-center text-orange-600 font-extrabold text-lg shrink-0 overflow-hidden">
                   @if (res.photo && !res._modalPhotoError) {
                     <img [src]="photoUrl(res.photo)" (error)="res._modalPhotoError = true" alt="Photo" class="w-full h-full object-cover">
                   } @else {
-                    <svg class="w-9 h-9 text-slate-400" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                    </svg>
+                    {{ getInitials(res) }}
                   }
                 </div>
-                <div class="min-w-0">
-                  <h3 class="text-lg sm:text-xl font-black text-slate-900 leading-snug truncate">{{ formatResidentName(res) }}</h3>
-                  <div class="flex items-center gap-2 mt-1 text-xs">
-                    <span class="font-mono font-bold text-slate-700">{{ res.resident_code || 'No Code' }}</span>
-                    <span class="text-slate-300">•</span>
-                    <span class="flex items-center gap-1.5 font-semibold text-slate-600">
-                      <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
-                      <span>Active Resident</span>
-                    </span>
-                  </div>
-                  <div class="mt-1 flex items-center gap-1.5 text-xs font-bold">
+                <div>
+                  <h3 class="text-base font-bold text-slate-900 leading-snug">{{ formatResidentName(res) }}</h3>
+                  <div class="flex flex-wrap items-center gap-2 mt-1">
+                    <span class="px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-white border border-orange-200 text-orange-800">{{ res.resident_code || 'No Code' }}</span>
                     @if (isRegistered(res)) {
-                      <div class="flex items-center gap-1.5 text-emerald-700">
-                        <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.393 9.393c5.857-5.857 15.355-5.857 21.213 0"/>
-                        </svg>
-                        <span>RFID: Active Card</span>
-                      </div>
+                      <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+                        <svg class="w-3 h-3 text-emerald-600 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                        Card Registered
+                      </span>
                     } @else {
-                      <div class="flex items-center gap-1.5 text-[#ea580c]">
-                        <svg class="w-4 h-4 text-[#ea580c] shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.393 9.393c5.857-5.857 15.355-5.857 21.213 0"/>
-                        </svg>
-                        <span>RFID: Pending Registration</span>
-                      </div>
+                      <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1">
+                        <svg class="w-3 h-3 text-amber-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        Pending RFID Card
+                      </span>
                     }
                   </div>
                 </div>
               </div>
-              
-              <div class="text-right flex flex-col items-end gap-1.5 shrink-0 pl-3">
-                <span class="px-3 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-300">
-                  {{ res.resident_status || 'ACTIVE' }}
+              <div class="text-right flex flex-col items-end gap-1">
+                <span [class]="'px-2.5 py-0.5 rounded-full text-[11px] font-bold border ' + (res.resident_status === 'ACTIVE' || res.resident_status === 'Active' || !res.resident_status ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-red-50 text-red-800 border-red-200')">
+                  {{ res.resident_status || 'Active' }}
                 </span>
-                <div class="flex items-center gap-1.5 text-xs text-slate-500 mt-0.5">
-                  <svg class="w-4 h-4 text-[#ea580c] shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                  </svg>
-                  <div class="text-right">
-                    <span class="text-[10px] uppercase font-bold text-slate-400 block leading-none">Registered on</span>
-                    <span class="font-bold text-slate-700 text-xs leading-tight">{{ (res.resident_created_at || res.created_at) | date:'MMM d, y' }}</span>
-                  </div>
+                <div>
+                  <p class="text-[11px] text-slate-400 font-medium">Approved / Added</p>
+                  <p class="text-xs font-semibold text-slate-700 mt-0.5">{{ (res.resident_created_at || res.created_at) | date:'MMM d, y' }}</p>
                 </div>
               </div>
             </div>
 
-            <!-- Section 1: BARANGAY ID / RFID CARD REGISTRATION -->
-            <div class="bg-white border border-orange-200/90 rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
-              <div class="flex items-start gap-3">
-                <div class="w-8 h-8 rounded-lg bg-[#ea580c] text-white flex items-center justify-center shrink-0 shadow-2xs">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.393 9.393c5.857-5.857 15.355-5.857 21.213 0"/>
-                  </svg>
-                </div>
-                <div>
-                  <h4 class="text-xs sm:text-sm font-black uppercase tracking-wider text-[#ea580c]">
-                    BARANGAY ID / RFID CARD REGISTRATION
-                  </h4>
-                  <p class="text-xs text-slate-500 mt-0.5">
-                    Scan the resident's physical RFID card or enter the card UID below to activate their Barangay ID.
-                  </p>
-                </div>
-              </div>
-
+            <!-- RFID Card Registration & Status Section -->
+            <div class="space-y-2 pt-1">
+              <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400 px-1">Barangay ID / RFID Card Registration</p>
+              
               @if (!isRegistered(res)) {
-                <div class="space-y-3.5">
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <!-- Card UID -->
-                    <div>
-                      <label class="block text-xs font-bold text-slate-700 mb-1.5">
-                        Card UID <span class="text-rose-500">*</span>
-                      </label>
-                      <div class="relative">
-                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.393 9.393c5.857-5.857 15.355-5.857 21.213 0"/>
-                          </svg>
-                        </span>
-                        <input
-                          type="text"
-                          [value]="regCardUid()"
-                          (input)="regCardUid.set($any($event.target).value)"
-                          placeholder="e.g. 04A1B2C3D4"
-                          class="w-full h-11 pl-9 pr-3 border border-slate-300 rounded-xl text-sm font-mono text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 shadow-2xs"
-                        />
-                      </div>
-                      <div class="flex items-center gap-1.5 text-[11px] text-slate-500 mt-1.5 pl-1">
-                        <span class="w-2 h-2 rounded-full bg-slate-400 animate-pulse"></span>
-                        <span>Waiting for RFID card...</span>
-                      </div>
-                    </div>
-
-                    <!-- Expiration Date -->
-                    <div>
-                      <label class="block text-xs font-bold text-slate-700 mb-1.5">
-                        Expiration Date
-                      </label>
-                      <div class="relative">
-                        <input
-                          type="date"
-                          [value]="regExpirationDate()"
-                          (input)="regExpirationDate.set($any($event.target).value)"
-                          class="w-full h-11 px-3 border border-slate-300 rounded-xl text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 shadow-2xs"
-                        />
-                      </div>
-                      <p class="text-[11px] text-slate-400 mt-1.5 pl-1">
-                        (Default 3 Years, Editable)
-                      </p>
-                    </div>
-                  </div>
-
-                  <!-- Info Banner -->
-                  <div class="bg-orange-50/80 border border-orange-200/80 rounded-xl px-3.5 py-2.5 flex items-center gap-2 text-xs text-orange-900 font-medium">
-                    <svg class="w-4 h-4 text-orange-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-                      <circle cx="12" cy="12" r="9"/>
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01"/>
+                <!-- Registration Form (When Resident Has No Active Card) -->
+                <div class="bg-orange-50/50 border border-orange-200 rounded-xl p-4 space-y-3">
+                  <div class="flex items-center gap-2 text-orange-900 font-bold text-sm">
+                    <svg class="w-4 h-4 text-orange-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 9.5h8M7 12h8" stroke-linecap="round"/>
                     </svg>
-                    <span>Make sure the card is properly placed on the RFID reader.</span>
+                    <span>Register New RFID Card</span>
+                  </div>
+                  <p class="text-xs text-slate-600">
+                    Scan the resident's physical RFID card on the reader or enter the card UID below to activate their Barangay ID.
+                  </p>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label class="block text-xs font-bold text-slate-700 mb-1">Card UID <span class="text-rose-500">*</span></label>
+                      <input
+                        type="text"
+                        [value]="regCardUid()"
+                        (input)="regCardUid.set($any($event.target).value)"
+                        placeholder="e.g. 04A1B2C3D4"
+                        class="w-full h-10 px-3 border border-slate-300 rounded-lg text-sm font-mono text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 shadow-2xs"
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-xs font-bold text-slate-700 mb-1">Expiration Date <span class="text-slate-400 font-normal">(Default 3 Years, Editable)</span></label>
+                      <input
+                        type="date"
+                        [value]="regExpirationDate()"
+                        (input)="regExpirationDate.set($any($event.target).value)"
+                        class="w-full h-10 px-3 border border-slate-300 rounded-lg text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 shadow-2xs"
+                      />
+                    </div>
                   </div>
 
                   @if (regError()) {
-                    <p class="text-xs text-rose-600 font-medium flex items-center gap-1.5">
-                      <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <p class="text-xs text-rose-600 font-medium flex items-center gap-1">
+                      <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                       {{ regError() }}
                     </p>
                   }
 
-                  <!-- Action Button directly inside section -->
-                  <div class="flex items-center justify-end pt-1">
+                  <div class="flex items-center justify-end gap-2 pt-2">
                     <button
                       type="button"
                       (click)="registerCard(res)"
                       [disabled]="registering()"
-                      class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#ea580c] hover:bg-[#c2410c] active:scale-[0.98] text-white text-xs sm:text-sm font-bold rounded-xl shadow-xs transition disabled:opacity-50 cursor-pointer"
+                      class="inline-flex items-center gap-1.5 px-4 py-2 bg-orange-600 hover:bg-orange-700 active:scale-[0.98] text-white text-xs font-bold rounded-xl shadow-2xs transition disabled:opacity-50 cursor-pointer"
                     >
                       @if (registering()) {
-                        <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <div class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                         <span>Registering...</span>
                       } @else {
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                        <span>Confirm &amp; Register Card</span>
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        <span>Confirm & Register Card</span>
                       }
                     </button>
                   </div>
                 </div>
               } @else {
-                <!-- Registered Card Information -->
+                <!-- Registered Card Information (Active Card Details & Controls) -->
                 <div class="bg-emerald-50/50 border border-emerald-200 rounded-xl p-4 space-y-3">
                   <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2 text-emerald-900 font-bold text-sm">
@@ -383,155 +327,41 @@ import { environment } from '../../../environments/environment';
               }
             </div>
 
-            <!-- Section 2: PERSONAL INFORMATION Card -->
-            <div class="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
-              <div class="flex items-center gap-2 text-slate-800">
-                <svg class="w-5 h-5 text-slate-500 shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                </svg>
-                <h4 class="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-700">
-                  PERSONAL INFORMATION
-                </h4>
-              </div>
-
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-6 text-xs">
-                <!-- Birth Date -->
-                <div class="flex items-start gap-3">
-                  <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                    </svg>
+            <!-- Personal Information Details (Identical to Resident Profile layout) -->
+            <div class="space-y-1">
+              <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400 px-1">Personal Information</p>
+              <div class="grid grid-cols-2 gap-y-3 gap-x-4 text-xs bg-slate-50 p-4 rounded-xl border border-slate-100">
+                <div><span class="text-slate-400 font-medium block">Birth Date</span><span class="font-bold text-slate-800">{{ res.birth_date ? (res.birth_date | date:'MMMM d, y') : '-' }}</span></div>
+                <div><span class="text-slate-400 font-medium block">Place of Birth</span><span class="font-bold text-slate-800">{{ res.birth_place || '-' }}</span></div>
+                <div><span class="text-slate-400 font-medium block">Gender</span><span class="font-bold text-slate-800 capitalize">{{ res.gender || '-' }}</span></div>
+                <div><span class="text-slate-400 font-medium block">Civil Status</span><span class="font-bold text-slate-800 capitalize">{{ res.civil_status || '-' }}</span></div>
+                <div><span class="text-slate-400 font-medium block">Occupation</span><span class="font-bold text-slate-800">{{ res.occupation || '-' }}</span></div>
+                <div><span class="text-slate-400 font-medium block">Blood Type</span><span class="font-bold text-slate-800">{{ res.blood_type || '-' }}</span></div>
+                <div><span class="text-slate-400 font-medium block">Contact Number</span><span class="font-bold text-slate-800">{{ res.contact_number || '-' }}</span></div>
+                <div><span class="text-slate-400 font-medium block">Email</span><span class="font-bold text-slate-800">{{ res.email || '-' }}</span></div>
+                <div class="col-span-2"><span class="text-slate-400 font-medium block">Complete Address</span><span class="font-bold text-slate-800">{{ formatFullAddress(res) }}</span></div>
+                @if (res.subdivision || res.street || res.block || res.lot || res.purok_zone) {
+                  <div class="col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1.5 border-t border-slate-200/60 text-[11px]">
+                    <div><span class="text-slate-400 font-medium block text-[10px]">Subdivision</span><span class="font-bold text-slate-700">{{ res.subdivision || '-' }}</span></div>
+                    <div><span class="text-slate-400 font-medium block text-[10px]">Street</span><span class="font-bold text-slate-700">{{ res.street || '-' }}</span></div>
+                    <div><span class="text-slate-400 font-medium block text-[10px]">Block</span><span class="font-bold text-slate-700">{{ res.block || '-' }}</span></div>
+                    <div><span class="text-slate-400 font-medium block text-[10px]">Lot</span><span class="font-bold text-slate-700">{{ res.lot || '-' }}</span></div>
                   </div>
-                  <div>
-                    <span class="text-slate-400 font-semibold block text-[11px]">Birth Date</span>
-                    <span class="font-black text-slate-800 text-sm mt-0.5 block">{{ res.birth_date ? (res.birth_date | date:'MMMM d, y') : '-' }}</span>
-                  </div>
-                </div>
-
-                <!-- Place of Birth -->
-                <div class="flex items-start gap-3">
-                  <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <span class="text-slate-400 font-semibold block text-[11px]">Place of Birth</span>
-                    <span class="font-black text-slate-800 text-sm mt-0.5 block">{{ res.birth_place || '-' }}</span>
-                  </div>
-                </div>
-
-                <!-- Gender -->
-                <div class="flex items-start gap-3">
-                  <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <span class="text-slate-400 font-semibold block text-[11px]">Gender</span>
-                    <span class="font-black text-slate-800 text-sm capitalize mt-0.5 block">{{ res.gender || '-' }}</span>
-                  </div>
-                </div>
-
-                <!-- Civil Status -->
-                <div class="flex items-start gap-3">
-                  <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <span class="text-slate-400 font-semibold block text-[11px]">Civil Status</span>
-                    <span class="font-black text-slate-800 text-sm capitalize mt-0.5 block">{{ res.civil_status || '-' }}</span>
-                  </div>
-                </div>
-
-                <!-- Occupation -->
-                <div class="flex items-start gap-3">
-                  <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <span class="text-slate-400 font-semibold block text-[11px]">Occupation</span>
-                    <span class="font-black text-slate-800 text-sm mt-0.5 block">{{ res.occupation || '-' }}</span>
-                  </div>
-                </div>
-
-                <!-- Contact Number -->
-                <div class="flex items-start gap-3">
-                  <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <span class="text-slate-400 font-semibold block text-[11px]">Contact Number</span>
-                    <span class="font-black text-slate-800 text-sm mt-0.5 block">{{ res.contact_number || '-' }}</span>
-                  </div>
-                </div>
-
-                <!-- Email -->
-                <div class="flex items-start gap-3">
-                  <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <span class="text-slate-400 font-semibold block text-[11px]">Email</span>
-                    <span class="font-black text-slate-800 text-sm mt-0.5 block">{{ res.email || '-' }}</span>
-                  </div>
-                </div>
-
-                <!-- Complete Address (Full Width) -->
-                <div class="sm:col-span-2 flex items-start gap-3 pt-2 border-t border-slate-100">
-                  <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <span class="text-slate-400 font-semibold block text-[11px]">Complete Address</span>
-                    <span class="font-black text-slate-800 text-sm mt-0.5 block leading-snug">{{ formatFullAddress(res) }}</span>
-                  </div>
-                </div>
-
-                <!-- Emergency Contact & Phone -->
+                }
                 @if (res.emergency_contact_name || res.emergency_contact_number) {
-                  <div class="sm:col-span-2 pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                    <div class="flex items-center gap-3">
-                      <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                        </svg>
-                      </div>
-                      <div>
-                        <span class="text-slate-400 font-semibold block text-[11px]">Emergency Contact</span>
-                        <span class="font-black text-slate-800 text-sm">{{ res.emergency_contact_name || '-' }}</span>
-                      </div>
+                  <div class="col-span-2 pt-2 border-t border-slate-200/60 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                    <div class="flex items-center gap-1.5">
+                      <span class="text-slate-400 font-medium">Emergency Contact:</span>
+                      <strong class="text-slate-800">{{ res.emergency_contact_name || '-' }}</strong>
                     </div>
-
-                    <div class="flex items-center gap-3">
-                      <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
-                        </svg>
-                      </div>
-                      <div>
-                        <span class="text-slate-400 font-semibold block text-[11px]">Phone</span>
-                        <span class="font-black text-slate-800 text-sm">{{ res.emergency_contact_number || '-' }}</span>
-                      </div>
+                    <div class="flex items-center gap-1.5">
+                      <span class="text-slate-400 font-medium">Phone:</span>
+                      <strong class="text-slate-800">{{ res.emergency_contact_number || '-' }}</strong>
                     </div>
                   </div>
                 }
               </div>
             </div>
-
           </div>
         }
       </app-modal>
