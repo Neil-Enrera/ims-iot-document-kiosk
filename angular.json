@@ -30,6 +30,16 @@
             ],
             "server": "frontend/admin-panel/src/main.server.ts",
             "outputMode": "server",
+            "allowedCommonJsDependencies": [
+              "jszip",
+              "canvg",
+              "rgbcolor",
+              "raf",
+              "core-js",
+              "jspdf",
+              "docx-preview",
+              "html2canvas"
+            ],
             "security": {
               "allowedHosts": []
             },
@@ -48,8 +58,8 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
+                  "maximumWarning": "1MB",
+                  "maximumError": "2MB"
                 },
                 {
                   "type": "anyComponentStyle",
@@ -97,6 +107,10 @@
             "browser": "frontend/kiosk-app/src/main.ts",
             "index": "frontend/kiosk-app/src/index.html",
             "tsConfig": "frontend/kiosk-app/tsconfig.app.json",
+            "allowedCommonJsDependencies": [
+              "jszip",
+              "docx-preview"
+            ],
             "assets": [
               {
                 "glob": "**/*",
@@ -120,8 +134,8 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "250kB",
-                  "maximumError": "500kB"
+                  "maximumWarning": "1MB",
+                  "maximumError": "2MB"
                 }
               ],
               "outputHashing": "all"

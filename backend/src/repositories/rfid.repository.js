@@ -290,4 +290,4 @@ const remove = async (rfidCardId) => {
   return result.affectedRows > 0;
 };
 
-module.exports = { findAll, findById, findByUid, findActiveByResident, create, updateStatus, replace, remove };
+module.exports = { findAll, findById, findByUid, findActiveByResident, create, updateStatus, replace, remove, getEquivalentUids };
