@@ -193,36 +193,6 @@ import { environment } from '../../../environments/environment';
               </div>
             </div>
 
-            <!-- Personal Information Details (Identical to Resident Profile layout) -->
-            <div class="space-y-1">
-              <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400 px-1">Personal Information</p>
-              <div class="grid grid-cols-2 gap-y-3 gap-x-4 text-xs bg-slate-50 p-4 rounded-xl border border-slate-100">
-                <div><span class="text-slate-400 font-medium block">Birth Date</span><span class="font-bold text-slate-800">{{ res.birth_date ? (res.birth_date | date:'MMMM d, y') : '-' }}</span></div>
-                <div><span class="text-slate-400 font-medium block">Place of Birth</span><span class="font-bold text-slate-800">{{ res.birth_place || '-' }}</span></div>
-                <div><span class="text-slate-400 font-medium block">Gender</span><span class="font-bold text-slate-800 capitalize">{{ res.gender || '-' }}</span></div>
-                <div><span class="text-slate-400 font-medium block">Civil Status</span><span class="font-bold text-slate-800 capitalize">{{ res.civil_status || '-' }}</span></div>
-                <div><span class="text-slate-400 font-medium block">Occupation</span><span class="font-bold text-slate-800">{{ res.occupation || '-' }}</span></div>
-                <div><span class="text-slate-400 font-medium block">Blood Type</span><span class="font-bold text-slate-800">{{ res.blood_type || '-' }}</span></div>
-                <div><span class="text-slate-400 font-medium block">Contact Number</span><span class="font-bold text-slate-800">{{ res.contact_number || '-' }}</span></div>
-                <div><span class="text-slate-400 font-medium block">Email</span><span class="font-bold text-slate-800">{{ res.email || '-' }}</span></div>
-                <div class="col-span-2"><span class="text-slate-400 font-medium block">Complete Address</span><span class="font-bold text-slate-800">{{ formatFullAddress(res) }}</span></div>
-                @if (res.subdivision || res.street || res.block || res.lot || res.purok_zone) {
-                  <div class="col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1.5 border-t border-slate-200/60 text-[11px]">
-                    <div><span class="text-slate-400 font-medium block text-[10px]">Subdivision</span><span class="font-bold text-slate-700">{{ res.subdivision || '-' }}</span></div>
-                    <div><span class="text-slate-400 font-medium block text-[10px]">Street</span><span class="font-bold text-slate-700">{{ res.street || '-' }}</span></div>
-                    <div><span class="text-slate-400 font-medium block text-[10px]">Block</span><span class="font-bold text-slate-700">{{ res.block || '-' }}</span></div>
-                    <div><span class="text-slate-400 font-medium block text-[10px]">Lot</span><span class="font-bold text-slate-700">{{ res.lot || '-' }}</span></div>
-                  </div>
-                }
-                @if (res.emergency_contact_name || res.emergency_contact_number) {
-                  <div class="col-span-2 pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px]">
-                    <div><span class="text-slate-400 font-medium">Emergency Contact:</span> <strong class="text-slate-800">{{ res.emergency_contact_name || '-' }}</strong></div>
-                    <div><span class="text-slate-400 font-medium">Phone:</span> <strong class="text-slate-800">{{ res.emergency_contact_number || '-' }}</strong></div>
-                  </div>
-                }
-              </div>
-            </div>
-
             <!-- RFID Card Registration & Status Section -->
             <div class="space-y-2 pt-1">
               <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400 px-1">Barangay ID / RFID Card Registration</p>
@@ -353,6 +323,36 @@ import { environment } from '../../../environments/environment';
                   }
                 </div>
               }
+            </div>
+
+            <!-- Personal Information Details (Identical to Resident Profile layout) -->
+            <div class="space-y-1">
+              <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400 px-1">Personal Information</p>
+              <div class="grid grid-cols-2 gap-y-3 gap-x-4 text-xs bg-slate-50 p-4 rounded-xl border border-slate-100">
+                <div><span class="text-slate-400 font-medium block">Birth Date</span><span class="font-bold text-slate-800">{{ res.birth_date ? (res.birth_date | date:'MMMM d, y') : '-' }}</span></div>
+                <div><span class="text-slate-400 font-medium block">Place of Birth</span><span class="font-bold text-slate-800">{{ res.birth_place || '-' }}</span></div>
+                <div><span class="text-slate-400 font-medium block">Gender</span><span class="font-bold text-slate-800 capitalize">{{ res.gender || '-' }}</span></div>
+                <div><span class="text-slate-400 font-medium block">Civil Status</span><span class="font-bold text-slate-800 capitalize">{{ res.civil_status || '-' }}</span></div>
+                <div><span class="text-slate-400 font-medium block">Occupation</span><span class="font-bold text-slate-800">{{ res.occupation || '-' }}</span></div>
+                <div><span class="text-slate-400 font-medium block">Blood Type</span><span class="font-bold text-slate-800">{{ res.blood_type || '-' }}</span></div>
+                <div><span class="text-slate-400 font-medium block">Contact Number</span><span class="font-bold text-slate-800">{{ res.contact_number || '-' }}</span></div>
+                <div><span class="text-slate-400 font-medium block">Email</span><span class="font-bold text-slate-800">{{ res.email || '-' }}</span></div>
+                <div class="col-span-2"><span class="text-slate-400 font-medium block">Complete Address</span><span class="font-bold text-slate-800">{{ formatFullAddress(res) }}</span></div>
+                @if (res.subdivision || res.street || res.block || res.lot || res.purok_zone) {
+                  <div class="col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1.5 border-t border-slate-200/60 text-[11px]">
+                    <div><span class="text-slate-400 font-medium block text-[10px]">Subdivision</span><span class="font-bold text-slate-700">{{ res.subdivision || '-' }}</span></div>
+                    <div><span class="text-slate-400 font-medium block text-[10px]">Street</span><span class="font-bold text-slate-700">{{ res.street || '-' }}</span></div>
+                    <div><span class="text-slate-400 font-medium block text-[10px]">Block</span><span class="font-bold text-slate-700">{{ res.block || '-' }}</span></div>
+                    <div><span class="text-slate-400 font-medium block text-[10px]">Lot</span><span class="font-bold text-slate-700">{{ res.lot || '-' }}</span></div>
+                  </div>
+                }
+                @if (res.emergency_contact_name || res.emergency_contact_number) {
+                  <div class="col-span-2 pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px]">
+                    <div><span class="text-slate-400 font-medium">Emergency Contact:</span> <strong class="text-slate-800">{{ res.emergency_contact_name || '-' }}</strong></div>
+                    <div><span class="text-slate-400 font-medium">Phone:</span> <strong class="text-slate-800">{{ res.emergency_contact_number || '-' }}</strong></div>
+                  </div>
+                }
+              </div>
             </div>
           </div>
         }
