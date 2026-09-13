@@ -169,7 +169,7 @@ import { environment } from '../../../environments/environment';
                   }
                 </div>
                 <div class="min-w-0">
-                  <h3 class="text-base sm:text-lg font-extrabold text-slate-900 leading-snug truncate">{{ formatResidentName(res) }}</h3>
+                  <h3 class="text-base font-bold text-slate-900 leading-snug">{{ formatResidentName(res) }}</h3>
                   <p class="font-bold text-slate-600 text-xs mt-0.5">{{ res.resident_code || 'No Code' }}</p>
                   <div class="mt-0.5">
                     @if (isRegistered(res)) {
