@@ -1,5 +1,64 @@
 SET FOREIGN_KEY_CHECKS = 0;
 
+-- =====================================================
+-- Schema migrations: add missing columns if they do not
+-- already exist (safe to re-run on any database state)
+-- =====================================================
+
+-- barangays: columns added by migration 021-move-barangay-id-template-to-service
+ALTER TABLE `barangays`
+  ADD COLUMN IF NOT EXISTS `captain_name`             VARCHAR(100)  NULL AFTER `email`,
+  ADD COLUMN IF NOT EXISTS `secretary_name`           VARCHAR(100)  NULL AFTER `captain_name`,
+  ADD COLUMN IF NOT EXISTS `treasurer_name`           VARCHAR(100)  NULL AFTER `secretary_name`,
+  ADD COLUMN IF NOT EXISTS `address`                  VARCHAR(500)  NULL AFTER `treasurer_name`,
+  ADD COLUMN IF NOT EXISTS `id_template_path`         VARCHAR(500)  NULL AFTER `address`,
+  ADD COLUMN IF NOT EXISTS `id_template_original_name` VARCHAR(255) NULL AFTER `id_template_path`,
+  ADD COLUMN IF NOT EXISTS `id_template_mime`         VARCHAR(100)  NULL AFTER `id_template_original_name`,
+  ADD COLUMN IF NOT EXISTS `id_template_size`         BIGINT UNSIGNED NULL AFTER `id_template_mime`;
+
+-- services: columns added by migrations 005, 007, 015, 016, 020, 025
+ALTER TABLE `services`
+  ADD COLUMN IF NOT EXISTS `requirements`                   JSON          NULL AFTER `description`,
+  ADD COLUMN IF NOT EXISTS `form_fields`                    JSON          NULL AFTER `requirements`,
+  ADD COLUMN IF NOT EXISTS `can_combine_with_others`        BOOLEAN       DEFAULT TRUE  AFTER `requires_photo`,
+  ADD COLUMN IF NOT EXISTS `allow_multiple_active_requests` BOOLEAN       DEFAULT FALSE AFTER `can_combine_with_others`,
+  ADD COLUMN IF NOT EXISTS `allow_new_request_after_release` BOOLEAN      DEFAULT TRUE  AFTER `allow_multiple_active_requests`,
+  ADD COLUMN IF NOT EXISTS `template_path`                  VARCHAR(500)  NULL AFTER `allow_new_request_after_release`,
+  ADD COLUMN IF NOT EXISTS `template_original_name`         VARCHAR(255)  NULL AFTER `template_path`,
+  ADD COLUMN IF NOT EXISTS `template_mime`                  VARCHAR(100)  NULL AFTER `template_original_name`,
+  ADD COLUMN IF NOT EXISTS `template_size`                  BIGINT UNSIGNED NULL AFTER `template_mime`,
+  ADD COLUMN IF NOT EXISTS `document_mappings`              LONGTEXT      NULL AFTER `template_size`;
+
+-- residents: columns added by migrations 005, plus extended address/personal fields
+ALTER TABLE `residents`
+  ADD COLUMN IF NOT EXISTS `birth_place`               VARCHAR(100) NULL AFTER `birth_date`,
+  ADD COLUMN IF NOT EXISTS `nationality`               VARCHAR(50)  DEFAULT 'Filipino' AFTER `birth_place`,
+  ADD COLUMN IF NOT EXISTS `religion`                  VARCHAR(50)  NULL AFTER `nationality`,
+  ADD COLUMN IF NOT EXISTS `occupation`                VARCHAR(100) NULL AFTER `religion`,
+  ADD COLUMN IF NOT EXISTS `blood_type`                VARCHAR(10)  NULL AFTER `civil_status`,
+  ADD COLUMN IF NOT EXISTS `house_number`              VARCHAR(50)  NULL AFTER `address_line`,
+  ADD COLUMN IF NOT EXISTS `street`                    VARCHAR(100) NULL AFTER `house_number`,
+  ADD COLUMN IF NOT EXISTS `subdivision`               VARCHAR(100) NULL AFTER `street`,
+  ADD COLUMN IF NOT EXISTS `block`                     VARCHAR(50)  NULL AFTER `subdivision`,
+  ADD COLUMN IF NOT EXISTS `lot`                       VARCHAR(50)  NULL AFTER `block`,
+  ADD COLUMN IF NOT EXISTS `purok_zone`                VARCHAR(100) NULL AFTER `lot`,
+  ADD COLUMN IF NOT EXISTS `sitio`                     VARCHAR(100) NULL AFTER `purok_zone`,
+  ADD COLUMN IF NOT EXISTS `municipality`              VARCHAR(100) NULL AFTER `sitio`,
+  ADD COLUMN IF NOT EXISTS `province`                  VARCHAR(100) NULL AFTER `municipality`,
+  ADD COLUMN IF NOT EXISTS `zip_code`                  VARCHAR(10)  NULL AFTER `province`,
+  ADD COLUMN IF NOT EXISTS `emergency_contact_name`    VARCHAR(100) NULL AFTER `contact_number`,
+  ADD COLUMN IF NOT EXISTS `emergency_contact_number`  VARCHAR(20)  NULL AFTER `emergency_contact_name`;
+
+-- residents.photo: may already exist as VARCHAR(255); extend to 500 safely
+ALTER TABLE `residents`
+  MODIFY COLUMN IF EXISTS `photo` VARCHAR(500) NULL;
+
+-- rfid_cards: status enum may only have ACTIVE/EXPIRED/LOST/CANCELLED in base schema;
+-- ensure INACTIVE and empty-string coercion work by widening the enum
+ALTER TABLE `rfid_cards`
+  MODIFY COLUMN `status` ENUM('ACTIVE','INACTIVE','EXPIRED','LOST','CANCELLED') DEFAULT 'ACTIVE';
+
+
 CREATE TABLE IF NOT EXISTS system_settings (
     setting_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     setting_key VARCHAR(100) NOT NULL UNIQUE,
@@ -151,7 +210,7 @@ INSERT INTO `residents` (`resident_id`, `resident_code`, `first_name`, `middle_n
 -- Table: rfid_cards
 DELETE FROM `rfid_cards`;
 INSERT INTO `rfid_cards` (`rfid_card_id`, `resident_id`, `card_uid`, `status`, `issued_date`, `expiration_date`, `created_at`, `updated_at`) VALUES (17, 42, 'C9463D05', 'ACTIVE', NULL, '2029-08-24 16:00:00', '2026-08-25 10:06:59', '2026-08-25 10:06:59');
-INSERT INTO `rfid_cards` (`rfid_card_id`, `resident_id`, `card_uid`, `status`, `issued_date`, `expiration_date`, `created_at`, `updated_at`) VALUES (18, 45, 'TEST_1788451460005', '', NULL, NULL, '2026-09-03 16:04:20', '2026-09-03 16:04:20');
+INSERT INTO `rfid_cards` (`rfid_card_id`, `resident_id`, `card_uid`, `status`, `issued_date`, `expiration_date`, `created_at`, `updated_at`) VALUES (18, 45, 'TEST_1788451460005', 'INACTIVE', NULL, NULL, '2026-09-03 16:04:20', '2026-09-03 16:04:20');
 INSERT INTO `rfid_cards` (`rfid_card_id`, `resident_id`, `card_uid`, `status`, `issued_date`, `expiration_date`, `created_at`, `updated_at`) VALUES (21, 48, '1225562341', 'ACTIVE', NULL, '2029-09-12 16:00:00', '2026-09-13 06:21:23', '2026-09-13 06:21:23');
 INSERT INTO `rfid_cards` (`rfid_card_id`, `resident_id`, `card_uid`, `status`, `issued_date`, `expiration_date`, `created_at`, `updated_at`) VALUES (22, 43, '1225208565', 'ACTIVE', NULL, '2029-09-12 16:00:00', '2026-09-13 07:04:06', '2026-09-13 07:04:06');
 
