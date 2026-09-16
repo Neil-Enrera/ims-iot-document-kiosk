@@ -1,5 +1,90 @@
 SET FOREIGN_KEY_CHECKS = 0;
 
+CREATE TABLE IF NOT EXISTS system_settings (
+    setting_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    setting_key VARCHAR(100) NOT NULL UNIQUE,
+    setting_value TEXT,
+    setting_type VARCHAR(50) DEFAULT 'string',
+    category VARCHAR(50) DEFAULT 'general',
+    description VARCHAR(255),
+    is_readonly BOOLEAN DEFAULT FALSE,
+    updated_by BIGINT UNSIGNED NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_system_settings_key (setting_key),
+    INDEX idx_system_settings_category (category)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS login_verification_codes (
+    code_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    verification_code VARCHAR(10) NOT NULL,
+    temp_token VARCHAR(255) NOT NULL,
+    expires_at DATETIME NOT NULL,
+    used_at DATETIME NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_lvc_email (email),
+    INDEX idx_lvc_code (verification_code),
+    INDEX idx_lvc_token (temp_token)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS password_resets (
+    reset_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    verification_code VARCHAR(10) NOT NULL,
+    reset_token VARCHAR(255) NULL,
+    expires_at DATETIME NOT NULL,
+    used_at DATETIME NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_password_resets_email (email),
+    INDEX idx_password_resets_code (verification_code),
+    INDEX idx_password_resets_token (reset_token)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS barangay_id_applications (
+    application_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    application_number VARCHAR(50) NOT NULL UNIQUE,
+    resident_id BIGINT UNSIGNED NULL,
+    first_name VARCHAR(100) NOT NULL,
+    middle_name VARCHAR(100),
+    last_name VARCHAR(100) NOT NULL,
+    suffix VARCHAR(20),
+    birth_date DATE NOT NULL,
+    gender ENUM('Male','Female','Other') NOT NULL,
+    civil_status ENUM('Single','Married','Widowed','Separated','Divorced') NOT NULL,
+    blood_type VARCHAR(10),
+    contact_number VARCHAR(20) NOT NULL,
+    email VARCHAR(100),
+    address_line VARCHAR(500) NOT NULL,
+    emergency_contact_name VARCHAR(100) NOT NULL,
+    emergency_contact_number VARCHAR(20) NOT NULL,
+    photo_path VARCHAR(500),
+    status ENUM('PENDING','APPROVED','REJECTED','ISSUED') DEFAULT 'PENDING' NOT NULL,
+    admin_remarks TEXT,
+    reviewed_by BIGINT UNSIGNED NULL,
+    reviewed_at DATETIME NULL,
+    issued_at DATETIME NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_bid_app_status (status),
+    INDEX idx_bid_app_number (application_number)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS resident_update_requests (
+    request_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    resident_id BIGINT UNSIGNED NOT NULL,
+    changes JSON NOT NULL,
+    status ENUM('PENDING','APPROVED','REJECTED') DEFAULT 'PENDING' NOT NULL,
+    admin_remarks TEXT,
+    reviewed_by BIGINT UNSIGNED NULL,
+    reviewed_at DATETIME NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_rur_resident (resident_id),
+    INDEX idx_rur_status (status)
+) ENGINE=InnoDB;
+
 -- Table: user_roles
 DELETE FROM `user_roles`;
 INSERT INTO `user_roles` (`role_id`, `role_name`, `description`, `is_active`, `created_at`, `updated_at`) VALUES (1, 'Administrator', 'System Administrator', 1, '2026-07-29 05:27:50', '2026-07-29 05:27:50');
