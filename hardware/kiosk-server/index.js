@@ -1,5 +1,6 @@
 const express = require('express');
 const http = require('http');
+const https = require('https');
 const WebSocket = require('ws');
 const cors = require('cors');
 const path = require('path');
@@ -453,7 +454,83 @@ app.post('/api/arduino/rfid/verify', async (req, res) => {
 // ============================================================
 
 const PORT = process.env.KIOSK_PORT || 3001;
-server.listen(PORT, () => console.log(`[Kiosk Server] Dual Serial/WS + REST on port ${PORT}`));
+server.listen(PORT, () => console.log(`[Kiosk Server] HTTP + WS on port ${PORT}`));
+
+// ============================================================
+// HTTPS Server + ESP32-CAM Proxy (for VPS-hosted kiosk frontend)
+// ============================================================
+
+const HTTPS_PORT = process.env.KIOSK_HTTPS_PORT || 3002;
+const ESP32_CAM_IP = process.env.ESP32_CAM_IP || '192.168.100.200';
+
+const keyPath = path.join(__dirname, 'key.pem');
+const certPath = path.join(__dirname, 'cert.pem');
+
+if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
+  const httpsOptions = {
+    key: fs.readFileSync(keyPath),
+    cert: fs.readFileSync(certPath)
+  };
+
+  const httpsApp = express();
+  httpsApp.use(cors());
+
+  // ESP32-CAM MJPEG stream proxy
+  httpsApp.get('/esp32/stream', (req, res) => {
+    console.log('[ESP32 Proxy] Stream request');
+    const proxyReq = http.get(`http://${ESP32_CAM_IP}/stream`, (proxyRes) => {
+      res.writeHead(200, {
+        'Content-Type': 'multipart/x-mixed-replace; boundary=--boundary',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*'
+      });
+      proxyRes.pipe(res);
+    });
+    proxyReq.on('error', (err) => {
+      console.error('[ESP32 Proxy] Stream error:', err.message);
+      if (!res.headersSent) res.status(502).json({ error: 'ESP32-CAM unreachable' });
+    });
+    req.on('close', () => proxyReq.destroy());
+  });
+
+  // ESP32-CAM single capture proxy
+  httpsApp.get('/esp32/capture', (req, res) => {
+    console.log('[ESP32 Proxy] Capture request');
+    const proxyReq = http.get(`http://${ESP32_CAM_IP}/capture`, (proxyRes) => {
+      const contentType = proxyRes.headers['content-type'] || 'image/jpeg';
+      res.writeHead(200, {
+        'Content-Type': contentType,
+        'Cache-Control': 'no-cache',
+        'Access-Control-Allow-Origin': '*'
+      });
+      proxyRes.pipe(res);
+    });
+    proxyReq.on('error', (err) => {
+      console.error('[ESP32 Proxy] Capture error:', err.message);
+      if (!res.headersSent) res.status(502).json({ error: 'ESP32-CAM unreachable' });
+    });
+  });
+
+  // ESP32-CAM status check proxy
+  httpsApp.get('/esp32/status', (req, res) => {
+    const proxyReq = http.get(`http://${ESP32_CAM_IP}/`, { timeout: 3000 }, (proxyRes) => {
+      let body = '';
+      proxyRes.on('data', (chunk) => body += chunk);
+      proxyRes.on('end', () => res.json({ online: true, response: body }));
+    });
+    proxyReq.on('error', () => res.json({ online: false }));
+    proxyReq.on('timeout', () => { proxyReq.destroy(); res.json({ online: false }); });
+  });
+
+  const httpsServer = https.createServer(httpsOptions, httpsApp);
+  httpsServer.listen(HTTPS_PORT, () =>
+    console.log(`[Kiosk Server] HTTPS + ESP32-CAM proxy on port ${HTTPS_PORT}`)
+  );
+} else {
+  console.log(`[Kiosk Server] HTTPS disabled — missing key.pem/cert.pem in ${__dirname}`);
+  console.log(`[Kiosk Server] Run: openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/CN=192.168.100.102"`);
+}
 
 function shutdown() {
   console.log('[Kiosk Server] Gracefully closing connections...');
