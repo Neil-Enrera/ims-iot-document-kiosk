@@ -43,6 +43,16 @@ const updateApproval = async (documentId, { status, reviewedBy, reviewRemarks })
   return result.affectedRows > 0;
 };
 
+const findPdfByRequest = async (requestId) => {
+  const [rows] = await pool.query(
+    `SELECT * FROM generated_documents
+     WHERE request_id = ? AND (file_type = 'application/pdf' OR file_name LIKE '%.pdf')
+     ORDER BY generated_at DESC LIMIT 1`,
+    [requestId]
+  );
+  return parseWarnings(rows[0] || null);
+};
+
 const remove = async (documentId) => {
   const [result] = await pool.query('DELETE FROM generated_documents WHERE document_id = ?', [documentId]);
   return result.affectedRows > 0;
@@ -61,4 +71,4 @@ const parseWarnings = (row) => {
   return row;
 };
 
-module.exports = { create, findByRequest, findById, updateApproval, remove };
+module.exports = { create, findByRequest, findById, findPdfByRequest, updateApproval, remove };

@@ -1,7 +1,6 @@
 import { Component, Input, Output, EventEmitter, AfterViewChecked, ViewChild, ElementRef, signal, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { renderAsync } from 'docx-preview';
-import { DocumentPdfExportService } from '../services';
 
 @Component({
   selector: 'app-document-preview-modal',
@@ -23,24 +22,12 @@ import { DocumentPdfExportService } from '../services';
               <p class="text-xs text-gray-500 truncate">Scroll to review all pages. Use the controls to adjust the size.</p>
             </div>
             <div class="flex items-center gap-2 shrink-0 flex-wrap" role="toolbar" aria-label="Document controls">
-              <!-- Download Formats & Print -->
+              <!-- Download PDF & Print -->
               <button
                 type="button"
-                (click)="downloadDocx()"
-                [disabled]="rendering() || (!blob && !blobUrl)"
-                title="Download as Word DOCX document"
-                class="h-9 px-3 flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 text-blue-700 text-xs font-bold hover:bg-blue-100 disabled:opacity-40 transition cursor-pointer">
-                <svg class="w-4 h-4 text-blue-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                </svg>
-                <span>DOCX</span>
-              </button>
-
-              <button
-                type="button"
-                (click)="downloadPdf()"
+                (click)="onDownloadClick()"
                 [disabled]="rendering() || (!blob && !blobUrl) || downloadingPdf()"
-                title="Download as PDF file"
+                title="Download as PDF"
                 class="h-9 px-3 flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-xs font-bold hover:bg-rose-100 disabled:opacity-40 transition cursor-pointer">
                 @if (downloadingPdf()) {
                   <svg class="animate-spin h-3.5 w-3.5 text-rose-600" fill="none" viewBox="0 0 24 24">
@@ -52,7 +39,7 @@ import { DocumentPdfExportService } from '../services';
                   <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                   </svg>
-                  <span>PDF</span>
+                  <span>Download</span>
                 }
               </button>
 
@@ -141,6 +128,7 @@ export class DocumentPreviewModalComponent implements AfterViewChecked, OnChange
   @Input() blob: Blob | null = null;
   @Input() blobUrl: string | null = null;
   @Output() onClose = new EventEmitter<void>();
+  @Output() onDownload = new EventEmitter<void>();
 
   readonly MIN_ZOOM = 0.5;
   readonly MAX_ZOOM = 3;
@@ -162,7 +150,7 @@ export class DocumentPreviewModalComponent implements AfterViewChecked, OnChange
 
   private renderedKey: string | Blob | null = null;
 
-  constructor(private pdfExportService: DocumentPdfExportService) {}
+  constructor() {}
 
   // Reset the render state whenever the modal closes or a new document arrives.
   // Closing destroys the container (the @if block) and clears renderedKey, so the
@@ -197,47 +185,8 @@ export class DocumentPreviewModalComponent implements AfterViewChecked, OnChange
     this.onClose.emit();
   }
 
-  downloadDocx() {
-    if (!this.blob && !this.blobUrl) return;
-    this.loadBlob().then(b => {
-      const url = URL.createObjectURL(b);
-      const a = document.createElement('a');
-      a.href = url;
-      const baseName = (this.title || 'document').replace(/\.[^/.]+$/, '');
-      a.download = `${baseName}.docx`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    });
-  }
-
-  async downloadPdf() {
-    if (!this.blob && !this.blobUrl) return;
-    this.downloadingPdf.set(true);
-
-    try {
-      const b = await this.loadBlob();
-      if (b.type === 'application/pdf') {
-        const url = URL.createObjectURL(b);
-        const a = document.createElement('a');
-        a.href = url;
-        const baseName = (this.title || 'document').replace(/\.[^/.]+$/, '');
-        a.download = `${baseName}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-      } else if (this.container?.nativeElement) {
-        await this.pdfExportService.exportElementToPdf(this.container.nativeElement, this.title || 'document');
-      } else {
-        await this.pdfExportService.convertDocxToPdf(b, this.title || 'document');
-      }
-    } catch (err) {
-      console.error('PDF export error:', err);
-    } finally {
-      this.downloadingPdf.set(false);
-    }
+  onDownloadClick() {
+    this.onDownload.emit();
   }
 
   print() {

@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { renderAsync } from 'docx-preview';
 import { RequestService, DocumentService, ServiceService, DocumentPdfExportService } from '../../shared/services';
 import { NotificationService } from '../notifications/notification.service';
 import { DocumentRequest, RequestStatusHistory, GeneratedDocument, Service } from '../../shared/interfaces/api.interfaces';
@@ -563,21 +564,15 @@ interface StatusOption {
                       <div class="flex items-center flex-wrap gap-2 sm:gap-3 border-t border-slate-200 pt-2 text-xs">
                         <button type="button" (click)="previewDocument(doc)" class="text-orange-600 font-bold hover:underline cursor-pointer">Preview</button>
                         <span class="text-slate-300">|</span>
-                        <button type="button" (click)="downloadDocumentDocx(doc)" [disabled]="doc.approval_status !== 'approved'" title="Download Word DOCX" class="text-slate-700 font-semibold hover:text-blue-600 hover:underline disabled:opacity-40 cursor-pointer flex items-center gap-1">
-                          <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-                          <span>DOCX</span>
-                        </button>
-                        <button type="button" (click)="downloadDocumentPdf(doc)" [disabled]="doc.approval_status !== 'approved' || downloadingDocId() === doc.document_id" title="Download PDF" class="text-slate-700 font-semibold hover:text-rose-600 hover:underline disabled:opacity-40 cursor-pointer flex items-center gap-1">
+                        <button type="button" (click)="downloadDocument(doc)" [disabled]="doc.approval_status !== 'approved' || downloadingDocId() === doc.document_id" title="Download as PDF" class="text-slate-700 font-semibold hover:text-rose-600 hover:underline disabled:opacity-40 cursor-pointer flex items-center gap-1">
                           @if (downloadingDocId() === doc.document_id) {
                             <div class="w-3 h-3 border-2 border-rose-600 border-t-transparent rounded-full animate-spin"></div>
-                            <span>Exporting...</span>
+                            <span>Downloading...</span>
                           } @else {
                             <svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                            <span>PDF</span>
+                            <span>Download</span>
                           }
                         </button>
-                        <span class="text-slate-300">|</span>
-                        <button type="button" (click)="printDocument(doc)" [disabled]="doc.approval_status !== 'approved'" class="text-slate-700 font-semibold hover:underline disabled:opacity-40 cursor-pointer">Print</button>
                         
                         @if (doc.approval_status === 'pending') {
                           <span class="text-slate-300">|</span>
@@ -950,6 +945,7 @@ interface StatusOption {
         [title]="previewTitle"
         [blob]="previewBlob"
         (onClose)="closePreview()"
+        (onDownload)="downloadPreviewDocument()"
       />
 
     </div>
@@ -1729,73 +1725,140 @@ export class RequestsComponent implements OnInit, OnDestroy {
   }
 
   downloadDocument(doc: GeneratedDocument) {
-    this.downloadDocumentDocx(doc);
+    const request = this.selectedRequest();
+    if (!request) return;
+    this.downloadingDocId.set(doc.document_id);
+    const url = this.documentService.downloadUrl(request.request_id, doc.document_id);
+    const token = localStorage.getItem('token');
+    fetch(url, { headers: token ? { 'Authorization': `Bearer ${token}` } : {} })
+      .then(res => {
+        if (!res.ok) return res.json().then(data => { throw new Error(data.message || 'Download failed'); });
+        const ct = res.headers.get('content-type') || '';
+        if (ct.includes('pdf')) return res.blob();
+        throw new Error('NO_SERVER_PDF');
+      })
+      .then(blob => {
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        const baseName = (doc.file_name || 'document').replace(/\.[^/.]+$/, '');
+        a.download = `${baseName}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(blobUrl);
+      })
+      .catch(err => {
+        if (err.message === 'NO_SERVER_PDF') {
+          return this.downloadDocumentClientSide(doc);
+        }
+        this.docError.set(err.message || 'Could not download the document.');
+      })
+      .finally(() => {
+        this.downloadingDocId.set(null);
+      });
   }
 
-  downloadDocumentDocx(doc: GeneratedDocument) {
+  private downloadDocumentClientSide(doc: GeneratedDocument) {
+    const request = this.selectedRequest();
+    if (!request) return;
+    this.documentService.fetchBlob(request.request_id, doc.document_id).subscribe({
+      next: async (blob) => {
+        try {
+          await this.pdfExportService.convertDocxToPdf(blob, doc.file_name || 'document');
+        } catch (e) {
+          console.error('Client-side PDF export error:', e);
+          this.docError.set('Could not generate PDF. The document may be too complex for browser conversion.');
+        }
+      },
+      error: () => {
+        this.docError.set('Could not load the document for PDF conversion.');
+      }
+    });
+  }
+
+  downloadPreviewDocument() {
+    const request = this.selectedRequest();
+    if (!request) return;
+    const docs = this.documents();
+    const lastDoc = docs[docs.length - 1];
+    if (!lastDoc) return;
+    this.downloadDocument(lastDoc);
+  }
+
+  printDocument(doc: GeneratedDocument) {
     const request = this.selectedRequest();
     if (!request) return;
     this.documentService.fetchBlob(request.request_id, doc.document_id).subscribe({
       next: (blob) => {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        const baseName = (doc.file_name || 'document').replace(/\.[^/.]+$/, '');
-        a.download = `${baseName}.docx`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
+        this.printBlob(blob, doc.file_name);
       },
       error: () => {
-        this.docError.set('Could not download the DOCX document.');
+        this.docError.set('Could not load the document for printing.');
       }
     });
   }
 
-  downloadDocumentPdf(doc: GeneratedDocument) {
-    const request = this.selectedRequest();
-    if (!request) return;
-    
-    // Check if there is an existing PDF document registered in the request's artifacts
-    const pdfDoc = this.documents().find(d => d.file_type === 'application/pdf' || d.file_name?.toLowerCase().endsWith('.pdf'));
-    const targetDoc = pdfDoc || doc;
+  private printBlob(blob: Blob, title: string) {
+    if (blob.type === 'application/pdf') {
+      const url = URL.createObjectURL(blob);
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.top = '-99999px';
+      iframe.style.left = '-99999px';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = '0';
+      iframe.src = url;
+      iframe.onload = () => {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+        setTimeout(() => { URL.revokeObjectURL(url); iframe.remove(); }, 1000);
+      };
+      document.body.appendChild(iframe);
+      return;
+    }
 
-    this.downloadingDocId.set(doc.document_id);
+    const container = document.createElement('div');
+    container.style.position = 'fixed';
+    container.style.top = '-99999px';
+    container.style.left = '-99999px';
+    container.style.width = '794px';
+    container.style.background = '#ffffff';
+    document.body.appendChild(container);
 
-    this.documentService.fetchBlob(request.request_id, targetDoc.document_id).subscribe({
-      next: async (blob) => {
-        try {
-          if (blob.type === 'application/pdf' || targetDoc.file_type === 'application/pdf') {
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            const baseName = (targetDoc.file_name || 'document').replace(/\.[^/.]+$/, '');
-            a.download = `${baseName}.pdf`;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            URL.revokeObjectURL(url);
-          } else {
-            // Convert DOCX blob directly to PDF and download
-            await this.pdfExportService.convertDocxToPdf(blob, doc.file_name || 'document');
-          }
-        } catch (err) {
-          console.error('PDF export error:', err);
-          this.docError.set('Could not generate PDF file.');
-        } finally {
-          this.downloadingDocId.set(null);
-        }
-      },
-      error: () => {
-        this.downloadingDocId.set(null);
-        this.docError.set('Could not download the PDF document.');
-      }
+    renderAsync(blob, container).then(() => {
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) { container.remove(); return; }
+
+      const styleTags = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
+        .map(node => node.outerHTML).join('\n');
+
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>${title}</title>
+            ${styleTags}
+            <style>
+              @media print { @page { margin: 10mm; size: auto; } body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; } .docx-preview-container { box-shadow: none !important; margin: 0 auto; width: 100% !important; } }
+              body { margin: 0; padding: 10mm; background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+              .docx-preview-container { box-shadow: none !important; margin: 0 auto; width: 100% !important; }
+            </style>
+          </head>
+          <body>
+            <div class="docx-preview-container">${container.innerHTML}</div>
+            <script>window.onload = function() { window.focus(); window.print(); setTimeout(function() { window.close(); }, 500); };</script>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      container.remove();
+    }).catch(err => {
+      console.error('Print render error:', err);
+      container.remove();
+      this.docError.set('Could not render the document for printing.');
     });
-  }
-
-  printDocument(doc: GeneratedDocument) {
-    this.previewDocument(doc);
   }
 
   // --- Document Preview Modal State ---
@@ -1811,10 +1874,11 @@ export class RequestsComponent implements OnInit, OnDestroy {
     if (!request) return;
     this.previewTitle = doc.file_name;
     this.previewBlob = null;
-    this.showPreview.set(true);
+    this.docError.set('');
     this.documentService.fetchBlob(request.request_id, doc.document_id).subscribe({
       next: (blob) => {
         this.previewBlob = blob;
+        this.showPreview.set(true);
       },
       error: () => {
         this.docError.set('Could not load the document for preview.');

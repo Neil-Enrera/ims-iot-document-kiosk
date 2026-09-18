@@ -53,13 +53,20 @@ const getById = async (req, res) => {
 
 const download = async (req, res) => {
   try {
-    const result = await documentService.getDocument(req.params.documentId);
+    const result = await documentService.getDocumentAsPdf(req.params.documentId);
     if (!result.success) return errorResponse(res, 404, result.message);
-    const doc = result.data;
-    if (doc.approval_status !== 'approved') {
+
+    // Check approval status on the original document
+    const originalDoc = await documentService.getDocument(req.params.documentId);
+    if (!originalDoc.success) return errorResponse(res, 404, originalDoc.message);
+    if (originalDoc.data.approval_status !== 'approved') {
       return errorResponse(res, 403, 'This document has not been approved yet and cannot be downloaded.');
     }
-    return res.download(doc.filePath, doc.file_name);
+
+    const fileName = result.isPdf
+      ? (result.fileName || 'document').replace(/\.[^/.]+$/, '') + '.pdf'
+      : result.fileName;
+    return res.download(result.filePath, fileName);
   } catch {
     return errorResponse(res, 500, 'Internal server error.');
   }

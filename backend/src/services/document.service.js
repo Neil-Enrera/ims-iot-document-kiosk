@@ -481,11 +481,60 @@ const reviewDocument = async (documentId, { status, reviewedBy, remarks }) => {
   return { success: true, message: `Document marked as "${status}".`, data: { documentId, approvalStatus: status } };
 };
 
+const findPdfForRequest = async (requestId) => {
+  return documentRepository.findPdfByRequest(requestId);
+};
+
+// Return the best PDF representation for a document:
+// 1. If the document itself is a PDF, serve it directly.
+// 2. If a PDF exists for the same request, serve that.
+// 3. Otherwise, try on-the-fly LibreOffice conversion of the DOCX.
+// 4. If all else fails, return the original DOCX (caller handles fallback).
+const getDocumentAsPdf = async (documentId) => {
+  const document = await documentRepository.findById(documentId);
+  if (!document) {
+    return { success: false, message: 'Document not found.' };
+  }
+
+  const filePath = path.join(__dirname, '../../uploads', document.file_path);
+  if (!fs.existsSync(filePath)) {
+    return { success: false, message: 'Document file is missing on the server.' };
+  }
+
+  // Already a PDF — serve it
+  if (document.file_type === 'application/pdf' || (document.file_name || '').toLowerCase().endsWith('.pdf')) {
+    return { success: true, filePath, fileName: document.file_name, isPdf: true };
+  }
+
+  // Look for an existing PDF for the same request
+  const existingPdf = await documentRepository.findPdfByRequest(document.request_id);
+  if (existingPdf) {
+    const pdfPath = path.join(__dirname, '../../uploads', existingPdf.file_path);
+    if (fs.existsSync(pdfPath)) {
+      return { success: true, filePath: pdfPath, fileName: existingPdf.file_name, isPdf: true };
+    }
+  }
+
+  // No existing PDF — attempt on-the-fly conversion
+  const converted = await tryConvertToPdf(filePath);
+  if (converted) {
+    const pdfFullPath = path.join(__dirname, '../../uploads', converted.filePath);
+    if (fs.existsSync(pdfFullPath)) {
+      return { success: true, filePath: pdfFullPath, fileName: converted.fileName, isPdf: true };
+    }
+  }
+
+  // Conversion failed — cannot produce a PDF
+  return { success: false, message: 'PDF conversion is not available on this server. Please install LibreOffice to enable PDF downloads.' };
+};
+
 module.exports = {
   generateDocument,
   renderRequestPreview,
   listDocuments,
   getDocument,
+  getDocumentAsPdf,
+  findPdfForRequest,
   deleteDocument,
   hasGeneratedDocument,
   scanTemplatePlaceholders,
