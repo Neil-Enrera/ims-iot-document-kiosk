@@ -190,12 +190,6 @@ const generateDocument = async ({ requestId, userId }) => {
     fileSize: renderedBuffer.length
   }];
 
-  // Optionally convert to PDF if LibreOffice is available
-  const pdf = await tryConvertToPdf(path.join(GENERATED_DIR, docxName));
-  if (pdf) {
-    generated.push(pdf);
-  }
-
   const validUserId = processedBy ? userId : null;
 
   for (const doc of generated) {

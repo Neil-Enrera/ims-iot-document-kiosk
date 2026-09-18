@@ -16,6 +16,8 @@ const findByRequest = async (requestId) => {
      FROM generated_documents gd
      LEFT JOIN users u ON gd.generated_by = u.user_id
      WHERE gd.request_id = ?
+       AND gd.file_type != 'application/pdf'
+       AND gd.file_name NOT LIKE '%.pdf'
      ORDER BY gd.generated_at ASC`,
     [requestId]
   );
