@@ -62,3 +62,7 @@ backend/uploads/
 
 # Generated analysis output
 /graphify-out/
+
+# SSL certificates
+*.pem
+*.pfx
