@@ -317,7 +317,7 @@ export class StatusDisplayComponent implements OnInit, OnDestroy {
   loading = signal(true);
   isRestrictedAccess = signal<boolean>(false);
 
-  readonly lanStatusUrl = 'http://192.168.100.102:4201/status-display';
+  readonly lanStatusUrl = 'https://192.168.100.102:4201/status-display';
 
   private eventSource: EventSource | null = null;
   private reconnectTimer: any;
@@ -413,13 +413,7 @@ export class StatusDisplayComponent implements OnInit, OnDestroy {
   }
 
   private getApiBaseUrl(): string {
-    if (typeof window !== 'undefined' && window.location) {
-      const hostname = window.location.hostname;
-      if (hostname === 'localhost' || hostname === '127.0.0.1') {
-        return `http://${hostname}:3000/api/v1`;
-      }
-    }
-    return environment.apiUrl;
+    return '/api/v1';
   }
 
   private fetchSnapshot() {

@@ -42,11 +42,6 @@ export class RfidScanService {
   }
 
   private getHardwareWsUrl(): string {
-    if (typeof window !== 'undefined' && window.location && window.location.hostname) {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const host = window.location.hostname;
-      return `${protocol}//${host}:3001/ws?type=kiosk`;
-    }
     return environment.hardwareWsUrl;
   }
 

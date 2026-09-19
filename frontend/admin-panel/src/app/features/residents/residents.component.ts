@@ -1585,7 +1585,8 @@ export class ResidentsComponent implements OnInit, OnDestroy {
 
   connectRfidScanner() {
     if (this.ws) return;
-    this.ws = new WebSocket('ws://localhost:3001/ws?type=kiosk');
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    this.ws = new WebSocket(`${protocol}//${window.location.hostname}/ws?type=kiosk`);
     this.ws.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data);

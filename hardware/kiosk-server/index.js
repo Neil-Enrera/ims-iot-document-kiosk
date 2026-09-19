@@ -523,9 +523,105 @@ if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
     proxyReq.on('timeout', () => { proxyReq.destroy(); res.json({ online: false }); });
   });
 
+  httpsApp.post('/api/hardware/capture', (req, res) => {
+    console.log('[Webcam-HTTPS] Capture request received from tablet');
+    const tempFilename = `capture_${Date.now()}.bmp`;
+    const outputPath = path.join(__dirname, tempFilename);
+    const cmd = `CommandCam.exe /devnum 1 /filename "${tempFilename}" /delay 500`;
+    exec(cmd, { cwd: __dirname }, (error, stdout, stderr) => {
+      if (error) {
+        console.error('[Webcam-HTTPS] CommandCam failed:', error.message);
+        return res.status(500).json({ success: false, error: `Webcam capture failed: ${error.message}` });
+      }
+      if (!fs.existsSync(outputPath)) {
+        return res.status(500).json({ success: false, error: 'Captured file not found' });
+      }
+      try {
+        const imageBuffer = fs.readFileSync(outputPath);
+        const base64Image = `data:image/bmp;base64,${imageBuffer.toString('base64')}`;
+        fs.unlinkSync(outputPath);
+        console.log('[Webcam-HTTPS] Image captured successfully');
+        res.json({ success: true, image: base64Image });
+      } catch (readError) {
+        console.error('[Webcam-HTTPS] File operation failed:', readError.message);
+        res.status(500).json({ success: false, error: 'Failed to process captured image' });
+      }
+    });
+  });
+
+  httpsApp.post('/api/arduino/rfid/verify', async (req, res) => {
+    const { uid } = req.body;
+    try {
+      const [rows] = await pool.query(
+        `SELECT r.*, rc.card_uid FROM rfid_cards rc
+         JOIN residents r ON rc.resident_id = r.resident_id
+         WHERE rc.card_uid = ? AND rc.status = 'Active' AND r.status = 'Active' LIMIT 1`,
+        [uid]
+      );
+      if (rows.length > 0) {
+        res.json({ success: true, resident: rows[0] });
+      } else {
+        res.json({ success: false, message: 'No active resident found for this card' });
+      }
+    } catch (err) {
+      console.error('[RFID-HTTPS] Verify error:', err.message);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
   const httpsServer = https.createServer(httpsOptions, httpsApp);
+  const wssHttps = new WebSocket.Server({ server: httpsServer, path: '/ws' });
+
+  wssHttps.on('connection', (ws, req) => {
+    const params = new URL(req.url, 'https://localhost').searchParams;
+    const clientType = params.get('type') || 'kiosk';
+
+    if (clientType === 'arduino') {
+      console.log('[WS-HTTPS] Arduino/ESP8266 connected');
+      arduinoClients.set('main', ws);
+      arduinoState.connected = true;
+      arduinoState.connectionType = 'ws';
+      arduinoState.lastHeartbeat = Date.now();
+      broadcastHardwareStatus();
+      startHeartbeatCheck();
+    } else {
+      console.log('[WS-HTTPS] Kiosk frontend connected');
+      kioskClients.add(ws);
+      ws.send(JSON.stringify({
+        type: 'hardware_status',
+        data: { arduino: isHardwareConnected() }
+      }));
+    }
+
+    ws.on('message', (msg) => {
+      try {
+        const data = JSON.parse(msg);
+        if (clientType === 'arduino') {
+          handleArduinoMessage(data, ws);
+        }
+      } catch (e) {}
+    });
+
+    ws.on('close', () => {
+      if (clientType === 'arduino') {
+        console.log('[WS-HTTPS] Arduino disconnected');
+        arduinoClients.delete('main');
+        if (arduinoState.connectionType === 'ws') {
+          arduinoState.connected = false;
+          arduinoState.device = null;
+          arduinoState.connectionType = null;
+        }
+        broadcastHardwareStatus();
+      } else {
+        kioskClients.delete(ws);
+      }
+    });
+
+    ws.on('error', (err) => console.error('[WS-HTTPS] Error:', err.message));
+  });
+
   httpsServer.listen(HTTPS_PORT, () =>
-    console.log(`[Kiosk Server] HTTPS + ESP32-CAM proxy on port ${HTTPS_PORT}`)
+    console.log(`[Kiosk Server] HTTPS + ESP32-CAM proxy + WS on port ${HTTPS_PORT}`)
   );
 } else {
   console.log(`[Kiosk Server] HTTPS disabled — missing key.pem/cert.pem in ${__dirname}`);

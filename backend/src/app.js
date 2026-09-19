@@ -15,12 +15,19 @@ const allowedOrigins = [
   'http://localhost:4200',
   'http://localhost:4201',
   'http://localhost:3000',
+  'https://localhost:4200',
+  'https://localhost:4201',
   'http://13.250.176.247:4200',
   'http://13.250.176.247:4201',
   'http://13.250.176.247:3000',
+  'https://13.250.176.247:4200',
+  'https://13.250.176.247:4201',
+  'https://13.250.176.247:3000',
   'http://192.168.100.102:4200',
   'http://192.168.100.102:4201',
   'http://192.168.100.102:3000',
+  'https://192.168.100.102:4201',
+  'https://192.168.100.102:3002',
   'http://192.168.100.245:4200',
   'http://192.168.100.245:4201',
   'http://192.168.100.245:3000'
@@ -29,9 +36,10 @@ const allowedOrigins = [
 app.use(helmet());
 app.use(cors({ 
   origin: (origin, callback) => {
-    // Allow requests with no origin (e.g. mobile apps, curl, server-to-server)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1 || origin.startsWith('http://192.168.') || origin.startsWith('http://172.20.')) {
+    if (allowedOrigins.indexOf(origin) !== -1 ||
+        origin.startsWith('http://192.168.') || origin.startsWith('https://192.168.') ||
+        origin.startsWith('http://172.20.') || origin.startsWith('https://172.20.')) {
       return callback(null, true);
     }
     return callback(null, true); // Permissive CORS for local LAN development

@@ -227,12 +227,7 @@ export interface PreviousRequest {
 @Injectable({ providedIn: 'root' })
 export class KioskService {
   private get apiUrl(): string {
-    if (typeof window !== 'undefined' && window.location && window.location.hostname) {
-      const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
-      const host = window.location.hostname;
-      return `${protocol}//${host}:3000/api/v1`;
-    }
-    return environment.apiUrl;
+    return '/api/v1';
   }
 
   constructor(private http: HttpClient) {}
@@ -368,7 +363,7 @@ export class KioskService {
   }
 
   captureEsp32Cam(url?: string): Observable<Blob> {
-    const targetUrl = url || environment.esp32CamCaptureUrl || 'http://192.168.100.200/capture';
+    const targetUrl = url || environment.esp32CamCaptureUrl;
     return this.http.get(targetUrl, { responseType: 'blob' });
   }
 
