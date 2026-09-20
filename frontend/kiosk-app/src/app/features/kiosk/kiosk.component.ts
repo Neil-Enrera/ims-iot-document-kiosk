@@ -2307,7 +2307,6 @@ export type BarangayStep =
                                      [src]="esp32StreamUrl()"
                                      (load)="onEsp32StreamLoad()"
                                      (error)="onEsp32StreamError()"
-                                     crossorigin="anonymous"
                                      class="absolute inset-0 w-full h-full object-cover select-none pointer-events-none rotate-90 scale-[1.35]"
                                      alt="ESP32-CAM Live Preview" />
                               } @else {
@@ -4169,7 +4168,6 @@ export type BarangayStep =
                                      [src]="esp32StreamUrl()"
                                      (load)="onEsp32StreamLoad()"
                                      (error)="onEsp32StreamError()"
-                                     crossorigin="anonymous"
                                      class="absolute inset-0 w-full h-full object-cover select-none pointer-events-none rotate-90 scale-[1.35]"
                                      alt="ESP32-CAM Live Preview" />
                               } @else {

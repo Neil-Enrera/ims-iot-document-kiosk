@@ -479,12 +479,15 @@ if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
   httpsApp.get('/esp32/stream', (req, res) => {
     console.log('[ESP32 Proxy] Stream request');
     const proxyReq = http.get(`http://${ESP32_CAM_IP}/stream`, (proxyRes) => {
-      res.writeHead(200, {
-        'Content-Type': 'multipart/x-mixed-replace; boundary=--boundary',
+      const headers = {
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
         'Access-Control-Allow-Origin': '*'
-      });
+      };
+      if (proxyRes.headers['content-type']) {
+        headers['Content-Type'] = proxyRes.headers['content-type'];
+      }
+      res.writeHead(200, headers);
       proxyRes.pipe(res);
     });
     proxyReq.on('error', (err) => {
