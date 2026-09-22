@@ -9,6 +9,7 @@ const { restrictStatusDisplayToLan } = require('../middleware/status-display-gua
 router.get('/kiosk/residents/search', controller.searchResidents);
 router.get('/kiosk/residents/:id', controller.getResident);
 router.get('/kiosk/services', controller.getServices);
+router.get('/kiosk/services/popular', controller.getPopularServices);
 router.post('/kiosk/requests', ...createRequestValidation, validate, controller.createRequest);
 router.post('/kiosk/requests/preview', ...createRequestValidation, validate, controller.previewRequestDocument);
 router.post('/kiosk/barangay-id', ...barangayIdApplicationValidation, validate, controller.createBarangayIdApplication);

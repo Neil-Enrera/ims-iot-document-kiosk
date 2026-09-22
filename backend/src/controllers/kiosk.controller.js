@@ -123,6 +123,38 @@ const getServices = async (req, res) => {
   }
 };
 
+// Public popular services for portal (ordered by request volume)
+const getPopularServices = async (req, res) => {
+  try {
+    const rawLimit = parseInt(req.query.limit, 10);
+    const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 12) : 6;
+    const [rows] = await pool.query(
+      `SELECT s.service_id, s.service_name, s.description, s.requirements, s.form_fields,
+              s.processing_fee, s.requires_photo, s.is_active, s.template_path,
+              COUNT(r.request_id) AS request_count
+       FROM services s
+       LEFT JOIN requests r ON r.service_id = s.service_id
+       WHERE s.is_active = 1 AND LOWER(TRIM(s.service_name)) != 'barangay id'
+       GROUP BY s.service_id, s.service_name, s.description, s.requirements, s.form_fields,
+                s.processing_fee, s.requires_photo, s.is_active, s.template_path
+       ORDER BY request_count DESC, s.service_name ASC
+       LIMIT ?`,
+      [limit]
+    );
+    const services = rows.map(s => ({
+      ...s,
+      requirements: parseJsonField(s.requirements),
+      form_fields: parseJsonField(s.form_fields),
+      has_template: !!s.template_path,
+      request_count: Number(s.request_count) || 0
+    }));
+    return successResponse(res, 'Popular services retrieved.', services);
+  } catch (error) {
+    console.error('Kiosk getPopularServices error:', error);
+    return errorResponse(res, 500, 'Internal server error.');
+  }
+};
+
 // Dedicated Barangay ID config endpoint for Kiosk
 const getBarangayIdConfig = async (req, res) => {
   try {
@@ -497,6 +529,7 @@ module.exports = {
   searchResidents,
   getResident,
   getServices,
+  getPopularServices,
   createRequest,
   createBarangayIdApplication,
   previewBarangayId,
