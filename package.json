@@ -6,6 +6,8 @@
     "start": "ng serve admin-panel",
     "start:admin": "ng serve admin-panel --open",
     "start:kiosk": "ng serve kiosk-app --port 4201 --host 0.0.0.0 --open",
+    "start:portal": "ng serve online-portal --port 4202 --open",
+    "build:portal": "ng build online-portal",
     "start:backend": "node backend/src/server.js",
     "start:hardware": "node hardware/kiosk-server/index.js",
     "start:all": "concurrently \"npm run start:backend\" \"npm run start:hardware\" \"npm run start:admin\" \"npm run start:kiosk\"",

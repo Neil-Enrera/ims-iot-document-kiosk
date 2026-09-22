@@ -164,6 +164,73 @@
           "builder": "@angular/build:unit-test"
         }
       }
+    },
+    "online-portal": {
+      "projectType": "application",
+      "schematics": {},
+      "root": "frontend/online-portal",
+      "sourceRoot": "frontend/online-portal/src",
+      "prefix": "portal",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "frontend/online-portal/src/main.ts",
+            "index": "frontend/online-portal/src/index.html",
+            "tsConfig": "frontend/online-portal/tsconfig.app.json",
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "public"
+              }
+            ],
+            "styles": [
+              "frontend/online-portal/src/styles.css"
+            ],
+            "polyfills": ["zone.js"],
+            "outputPath": "dist/online-portal"
+          },
+          "configurations": {
+            "production": {
+              "fileReplacements": [
+                {
+                  "replace": "frontend/online-portal/src/environments/environment.ts",
+                  "with": "frontend/online-portal/src/environments/environment.prod.ts"
+                }
+              ],
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "1MB",
+                  "maximumError": "2MB"
+                }
+              ],
+              "outputHashing": "all"
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "configurations": {
+            "production": {
+              "buildTarget": "online-portal:build:production"
+            },
+            "development": {
+              "buildTarget": "online-portal:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test"
+        }
+      }
     }
   }
 }
