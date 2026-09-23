@@ -16,6 +16,7 @@ const kioskRoutes = require('./kiosk.routes');
 const applicationRoutes = require('./application.routes');
 const barangayRoutes = require('./barangay.routes');
 const residentUpdateRoutes = require('./resident-update.routes');
+const portalAuthRoutes = require('./portal-auth.routes');
 
 router.use(healthRoutes);
 router.use('/auth', authRoutes);
@@ -33,5 +34,6 @@ router.use(kioskRoutes);
 router.use('/applications', applicationRoutes);
 router.use('/barangays', barangayRoutes);
 router.use('/resident-updates', residentUpdateRoutes);
+router.use('/portal', portalAuthRoutes);
 
 module.exports = router;

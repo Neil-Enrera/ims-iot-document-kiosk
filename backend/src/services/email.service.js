@@ -170,4 +170,96 @@ const sendLoginVerificationCode = async ({ email, name, code, expiresMinutes = 1
   }
 };
 
-module.exports = { sendVerificationCode, sendLoginVerificationCode };
+const sendPortalCredentials = async ({ email, name, accountId, temporaryPassword, portalUrl = '' }) => {
+  const mailTransporter = getTransporter();
+  const loginUrl = portalUrl ? `${portalUrl.replace(/\/$/, '')}/login` : '';
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; margin: 0; padding: 24px; }
+        .card { max-width: 520px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; padding: 32px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .header { text-align: center; border-bottom: 2px solid #f97316; padding-bottom: 16px; margin-bottom: 24px; }
+        .logo-title { font-size: 20px; font-weight: bold; color: #0f172a; margin: 0; }
+        .sub-title { font-size: 13px; color: #ea580c; font-weight: 600; text-transform: uppercase; margin: 4px 0 0 0; }
+        .greeting { font-size: 15px; color: #334155; margin-bottom: 16px; }
+        .cred-box { background: #fff7ed; border: 2px dashed #f97316; border-radius: 12px; padding: 20px; margin: 24px 0; }
+        .cred-row { display: flex; justify-content: space-between; gap: 12px; margin: 8px 0; font-size: 14px; }
+        .cred-label { color: #64748b; font-weight: 600; }
+        .cred-val { font-family: monospace; font-weight: 800; color: #0f172a; font-size: 16px; }
+        .warning-box { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px; margin-top: 16px; font-size: 12px; color: #991b1b; line-height: 1.5; }
+        .info { font-size: 13px; color: #475569; line-height: 1.6; }
+        .cta { display: inline-block; margin-top: 16px; padding: 10px 18px; background: #ea580c; color: #ffffff !important; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 13px; }
+        .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #f1f5f9; text-align: center; font-size: 11px; color: #94a3b8; }
+      </style>
+    </head>
+    <body>
+      <div class="card">
+        <div class="header">
+          <h1 class="logo-title">Barangay San Manuel</h1>
+          <p class="sub-title">Online Portal Account</p>
+        </div>
+        <p class="greeting">Hello <strong>${name || 'Resident'}</strong>,</p>
+        <p class="info">Your Barangay San Manuel Online Portal account has been created. Use the credentials below to sign in:</p>
+
+        <div class="cred-box">
+          <div class="cred-row">
+            <span class="cred-label">Account ID</span>
+            <span class="cred-val">${accountId}</span>
+          </div>
+          <div class="cred-row">
+            <span class="cred-label">Temporary Password</span>
+            <span class="cred-val">${temporaryPassword}</span>
+          </div>
+        </div>
+
+        <div class="warning-box">
+          <strong>Security Notice:</strong> For security purposes, you are required to change your temporary password when you first log in. Never share these credentials with anyone.
+        </div>
+
+        <p class="info">Sign in with your Account ID and temporary password, then create your own password.</p>
+        ${loginUrl ? `<p style="text-align:center;"><a class="cta" href="${loginUrl}">Open Online Portal</a></p>` : ''}
+
+        <div class="footer">
+          <p>Barangay San Manuel Information Management System &bull; Tarlac City</p>
+          <p>This is an automated system notification. Please do not reply directly to this email.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const subject = 'Barangay San Manuel Online Portal Account';
+  const text = `Your Online Portal account has been created.\n\nAccount ID: ${accountId}\nTemporary Password: ${temporaryPassword}\n\nYou must change this temporary password on first login.${loginUrl ? `\n\nPortal: ${loginUrl}` : ''}`;
+
+  if (mailTransporter) {
+    try {
+      const info = await mailTransporter.sendMail({
+        from: config.smtp.from,
+        to: email,
+        subject,
+        text,
+        html: htmlContent
+      });
+      console.log(`[EMAIL SERVICE] Portal credentials sent to ${email} (MessageID: ${info.messageId})`);
+      return { success: true, mode: 'smtp' };
+    } catch (err) {
+      console.error(`[EMAIL SERVICE] SMTP delivery failed to ${email}:`, err.message);
+      console.log(`[EMAIL SERVICE (FALLBACK)] Portal credentials for ${email}: Account ID ${accountId}, Temp Password ${temporaryPassword}`);
+      return { success: true, mode: 'fallback' };
+    }
+  }
+
+  console.log(`=======================================================`);
+  console.log(`[EMAIL SERVICE (DEV MODE)] Portal Account Credentials`);
+  console.log(`Recipient: ${name || 'Resident'} <${email}>`);
+  console.log(`Account ID: ${accountId}`);
+  console.log(`Temporary Password: ${temporaryPassword}`);
+  console.log(`=======================================================`);
+  return { success: true, mode: 'dev' };
+};
+
+module.exports = { sendVerificationCode, sendLoginVerificationCode, sendPortalCredentials };

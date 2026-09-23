@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'portal-layout',
@@ -32,6 +33,20 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
                class="px-3 py-2 rounded-lg hover:bg-slate-100 transition hidden sm:inline-flex">Contact Us</a>
             <a routerLink="/profile" routerLinkActive="text-[#ea580c] bg-orange-50"
                class="px-3 py-2 rounded-lg hover:bg-slate-100 transition">Profile</a>
+
+            @if (auth.isAuthenticated() && !auth.mustChangePassword()) {
+              <button
+                type="button"
+                (click)="auth.logout()"
+                class="ml-1 px-3 py-2 rounded-lg bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-xs sm:text-sm transition cursor-pointer">
+                Logout
+              </button>
+            } @else {
+              <a routerLink="/login"
+                 class="ml-1 px-3 py-2 rounded-lg bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-xs sm:text-sm transition">
+                Login
+              </a>
+            }
           </nav>
         </div>
       </header>
@@ -56,6 +71,13 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
               <li><a routerLink="/services" class="hover:text-orange-400 transition">Services</a></li>
               <li><a routerLink="/requests" class="hover:text-orange-400 transition">My Requests</a></li>
               <li><a routerLink="/contact" class="hover:text-orange-400 transition">Contact Us</a></li>
+              <li>
+                @if (auth.isAuthenticated()) {
+                  <button type="button" (click)="auth.logout()" class="hover:text-orange-400 transition cursor-pointer">Logout</button>
+                } @else {
+                  <a routerLink="/login" class="hover:text-orange-400 transition">Login</a>
+                }
+              </li>
             </ul>
           </div>
         </div>
@@ -66,4 +88,6 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
     </div>
   `
 })
-export class PortalLayoutComponent {}
+export class PortalLayoutComponent {
+  constructor(public auth: AuthService) {}
+}

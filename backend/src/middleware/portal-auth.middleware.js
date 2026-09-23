@@ -1,8 +1,7 @@
 const jwt = require('jsonwebtoken');
 const config = require('../config/environment');
 
-const authenticate = (req, res, next) => {
-  // Support both Authorization header and query string token (for SSE)
+const authenticatePortal = (req, res, next) => {
   let token = null;
 
   const authHeader = req.headers.authorization;
@@ -22,14 +21,14 @@ const authenticate = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, config.jwt.secret);
-    if (decoded && decoded.type === 'portal') {
+    if (!decoded || decoded.type !== 'portal' || !decoded.portalAccountId) {
       return res.status(401).json({
         success: false,
-        message: 'Portal tokens cannot access admin endpoints.',
+        message: 'Invalid portal access token.',
         errors: []
       });
     }
-    req.user = decoded;
+    req.portalUser = decoded;
     next();
   } catch {
     return res.status(401).json({
@@ -40,4 +39,4 @@ const authenticate = (req, res, next) => {
   }
 };
 
-module.exports = authenticate;
+module.exports = authenticatePortal;

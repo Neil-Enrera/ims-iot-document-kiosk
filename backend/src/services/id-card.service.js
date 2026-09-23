@@ -234,7 +234,8 @@ const buildContext = async ({ application, resident, barangay, processedBy }) =>
     email: application.email,
     id_number: application.id_number,
     id_expiration: application.id_expiration_date,
-    expiration_date: application.id_expiration_date
+    expiration_date: application.id_expiration_date,
+    account_id: application.account_id || ''
   };
   // A real resident record wins; otherwise fall back to the application fields.
   const residentContext = {

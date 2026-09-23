@@ -21,8 +21,8 @@ import { RouterLink } from '@angular/router';
         </div>
         <h2 class="mt-5 text-xl font-black text-slate-900">Request history will appear here</h2>
         <p class="mt-2 text-sm text-slate-500 leading-relaxed max-w-lg mx-auto">
-          This page becomes available after portal login is enabled. You'll see request numbers, statuses,
-          and correction notices for every online submission.
+          Request numbers, statuses, and correction notices for every online submission will appear here after
+          your first request.
         </p>
         <div class="mt-6">
           <a routerLink="/services"

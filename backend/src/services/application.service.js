@@ -4,6 +4,7 @@ const residentRepository = require('../repositories/resident.repository');
 const notificationService = require('../services/notification.service');
 const sseManager = require('../services/notification-sse');
 const idCardService = require('../services/id-card.service');
+const portalAccountService = require('../services/portal-account.service');
 const pool = require('../config/database');
 const fs = require('fs');
 const path = require('path');
@@ -167,6 +168,29 @@ const approveApplication = async (applicationId, userId, remarks, ipAddress) => 
 
   const resident = await residentRepository.findById(residentId);
 
+  // Auto-generate the online portal account after Barangay ID issuance
+  // (spec §4-§6). Failures are logged but never block the approval itself.
+  let portalAccount = null;
+  try {
+    const fullName = [application.first_name, application.middle_name, application.last_name]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+    const portalResult = await portalAccountService.createAccountForResident({
+      residentId,
+      email: application.email,
+      fullName
+    });
+    if (portalResult.success && portalResult.data?.account) {
+      portalAccount = portalResult.data.account;
+      updated.account_id = portalAccount.account_id;
+    } else if (!portalResult.success) {
+      console.error(`Portal account not created for application #${applicationId}:`, portalResult.message);
+    }
+  } catch (portalError) {
+    console.error(`Failed to create portal account for application #${applicationId}:`, portalError);
+  }
+
   // Generate the ID card DOCX from the barangay's id_template. Failures are
   // logged but never block the approval itself.
   try {
@@ -206,10 +230,19 @@ const approveApplication = async (applicationId, userId, remarks, ipAddress) => 
     applicationNumber: application.application_number,
     residentId,
     residentCode,
-    idNumber
+    idNumber,
+    accountId: portalAccount?.account_id || null
   });
 
-  return { success: true, message: 'Application approved and resident created.', data: { application: finalApplication, resident } };
+  return {
+    success: true,
+    message: 'Application approved and resident created.',
+    data: {
+      application: finalApplication,
+      resident,
+      accountId: portalAccount?.account_id || null
+    }
+  };
 };
 
 const rejectApplication = async (applicationId, userId, remarks, ipAddress) => {
