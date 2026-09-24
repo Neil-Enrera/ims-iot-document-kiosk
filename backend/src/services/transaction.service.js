@@ -145,7 +145,9 @@ const validateServiceFormData = (formFields, formData = {}, serviceName = 'Servi
     }
 
     // 2. Phone / Mobile validations
-    const isPhone = field.type === 'tel' || field.key.toLowerCase().includes('contact') || field.key.toLowerCase().includes('phone') || field.key.toLowerCase().includes('mobile') || (field.label && (field.label.toLowerCase().includes('contact') || field.label.toLowerCase().includes('phone') || field.label.toLowerCase().includes('mobile')));
+    const isPhoneKey = (field.key.toLowerCase().includes('number') || field.key.toLowerCase().includes('phone') || field.key.toLowerCase().includes('mobile') || field.key.toLowerCase().includes('contact_no') || field.key.toLowerCase().includes('contact_number') || field.key.toLowerCase().includes('contactnumber')) && !field.key.toLowerCase().includes('name') && !field.key.toLowerCase().includes('person') && !field.key.toLowerCase().includes('relation');
+    const isPhoneLabel = field.label && (field.label.toLowerCase().includes('number') || field.label.toLowerCase().includes('phone') || field.label.toLowerCase().includes('mobile') || field.label.toLowerCase().includes('contact number') || field.label.toLowerCase().includes('contact no')) && !field.label.toLowerCase().includes('name') && !field.label.toLowerCase().includes('person') && !field.label.toLowerCase().includes('relation');
+    const isPhone = field.type === 'tel' || isPhoneKey || isPhoneLabel;
     if (isPhone) {
       const cleanPhone = valStr.replace(/[\s\-()]/g, '');
       if (!/^(09\d{9}|\+639\d{9})$/.test(cleanPhone)) {
@@ -154,7 +156,9 @@ const validateServiceFormData = (formFields, formData = {}, serviceName = 'Servi
     }
 
     // 3. Name validations
-    const isName = !isPhone && !field.key.toLowerCase().includes('email') && !field.key.toLowerCase().includes('address') && (field.key.toLowerCase().includes('name') || field.key.toLowerCase().includes('relative') || (field.label && (field.label.toLowerCase().includes('name') || field.label.toLowerCase().includes('relative'))));
+    const isNameKey = (field.key.toLowerCase().includes('name') || field.key.toLowerCase().includes('person') || field.key.toLowerCase().includes('relative') || field.key.toLowerCase().includes('father') || field.key.toLowerCase().includes('mother') || field.key.toLowerCase().includes('spouse') || field.key.toLowerCase().includes('guardian')) && !field.key.toLowerCase().includes('number') && !field.key.toLowerCase().includes('phone');
+    const isNameLabel = field.label && (field.label.toLowerCase().includes('name') || field.label.toLowerCase().includes('person') || field.label.toLowerCase().includes('relative') || field.label.toLowerCase().includes('father') || field.label.toLowerCase().includes('mother') || field.label.toLowerCase().includes('spouse') || field.label.toLowerCase().includes('guardian')) && !field.label.toLowerCase().includes('number') && !field.label.toLowerCase().includes('phone');
+    const isName = !isPhone && !field.key.toLowerCase().includes('email') && !field.key.toLowerCase().includes('address') && (isNameKey || isNameLabel);
     if (isName) {
       if (!/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(valStr)) {
         errors.push(`${field.label || field.key} must contain letters only.`);
@@ -162,7 +166,7 @@ const validateServiceFormData = (formFields, formData = {}, serviceName = 'Servi
     }
 
     // 4. Email validations
-    const isEmail = field.type === 'email' || field.key.toLowerCase().includes('email');
+    const isEmail = field.type === 'email' || field.key.toLowerCase().includes('email') || (field.label && field.label.toLowerCase().includes('email'));
     if (isEmail) {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valStr)) {
         errors.push(`${field.label || field.key} must be a valid email address.`);
@@ -203,7 +207,7 @@ const validateServiceFormData = (formFields, formData = {}, serviceName = 'Servi
 
     // 6. String length & pattern validations
     if (typeof rawVal === 'string' && !rawVal.startsWith('data:')) {
-      const defaultMax = field.type === 'textarea' ? 500 : (isPhone ? 11 : (isName ? 100 : 255));
+      const defaultMax = field.type === 'textarea' ? 500 : (isPhone ? 25 : (isName ? 100 : 255));
       const effectiveMax = v.maxLength || defaultMax;
       if (valStr.length > effectiveMax) {
         errors.push(`${field.label || field.key} must not exceed ${effectiveMax} characters.`);

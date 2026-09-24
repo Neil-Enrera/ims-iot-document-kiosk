@@ -304,3 +304,44 @@ test('Guest Demographic Validation (validateGuestInput)', () => {
   const errors2 = validateGuestInput(invalidGuest);
   assert.ok(errors2.length >= 4, `Expected at least 4 errors, got: ${errors2.length}`);
 });
+
+test('Emergency Contact Field Validation (validateServiceFormData)', () => {
+  const formFields = [
+    {
+      key: 'emergency_contact_name',
+      label: 'Emergency Contact Person',
+      type: 'text',
+      required: true
+    },
+    {
+      key: 'emergency_contact_number',
+      label: 'Emergency Contact Number',
+      type: 'tel',
+      required: true
+    }
+  ];
+
+  // Test 1: Valid emergency contact person name and 11-digit mobile number
+  const validData = {
+    emergency_contact_name: 'Maria Dela Cruz',
+    emergency_contact_number: '09123456789'
+  };
+  const errors1 = validateServiceFormData(formFields, validData, 'Barangay ID Renewal');
+  assert.equal(errors1.length, 0, `Expected 0 errors for valid emergency contact, got: ${errors1.join(', ')}`);
+
+  // Test 2: Emergency contact name should NOT be rejected as a phone number
+  const validNameData = {
+    emergency_contact_name: 'Hanna Marie Enrera',
+    emergency_contact_number: '09987654321'
+  };
+  const errors2 = validateServiceFormData(formFields, validNameData, 'Barangay ID Renewal');
+  assert.equal(errors2.length, 0, `Expected 0 errors, got: ${errors2.join(', ')}`);
+
+  // Test 3: Invalid emergency contact number (invalid digits)
+  const invalidData = {
+    emergency_contact_name: 'Maria Dela Cruz',
+    emergency_contact_number: '08123456789' // invalid prefix
+  };
+  const errors3 = validateServiceFormData(formFields, invalidData, 'Barangay ID Renewal');
+  assert.ok(errors3.some(e => e.includes('valid 11-digit contact number')), 'Expected phone error for invalid number');
+});

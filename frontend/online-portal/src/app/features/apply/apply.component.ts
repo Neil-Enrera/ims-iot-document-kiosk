@@ -1280,6 +1280,33 @@ export class ApplyComponent implements OnInit {
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   }
 
+  isPhoneField(field: any): boolean {
+    if (field.type === 'tel') return true;
+    const key = (field.key || '').toLowerCase();
+    const label = (field.label || '').toLowerCase();
+    if (key.includes('name') || key.includes('person') || key.includes('relation') ||
+        label.includes('name') || label.includes('person') || label.includes('relation')) {
+      return false;
+    }
+    return key.includes('phone') || key.includes('mobile') || key.includes('contact_no') ||
+           key.includes('contact_number') || key.includes('contactnumber') ||
+           label.includes('phone') || label.includes('mobile') || label.includes('contact number') ||
+           label.includes('contact no');
+  }
+
+  isNameField(field: any): boolean {
+    if (this.isPhoneField(field)) return false;
+    const key = (field.key || '').toLowerCase();
+    const label = (field.label || '').toLowerCase();
+    if (key.includes('email') || key.includes('address') || label.includes('email') || label.includes('address')) {
+      return false;
+    }
+    return key.includes('name') || key.includes('person') || key.includes('relative') ||
+           key.includes('father') || key.includes('mother') || key.includes('spouse') || key.includes('guardian') ||
+           label.includes('name') || label.includes('person') || label.includes('relative') ||
+           label.includes('father') || label.includes('mother') || label.includes('spouse') || label.includes('guardian');
+  }
+
   validateAndProceedToReview(): void {
     this.formErrors = {};
 
@@ -1293,10 +1320,37 @@ export class ApplyComponent implements OnInit {
     const svc = this.selectedService();
     if (svc?.form_fields) {
       for (const field of svc.form_fields) {
-        if (field.required) {
-          const val = this.formData[field.key];
-          if (val === undefined || val === null || String(val).trim() === '') {
+        const val = this.formData[field.key];
+        const isEmpty = val === undefined || val === null || String(val).trim() === '';
+
+        if (isEmpty) {
+          if (field.required) {
             this.formErrors[field.key] = `${field.label || field.key} is required.`;
+          }
+          continue;
+        }
+
+        const valStr = String(val).trim();
+
+        // Phone validation
+        if (this.isPhoneField(field)) {
+          const cleanPhone = valStr.replace(/[\s\-()]/g, '');
+          if (!/^(09\d{9}|\+639\d{9})$/.test(cleanPhone)) {
+            this.formErrors[field.key] = `${field.label || field.key} must be a valid 11-digit contact number (e.g. 09123456789).`;
+          }
+        }
+
+        // Name validation
+        if (this.isNameField(field)) {
+          if (!/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(valStr)) {
+            this.formErrors[field.key] = `${field.label || field.key} must contain letters only.`;
+          }
+        }
+
+        // Email validation
+        if (field.type === 'email' || field.key.toLowerCase().includes('email') || (field.label && field.label.toLowerCase().includes('email'))) {
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valStr)) {
+            this.formErrors[field.key] = `${field.label || field.key} must be a valid email address.`;
           }
         }
       }

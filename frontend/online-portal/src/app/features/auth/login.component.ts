@@ -265,8 +265,8 @@ import { AuthService } from '../../core/services/auth.service';
                       <div class="rounded-full transition-colors duration-300" [class]="strengthSegmentClass(4)"></div>
                     </div>
 
-                    <!-- Real-time ASCII / Complexity Checklist -->
-                    <div class="pt-1 grid grid-cols-1 sm:grid-cols-2 gap-1 text-[11px]">
+                    <!-- Real-time Complexity Checklist -->
+                    <div class="pt-1 grid grid-cols-1 sm:grid-cols-3 gap-1 text-[11px]">
                       <div class="flex items-center gap-1.5" [class]="hasMinLength() ? 'text-emerald-700 font-medium' : 'text-slate-400'">
                         <span>{{ hasMinLength() ? '✓' : '○' }}</span>
                         <span>8+ characters</span>
@@ -278,10 +278,6 @@ import { AuthService } from '../../core/services/auth.service';
                       <div class="flex items-center gap-1.5" [class]="hasNumber() ? 'text-emerald-700 font-medium' : 'text-slate-400'">
                         <span>{{ hasNumber() ? '✓' : '○' }}</span>
                         <span>Numbers (0-9)</span>
-                      </div>
-                      <div class="flex items-center gap-1.5" [class]="hasAsciiSymbol() ? 'text-emerald-700 font-medium' : 'text-slate-400'">
-                        <span>{{ hasAsciiSymbol() ? '✓' : '○' }}</span>
-                        <span>ASCII symbols (!@#$)</span>
                       </div>
                     </div>
                   </div>
@@ -365,11 +361,10 @@ export class LoginComponent implements OnInit {
   loading = signal(false);
   resetToken = signal('');
 
-  // Real-time ASCII / Complexity Criteria for RESET mode
+  // Real-time Complexity Criteria for RESET mode
   hasMinLength = computed(() => this.newPassword().length >= 8);
   hasUpperAndLower = computed(() => /[a-z]/.test(this.newPassword()) && /[A-Z]/.test(this.newPassword()));
   hasNumber = computed(() => /\d/.test(this.newPassword()));
-  hasAsciiSymbol = computed(() => /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`§±]/.test(this.newPassword()));
 
   strengthScore = computed(() => {
     const p = this.newPassword();
@@ -378,7 +373,6 @@ export class LoginComponent implements OnInit {
     if (this.hasMinLength()) score++;
     if (this.hasUpperAndLower()) score++;
     if (this.hasNumber()) score++;
-    if (this.hasAsciiSymbol()) score++;
     return score;
   });
 
@@ -387,24 +381,25 @@ export class LoginComponent implements OnInit {
     if (!p) return '';
     const score = this.strengthScore();
     if (score <= 1) return 'Weak';
-    if (score <= 3) return 'Moderate';
+    if (score === 2) return 'Moderate';
     return 'Strong';
   });
 
   strengthBadgeClass = computed(() => {
     const score = this.strengthScore();
     if (score <= 1) return 'bg-rose-50 text-rose-700 border-rose-200';
-    if (score <= 3) return 'bg-amber-50 text-amber-700 border-amber-200';
+    if (score === 2) return 'bg-amber-50 text-amber-700 border-amber-200';
     return 'bg-emerald-50 text-emerald-700 border-emerald-200';
   });
 
   strengthSegmentClass(index: number): string {
     const score = this.strengthScore();
-    if (score < index) {
+    const effectiveScore = score === 3 ? 4 : (score === 2 ? 2 : 1);
+    if (effectiveScore < index) {
       return 'bg-slate-200';
     }
     if (score <= 1) return 'bg-rose-500';
-    if (score <= 3) return 'bg-amber-500';
+    if (score === 2) return 'bg-amber-500';
     return 'bg-emerald-500';
   }
 

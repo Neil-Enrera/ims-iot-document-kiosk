@@ -340,7 +340,7 @@ export class ServicesComponent implements OnInit {
 
   isIdService(service: Service): boolean {
     const name = (service.service_name || '').toLowerCase();
-    return name.includes('barangay id') || name.includes('id card') || name.includes('id renewal') || name.includes('id replacement') || !!service.requires_photo;
+    return name.includes('barangay id') || name.includes('id card') || name.includes('id renewal') || !!service.requires_photo;
   }
 
   onSelectService(service: Service): void {
