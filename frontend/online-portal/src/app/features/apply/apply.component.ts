@@ -1,12 +1,13 @@
 import { Component, OnInit, signal, computed, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Params, Router, RouterLink } from '@angular/router';
 import {
   PortalService,
   Service,
   UploadedRequirement,
-  FormField
+  FormField,
+  ApiResponse
 } from '../../core/services/portal.service';
 import { AuthService, PortalAccount } from '../../core/services/auth.service';
 
@@ -128,24 +129,54 @@ import { AuthService, PortalAccount } from '../../core/services/auth.service';
                 <p class="text-xs mt-1 text-emerald-800">You may proceed directly to the application form.</p>
               </div>
             } @else {
-              <div class="mt-6 space-y-4">
+              <div class="mt-6 space-y-5">
                 @for (reqName of svc.requirements; track reqName; let idx = $index) {
                   <div class="rounded-2xl border border-slate-200 p-5 bg-slate-50/50">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div>
-                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wide">Requirement #{{ idx + 1 }}</p>
-                        <h3 class="text-base font-bold text-slate-900">{{ reqName }}</h3>
+                    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                      <div class="flex-1">
+                        <div class="flex items-center gap-2">
+                          <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider">Requirement #{{ idx + 1 }}</p>
+                          @if (is2x2PhotoReq(reqName)) {
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-100 text-blue-800 border border-blue-200">
+                              2×2 ID Photo (1:1 Ratio)
+                            </span>
+                          }
+                        </div>
+                        <h3 class="text-base font-bold text-slate-900 mt-0.5">{{ reqName }}</h3>
+
+                        <!-- 2x2 Photo Specific Guidelines -->
+                        @if (is2x2PhotoReq(reqName)) {
+                          <div class="mt-2 text-xs text-slate-500 space-y-1 bg-white/70 border border-slate-200/60 rounded-xl p-3">
+                            <p class="font-semibold text-slate-700 flex items-center gap-1.5">
+                              <svg class="w-3.5 h-3.5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                              </svg>
+                              <span>2×2 ID Photo Format Checklist:</span>
+                            </p>
+                            <ul class="list-disc list-inside text-[11px] text-slate-600 space-y-0.5 pl-1">
+                              <li>Square 1:1 aspect ratio (min 300 × 300 px)</li>
+                              <li>Plain white or light background</li>
+                              <li>Front-facing, centered with neutral expression</li>
+                              <li>No eyeglasses, colored lenses, or hats obscuring the face</li>
+                            </ul>
+                          </div>
+                        }
                       </div>
 
                       <!-- Uploaded Status or Upload Button -->
                       @if (getUploadedReq(reqName); as uploaded) {
-                        <div class="flex items-center gap-3 bg-white border border-emerald-300 rounded-xl px-3 py-1.5 shadow-2xs">
-                          <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          <div class="text-left text-xs min-w-0 max-w-[200px]">
+                        <div class="flex items-center gap-3 bg-white border border-emerald-300 rounded-xl p-2.5 shadow-2xs shrink-0">
+                          @if (is2x2PhotoReq(reqName)) {
+                            <img [src]="uploaded.file_url" alt="Uploaded 2x2 ID Photo"
+                                 class="w-12 h-12 rounded-lg object-cover border border-slate-200 shrink-0" />
+                          } @else {
+                            <svg class="w-6 h-6 text-emerald-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          }
+                          <div class="text-left text-xs min-w-0 max-w-[180px]">
                             <p class="font-bold text-slate-800 truncate">{{ uploaded.original_name }}</p>
-                            <p class="text-[10px] text-slate-400">{{ formatSize(uploaded.size) }}</p>
+                            <p class="text-[10px] text-emerald-600 font-semibold">{{ formatSize(uploaded.size) }} &bull; Verified</p>
                           </div>
                           <button
                             type="button"
@@ -155,18 +186,18 @@ import { AuthService, PortalAccount } from '../../core/services/auth.service';
                           </button>
                         </div>
                       } @else {
-                        <div>
+                        <div class="shrink-0">
                           <label [for]="'file-upload-' + idx"
-                                 class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-300 hover:border-orange-500 text-slate-700 font-bold text-xs transition cursor-pointer shadow-2xs">
+                                 class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-300 hover:border-orange-500 text-slate-700 font-bold text-xs transition cursor-pointer shadow-2xs">
                             <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                               <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
                             </svg>
-                            <span>Upload Document</span>
+                            <span>{{ is2x2PhotoReq(reqName) ? 'Upload 2×2 Photo' : 'Upload Document' }}</span>
                           </label>
                           <input
                             [id]="'file-upload-' + idx"
                             type="file"
-                            accept=".pdf,image/jpeg,image/png"
+                            [accept]="is2x2PhotoReq(reqName) ? 'image/jpeg,image/png,image/webp' : '.pdf,image/jpeg,image/png'"
                             class="sr-only"
                             (change)="onFileSelected($event, reqName)"
                           />
@@ -174,13 +205,26 @@ import { AuthService, PortalAccount } from '../../core/services/auth.service';
                       }
                     </div>
 
+                    <!-- Upload Error Banner for this requirement -->
+                    @if (reqErrors()[reqName]) {
+                      <div class="mt-3 rounded-xl bg-red-50 border border-red-200 p-3 text-xs text-red-700 flex items-start gap-2">
+                        <svg class="w-4 h-4 text-red-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                        </svg>
+                        <div>
+                          <p class="font-bold">Validation Error</p>
+                          <p class="mt-0.5 leading-relaxed">{{ reqErrors()[reqName] }}</p>
+                        </div>
+                      </div>
+                    }
+
                     @if (uploadingReq() === reqName) {
-                      <div class="mt-3 flex items-center gap-2 text-xs text-orange-600">
+                      <div class="mt-3 flex items-center gap-2 text-xs text-orange-600 font-semibold">
                         <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                         </svg>
-                        <span>Uploading file...</span>
+                        <span>Validating and uploading file...</span>
                       </div>
                     }
                   </div>
@@ -278,7 +322,7 @@ import { AuthService, PortalAccount } from '../../core/services/auth.service';
                 } @else {
                   <textarea
                     [id]="'field-' + purposeField.key"
-                    rows="3"
+                    rows="2"
                     [(ngModel)]="formData['purpose']"
                     [placeholder]="purposeField.placeholder || 'e.g. Employment, Scholarship, Postal ID...'"
                     class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition">
@@ -290,9 +334,9 @@ import { AuthService, PortalAccount } from '../../core/services/auth.service';
                 </label>
                 <textarea
                   id="req-purpose"
-                  rows="3"
+                  rows="2"
                   [(ngModel)]="formData['purpose']"
-                  placeholder="e.g. Employment requirement, Bank account opening, Scholarship, Postal ID application..."
+                  placeholder="e.g. Employment requirement, Bank account opening, Scholarship, ID renewal..."
                   class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition">
                 </textarea>
               }
@@ -499,44 +543,38 @@ import { AuthService, PortalAccount } from '../../core/services/auth.service';
             <h2 class="text-xl sm:text-2xl font-black text-slate-900">Review & Confirm Request</h2>
             <p class="text-slate-500 text-sm mt-0.5">Please check your details before submitting your request to the barangay.</p>
 
-            <!-- Review Summary Card -->
-            <div class="mt-6 rounded-2xl border border-slate-200 bg-slate-50/70 p-5 sm:p-6 space-y-4">
-              <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+            <div class="mt-6 rounded-2xl bg-slate-50 border border-slate-200 p-5 space-y-4">
+              <!-- Service & Fee Breakdown -->
+              <div class="flex items-center justify-between pb-3 border-b border-slate-200">
                 <div>
-                  <span class="text-xs font-bold text-slate-400 uppercase">Service Requested</span>
-                  <h3 class="text-lg font-black text-slate-900 uppercase">{{ svc.service_name }}</h3>
+                  <span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Selected Service</span>
+                  <p class="font-black text-slate-900 text-base">{{ svc.service_name }}</p>
                 </div>
                 <div class="text-right">
-                  <span class="text-xs font-bold text-slate-400 uppercase">Processing Fee</span>
-                  <p class="text-lg font-black text-orange-600">
-                    {{ (svc.processing_fee || 0) > 0 ? ('₱' + (svc.processing_fee | number:'1.2-2')) : 'FREE' }}
+                  <span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Fee</span>
+                  <p class="font-black text-orange-600 text-base">
+                    @if (svc.processing_fee > 0) {
+                      ₱{{ svc.processing_fee | number:'1.2-2' }}
+                    } @else {
+                      FREE
+                    }
                   </p>
                 </div>
               </div>
 
-              <!-- Applicant & Address Info -->
-              <div class="grid sm:grid-cols-2 gap-4 text-xs sm:text-sm">
+              <!-- Resident & Address Summary -->
+              <div class="grid sm:grid-cols-2 gap-3 text-xs">
                 <div>
-                  <span class="font-bold text-slate-400 uppercase text-[11px] block">Resident Applicant</span>
-                  <span class="font-bold text-slate-800">{{ residentFullName() }}</span>
+                  <span class="font-bold text-slate-400 uppercase text-[11px] block">Applicant Name</span>
+                  <p class="text-slate-800 font-bold mt-0.5">{{ residentFullName() }}</p>
                 </div>
                 <div>
-                  <span class="font-bold text-slate-400 uppercase text-[11px] block">Barangay Resident ID</span>
-                  <span class="font-bold text-slate-800 font-mono">{{ auth.currentUser()?.resident_code || 'BSM-RESIDENT' }}</span>
-                </div>
-                <div>
-                  <span class="font-bold text-slate-400 uppercase text-[11px] block">Contact Number</span>
-                  <span class="font-medium text-slate-800">{{ formData['contact_number'] || auth.currentUser()?.contact_number || 'N/A' }}</span>
-                </div>
-                <div>
-                  <span class="font-bold text-slate-400 uppercase text-[11px] block">Email Address</span>
-                  <span class="font-medium text-slate-800">{{ formData['email'] || auth.currentUser()?.email || 'N/A' }}</span>
+                  <span class="font-bold text-slate-400 uppercase text-[11px] block">Resident Code / Account</span>
+                  <p class="text-slate-800 font-bold mt-0.5 font-mono">{{ auth.currentUser()?.resident_code || 'RES-00000' }} &bull; {{ auth.currentUser()?.account_id }}</p>
                 </div>
                 <div class="sm:col-span-2">
-                  <span class="font-bold text-slate-400 uppercase text-[11px] block">Complete Address</span>
-                  <p class="text-slate-800 font-medium mt-0.5 leading-relaxed">
-                    {{ formData['address'] || formData['address_line'] || auth.currentUser()?.address_line }}
-                  </p>
+                  <span class="font-bold text-slate-400 uppercase text-[11px] block">Delivery / Registered Address</span>
+                  <p class="text-slate-800 font-semibold mt-0.5">{{ formData['address'] || auth.currentUser()?.address_line }}</p>
                 </div>
                 <div class="sm:col-span-2">
                   <span class="font-bold text-slate-400 uppercase text-[11px] block">Purpose</span>
@@ -565,11 +603,23 @@ import { AuthService, PortalAccount } from '../../core/services/auth.service';
                 @if (uploadedRequirements().length === 0) {
                   <p class="text-xs text-slate-500 italic">No files attached (not required for this service).</p>
                 } @else {
-                  <ul class="space-y-1.5">
+                  <ul class="space-y-2">
                     @for (file of uploadedRequirements(); track file.requirement_name) {
-                      <li class="flex items-center justify-between text-xs bg-white border border-slate-200 rounded-lg p-2.5">
-                        <span class="font-bold text-slate-800">{{ file.requirement_name }}</span>
-                        <span class="text-slate-500 font-mono">{{ file.original_name }}</span>
+                      <li class="flex items-center justify-between text-xs bg-white border border-slate-200 rounded-xl p-2.5">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                          @if (is2x2PhotoReq(file.requirement_name)) {
+                            <img [src]="file.file_url" alt="Photo" class="w-8 h-8 rounded-lg object-cover border border-slate-200 shrink-0" />
+                          } @else {
+                            <svg class="w-5 h-5 text-slate-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                            </svg>
+                          }
+                          <div class="min-w-0">
+                            <span class="font-bold text-slate-800 block truncate">{{ file.requirement_name }}</span>
+                            <span class="text-slate-400 font-mono text-[10px] block truncate">{{ file.original_name }}</span>
+                          </div>
+                        </div>
+                        <span class="text-emerald-600 font-bold text-xs shrink-0">Attached</span>
                       </li>
                     }
                   </ul>
@@ -602,7 +652,8 @@ import { AuthService, PortalAccount } from '../../core/services/auth.service';
                   </svg>
                   <span>Submitting Request...</span>
                 } @else {
-                  <span>Confirm & Submit Request</span>
+                  <span>Submit Document Request</span>
+                  <span>&rarr;</span>
                 }
               </button>
             </div>
@@ -610,44 +661,65 @@ import { AuthService, PortalAccount } from '../../core/services/auth.service';
         }
 
         <!-- ========================================================================= -->
-        <!-- STEP 4: SUBMISSION CONFIRMATION -->
+        <!-- STEP 4: CONFIRMATION -->
         <!-- ========================================================================= -->
-        @if (wizardStep() === 4 && submittedResult(); as res) {
-          <div class="rounded-3xl border border-slate-200 bg-white p-8 sm:p-10 shadow-xs text-center py-10">
-            <div class="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center">
-              <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+        @if (wizardStep() === 4) {
+          <div class="rounded-3xl border border-emerald-200 bg-white p-6 sm:p-10 shadow-xs text-center">
+            <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-3xl flex items-center justify-center mx-auto shadow-xs">
+              <svg class="w-9 h-9" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
               </svg>
             </div>
 
-            <h2 class="text-2xl sm:text-3xl font-black text-slate-900 mt-4">Document Request Submitted!</h2>
-            <p class="text-slate-500 text-sm mt-1 max-w-md mx-auto">
-              Your online document request has been received by Barangay San Manuel staff for review and processing.
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-black uppercase tracking-wider mt-4">
+              Request Submitted Successfully
+            </span>
+
+            <h2 class="text-2xl sm:text-3xl font-black text-slate-900 mt-2">
+              Your request is being processed
+            </h2>
+            <p class="text-slate-500 text-sm max-w-md mx-auto mt-2 leading-relaxed">
+              Barangay personnel will review your application and digital requirements. You can track status updates in your resident dashboard.
             </p>
 
-            <!-- Request Number Box -->
-            <div class="mt-6 inline-block bg-orange-50 border border-orange-200 rounded-2xl p-5 px-8">
-              <span class="text-xs font-bold text-orange-700 uppercase tracking-widest block">Your Request Number</span>
-              <span class="text-2xl sm:text-3xl font-black font-mono text-slate-900 mt-1 block">
-                {{ res.request_number }}
-              </span>
-              <span class="text-xs text-slate-500 mt-1 block">Save or take note of this reference number.</span>
-            </div>
+            @if (submittedResult(); as res) {
+              <div class="mt-6 inline-block bg-slate-50 border border-slate-200 rounded-2xl p-5 text-left max-w-sm w-full">
+                <div class="flex items-center justify-between text-xs pb-2 border-b border-slate-200">
+                  <span class="font-bold text-slate-400 uppercase tracking-wider">Tracking Number</span>
+                  <span class="font-black text-orange-600 font-mono text-sm">
+                    {{ res.transaction?.transaction_number || res.requests?.[0]?.request_number }}
+                  </span>
+                </div>
+                <div class="mt-3 space-y-1.5 text-xs text-slate-600">
+                  <div class="flex justify-between">
+                    <span class="text-slate-400">Service:</span>
+                    <span class="font-bold text-slate-800">{{ svc.service_name }}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-slate-400">Status:</span>
+                    <span class="font-bold text-amber-600">Pending Staff Review</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-slate-400">Submitted:</span>
+                    <span class="font-semibold text-slate-800">{{ res.requests?.[0]?.created_at | date:'mediumDate' }}</span>
+                  </div>
+                </div>
+              </div>
+            }
 
-            <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <div class="mt-8 flex flex-wrap justify-center gap-3">
               <a routerLink="/requests"
-                 class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-sm transition">
-                View in My Requests
+                 class="px-6 py-2.5 rounded-xl bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-sm shadow-sm transition">
+                Track My Requests
               </a>
               <a routerLink="/services"
-                 class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-white border border-slate-300 hover:border-slate-400 text-slate-700 font-bold text-sm transition">
+                 class="px-6 py-2.5 rounded-xl border border-slate-300 hover:border-slate-400 text-slate-700 font-bold text-sm transition">
                 Request Another Document
               </a>
             </div>
           </div>
         }
       }
-
     </div>
   `
 })
@@ -663,8 +735,10 @@ export class ApplyComponent implements OnInit {
 
   formData: Record<string, any> = {};
   formErrors: Record<string, string> = {};
+  reqErrors = signal<Record<string, string>>({});
   uploadedRequirements = signal<UploadedRequirement[]>([]);
   uploadingReq = signal<string | null>(null);
+  uploadedPhotoUrl = signal<string | null>(null);
 
   submitting = signal<boolean>(false);
   submissionError = signal<string | null>(null);
@@ -691,7 +765,7 @@ export class ApplyComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.route.queryParams.subscribe(params => {
+    this.route.queryParams.subscribe((params: Params) => {
       let serviceId = params['service_id'];
       if (!serviceId) {
         try {
@@ -712,9 +786,9 @@ export class ApplyComponent implements OnInit {
   private loadService(serviceId: number, isReuse: boolean): void {
     this.loadingService.set(true);
     this.portalService.getServices().subscribe({
-      next: (res) => {
+      next: (res: ApiResponse<Service[]>) => {
         const list = Array.isArray(res?.data) ? res.data : [];
-        const match = list.find(s => s.service_id === serviceId && s.is_active !== false);
+        const match = list.find((s: Service) => s.service_id === serviceId && s.is_active !== false);
         if (!match) {
           this.loadingService.set(false);
           this.router.navigate(['/services']);
@@ -726,7 +800,7 @@ export class ApplyComponent implements OnInit {
 
         if (isReuse) {
           this.portalService.getPreviousServiceData(serviceId).subscribe({
-            next: (dataRes) => {
+            next: (dataRes: any) => {
               if (dataRes.data?.form_data) {
                 this.formData = {
                   ...this.formData,
@@ -758,265 +832,215 @@ export class ApplyComponent implements OnInit {
     if (r) {
       // 1. Core resident demographics defaults
       if (!defaults['full_name']) defaults['full_name'] = this.residentFullName();
-      if (!defaults['first_name']) defaults['first_name'] = r.first_name || '';
-      if (!defaults['middle_name']) defaults['middle_name'] = r.middle_name || '';
-      if (!defaults['last_name']) defaults['last_name'] = r.last_name || '';
-      if (!defaults['suffix']) defaults['suffix'] = r.suffix || '';
-      if (!defaults['birth_date']) defaults['birth_date'] = this.formatDateForInput(r.birth_date);
-      if (!defaults['place_of_birth'] && !defaults['birth_place']) {
-        defaults['place_of_birth'] = r.birth_place || '';
-        defaults['birth_place'] = r.birth_place || '';
-      }
-      if (!defaults['age']) {
-        const computedAge = this.calculateAge(r.birth_date);
-        if (computedAge !== null) defaults['age'] = computedAge;
-      }
-      if (!defaults['gender'] && !defaults['sex']) {
-        defaults['gender'] = r.gender || '';
-        defaults['sex'] = r.gender || '';
-      }
-      if (!defaults['civil_status']) defaults['civil_status'] = r.civil_status || '';
-      if (!defaults['occupation']) defaults['occupation'] = r.occupation || '';
-      if (!defaults['nationality']) defaults['nationality'] = r.nationality || 'Filipino';
-      if (!defaults['religion']) defaults['religion'] = r.religion || '';
-      if (!defaults['contact_number']) defaults['contact_number'] = r.contact_number || '';
-      if (!defaults['email']) defaults['email'] = r.email || '';
+      if (!defaults['first_name'] && r.first_name) defaults['first_name'] = r.first_name;
+      if (!defaults['middle_name'] && r.middle_name) defaults['middle_name'] = r.middle_name;
+      if (!defaults['last_name'] && r.last_name) defaults['last_name'] = r.last_name;
+      if (!defaults['suffix'] && r.suffix) defaults['suffix'] = r.suffix;
 
-      // 2. Complete Address fields
-      if (!defaults['address'] && !defaults['address_line'] && !defaults['complete_address']) {
-        const fullAddr = r.address_line || 'Barangay San Manuel, Tarlac';
-        defaults['address'] = fullAddr;
-        defaults['address_line'] = fullAddr;
-        defaults['complete_address'] = fullAddr;
-      }
-      if (!defaults['house_number']) defaults['house_number'] = r.house_number || '';
-      if (!defaults['block']) defaults['block'] = r.block || this.extractBlock(r.address_line) || '';
-      if (!defaults['lot']) defaults['lot'] = r.lot || this.extractLot(r.address_line) || '';
-      if (!defaults['street']) defaults['street'] = r.street || this.extractStreet(r.address_line) || '';
-      if (!defaults['subdivision']) defaults['subdivision'] = r.subdivision || this.extractSubdivision(r.address_line) || '';
-      if (!defaults['purok_zone'] && !defaults['purok']) {
-        const pz = r.purok_zone || r.sitio || this.extractPurok(r.address_line) || '';
-        defaults['purok_zone'] = pz;
-        defaults['purok'] = pz;
-      }
+      // 2. Dates & Demographics
+      if (!defaults['birth_date'] && r.birth_date) defaults['birth_date'] = this.formatDateForInput(r.birth_date);
+      if (!defaults['birth_place'] && r.birth_place) defaults['birth_place'] = r.birth_place;
+      if (!defaults['place_of_birth'] && r.birth_place) defaults['place_of_birth'] = r.birth_place;
+      if (!defaults['gender'] && r.gender) defaults['gender'] = r.gender;
+      if (!defaults['civil_status'] && r.civil_status) defaults['civil_status'] = r.civil_status;
+      if (!defaults['blood_type'] && r.blood_type) defaults['blood_type'] = r.blood_type;
+      if (!defaults['occupation'] && r.occupation) defaults['occupation'] = r.occupation;
+      if (!defaults['nationality'] && r.nationality) defaults['nationality'] = r.nationality || 'Filipino';
+      if (!defaults['religion'] && r.religion) defaults['religion'] = r.religion;
+
+      // 3. Contact & Emergency Contacts
+      if (!defaults['contact_number'] && r.contact_number) defaults['contact_number'] = r.contact_number;
+      if (!defaults['email'] && r.email) defaults['email'] = r.email;
+      if (!defaults['emergency_contact_name'] && r.emergency_contact_name) defaults['emergency_contact_name'] = r.emergency_contact_name;
+      if (!defaults['emergency_contact_number'] && r.emergency_contact_number) defaults['emergency_contact_number'] = r.emergency_contact_number;
+
+      // 4. Address Components
+      if (!defaults['block'] && r.block) defaults['block'] = r.block;
+      if (!defaults['lot'] && r.lot) defaults['lot'] = r.lot;
+      if (!defaults['street'] && r.street) defaults['street'] = r.street;
+      if (!defaults['subdivision'] && r.subdivision) defaults['subdivision'] = r.subdivision;
+      if (!defaults['purok_zone'] && r.purok_zone) defaults['purok_zone'] = r.purok_zone;
       if (!defaults['barangay']) defaults['barangay'] = r.barangay_name || 'San Manuel';
-      if (!defaults['municipality']) defaults['municipality'] = r.municipality || 'San Manuel';
+      if (!defaults['municipality']) defaults['municipality'] = r.municipality || 'Tarlac City';
       if (!defaults['province']) defaults['province'] = r.province || 'Tarlac';
+      if (!defaults['zip_code']) defaults['zip_code'] = r.zip_code || '2300';
 
-      // 3. Emergency Contact
-      if (!defaults['emergency_contact_name']) defaults['emergency_contact_name'] = r.emergency_contact_name || '';
-      if (!defaults['emergency_contact_number']) defaults['emergency_contact_number'] = r.emergency_contact_number || '';
+      // 5. Fallback regex address parsing
+      if (r.address_line) {
+        if (!defaults['block']) defaults['block'] = this.extractBlock(r.address_line);
+        if (!defaults['lot']) defaults['lot'] = this.extractLot(r.address_line);
+        if (!defaults['street']) defaults['street'] = this.extractStreet(r.address_line);
+        if (!defaults['subdivision']) defaults['subdivision'] = this.extractSubdivision(r.address_line);
+        if (!defaults['purok_zone']) defaults['purok_zone'] = this.extractPurok(r.address_line);
+      }
 
-      // 4. Intelligent matching for every dynamic field defined by the service
-      const targetService = svc || this.selectedService();
-      if (targetService?.form_fields) {
-        for (const field of targetService.form_fields) {
-          if (defaults[field.key] === undefined || defaults[field.key] === null || defaults[field.key] === '') {
-            const autoVal = this.resolveResidentFieldValue(r, field.key, field.label);
-            if (autoVal !== null && autoVal !== undefined && autoVal !== '') {
-              defaults[field.key] = autoVal;
-            }
-          }
+      // 6. Unified Address Line
+      if (!defaults['address']) defaults['address'] = r.address_line || 'Barangay San Manuel, Tarlac';
+      if (!defaults['address_line']) defaults['address_line'] = r.address_line || 'Barangay San Manuel, Tarlac';
+    }
+
+    // 7. Dynamic Service Field Matching
+    if (svc?.form_fields && r) {
+      for (const field of svc.form_fields) {
+        const k = field.key;
+        if (defaults[k] !== undefined && defaults[k] !== '') continue;
+
+        const resolved = this.resolveResidentFieldValue(field, r);
+        if (resolved !== undefined && resolved !== null && resolved !== '') {
+          defaults[k] = resolved;
         }
       }
+    }
+
+    // 8. Service-specific defaults (Renewal / Replacement)
+    const svcName = (svc?.service_name || '').toLowerCase();
+    if (svcName.includes('renewal')) {
+      if (!defaults['purpose']) defaults['purpose'] = 'Barangay ID Renewal';
+    } else if (svcName.includes('replacement')) {
+      if (!defaults['purpose']) defaults['purpose'] = 'Barangay ID Replacement';
+      if (!defaults['replacement_reason']) defaults['replacement_reason'] = 'Lost ID';
     }
 
     this.formData = defaults;
   }
 
-  /**
-   * Intelligent resolution for resident demographic & address fields matching Kiosk logic.
-   */
-  private resolveResidentFieldValue(r: PortalAccount, key: string, label: string = ''): any {
-    if (!r) return null;
-    const normKey = (key || '').toLowerCase().replace(/[-_\s.]/g, '');
-    const normLabel = (label || '').toLowerCase().replace(/[-_\s.]/g, '');
+  private resolveResidentFieldValue(field: FormField, r: PortalAccount): any {
+    const key = (field.key || '').toLowerCase().replace(/[-_]/g, '');
+    const label = (field.label || '').toLowerCase().replace(/[-_]/g, '');
 
-    const isMatch = (...aliases: string[]) => {
-      return aliases.some(a => {
-        const normA = a.toLowerCase().replace(/[-_\s.]/g, '');
-        return normKey === normA || normLabel === normA || normKey.includes(normA) || normLabel.includes(normA);
-      });
-    };
+    if (key === 'fullname' || label.includes('fullname') || label.includes('applicantname')) {
+      return this.residentFullName();
+    }
+    if (key === 'firstname' || label.includes('firstname')) return r.first_name || '';
+    if (key === 'middlename' || label.includes('middlename')) return r.middle_name || '';
+    if (key === 'lastname' || label.includes('lastname')) return r.last_name || '';
+    if (key === 'suffix' || label.includes('suffix')) return r.suffix || '';
 
-    // Full Name
-    if (isMatch('fullname', 'full_name', 'applicantname', 'residentname', 'completename', 'nameofresident') &&
-        !isMatch('emergency', 'relative', 'father', 'mother', 'spouse', 'guardian', 'beneficiary')) {
-      const parts = [r.first_name, r.middle_name, r.last_name, r.suffix].filter(Boolean);
-      return parts.join(' ');
-    }
-    // First Name
-    if (isMatch('firstname', 'first_name', 'givenname') &&
-        !isMatch('emergency', 'relative', 'father', 'mother', 'spouse', 'guardian', 'beneficiary')) {
-      return r.first_name || '';
-    }
-    // Middle Name
-    if (isMatch('middlename', 'middle_name') &&
-        !isMatch('emergency', 'relative', 'father', 'mother', 'spouse', 'guardian', 'beneficiary')) {
-      return r.middle_name || '';
-    }
-    // Last Name
-    if (isMatch('lastname', 'last_name', 'surname', 'familyname') &&
-        !isMatch('emergency', 'relative', 'father', 'mother', 'spouse', 'guardian', 'beneficiary')) {
-      return r.last_name || '';
-    }
-    // Suffix
-    if (isMatch('suffix', 'namesuffix') &&
-        !isMatch('emergency', 'relative', 'father', 'mother', 'spouse', 'guardian', 'beneficiary')) {
-      return r.suffix || '';
-    }
-    // Birth Date / DOB
-    if (isMatch('birthdate', 'birth_date', 'dateofbirth', 'dob', 'bdate')) {
+    if (key === 'birthdate' || key === 'dob' || label.includes('birthdate') || label.includes('dateofbirth')) {
       return this.formatDateForInput(r.birth_date);
     }
-    // Place of Birth
-    if (isMatch('birthplace', 'birth_place', 'placeofbirth', 'place_of_birth', 'pob')) {
+    if (key === 'birthplace' || key === 'placeofbirth' || label.includes('birthplace') || label.includes('placeofbirth')) {
       return r.birth_place || '';
     }
-    // Age
-    if (isMatch('age', 'ageyears')) {
-      const computedAge = this.calculateAge(r.birth_date);
-      return computedAge !== null ? computedAge : '';
+    if (key === 'age' || label.includes('age')) {
+      return this.calculateAge(r.birth_date);
     }
-    // Gender / Sex
-    if (isMatch('gender', 'sex')) {
+    if (key === 'gender' || key === 'sex' || label.includes('gender') || label.includes('sex')) {
       return r.gender || '';
     }
-    // Civil Status / Marital Status
-    if (isMatch('civilstatus', 'civil_status', 'maritalstatus', 'marital_status')) {
+    if (key === 'civilstatus' || key === 'maritalstatus' || label.includes('civilstatus') || label.includes('maritalstatus')) {
       return r.civil_status || '';
     }
-    // Blood Type
-    if (isMatch('bloodtype', 'blood_type')) {
+    if (key === 'bloodtype' || label.includes('bloodtype')) {
       return r.blood_type || '';
     }
-    // Occupation
-    if (isMatch('occupation', 'profession', 'job')) {
+    if (key === 'occupation' || key === 'profession' || label.includes('occupation') || label.includes('profession')) {
       return r.occupation || '';
     }
-    // Nationality / Citizenship
-    if (isMatch('nationality', 'citizenship')) {
+    if (key === 'nationality' || key === 'citizenship' || label.includes('nationality') || label.includes('citizenship')) {
       return r.nationality || 'Filipino';
     }
-    // Religion
-    if (isMatch('religion')) {
+    if (key === 'religion' || label.includes('religion')) {
       return r.religion || '';
     }
-    // Contact Number / Phone
-    if (isMatch('contactnumber', 'contact_number', 'contactno', 'contact_no', 'phone', 'phonenumber', 'mobile', 'mobilenumber', 'cellphone', 'tel') &&
-        !isMatch('emergency')) {
+    if (key === 'contactnumber' || key === 'mobilenumber' || key === 'phone' || key === 'phonenumber' || label.includes('contactnumber') || label.includes('mobilenumber') || label.includes('phone')) {
       return r.contact_number || '';
     }
-    // Email
-    if (isMatch('email', 'emailaddress', 'email_address')) {
+    if (key === 'email' || key === 'emailaddress' || label.includes('email')) {
       return r.email || '';
     }
-    // Complete Address
-    if (isMatch('completeaddress', 'complete_address', 'addressline', 'address_line', 'residentialaddress') ||
-        (isMatch('address') && !isMatch('email', 'block', 'lot', 'street', 'purok', 'zone', 'subdivision', 'barangay'))) {
-      return r.address_line || '';
-    }
-    // Block
-    if (isMatch('block', 'blockno', 'block_no', 'blocknumber', 'blk')) {
-      return r.block || this.extractBlock(r.address_line) || '';
-    }
-    // Lot
-    if (isMatch('lot', 'lotno', 'lot_no', 'lotnumber')) {
-      return r.lot || this.extractLot(r.address_line) || '';
-    }
-    // House No
-    if (isMatch('housenumber', 'house_number', 'houseno', 'house_no')) {
-      return r.house_number || '';
-    }
-    // Street
-    if (isMatch('street', 'streetname', 'street_name', 'st')) {
-      return r.street || this.extractStreet(r.address_line) || '';
-    }
-    // Subdivision
-    if (isMatch('subdivision', 'subd', 'village')) {
-      return r.subdivision || this.extractSubdivision(r.address_line) || '';
-    }
-    // Purok / Zone / Sitio
-    if (isMatch('purok', 'zone', 'purokzone', 'purok_zone', 'purokno', 'sitio')) {
-      return r.purok_zone || r.sitio || this.extractPurok(r.address_line) || '';
-    }
-    // Barangay
-    if (isMatch('barangay', 'brgy', 'bgy')) {
-      return r.barangay_name || 'San Manuel';
-    }
-    // Municipality
-    if (isMatch('municipality', 'city', 'town')) {
-      return r.municipality || 'San Manuel';
-    }
-    // Province
-    if (isMatch('province')) {
-      return r.province || 'Tarlac';
-    }
-    // Emergency Contact Person
-    if (isMatch('emergencycontactname', 'emergency_contact_name', 'emergencyname', 'emergency_name', 'emergencycontactperson', 'emergencycontact')) {
+    if (key.includes('emergency') && (key.includes('name') || key.includes('person') || key.includes('contact'))) {
       return r.emergency_contact_name || '';
     }
-    // Emergency Contact Number
-    if (isMatch('emergencycontactnumber', 'emergency_contact_number', 'emergencycontactno', 'emergency_contact_no', 'emergencyphone', 'emergencymobile')) {
+    if (key.includes('emergency') && (key.includes('number') || key.includes('phone') || key.includes('tel'))) {
       return r.emergency_contact_number || '';
     }
 
-    // Generic fallback: check if r has exact matching property
-    if ((r as any)[key] !== undefined && (r as any)[key] !== null) {
-      return (r as any)[key];
+    if (key === 'block' || key === 'blockno' || key === 'blk' || label.includes('block')) {
+      return r.block || this.extractBlock(r.address_line);
+    }
+    if (key === 'lot' || key === 'lotno' || label.includes('lot')) {
+      return r.lot || this.extractLot(r.address_line);
+    }
+    if (key === 'houseno' || key === 'housenumber' || label.includes('houseno') || label.includes('housenumber')) {
+      return r.house_number || '';
+    }
+    if (key === 'street' || key === 'streetname' || label.includes('street')) {
+      return r.street || this.extractStreet(r.address_line);
+    }
+    if (key === 'subdivision' || key === 'village' || label.includes('subdivision') || label.includes('village')) {
+      return r.subdivision || this.extractSubdivision(r.address_line);
+    }
+    if (key === 'purok' || key === 'purokzone' || key === 'zone' || label.includes('purok') || label.includes('zone')) {
+      return r.purok_zone || this.extractPurok(r.address_line);
+    }
+    if (key === 'barangay' || label.includes('barangay')) {
+      return r.barangay_name || 'San Manuel';
+    }
+    if (key === 'municipality' || key === 'city' || label.includes('municipality') || label.includes('city')) {
+      return r.municipality || 'Tarlac City';
+    }
+    if (key === 'province' || label.includes('province')) {
+      return r.province || 'Tarlac';
+    }
+    if (key === 'zipcode' || key === 'postalcode' || label.includes('zipcode') || label.includes('postalcode')) {
+      return r.zip_code || '2300';
+    }
+    if (key === 'address' || key === 'completeaddress' || key === 'addressline' || label.includes('address')) {
+      return r.address_line || 'Barangay San Manuel, Tarlac';
     }
 
-    return null;
+    return undefined;
   }
 
-  // Address extraction regex fallbacks identical to Kiosk
-  private extractBlock(addr: string | null | undefined): string | null {
-    if (!addr) return null;
-    const m = addr.match(/(?:blk|block)\.?\s*([0-9a-z-]+)/i);
-    return m ? m[1] : null;
+  private extractBlock(addr?: string | null): string {
+    if (!addr) return '';
+    const m = addr.match(/blk\.?\s*([0-9a-zA-Z]+)/i) || addr.match(/block\s*([0-9a-zA-Z]+)/i);
+    return m ? m[1] : '';
   }
 
-  private extractLot(addr: string | null | undefined): string | null {
-    if (!addr) return null;
-    const m = addr.match(/(?:lot)\.?\s*([0-9a-z-]+)/i);
-    return m ? m[1] : null;
+  private extractLot(addr?: string | null): string {
+    if (!addr) return '';
+    const m = addr.match(/lot\.?\s*([0-9a-zA-Z]+(?:\s+[a-zA-Z])?)/i);
+    return m ? m[1] : '';
   }
 
-  private extractStreet(addr: string | null | undefined): string | null {
-    if (!addr) return null;
-    const m = addr.match(/(?:,\s*|\b)([0-9a-z\s]+?(?:street|st\.|st|ave|avenue|dr|drive|rd|road))\b/i);
-    return m ? m[1].trim() : null;
+  private extractStreet(addr?: string | null): string {
+    if (!addr) return '';
+    const m = addr.match(/([a-zA-Z0-9\s]+?)\s*(?:st\.?|street)/i);
+    if (m) return m[1].replace(/^(?:blk|block|lot)\.?\s*[0-9a-zA-Z]+,?\s*/i, '').trim();
+    return '';
   }
 
-  private extractSubdivision(addr: string | null | undefined): string | null {
-    if (!addr) return null;
-    const m = addr.match(/(?:,\s*|\b)([0-9a-z\s]+?(?:subd|subdivision|village|homes|estates))\b/i);
-    return m ? m[1].trim() : null;
+  private extractSubdivision(addr?: string | null): string {
+    if (!addr) return '';
+    const m = addr.match(/([a-zA-Z0-9\s]+?)\s*(?:subd\.?|subdivision|village|hills|homes|park)/i);
+    if (m) return m[0].replace(/^,?\s*/, '').trim();
+    return '';
   }
 
-  private extractPurok(addr: string | null | undefined): string | null {
-    if (!addr) return null;
-    const m = addr.match(/(?:purok|zone|prk|zn)\.?\s*([0-9a-z-]+)/i);
-    return m ? `Purok ${m[1]}` : null;
+  private extractPurok(addr?: string | null): string {
+    if (!addr) return '';
+    const m = addr.match(/purok\s*([0-9a-zA-Z]+)/i) || addr.match(/zone\s*([0-9a-zA-Z]+)/i);
+    return m ? m[0] : '';
   }
 
-  private calculateAge(birthDate: string | Date | null | undefined): number | null {
-    if (!birthDate) return null;
-    const d = new Date(birthDate);
-    if (isNaN(d.getTime())) return null;
+  calculateAge(birthDate: string | Date | null | undefined): string {
+    if (!birthDate) return '';
+    const dob = new Date(birthDate);
+    if (isNaN(dob.getTime())) return '';
     const today = new Date();
-    let age = today.getFullYear() - d.getFullYear();
-    const m = today.getMonth() - d.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < d.getDate())) {
+    let age = today.getFullYear() - dob.getFullYear();
+    const m = today.getMonth() - dob.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
       age--;
     }
-    return age >= 0 ? age : null;
+    return age >= 0 ? String(age) : '';
   }
 
-  formatDateForInput(val: string | Date | null | undefined): string {
+  private formatDateForInput(val: string | Date | null | undefined): string {
     if (!val) return '';
     if (val instanceof Date) {
-      if (isNaN(val.getTime())) return '';
       const year = val.getFullYear();
       const month = String(val.getMonth() + 1).padStart(2, '0');
       const day = String(val.getDate()).padStart(2, '0');
@@ -1125,19 +1149,94 @@ export class ApplyComponent implements OnInit {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  is2x2PhotoReq(reqName: string): boolean {
+    const n = (reqName || '').toLowerCase();
+    return n.includes('2x2') || n.includes('photo') || n.includes('picture') || n.includes('id picture') || n.includes('passport-size');
+  }
+
+  setReqError(reqName: string, errorMsg: string): void {
+    const current = { ...this.reqErrors() };
+    current[reqName] = errorMsg;
+    this.reqErrors.set(current);
+  }
+
+  clearReqError(reqName: string): void {
+    const current = { ...this.reqErrors() };
+    delete current[reqName];
+    this.reqErrors.set(current);
+  }
+
   onFileSelected(event: Event, reqName: string): void {
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) return;
 
     const file = input.files[0];
+    this.clearReqError(reqName);
+
+    // 1. General file size check
     if (file.size > 10 * 1024 * 1024) {
-      alert('File size exceeds the 10MB limit. Please upload a smaller file.');
+      this.setReqError(reqName, 'File size exceeds the 10MB limit. Please upload a smaller file.');
       return;
     }
 
+    // 2. Specialized 2x2 ID Photo Validation
+    if (this.is2x2PhotoReq(reqName)) {
+      if (!file.type.startsWith('image/')) {
+        this.setReqError(reqName, 'Invalid file format. 2×2 ID photos must be an image file (JPG, PNG, WEBP), not a document.');
+        return;
+      }
+
+      if (file.size < 20 * 1024) {
+        this.setReqError(reqName, 'Image file is too small or corrupted (less than 20KB). Please upload a clear photo.');
+        return;
+      }
+
+      // Read image dimensions & aspect ratio
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        const img = new Image();
+        img.onload = () => {
+          const width = img.naturalWidth;
+          const height = img.naturalHeight;
+          const ratio = width / height;
+
+          // Aspect ratio validation (1:1 square with 15% tolerance)
+          if (ratio < 0.85 || ratio > 1.15) {
+            this.setReqError(
+              reqName,
+              `Invalid photo aspect ratio (${width}×${height}px). A 2×2 ID photo must be square (1:1 aspect ratio). Please crop or upload a 2×2 square image.`
+            );
+            return;
+          }
+
+          // Resolution validation (at least 300x300px)
+          if (width < 300 || height < 300) {
+            this.setReqError(
+              reqName,
+              `Photo resolution is too low (${width}×${height}px). 2×2 ID photos must be at least 300×300px for clear ID printing.`
+            );
+            return;
+          }
+
+          // Valid image -> proceed with upload
+          this.performUpload(file, reqName, true);
+        };
+        img.onerror = () => {
+          this.setReqError(reqName, 'Unable to process image file. It may be corrupted.');
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    } else {
+      // Non-photo digital requirement upload
+      this.performUpload(file, reqName, false);
+    }
+  }
+
+  private performUpload(file: File, reqName: string, isPhoto: boolean): void {
     this.uploadingReq.set(reqName);
     this.portalService.uploadRequirement(file).subscribe({
-      next: (res) => {
+      next: (res: ApiResponse<UploadedRequirement>) => {
         if (res.success && res.data) {
           const uploaded: UploadedRequirement = {
             requirement_name: reqName,
@@ -1147,26 +1246,31 @@ export class ApplyComponent implements OnInit {
             size: res.data.size,
             mime_type: res.data.mime_type
           };
-          const current = this.uploadedRequirements().filter(r => r.requirement_name !== reqName);
+          const current = this.uploadedRequirements().filter((r: UploadedRequirement) => r.requirement_name !== reqName);
           this.uploadedRequirements.set([...current, uploaded]);
+
+          if (isPhoto || this.selectedService()?.requires_photo) {
+            this.uploadedPhotoUrl.set(res.data.file_url);
+          }
         }
         this.uploadingReq.set(null);
       },
-      error: (err) => {
-        alert(err?.error?.message || 'Failed to upload document. Please try again.');
+      error: (err: any) => {
+        this.setReqError(reqName, err?.error?.message || 'Failed to upload document. Please try again.');
         this.uploadingReq.set(null);
       }
     });
   }
 
   getUploadedReq(reqName: string): UploadedRequirement | undefined {
-    return this.uploadedRequirements().find(r => r.requirement_name === reqName);
+    return this.uploadedRequirements().find((r: UploadedRequirement) => r.requirement_name === reqName);
   }
 
   removeUploadedReq(reqName: string): void {
     this.uploadedRequirements.set(
-      this.uploadedRequirements().filter(r => r.requirement_name !== reqName)
+      this.uploadedRequirements().filter((r: UploadedRequirement) => r.requirement_name !== reqName)
     );
+    this.clearReqError(reqName);
   }
 
   formatSize(bytes?: number): string {
@@ -1219,14 +1323,15 @@ export class ApplyComponent implements OnInit {
       service_id: svc.service_id,
       form_data: this.formData,
       requirements: this.uploadedRequirements(),
+      photo: this.uploadedPhotoUrl() || undefined,
       idempotency_key: idempotencyKey
     }).subscribe({
-      next: (res) => {
+      next: (res: ApiResponse<any>) => {
         this.submitting.set(false);
         this.submittedResult.set(res.data);
         this.proceedToStep(4);
       },
-      error: (err) => {
+      error: (err: any) => {
         this.submitting.set(false);
         this.submissionError.set(err?.error?.message || 'Failed to submit request. Please try again.');
       }
