@@ -1,7 +1,8 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { BarangayUpdate, PortalService, Service } from '../../core/services/portal.service';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'portal-home',
@@ -77,11 +78,20 @@ import { BarangayUpdate, PortalService, Service } from '../../core/services/port
       } @else {
         <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           @for (service of popularServices(); track service.service_id) {
-            <article class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex flex-col">
+            <article
+              (click)="selectService(service)"
+              (keydown.enter)="selectService(service)"
+              (keydown.space)="$event.preventDefault(); selectService(service)"
+              role="button"
+              tabindex="0"
+              [attr.aria-label]="'Request ' + service.service_name"
+              class="bg-white border border-slate-200 hover:border-orange-500 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-2xl p-5 shadow-xs flex flex-col cursor-pointer group">
               <div class="flex items-start justify-between gap-3">
-                <h3 class="font-black text-lg text-[#0f172a]">{{ service.service_name }}</h3>
+                <h3 class="font-black text-lg text-[#0f172a] group-hover:text-orange-600 transition-colors uppercase leading-snug">
+                  {{ service.service_name }}
+                </h3>
                 @if (service.request_count) {
-                  <span class="px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200 text-xs font-bold whitespace-nowrap"
+                  <span class="px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200 text-xs font-bold whitespace-nowrap shrink-0"
                         [attr.aria-label]="service.request_count + ' requests'">
                     {{ service.request_count }} req
                   </span>
@@ -90,14 +100,18 @@ import { BarangayUpdate, PortalService, Service } from '../../core/services/port
               @if (service.description) {
                 <p class="text-sm text-slate-500 mt-2 leading-relaxed line-clamp-3">{{ service.description }}</p>
               }
-              <div class="mt-auto pt-5 flex items-center justify-between gap-3">
+              <div class="mt-auto pt-5 flex items-center justify-between gap-3 border-t border-slate-100">
                 <span class="text-sm font-bold text-slate-700">
-                  ₱{{ service.processing_fee | number:'1.2-2' }}
+                  @if (service.processing_fee > 0) {
+                    ₱{{ service.processing_fee | number:'1.2-2' }}
+                  } @else {
+                    FREE
+                  }
                 </span>
-                <a routerLink="/services"
-                   class="text-sm font-bold text-orange-700 hover:text-orange-800 transition">
-                  View details &rarr;
-                </a>
+                <span class="text-xs font-black uppercase tracking-wider text-orange-600 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                  <span>Apply now</span>
+                  <span aria-hidden="true">&rarr;</span>
+                </span>
               </div>
             </article>
           } @empty {
@@ -194,7 +208,30 @@ export class HomeComponent implements OnInit {
   popularError = signal(false);
   updates = signal<BarangayUpdate[]>([]);
 
-  constructor(private portalService: PortalService) {}
+  constructor(
+    private portalService: PortalService,
+    private router: Router,
+    public auth: AuthService
+  ) {}
+
+  selectService(service: Service): void {
+    try {
+      sessionStorage.setItem('portal_selected_service_id', String(service.service_id));
+    } catch {
+      // sessionStorage may be unavailable
+    }
+
+    if (!this.auth.isAuthenticated() || this.auth.mustChangePassword()) {
+      this.router.navigate(['/login'], {
+        queryParams: { returnUrl: `/apply?service_id=${service.service_id}` }
+      });
+      return;
+    }
+
+    this.router.navigate(['/apply'], {
+      queryParams: { service_id: service.service_id }
+    });
+  }
 
   ngOnInit(): void {
     this.portalService.getPopularServices(6).subscribe({

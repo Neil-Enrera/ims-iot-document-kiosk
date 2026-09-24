@@ -37,10 +37,7 @@ import { AuthService } from '../../core/services/auth.service';
             />
           </div>
           <p class="text-xs font-semibold text-slate-500 sm:ml-auto">
-            {{ filteredServices().length }} service{{ filteredServices().length === 1 ? '' : 's' }}
-            @if (selected(); as sel) {
-              <span class="text-orange-600"> &bull; Selected: {{ sel.service_name }}</span>
-            }
+            {{ filteredServices().length }} service{{ filteredServices().length === 1 ? '' : 's' }} available
           </p>
         </div>
       }
@@ -60,23 +57,16 @@ import { AuthService } from '../../core/services/auth.service';
         <div class="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           @for (service of filteredServices(); track service.service_id) {
             <article
-              class="bg-white border rounded-2xl p-5 shadow-xs flex flex-col transition cursor-pointer"
-              [class.border-orange-500]="isSelected(service)"
-              [class.bg-orange-50/40]="isSelected(service)"
-              [class.ring-2]="isSelected(service)"
-              [class.ring-orange-500/30]="isSelected(service)"
-              [class.border-slate-200]="!isSelected(service)"
-              [class.hover:border-orange-300]="!isSelected(service)"
+              (click)="onSelectService(service)"
+              (keydown.enter)="onSelectService(service)"
+              (keydown.space)="$event.preventDefault(); onSelectService(service)"
               role="button"
               tabindex="0"
-              [attr.aria-pressed]="isSelected(service)"
-              [attr.aria-label]="'Select ' + service.service_name"
-              (click)="selectService(service)"
-              (keydown.enter)="selectService(service)"
-              (keydown.space)="$event.preventDefault(); selectService(service)"
+              [attr.aria-label]="'Request ' + service.service_name"
+              class="bg-white border border-slate-200 hover:border-orange-500 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-2xl p-5 shadow-xs flex flex-col cursor-pointer group"
             >
               <div class="flex items-start gap-3">
-                <div class="w-10 h-10 rounded-xl bg-orange-50 border border-orange-100 text-orange-600 shrink-0 flex items-center justify-center">
+                <div class="w-10 h-10 rounded-xl bg-orange-50 border border-orange-100 text-orange-600 group-hover:bg-orange-500 group-hover:text-white transition-colors shrink-0 flex items-center justify-center">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round"
                           d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -84,10 +74,10 @@ import { AuthService } from '../../core/services/auth.service';
                 </div>
                 <div class="min-w-0 flex-1">
                   <div class="flex items-start justify-between gap-3">
-                    <h2 class="font-black text-lg text-[#0f172a] uppercase leading-snug break-words">
+                    <h2 class="font-black text-lg text-[#0f172a] group-hover:text-orange-600 transition-colors uppercase leading-snug break-words">
                       {{ service.service_name }}
                     </h2>
-                    <span class="px-2.5 py-1 rounded-full bg-orange-50 text-orange-700 border border-orange-200 text-xs font-bold whitespace-nowrap">
+                    <span class="px-2.5 py-1 rounded-full bg-orange-50 text-orange-700 border border-orange-200 text-xs font-bold whitespace-nowrap shrink-0">
                       @if (service.processing_fee > 0) {
                         ₱{{ service.processing_fee | number:'1.2-2' }}
                       } @else {
@@ -121,14 +111,9 @@ import { AuthService } from '../../core/services/auth.service';
                 </div>
               }
 
-              <div class="mt-auto pt-5">
-                <button
-                  type="button"
-                  (click)="continueRequest(service); $event.stopPropagation()"
-                  class="w-full text-center px-4 py-2.5 rounded-xl font-bold text-sm transition cursor-pointer bg-[#ea580c] hover:bg-[#c2410c] text-white shadow-xs flex items-center justify-center gap-1.5">
-                  <span>Select service</span>
-                  <span aria-hidden="true">&rarr;</span>
-                </button>
+              <div class="mt-auto pt-5 flex items-center justify-between border-t border-slate-100 text-xs font-black uppercase tracking-wider text-orange-600">
+                <span>Apply now</span>
+                <span class="group-hover:translate-x-1 transition-transform" aria-hidden="true">&rarr;</span>
               </div>
             </article>
           } @empty {
@@ -142,61 +127,6 @@ import { AuthService } from '../../core/services/auth.service';
           }
         </div>
       }
-
-      @if (!loading() && !error() && selected(); as sel) {
-        <div class="mt-8 rounded-3xl border border-orange-200 bg-orange-50 p-5 sm:p-6 shadow-xs sticky bottom-4 z-10">
-          <div class="flex flex-col sm:flex-row sm:items-center gap-4">
-            <div class="min-w-0 flex-1">
-              <p class="text-[11px] font-black uppercase tracking-wider text-orange-700">Selected service</p>
-              <p class="mt-0.5 font-black text-lg text-[#0f172a] uppercase">{{ sel.service_name }}</p>
-              <p class="text-sm text-orange-900/80 mt-0.5">
-                Fee:
-                @if (sel.processing_fee > 0) {
-                  ₱{{ sel.processing_fee | number:'1.2-2' }}
-                } @else {
-                  Free
-                }
-                @if (sel.requirements?.length) {
-                  &bull; {{ sel.requirements.length }} requirement{{ sel.requirements.length === 1 ? '' : 's' }}
-                }
-              </p>
-            </div>
-            <div class="flex flex-col sm:flex-row gap-2 sm:shrink-0">
-              <button
-                type="button"
-                (click)="clearSelection(); $event.stopPropagation()"
-                class="px-5 py-2.5 rounded-xl bg-white border border-slate-300 hover:border-orange-400 text-slate-800 font-bold text-sm transition cursor-pointer">
-                Clear
-              </button>
-              @if (auth.isAuthenticated() && !auth.mustChangePassword()) {
-                <button
-                  type="button"
-                  (click)="continueRequest(sel)"
-                  class="px-5 py-2.5 rounded-xl bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-sm transition cursor-pointer">
-                  Continue with {{ sel.service_name }}
-                </button>
-              } @else {
-                <button
-                  type="button"
-                  (click)="continueRequest(sel)"
-                  class="px-5 py-2.5 rounded-xl bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-sm transition cursor-pointer">
-                  Login to continue
-                </button>
-              }
-            </div>
-          </div>
-          @if (auth.isAuthenticated() && !auth.mustChangePassword()) {
-            <p class="mt-3 text-xs text-orange-900/70 leading-relaxed">
-              You’ll continue this request as a signed-in resident. Keep the listed requirements ready for upload.
-            </p>
-          } @else {
-            <p class="mt-3 text-xs text-orange-900/70 leading-relaxed">
-              Resident login is required to submit online requests. Don’t have an account? Visit Barangay San Manuel
-              to apply for a Barangay ID and activate your portal account.
-            </p>
-          }
-        </div>
-      }
     </div>
   `
 })
@@ -205,7 +135,6 @@ export class ServicesComponent implements OnInit {
   loading = signal(true);
   error = signal<string | null>(null);
   search = signal('');
-  selected = signal<Service | null>(null);
 
   filteredServices = computed(() => {
     const q = this.search().trim().toLowerCase();
@@ -238,23 +167,7 @@ export class ServicesComponent implements OnInit {
     });
   }
 
-  isSelected(service: Service): boolean {
-    return this.selected()?.service_id === service.service_id;
-  }
-
-  selectService(service: Service): void {
-    if (this.selected()?.service_id === service.service_id) {
-      this.selected.set(null);
-      return;
-    }
-    this.selected.set(service);
-  }
-
-  clearSelection(): void {
-    this.selected.set(null);
-  }
-
-  continueRequest(service: Service): void {
+  onSelectService(service: Service): void {
     try {
       sessionStorage.setItem('portal_selected_service_id', String(service.service_id));
     } catch {

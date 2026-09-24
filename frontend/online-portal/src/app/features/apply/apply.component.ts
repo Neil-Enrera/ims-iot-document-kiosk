@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed, inject } from '@angular/core';
+import { Component, OnInit, signal, computed, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -8,7 +8,7 @@ import {
   UploadedRequirement,
   FormField
 } from '../../core/services/portal.service';
-import { AuthService } from '../../core/services/auth.service';
+import { AuthService, PortalAccount } from '../../core/services/auth.service';
 
 @Component({
   selector: 'portal-apply',
@@ -209,51 +209,107 @@ import { AuthService } from '../../core/services/auth.service';
         <!-- ========================================================================= -->
         @if (wizardStep() === 2) {
           <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
-            <h2 class="text-xl sm:text-2xl font-black text-slate-900">Application Information</h2>
-            <p class="text-slate-500 text-sm mt-0.5">
-              Your verified Barangay ID information is prefilled. Specify your request purpose and any required details.
-            </p>
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-slate-100">
+              <div>
+                <h2 class="text-xl sm:text-2xl font-black text-slate-900">Application Information</h2>
+                <p class="text-slate-500 text-sm mt-0.5">
+                  Your registered resident profile and address are automatically populated. Review and adjust any details for this request.
+                </p>
+              </div>
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold shrink-0 self-start sm:self-auto">
+                <svg class="w-3.5 h-3.5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+                <span>Profile Auto-Filled</span>
+              </span>
+            </div>
 
             <!-- Pre-filled Resident Profile Summary Card -->
-            <div class="mt-5 rounded-2xl bg-slate-50 border border-slate-200 p-4 text-xs sm:text-sm grid sm:grid-cols-3 gap-3">
-              <div>
-                <span class="text-slate-400 text-[11px] uppercase font-bold block">Applicant Name</span>
-                <span class="font-bold text-slate-900">{{ residentFullName() }}</span>
+            <div class="mt-5 rounded-2xl bg-slate-50/70 border border-slate-200 p-4 sm:p-5 text-xs sm:text-sm">
+              <div class="grid sm:grid-cols-3 gap-4">
+                <div>
+                  <span class="text-slate-400 text-[11px] uppercase font-bold block">Applicant Name</span>
+                  <span class="font-bold text-slate-900">{{ residentFullName() }}</span>
+                </div>
+                <div>
+                  <span class="text-slate-400 text-[11px] uppercase font-bold block">Barangay Resident ID</span>
+                  <span class="font-bold text-slate-900 font-mono">{{ auth.currentUser()?.resident_code || 'BSM-RESIDENT' }}</span>
+                </div>
+                <div>
+                  <span class="text-slate-400 text-[11px] uppercase font-bold block">Contact / Email</span>
+                  <span class="font-bold text-slate-900 truncate block">{{ auth.currentUser()?.contact_number || 'N/A' }} &bull; {{ auth.currentUser()?.email || 'N/A' }}</span>
+                </div>
               </div>
-              <div>
-                <span class="text-slate-400 text-[11px] uppercase font-bold block">Barangay Resident ID</span>
-                <span class="font-bold text-slate-900">{{ auth.currentUser()?.resident_code || 'BSM-RESIDENT' }}</span>
-              </div>
-              <div>
-                <span class="text-slate-400 text-[11px] uppercase font-bold block">Contact / Address</span>
-                <span class="font-bold text-slate-900 truncate block">{{ auth.currentUser()?.contact_number || 'N/A' }} &bull; {{ auth.currentUser()?.address_line || 'San Manuel' }}</span>
+
+              <div class="mt-3 pt-3 border-t border-slate-200/60 grid sm:grid-cols-2 gap-3">
+                <div>
+                  <span class="text-slate-400 text-[11px] uppercase font-bold block">Registered Address</span>
+                  <span class="font-medium text-slate-800">{{ auth.currentUser()?.address_line || 'Barangay San Manuel, Tarlac' }}</span>
+                </div>
+                <div>
+                  <span class="text-slate-400 text-[11px] uppercase font-bold block">Demographics</span>
+                  <span class="font-medium text-slate-800">
+                    {{ auth.currentUser()?.civil_status || 'Civil Status N/A' }} &bull;
+                    {{ auth.currentUser()?.gender || 'Gender N/A' }}
+                    @if (auth.currentUser()?.birth_date) {
+                      &bull; Born {{ formatDateDisplay(auth.currentUser()?.birth_date) }}
+                    }
+                  </span>
+                </div>
               </div>
             </div>
 
-            <!-- Purpose Field (Core requirement) -->
+            <!-- Purpose Field -->
             <div class="mt-6">
-              <label for="req-purpose" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                Purpose of Request <span class="text-red-500">*</span>
-              </label>
-              <textarea
-                id="req-purpose"
-                rows="3"
-                [(ngModel)]="formData['purpose']"
-                placeholder="e.g. Employment requirement, Bank account opening, Scholarship, Postal ID application..."
-                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition">
-              </textarea>
+              @if (getPurposeField(); as purposeField) {
+                <label [for]="'field-' + purposeField.key" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  {{ purposeField.label || 'Purpose of Request' }} <span class="text-red-500">*</span>
+                </label>
+                @if (purposeField.type === 'select' && purposeField.options?.length) {
+                  <select
+                    [id]="'field-' + purposeField.key"
+                    [(ngModel)]="formData['purpose']"
+                    class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition">
+                    <option value="">Select purpose</option>
+                    @for (opt of purposeField.options; track opt) {
+                      <option [value]="opt">{{ opt }}</option>
+                    }
+                  </select>
+                } @else {
+                  <textarea
+                    [id]="'field-' + purposeField.key"
+                    rows="3"
+                    [(ngModel)]="formData['purpose']"
+                    [placeholder]="purposeField.placeholder || 'e.g. Employment, Scholarship, Postal ID...'"
+                    class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition">
+                  </textarea>
+                }
+              } @else {
+                <label for="req-purpose" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  Purpose of Request <span class="text-red-500">*</span>
+                </label>
+                <textarea
+                  id="req-purpose"
+                  rows="3"
+                  [(ngModel)]="formData['purpose']"
+                  placeholder="e.g. Employment requirement, Bank account opening, Scholarship, Postal ID application..."
+                  class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition">
+                </textarea>
+              }
               @if (formErrors['purpose']) {
                 <p class="text-xs text-red-600 mt-1 font-semibold">{{ formErrors['purpose'] }}</p>
               }
             </div>
 
             <!-- Dynamic Service Fields (if configured) -->
-            @if (svc.form_fields && svc.form_fields.length > 0) {
-              <div class="mt-6 space-y-4">
-                <h3 class="text-xs font-black uppercase tracking-wider text-slate-400">Additional Service Fields</h3>
-                @for (field of svc.form_fields; track field.key) {
-                  @if (field.key !== 'full_name' && field.key !== 'address' && field.key !== 'contact_number' && field.key !== 'birth_date' && field.key !== 'purpose') {
-                    <div>
+            @if (getNonPurposeServiceFields().length > 0) {
+              <div class="mt-6 pt-6 border-t border-slate-100">
+                <h3 class="text-xs font-black uppercase tracking-wider text-slate-500 mb-4">
+                  Service Application Details
+                </h3>
+                <div class="grid gap-4 sm:grid-cols-2">
+                  @for (field of getNonPurposeServiceFields(); track field.key) {
+                    <div [class.sm:col-span-2]="isFullWidthField(field)">
                       <label [for]="'field-' + field.key" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
                         {{ field.label || field.key }}
                         @if (field.required) { <span class="text-red-500">*</span> }
@@ -263,6 +319,7 @@ import { AuthService } from '../../core/services/auth.service';
                         <select
                           [id]="'field-' + field.key"
                           [(ngModel)]="formData[field.key]"
+                          (ngModelChange)="onFormFieldChange(field.key)"
                           class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition">
                           <option value="">Select an option</option>
                           @for (opt of field.options; track opt) {
@@ -274,14 +331,24 @@ import { AuthService } from '../../core/services/auth.service';
                           [id]="'field-' + field.key"
                           rows="2"
                           [(ngModel)]="formData[field.key]"
+                          (ngModelChange)="onFormFieldChange(field.key)"
                           [placeholder]="field.placeholder || ''"
                           class="w-full px-4 py-2 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition">
                         </textarea>
+                      } @else if (field.type === 'date') {
+                        <input
+                          [id]="'field-' + field.key"
+                          type="date"
+                          [(ngModel)]="formData[field.key]"
+                          (ngModelChange)="onFormFieldChange(field.key)"
+                          class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition"
+                        />
                       } @else {
                         <input
                           [id]="'field-' + field.key"
                           [type]="field.type || 'text'"
                           [(ngModel)]="formData[field.key]"
+                          (ngModelChange)="onFormFieldChange(field.key)"
                           [placeholder]="field.placeholder || ''"
                           class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition"
                         />
@@ -292,7 +359,117 @@ import { AuthService } from '../../core/services/auth.service';
                       }
                     </div>
                   }
-                }
+                </div>
+              </div>
+            }
+
+            <!-- Address Breakdown Section (if service didn't include individual address fields) -->
+            @if (!hasSpecificAddressFields()) {
+              <div class="mt-6 pt-6 border-t border-slate-100">
+                <div class="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 class="text-xs font-black uppercase tracking-wider text-slate-500">
+                      Resident Address Details
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-0.5">
+                      Verify your address information as it will appear on your document.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="grid gap-3 sm:grid-cols-3">
+                  <div>
+                    <label for="addr-block" class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
+                      Block No.
+                    </label>
+                    <input
+                      id="addr-block"
+                      type="text"
+                      [(ngModel)]="formData['block']"
+                      (ngModelChange)="updateCompositeAddress()"
+                      placeholder="e.g. 15"
+                      class="w-full px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition"
+                    />
+                  </div>
+                  <div>
+                    <label for="addr-lot" class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
+                      Lot No.
+                    </label>
+                    <input
+                      id="addr-lot"
+                      type="text"
+                      [(ngModel)]="formData['lot']"
+                      (ngModelChange)="updateCompositeAddress()"
+                      placeholder="e.g. 20 B"
+                      class="w-full px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition"
+                    />
+                  </div>
+                  <div>
+                    <label for="addr-street" class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
+                      Street
+                    </label>
+                    <input
+                      id="addr-street"
+                      type="text"
+                      [(ngModel)]="formData['street']"
+                      (ngModelChange)="updateCompositeAddress()"
+                      placeholder="e.g. Samaria"
+                      class="w-full px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition"
+                    />
+                  </div>
+                  <div>
+                    <label for="addr-subdivision" class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
+                      Subdivision / Village
+                    </label>
+                    <input
+                      id="addr-subdivision"
+                      type="text"
+                      [(ngModel)]="formData['subdivision']"
+                      (ngModelChange)="updateCompositeAddress()"
+                      placeholder="e.g. Pleasant Hills"
+                      class="w-full px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition"
+                    />
+                  </div>
+                  <div>
+                    <label for="addr-purok" class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
+                      Purok / Zone
+                    </label>
+                    <input
+                      id="addr-purok"
+                      type="text"
+                      [(ngModel)]="formData['purok_zone']"
+                      (ngModelChange)="updateCompositeAddress()"
+                      placeholder="e.g. Purok 2"
+                      class="w-full px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition"
+                    />
+                  </div>
+                  <div>
+                    <label for="addr-barangay" class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
+                      Barangay
+                    </label>
+                    <input
+                      id="addr-barangay"
+                      type="text"
+                      [(ngModel)]="formData['barangay']"
+                      (ngModelChange)="updateCompositeAddress()"
+                      placeholder="San Manuel"
+                      class="w-full px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition"
+                    />
+                  </div>
+                </div>
+
+                <div class="mt-3">
+                  <label for="addr-complete" class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
+                    Complete Address Line
+                  </label>
+                  <input
+                    id="addr-complete"
+                    type="text"
+                    [(ngModel)]="formData['address']"
+                    placeholder="Complete address line"
+                    class="w-full px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition"
+                  />
+                </div>
               </div>
             }
 
@@ -337,32 +514,62 @@ import { AuthService } from '../../core/services/auth.service';
                 </div>
               </div>
 
+              <!-- Applicant & Address Info -->
               <div class="grid sm:grid-cols-2 gap-4 text-xs sm:text-sm">
                 <div>
                   <span class="font-bold text-slate-400 uppercase text-[11px] block">Resident Applicant</span>
                   <span class="font-bold text-slate-800">{{ residentFullName() }}</span>
                 </div>
                 <div>
-                  <span class="font-bold text-slate-400 uppercase text-[11px] block">Portal Account ID</span>
-                  <span class="font-bold text-slate-800">{{ auth.currentUser()?.account_id }}</span>
+                  <span class="font-bold text-slate-400 uppercase text-[11px] block">Barangay Resident ID</span>
+                  <span class="font-bold text-slate-800 font-mono">{{ auth.currentUser()?.resident_code || 'BSM-RESIDENT' }}</span>
+                </div>
+                <div>
+                  <span class="font-bold text-slate-400 uppercase text-[11px] block">Contact Number</span>
+                  <span class="font-medium text-slate-800">{{ formData['contact_number'] || auth.currentUser()?.contact_number || 'N/A' }}</span>
+                </div>
+                <div>
+                  <span class="font-bold text-slate-400 uppercase text-[11px] block">Email Address</span>
+                  <span class="font-medium text-slate-800">{{ formData['email'] || auth.currentUser()?.email || 'N/A' }}</span>
+                </div>
+                <div class="sm:col-span-2">
+                  <span class="font-bold text-slate-400 uppercase text-[11px] block">Complete Address</span>
+                  <p class="text-slate-800 font-medium mt-0.5 leading-relaxed">
+                    {{ formData['address'] || formData['address_line'] || auth.currentUser()?.address_line }}
+                  </p>
                 </div>
                 <div class="sm:col-span-2">
                   <span class="font-bold text-slate-400 uppercase text-[11px] block">Purpose</span>
-                  <p class="text-slate-800 mt-0.5 leading-relaxed">{{ formData['purpose'] }}</p>
+                  <p class="text-slate-800 mt-0.5 leading-relaxed font-semibold">{{ formData['purpose'] }}</p>
                 </div>
               </div>
+
+              <!-- Dynamic Service Field Entries -->
+              @if (getReviewFields().length > 0) {
+                <div class="border-t border-slate-200 pt-3">
+                  <span class="font-bold text-slate-400 uppercase text-[11px] block mb-2">Service Details</span>
+                  <div class="grid sm:grid-cols-2 gap-3 text-xs">
+                    @for (item of getReviewFields(); track item.label) {
+                      <div class="bg-white border border-slate-200 rounded-lg p-2.5">
+                        <span class="text-slate-400 block font-bold text-[10px] uppercase">{{ item.label }}</span>
+                        <span class="font-bold text-slate-800 mt-0.5 block">{{ item.value }}</span>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
 
               <!-- Uploaded Requirements List -->
               <div class="border-t border-slate-200 pt-3">
                 <span class="font-bold text-slate-400 uppercase text-[11px] block mb-2">Attached Digital Requirements</span>
                 @if (uploadedRequirements().length === 0) {
-                  <p class="text-xs text-slate-500 italic">No files attached.</p>
+                  <p class="text-xs text-slate-500 italic">No files attached (not required for this service).</p>
                 } @else {
                   <ul class="space-y-1.5">
                     @for (file of uploadedRequirements(); track file.requirement_name) {
                       <li class="flex items-center justify-between text-xs bg-white border border-slate-200 rounded-lg p-2.5">
                         <span class="font-bold text-slate-800">{{ file.requirement_name }}</span>
-                        <span class="text-slate-500">{{ file.original_name }}</span>
+                        <span class="text-slate-500 font-mono">{{ file.original_name }}</span>
                       </li>
                     }
                   </ul>
@@ -473,6 +680,16 @@ export class ApplyComponent implements OnInit {
     return Math.min(100, Math.round((this.wizardStep() / 3) * 100));
   });
 
+  constructor() {
+    effect(() => {
+      const u = this.auth.currentUser();
+      const svc = this.selectedService();
+      if (u && svc) {
+        this.initFormData(svc);
+      }
+    });
+  }
+
   ngOnInit(): void {
     this.route.queryParams.subscribe(params => {
       let serviceId = params['service_id'];
@@ -505,7 +722,7 @@ export class ApplyComponent implements OnInit {
         }
 
         this.selectedService.set(match);
-        this.initFormData();
+        this.initFormData(match);
 
         if (isReuse) {
           this.portalService.getPreviousServiceData(serviceId).subscribe({
@@ -531,14 +748,376 @@ export class ApplyComponent implements OnInit {
     });
   }
 
-  private initFormData(): void {
-    const u = this.auth.currentUser();
-    this.formData = {
-      full_name: this.residentFullName(),
-      address: u?.address_line || 'San Manuel',
-      contact_number: u?.contact_number || '',
-      email: u?.email || ''
+  /**
+   * Automatically populates resident demographics and address fields matching Kiosk logic.
+   */
+  private initFormData(svc?: Service): void {
+    const r = this.auth.currentUser();
+    const defaults: Record<string, any> = { ...this.formData };
+
+    if (r) {
+      // 1. Core resident demographics defaults
+      if (!defaults['full_name']) defaults['full_name'] = this.residentFullName();
+      if (!defaults['first_name']) defaults['first_name'] = r.first_name || '';
+      if (!defaults['middle_name']) defaults['middle_name'] = r.middle_name || '';
+      if (!defaults['last_name']) defaults['last_name'] = r.last_name || '';
+      if (!defaults['suffix']) defaults['suffix'] = r.suffix || '';
+      if (!defaults['birth_date']) defaults['birth_date'] = this.formatDateForInput(r.birth_date);
+      if (!defaults['place_of_birth'] && !defaults['birth_place']) {
+        defaults['place_of_birth'] = r.birth_place || '';
+        defaults['birth_place'] = r.birth_place || '';
+      }
+      if (!defaults['age']) {
+        const computedAge = this.calculateAge(r.birth_date);
+        if (computedAge !== null) defaults['age'] = computedAge;
+      }
+      if (!defaults['gender'] && !defaults['sex']) {
+        defaults['gender'] = r.gender || '';
+        defaults['sex'] = r.gender || '';
+      }
+      if (!defaults['civil_status']) defaults['civil_status'] = r.civil_status || '';
+      if (!defaults['occupation']) defaults['occupation'] = r.occupation || '';
+      if (!defaults['nationality']) defaults['nationality'] = r.nationality || 'Filipino';
+      if (!defaults['religion']) defaults['religion'] = r.religion || '';
+      if (!defaults['contact_number']) defaults['contact_number'] = r.contact_number || '';
+      if (!defaults['email']) defaults['email'] = r.email || '';
+
+      // 2. Complete Address fields
+      if (!defaults['address'] && !defaults['address_line'] && !defaults['complete_address']) {
+        const fullAddr = r.address_line || 'Barangay San Manuel, Tarlac';
+        defaults['address'] = fullAddr;
+        defaults['address_line'] = fullAddr;
+        defaults['complete_address'] = fullAddr;
+      }
+      if (!defaults['house_number']) defaults['house_number'] = r.house_number || '';
+      if (!defaults['block']) defaults['block'] = r.block || this.extractBlock(r.address_line) || '';
+      if (!defaults['lot']) defaults['lot'] = r.lot || this.extractLot(r.address_line) || '';
+      if (!defaults['street']) defaults['street'] = r.street || this.extractStreet(r.address_line) || '';
+      if (!defaults['subdivision']) defaults['subdivision'] = r.subdivision || this.extractSubdivision(r.address_line) || '';
+      if (!defaults['purok_zone'] && !defaults['purok']) {
+        const pz = r.purok_zone || r.sitio || this.extractPurok(r.address_line) || '';
+        defaults['purok_zone'] = pz;
+        defaults['purok'] = pz;
+      }
+      if (!defaults['barangay']) defaults['barangay'] = r.barangay_name || 'San Manuel';
+      if (!defaults['municipality']) defaults['municipality'] = r.municipality || 'San Manuel';
+      if (!defaults['province']) defaults['province'] = r.province || 'Tarlac';
+
+      // 3. Emergency Contact
+      if (!defaults['emergency_contact_name']) defaults['emergency_contact_name'] = r.emergency_contact_name || '';
+      if (!defaults['emergency_contact_number']) defaults['emergency_contact_number'] = r.emergency_contact_number || '';
+
+      // 4. Intelligent matching for every dynamic field defined by the service
+      const targetService = svc || this.selectedService();
+      if (targetService?.form_fields) {
+        for (const field of targetService.form_fields) {
+          if (defaults[field.key] === undefined || defaults[field.key] === null || defaults[field.key] === '') {
+            const autoVal = this.resolveResidentFieldValue(r, field.key, field.label);
+            if (autoVal !== null && autoVal !== undefined && autoVal !== '') {
+              defaults[field.key] = autoVal;
+            }
+          }
+        }
+      }
+    }
+
+    this.formData = defaults;
+  }
+
+  /**
+   * Intelligent resolution for resident demographic & address fields matching Kiosk logic.
+   */
+  private resolveResidentFieldValue(r: PortalAccount, key: string, label: string = ''): any {
+    if (!r) return null;
+    const normKey = (key || '').toLowerCase().replace(/[-_\s.]/g, '');
+    const normLabel = (label || '').toLowerCase().replace(/[-_\s.]/g, '');
+
+    const isMatch = (...aliases: string[]) => {
+      return aliases.some(a => {
+        const normA = a.toLowerCase().replace(/[-_\s.]/g, '');
+        return normKey === normA || normLabel === normA || normKey.includes(normA) || normLabel.includes(normA);
+      });
     };
+
+    // Full Name
+    if (isMatch('fullname', 'full_name', 'applicantname', 'residentname', 'completename', 'nameofresident') &&
+        !isMatch('emergency', 'relative', 'father', 'mother', 'spouse', 'guardian', 'beneficiary')) {
+      const parts = [r.first_name, r.middle_name, r.last_name, r.suffix].filter(Boolean);
+      return parts.join(' ');
+    }
+    // First Name
+    if (isMatch('firstname', 'first_name', 'givenname') &&
+        !isMatch('emergency', 'relative', 'father', 'mother', 'spouse', 'guardian', 'beneficiary')) {
+      return r.first_name || '';
+    }
+    // Middle Name
+    if (isMatch('middlename', 'middle_name') &&
+        !isMatch('emergency', 'relative', 'father', 'mother', 'spouse', 'guardian', 'beneficiary')) {
+      return r.middle_name || '';
+    }
+    // Last Name
+    if (isMatch('lastname', 'last_name', 'surname', 'familyname') &&
+        !isMatch('emergency', 'relative', 'father', 'mother', 'spouse', 'guardian', 'beneficiary')) {
+      return r.last_name || '';
+    }
+    // Suffix
+    if (isMatch('suffix', 'namesuffix') &&
+        !isMatch('emergency', 'relative', 'father', 'mother', 'spouse', 'guardian', 'beneficiary')) {
+      return r.suffix || '';
+    }
+    // Birth Date / DOB
+    if (isMatch('birthdate', 'birth_date', 'dateofbirth', 'dob', 'bdate')) {
+      return this.formatDateForInput(r.birth_date);
+    }
+    // Place of Birth
+    if (isMatch('birthplace', 'birth_place', 'placeofbirth', 'place_of_birth', 'pob')) {
+      return r.birth_place || '';
+    }
+    // Age
+    if (isMatch('age', 'ageyears')) {
+      const computedAge = this.calculateAge(r.birth_date);
+      return computedAge !== null ? computedAge : '';
+    }
+    // Gender / Sex
+    if (isMatch('gender', 'sex')) {
+      return r.gender || '';
+    }
+    // Civil Status / Marital Status
+    if (isMatch('civilstatus', 'civil_status', 'maritalstatus', 'marital_status')) {
+      return r.civil_status || '';
+    }
+    // Blood Type
+    if (isMatch('bloodtype', 'blood_type')) {
+      return r.blood_type || '';
+    }
+    // Occupation
+    if (isMatch('occupation', 'profession', 'job')) {
+      return r.occupation || '';
+    }
+    // Nationality / Citizenship
+    if (isMatch('nationality', 'citizenship')) {
+      return r.nationality || 'Filipino';
+    }
+    // Religion
+    if (isMatch('religion')) {
+      return r.religion || '';
+    }
+    // Contact Number / Phone
+    if (isMatch('contactnumber', 'contact_number', 'contactno', 'contact_no', 'phone', 'phonenumber', 'mobile', 'mobilenumber', 'cellphone', 'tel') &&
+        !isMatch('emergency')) {
+      return r.contact_number || '';
+    }
+    // Email
+    if (isMatch('email', 'emailaddress', 'email_address')) {
+      return r.email || '';
+    }
+    // Complete Address
+    if (isMatch('completeaddress', 'complete_address', 'addressline', 'address_line', 'residentialaddress') ||
+        (isMatch('address') && !isMatch('email', 'block', 'lot', 'street', 'purok', 'zone', 'subdivision', 'barangay'))) {
+      return r.address_line || '';
+    }
+    // Block
+    if (isMatch('block', 'blockno', 'block_no', 'blocknumber', 'blk')) {
+      return r.block || this.extractBlock(r.address_line) || '';
+    }
+    // Lot
+    if (isMatch('lot', 'lotno', 'lot_no', 'lotnumber')) {
+      return r.lot || this.extractLot(r.address_line) || '';
+    }
+    // House No
+    if (isMatch('housenumber', 'house_number', 'houseno', 'house_no')) {
+      return r.house_number || '';
+    }
+    // Street
+    if (isMatch('street', 'streetname', 'street_name', 'st')) {
+      return r.street || this.extractStreet(r.address_line) || '';
+    }
+    // Subdivision
+    if (isMatch('subdivision', 'subd', 'village')) {
+      return r.subdivision || this.extractSubdivision(r.address_line) || '';
+    }
+    // Purok / Zone / Sitio
+    if (isMatch('purok', 'zone', 'purokzone', 'purok_zone', 'purokno', 'sitio')) {
+      return r.purok_zone || r.sitio || this.extractPurok(r.address_line) || '';
+    }
+    // Barangay
+    if (isMatch('barangay', 'brgy', 'bgy')) {
+      return r.barangay_name || 'San Manuel';
+    }
+    // Municipality
+    if (isMatch('municipality', 'city', 'town')) {
+      return r.municipality || 'San Manuel';
+    }
+    // Province
+    if (isMatch('province')) {
+      return r.province || 'Tarlac';
+    }
+    // Emergency Contact Person
+    if (isMatch('emergencycontactname', 'emergency_contact_name', 'emergencyname', 'emergency_name', 'emergencycontactperson', 'emergencycontact')) {
+      return r.emergency_contact_name || '';
+    }
+    // Emergency Contact Number
+    if (isMatch('emergencycontactnumber', 'emergency_contact_number', 'emergencycontactno', 'emergency_contact_no', 'emergencyphone', 'emergencymobile')) {
+      return r.emergency_contact_number || '';
+    }
+
+    // Generic fallback: check if r has exact matching property
+    if ((r as any)[key] !== undefined && (r as any)[key] !== null) {
+      return (r as any)[key];
+    }
+
+    return null;
+  }
+
+  // Address extraction regex fallbacks identical to Kiosk
+  private extractBlock(addr: string | null | undefined): string | null {
+    if (!addr) return null;
+    const m = addr.match(/(?:blk|block)\.?\s*([0-9a-z-]+)/i);
+    return m ? m[1] : null;
+  }
+
+  private extractLot(addr: string | null | undefined): string | null {
+    if (!addr) return null;
+    const m = addr.match(/(?:lot)\.?\s*([0-9a-z-]+)/i);
+    return m ? m[1] : null;
+  }
+
+  private extractStreet(addr: string | null | undefined): string | null {
+    if (!addr) return null;
+    const m = addr.match(/(?:,\s*|\b)([0-9a-z\s]+?(?:street|st\.|st|ave|avenue|dr|drive|rd|road))\b/i);
+    return m ? m[1].trim() : null;
+  }
+
+  private extractSubdivision(addr: string | null | undefined): string | null {
+    if (!addr) return null;
+    const m = addr.match(/(?:,\s*|\b)([0-9a-z\s]+?(?:subd|subdivision|village|homes|estates))\b/i);
+    return m ? m[1].trim() : null;
+  }
+
+  private extractPurok(addr: string | null | undefined): string | null {
+    if (!addr) return null;
+    const m = addr.match(/(?:purok|zone|prk|zn)\.?\s*([0-9a-z-]+)/i);
+    return m ? `Purok ${m[1]}` : null;
+  }
+
+  private calculateAge(birthDate: string | Date | null | undefined): number | null {
+    if (!birthDate) return null;
+    const d = new Date(birthDate);
+    if (isNaN(d.getTime())) return null;
+    const today = new Date();
+    let age = today.getFullYear() - d.getFullYear();
+    const m = today.getMonth() - d.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < d.getDate())) {
+      age--;
+    }
+    return age >= 0 ? age : null;
+  }
+
+  formatDateForInput(val: string | Date | null | undefined): string {
+    if (!val) return '';
+    if (val instanceof Date) {
+      if (isNaN(val.getTime())) return '';
+      const year = val.getFullYear();
+      const month = String(val.getMonth() + 1).padStart(2, '0');
+      const day = String(val.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+    const s = String(val).trim();
+    const match = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+    if (match) {
+      const year = match[1];
+      const month = match[2].padStart(2, '0');
+      const day = match[3].padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return '';
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  formatDateDisplay(val: string | Date | null | undefined): string {
+    if (!val) return '';
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return String(val);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  /**
+   * Synchronizes composite address whenever individual components change.
+   */
+  updateCompositeAddress(): void {
+    const parts = [
+      this.formData['block'] ? (String(this.formData['block']).toLowerCase().startsWith('blk') ? this.formData['block'] : `Blk ${this.formData['block']}`) : null,
+      this.formData['lot'] ? (String(this.formData['lot']).toLowerCase().startsWith('lot') ? this.formData['lot'] : `Lot ${this.formData['lot']}`) : null,
+      this.formData['house_number'],
+      this.formData['street'],
+      this.formData['subdivision'],
+      this.formData['purok_zone'] || this.formData['purok'],
+      this.formData['barangay'] || 'Barangay San Manuel',
+      this.formData['municipality'],
+      this.formData['province']
+    ].filter(Boolean);
+
+    if (parts.length > 0) {
+      const uniqueParts: string[] = [];
+      for (const p of parts) {
+        if (p && !uniqueParts.some(u => u.toLowerCase() === String(p).toLowerCase())) {
+          uniqueParts.push(String(p).trim());
+        }
+      }
+      const composite = uniqueParts.join(', ');
+      this.formData['address'] = composite;
+      this.formData['address_line'] = composite;
+      this.formData['complete_address'] = composite;
+    }
+  }
+
+  onFormFieldChange(key: string): void {
+    const norm = (key || '').toLowerCase();
+    if (norm.includes('block') || norm.includes('lot') || norm.includes('street') || norm.includes('subdivision') || norm.includes('purok')) {
+      this.updateCompositeAddress();
+    }
+  }
+
+  getPurposeField(): FormField | undefined {
+    return this.selectedService()?.form_fields?.find(f => (f.key || '').toLowerCase() === 'purpose');
+  }
+
+  getNonPurposeServiceFields(): FormField[] {
+    const list = this.selectedService()?.form_fields || [];
+    return list.filter(f => (f.key || '').toLowerCase() !== 'purpose');
+  }
+
+  hasSpecificAddressFields(): boolean {
+    const fields = this.selectedService()?.form_fields || [];
+    return fields.some(f => {
+      const k = (f.key || '').toLowerCase();
+      return k.includes('block') || k.includes('lot') || k.includes('street') || k.includes('subdivision') || k.includes('purok') || k === 'address';
+    });
+  }
+
+  isFullWidthField(field: FormField): boolean {
+    if (field.type === 'textarea') return true;
+    const k = (field.key || '').toLowerCase();
+    return k === 'address' || k === 'complete_address' || k === 'address_line' || k === 'full_name';
+  }
+
+  getReviewFields(): { label: string; value: any }[] {
+    const list: { label: string; value: any }[] = [];
+    const svc = this.selectedService();
+    if (!svc) return list;
+
+    for (const field of svc.form_fields || []) {
+      if ((field.key || '').toLowerCase() === 'purpose') continue;
+      const val = this.formData[field.key];
+      if (val !== undefined && val !== null && String(val).trim() !== '') {
+        list.push({ label: field.label || field.key, value: val });
+      }
+    }
+    return list;
   }
 
   proceedToStep(step: number): void {
@@ -599,14 +1178,18 @@ export class ApplyComponent implements OnInit {
 
   validateAndProceedToReview(): void {
     this.formErrors = {};
-    if (!this.formData['purpose'] || !this.formData['purpose'].trim()) {
-      this.formErrors['purpose'] = 'Purpose is required.';
+
+    // Validate purpose
+    const purposeVal = this.formData['purpose'];
+    if (!purposeVal || !String(purposeVal).trim()) {
+      this.formErrors['purpose'] = 'Purpose of request is required.';
     }
 
+    // Validate any required service fields
     const svc = this.selectedService();
     if (svc?.form_fields) {
       for (const field of svc.form_fields) {
-        if (field.required && !['full_name', 'address', 'contact_number', 'birth_date', 'purpose'].includes(field.key)) {
+        if (field.required) {
           const val = this.formData[field.key];
           if (val === undefined || val === null || String(val).trim() === '') {
             this.formErrors[field.key] = `${field.label || field.key} is required.`;
@@ -619,6 +1202,7 @@ export class ApplyComponent implements OnInit {
       return;
     }
 
+    this.updateCompositeAddress();
     this.proceedToStep(3);
   }
 

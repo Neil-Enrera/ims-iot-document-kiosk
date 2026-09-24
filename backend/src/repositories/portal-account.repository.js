@@ -37,10 +37,16 @@ const findProfileByAccountId = async (accountId) => {
     `SELECT pa.portal_account_id, pa.account_id, pa.resident_id, pa.email, pa.password_hash, pa.status,
             pa.must_change_password, pa.last_login, pa.created_at,
             r.resident_code, r.first_name, r.middle_name, r.last_name, r.suffix,
-            r.birth_date, r.gender, r.civil_status, r.address_line, r.contact_number,
+            r.birth_date, r.birth_place, r.gender, r.civil_status, r.blood_type,
+            r.occupation, r.nationality, r.religion,
+            r.house_number, r.street, r.subdivision, r.block, r.lot, r.purok_zone, r.sitio,
+            r.municipality, r.province, r.zip_code, r.address_line,
+            r.barangay_id, b.barangay_name,
+            r.contact_number, r.emergency_contact_name, r.emergency_contact_number,
             r.photo, r.status AS resident_status
      FROM portal_accounts pa
      JOIN residents r ON r.resident_id = pa.resident_id
+     LEFT JOIN barangays b ON r.barangay_id = b.barangay_id
      WHERE pa.account_id = ? LIMIT 1`,
     [accountId]
   );
@@ -53,10 +59,16 @@ const findProfileByIdentifier = async (identifier) => {
     `SELECT pa.portal_account_id, pa.account_id, pa.resident_id, pa.email, pa.password_hash, pa.status,
             pa.must_change_password, pa.last_login, pa.created_at,
             r.resident_code, r.first_name, r.middle_name, r.last_name, r.suffix,
-            r.birth_date, r.gender, r.civil_status, r.address_line, r.contact_number,
+            r.birth_date, r.birth_place, r.gender, r.civil_status, r.blood_type,
+            r.occupation, r.nationality, r.religion,
+            r.house_number, r.street, r.subdivision, r.block, r.lot, r.purok_zone, r.sitio,
+            r.municipality, r.province, r.zip_code, r.address_line,
+            r.barangay_id, b.barangay_name,
+            r.contact_number, r.emergency_contact_name, r.emergency_contact_number,
             r.photo, r.status AS resident_status
      FROM portal_accounts pa
      JOIN residents r ON r.resident_id = pa.resident_id
+     LEFT JOIN barangays b ON r.barangay_id = b.barangay_id
      WHERE LOWER(pa.email) = LOWER(?) OR pa.account_id = ? LIMIT 1`,
     [clean, clean.toUpperCase()]
   );

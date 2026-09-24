@@ -26,8 +26,8 @@ export const routes: Routes = [
       },
       {
         path: 'requests/new',
-        canActivate: [authGuard],
-        redirectTo: 'apply'
+        redirectTo: 'apply',
+        pathMatch: 'full'
       },
       {
         path: 'requests',
