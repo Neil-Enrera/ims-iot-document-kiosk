@@ -34,7 +34,7 @@ const findByEmail = async (email) => {
 
 const findProfileByAccountId = async (accountId) => {
   const [rows] = await pool.query(
-    `SELECT pa.portal_account_id, pa.account_id, pa.resident_id, pa.email, pa.status,
+    `SELECT pa.portal_account_id, pa.account_id, pa.resident_id, pa.email, pa.password_hash, pa.status,
             pa.must_change_password, pa.last_login, pa.created_at,
             r.resident_code, r.first_name, r.middle_name, r.last_name, r.suffix,
             r.birth_date, r.gender, r.civil_status, r.address_line, r.contact_number,
@@ -43,6 +43,22 @@ const findProfileByAccountId = async (accountId) => {
      JOIN residents r ON r.resident_id = pa.resident_id
      WHERE pa.account_id = ? LIMIT 1`,
     [accountId]
+  );
+  return rows[0] || null;
+};
+
+const findProfileByIdentifier = async (identifier) => {
+  const clean = (identifier || '').trim();
+  const [rows] = await pool.query(
+    `SELECT pa.portal_account_id, pa.account_id, pa.resident_id, pa.email, pa.password_hash, pa.status,
+            pa.must_change_password, pa.last_login, pa.created_at,
+            r.resident_code, r.first_name, r.middle_name, r.last_name, r.suffix,
+            r.birth_date, r.gender, r.civil_status, r.address_line, r.contact_number,
+            r.photo, r.status AS resident_status
+     FROM portal_accounts pa
+     JOIN residents r ON r.resident_id = pa.resident_id
+     WHERE LOWER(pa.email) = LOWER(?) OR pa.account_id = ? LIMIT 1`,
+    [clean, clean.toUpperCase()]
   );
   return rows[0] || null;
 };
@@ -163,6 +179,7 @@ module.exports = {
   findByResidentId,
   findByEmail,
   findProfileByAccountId,
+  findProfileByIdentifier,
   findMaxAccountId,
   create,
   updatePassword,

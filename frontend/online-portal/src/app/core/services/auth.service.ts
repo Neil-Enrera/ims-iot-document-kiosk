@@ -92,9 +92,11 @@ export class AuthService {
       });
   }
 
-  login(accountId: string, password: string): Observable<PortalApiResponse<PortalLoginResponse>> {
+  login(identifier: string, password: string): Observable<PortalApiResponse<PortalLoginResponse>> {
     return this.http.post<PortalApiResponse<PortalLoginResponse>>(`${this.apiUrl}/portal/login`, {
-      accountId,
+      email: identifier,
+      accountId: identifier,
+      identifier,
       password
     }).pipe(
       tap(res => {
@@ -124,23 +126,25 @@ export class AuthService {
     );
   }
 
-  forgotPassword(accountId: string): Observable<PortalApiResponse<{ maskedEmail?: string }>> {
+  forgotPassword(identifier: string): Observable<PortalApiResponse<{ maskedEmail?: string }>> {
     return this.http.post<PortalApiResponse<{ maskedEmail?: string }>>(
       `${this.apiUrl}/portal/forgot-password`,
-      { accountId }
+      { accountId: identifier, email: identifier, identifier }
     );
   }
 
-  verifyResetCode(accountId: string, code: string): Observable<PortalApiResponse<{ resetToken: string; accountId: string; email: string }>> {
+  verifyResetCode(identifier: string, code: string): Observable<PortalApiResponse<{ resetToken: string; accountId: string; email: string }>> {
     return this.http.post<PortalApiResponse<{ resetToken: string; accountId: string; email: string }>>(
       `${this.apiUrl}/portal/verify-reset-code`,
-      { accountId, code }
+      { accountId: identifier, email: identifier, identifier, code }
     );
   }
 
-  resetPassword(accountId: string, resetToken: string, newPassword: string): Observable<PortalApiResponse<void>> {
+  resetPassword(identifier: string, resetToken: string, newPassword: string): Observable<PortalApiResponse<void>> {
     return this.http.post<PortalApiResponse<void>>(`${this.apiUrl}/portal/reset-password`, {
-      accountId,
+      accountId: identifier,
+      email: identifier,
+      identifier,
       resetToken,
       newPassword
     });

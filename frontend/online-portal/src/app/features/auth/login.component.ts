@@ -27,7 +27,7 @@ import { AuthService } from '../../core/services/auth.service';
               </svg>
             </div>
             <h1 class="text-2xl sm:text-3xl font-black text-[#0f172a] mt-4">Resident login</h1>
-            <p class="text-sm text-slate-500 mt-1">Sign in with your portal Account ID.</p>
+            <p class="text-sm text-slate-500 mt-1">Sign in with your registered email address.</p>
           </div>
 
           @if (mode() === 'LOGIN') {
@@ -39,16 +39,16 @@ import { AuthService } from '../../core/services/auth.service';
 
             <form (submit)="onLogin($event)" class="space-y-4">
               <div>
-                <label for="accountId" class="block text-xs font-bold text-slate-800 mb-1.5">Account ID</label>
+                <label for="email" class="block text-xs font-bold text-slate-800 mb-1.5">Email Address</label>
                 <input
-                  id="accountId"
-                  name="accountId"
+                  id="email"
+                  name="email"
                   type="text"
-                  autocomplete="username"
+                  autocomplete="email username"
                   required
-                  placeholder="e.g. BSM-000001"
-                  [value]="accountId()"
-                  (input)="accountId.set($any($event.target).value)"
+                  placeholder="e.g. resident@example.com (or Account ID)"
+                  [value]="identifier()"
+                  (input)="identifier.set($any($event.target).value)"
                   class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-900 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 bg-white placeholder:text-slate-400 transition"
                 />
               </div>
@@ -129,19 +129,19 @@ import { AuthService } from '../../core/services/auth.service';
 
             <h2 class="text-lg font-black text-slate-900">Forgot password?</h2>
             <p class="text-xs text-slate-500 mt-1 leading-relaxed mb-4">
-              Enter your Account ID. We will send a 6-digit verification code to your registered email.
+              Enter your registered email address or Account ID. We will send a 6-digit verification code to your email.
             </p>
 
             <form (submit)="onRequestCode($event)" class="space-y-4">
               <div>
-                <label for="forgotAccountId" class="block text-xs font-bold text-slate-800 mb-1.5">Account ID</label>
+                <label for="forgotIdentifier" class="block text-xs font-bold text-slate-800 mb-1.5">Email Address or Account ID</label>
                 <input
-                  id="forgotAccountId"
+                  id="forgotIdentifier"
                   type="text"
                   required
-                  placeholder="e.g. BSM-000001"
-                  [value]="accountId()"
-                  (input)="accountId.set($any($event.target).value)"
+                  placeholder="e.g. resident@example.com or BSM-000001"
+                  [value]="identifier()"
+                  (input)="identifier.set($any($event.target).value)"
                   class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-900 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 bg-white placeholder:text-slate-400 transition"
                 />
               </div>
@@ -168,7 +168,7 @@ import { AuthService } from '../../core/services/auth.service';
 
             <h2 class="text-lg font-black text-slate-900">Enter verification code</h2>
             <p class="text-xs text-slate-500 mt-1 leading-relaxed mb-4">
-              We sent a 6-digit code to your registered email for <strong>{{ accountId() }}</strong>. Code expires in 10 minutes.
+              We sent a 6-digit code to the registered email for <strong>{{ identifier() }}</strong>. Code expires in 10 minutes.
             </p>
 
             <form (submit)="onVerifyCode($event)" class="space-y-4">
@@ -198,7 +198,7 @@ import { AuthService } from '../../core/services/auth.service';
               type="button"
               (click)="mode.set('FORGOT'); error.set('')"
               class="mt-4 w-full text-center text-xs font-semibold text-slate-500 hover:text-slate-700 cursor-pointer">
-              &larr; Change Account ID
+              &larr; Change email or Account ID
             </button>
           } @else if (mode() === 'RESET') {
             @if (error()) {
@@ -209,7 +209,7 @@ import { AuthService } from '../../core/services/auth.service';
 
             <h2 class="text-lg font-black text-slate-900">Set new password</h2>
             <p class="text-xs text-slate-500 mt-1 leading-relaxed mb-4">
-              Create a new password for <strong>{{ accountId() }}</strong>. Minimum 8 characters.
+              Create a new password for <strong>{{ identifier() }}</strong>. Minimum 8 characters.
             </p>
 
             <form (submit)="onResetPassword($event)" class="space-y-4">
@@ -267,7 +267,7 @@ import { AuthService } from '../../core/services/auth.service';
 })
 export class LoginComponent implements OnInit {
   mode = signal<'LOGIN' | 'FORGOT' | 'VERIFY' | 'RESET'>('LOGIN');
-  accountId = signal('');
+  identifier = signal('');
   password = signal('');
   showPassword = signal(false);
   code = signal('');
@@ -277,6 +277,11 @@ export class LoginComponent implements OnInit {
   success = signal('');
   loading = signal(false);
   resetToken = signal('');
+
+  // Alias for backward compatibility
+  get accountId() {
+    return this.identifier;
+  }
 
   private returnUrl = '/';
 
@@ -300,18 +305,18 @@ export class LoginComponent implements OnInit {
 
   onLogin(event: Event): void {
     event.preventDefault();
-    const accountIdVal = this.accountId().trim();
+    const idVal = this.identifier().trim();
     const passwordVal = this.password();
 
-    if (!accountIdVal || !passwordVal) {
-      this.error.set('Please enter your Account ID and password.');
+    if (!idVal || !passwordVal) {
+      this.error.set('Please enter your email address and password.');
       return;
     }
 
     this.loading.set(true);
     this.error.set('');
 
-    this.auth.login(accountIdVal, passwordVal).subscribe({
+    this.auth.login(idVal, passwordVal).subscribe({
       next: (res) => {
         this.loading.set(false);
         if (!res.success || !res.data) {
@@ -326,7 +331,7 @@ export class LoginComponent implements OnInit {
       },
       error: (err) => {
         this.loading.set(false);
-        this.error.set(err?.error?.message || 'Invalid Account ID or password.');
+        this.error.set(err?.error?.message || 'Invalid email or password.');
       }
     });
   }
@@ -339,9 +344,9 @@ export class LoginComponent implements OnInit {
 
   onRequestCode(event: Event): void {
     event.preventDefault();
-    const id = this.accountId().trim();
+    const id = this.identifier().trim();
     if (!id) {
-      this.error.set('Please enter your Account ID.');
+      this.error.set('Please enter your registered email address or Account ID.');
       return;
     }
 
@@ -365,7 +370,7 @@ export class LoginComponent implements OnInit {
 
   onVerifyCode(event: Event): void {
     event.preventDefault();
-    const id = this.accountId().trim();
+    const id = this.identifier().trim();
     const codeVal = this.code().trim();
     if (!id || codeVal.length !== 6) {
       this.error.set('Please enter the 6-digit verification code.');
@@ -396,7 +401,7 @@ export class LoginComponent implements OnInit {
 
   onResetPassword(event: Event): void {
     event.preventDefault();
-    const id = this.accountId().trim();
+    const id = this.identifier().trim();
     const pass = this.newPassword();
     const confirm = this.confirmPassword();
 

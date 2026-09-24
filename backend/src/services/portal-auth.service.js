@@ -24,15 +24,15 @@ const toPublicAccount = (row) => ({
   last_login: row.last_login
 });
 
-const login = async (accountId, password) => {
-  if (!accountId || !password) {
-    return { success: false, message: 'Account ID and password are required.' };
+const login = async (identifier, password) => {
+  if (!identifier || !password) {
+    return { success: false, message: 'Email address or Account ID and password are required.' };
   }
 
-  const normalizedId = accountId.trim().toUpperCase();
-  const row = await portalAccountRepository.findProfileByAccountId(normalizedId);
+  const cleanIdentifier = String(identifier).trim();
+  const row = await portalAccountRepository.findProfileByIdentifier(cleanIdentifier);
   if (!row) {
-    return { success: false, message: 'Invalid Account ID or password.' };
+    return { success: false, message: 'Invalid email/Account ID or password.' };
   }
   if (row.status !== 'ACTIVE') {
     return { success: false, message: 'This portal account is inactive. Please contact the barangay office.' };
@@ -43,7 +43,7 @@ const login = async (accountId, password) => {
 
   const valid = await bcrypt.compare(password, row.password_hash);
   if (!valid) {
-    return { success: false, message: 'Invalid Account ID or password.' };
+    return { success: false, message: 'Invalid email/Account ID or password.' };
   }
 
   await portalAccountRepository.updateLastLogin(row.portal_account_id);

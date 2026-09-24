@@ -4,17 +4,17 @@ const { successResponse, errorResponse } = require('../utils/apiResponse');
 
 const login = async (req, res) => {
   try {
-    const accountId = req.body.accountId || req.body.account_id;
+    const identifier = req.body.email || req.body.identifier || req.body.accountId || req.body.account_id;
     const { password } = req.body;
-    if (!accountId || !password) {
-      return errorResponse(res, 400, 'Account ID and password are required.');
+    if (!identifier || !password) {
+      return errorResponse(res, 400, 'Email address or Account ID and password are required.');
     }
 
-    const result = await portalAuthService.login(accountId, password);
+    const result = await portalAuthService.login(identifier, password);
     if (!result.success) {
       auditRepository.log({
         userId: null,
-        action: `Failed portal login for Account ID: ${accountId} (${result.message})`,
+        action: `Failed portal login for: ${identifier} (${result.message})`,
         module: 'PortalAuth',
         ipAddress: req.ip
       });
@@ -23,7 +23,7 @@ const login = async (req, res) => {
 
     auditRepository.log({
       userId: null,
-      action: `Portal resident logged in: ${result.data.account.account_id}`,
+      action: `Portal resident logged in: ${result.data.account.account_id} (${result.data.account.email})`,
       module: 'PortalAuth',
       ipAddress: req.ip
     });
