@@ -1,11 +1,12 @@
-import { Component } from '@angular/core';
+import { Component, signal, HostListener } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
-import { AuthService } from '../services/auth.service';
+import { AuthService, PortalAccount } from '../services/auth.service';
 
 @Component({
   selector: 'portal-layout',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
   template: `
     <div class="min-h-screen w-full bg-slate-50 flex flex-col font-sans text-slate-900">
       <a href="#main" class="skip-link">Skip to main content</a>
@@ -31,19 +32,176 @@ import { AuthService } from '../services/auth.service';
                class="px-3 py-2 rounded-lg hover:bg-slate-100 transition hidden sm:inline-flex">My Requests</a>
             <a routerLink="/contact" routerLinkActive="text-[#ea580c] bg-orange-50"
                class="px-3 py-2 rounded-lg hover:bg-slate-100 transition hidden sm:inline-flex">Contact Us</a>
-            <a routerLink="/profile" routerLinkActive="text-[#ea580c] bg-orange-50"
-               class="px-3 py-2 rounded-lg hover:bg-slate-100 transition">Profile</a>
 
-            @if (auth.isAuthenticated() && !auth.mustChangePassword()) {
+            <!-- Profile Dropdown Menu Trigger -->
+            <div
+              class="relative profile-menu-container group"
+              (mouseenter)="onMouseEnter()"
+              (mouseleave)="onMouseLeave()">
               <button
                 type="button"
-                (click)="auth.logout()"
-                class="ml-1 px-3 py-2 rounded-lg bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-xs sm:text-sm transition cursor-pointer">
-                Logout
+                id="profileDropdownTrigger"
+                (click)="toggleDropdown($event)"
+                [class.bg-orange-50]="isDropdownOpen()"
+                [class.text-[#ea580c]]="isDropdownOpen()"
+                class="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-700 font-semibold text-sm transition focus:outline-hidden focus:ring-2 focus:ring-orange-400/30 cursor-pointer"
+                aria-haspopup="true"
+                [attr.aria-expanded]="isDropdownOpen()"
+                title="Profile Menu">
+                <!-- Profile Avatar / Icon -->
+                <div class="w-7 h-7 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center shrink-0 overflow-hidden font-black text-xs border border-orange-200 shadow-2xs">
+                  @if (auth.currentUser()?.photo) {
+                    <img [src]="'/uploads/' + auth.currentUser()?.photo" alt="Profile" class="w-full h-full object-cover" />
+                  } @else if (auth.isAuthenticated()) {
+                    <span>{{ userInitials(auth.currentUser()) }}</span>
+                  } @else {
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                  }
+                </div>
+
+                <span class="hidden md:inline-block max-w-[110px] truncate text-xs font-bold text-slate-800">
+                  {{ auth.isAuthenticated() ? (auth.currentUser()?.first_name || 'Profile') : 'Profile' }}
+                </span>
+
+                <!-- Subtle Chevron indicator -->
+                <svg
+                  class="w-3.5 h-3.5 text-slate-400 transition-transform duration-200"
+                  [class.rotate-180]="isDropdownOpen()"
+                  fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                </svg>
               </button>
-            } @else {
+
+              <!-- Dropdown Content Container with Bridge Padding -->
+              <div
+                [class.opacity-100]="isDropdownOpen()"
+                [class.translate-y-0]="isDropdownOpen()"
+                [class.pointer-events-auto]="isDropdownOpen()"
+                [class.visible]="isDropdownOpen()"
+                class="absolute right-0 top-full pt-1.5 w-72 transition-all duration-150 ease-out z-50
+                       opacity-0 -translate-y-1 pointer-events-none invisible
+                       group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto group-hover:visible">
+                <div class="bg-white rounded-2xl shadow-xl border border-slate-200/90 p-2 text-slate-800 overflow-hidden ring-1 ring-black/5">
+                  @if (auth.isAuthenticated() && !auth.mustChangePassword()) {
+                    <!-- Header with resident info -->
+                    <div class="px-3 py-3 bg-gradient-to-br from-orange-50/80 via-white to-slate-50 rounded-xl border border-orange-100/60 mb-1.5">
+                      <div class="flex items-center gap-2.5">
+                        <div class="w-9 h-9 rounded-full bg-orange-500 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs overflow-hidden">
+                          @if (auth.currentUser()?.photo) {
+                            <img [src]="'/uploads/' + auth.currentUser()?.photo" alt="Photo" class="w-full h-full object-cover" />
+                          } @else {
+                            <span>{{ userInitials(auth.currentUser()) }}</span>
+                          }
+                        </div>
+                        <div class="min-w-0 flex-1">
+                          <div class="flex items-center gap-1.5">
+                            <p class="text-xs font-black text-slate-900 truncate leading-tight">{{ displayName(auth.currentUser()) }}</p>
+                            <span class="inline-flex items-center px-1.5 py-0.2 rounded-full text-[9px] font-extrabold bg-emerald-100 text-emerald-800 shrink-0">
+                              Verified
+                            </span>
+                          </div>
+                          <p class="text-[11px] text-slate-500 font-mono truncate mt-0.5">{{ auth.currentUser()?.account_id }}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Profile Features Menu Links -->
+                    <div class="space-y-0.5">
+                      <a
+                        routerLink="/profile"
+                        (click)="closeDropdown()"
+                        class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:text-orange-600 hover:bg-orange-50/70 transition group/item">
+                        <div class="w-7 h-7 rounded-lg bg-slate-100 group-hover/item:bg-orange-100 text-slate-500 group-hover/item:text-orange-600 flex items-center justify-center shrink-0 transition">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                          </svg>
+                        </div>
+                        <div class="min-w-0">
+                          <p class="leading-tight">Resident Profile</p>
+                          <p class="text-[10px] text-slate-400 font-normal">View personal & ID details</p>
+                        </div>
+                      </a>
+
+                      <a
+                        routerLink="/requests"
+                        (click)="closeDropdown()"
+                        class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:text-orange-600 hover:bg-orange-50/70 transition group/item">
+                        <div class="w-7 h-7 rounded-lg bg-slate-100 group-hover/item:bg-orange-100 text-slate-500 group-hover/item:text-orange-600 flex items-center justify-center shrink-0 transition">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                          </svg>
+                        </div>
+                        <div class="min-w-0">
+                          <p class="leading-tight">My Requests</p>
+                          <p class="text-[10px] text-slate-400 font-normal">Track document applications</p>
+                        </div>
+                      </a>
+
+                      <a
+                        routerLink="/services"
+                        (click)="closeDropdown()"
+                        class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:text-orange-600 hover:bg-orange-50/70 transition group/item">
+                        <div class="w-7 h-7 rounded-lg bg-slate-100 group-hover/item:bg-orange-100 text-slate-500 group-hover/item:text-orange-600 flex items-center justify-center shrink-0 transition">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                          </svg>
+                        </div>
+                        <div class="min-w-0">
+                          <p class="leading-tight">Apply for Document</p>
+                          <p class="text-[10px] text-slate-400 font-normal">Browse available certificates</p>
+                        </div>
+                      </a>
+                    </div>
+
+                    <div class="my-1.5 border-t border-slate-100"></div>
+
+                    <!-- Sign out Action -->
+                    <button
+                      type="button"
+                      (click)="onLogout()"
+                      class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 transition group/logout cursor-pointer">
+                      <div class="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 group-hover/logout:bg-rose-100 flex items-center justify-center shrink-0 transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                        </svg>
+                      </div>
+                      <span class="leading-tight">Log out</span>
+                    </button>
+                  } @else {
+                    <!-- Guest Dropdown Menu -->
+                    <div class="px-3 py-2.5 bg-slate-50 rounded-xl mb-2 text-xs text-slate-600">
+                      <p class="font-bold text-slate-800">Resident Portal</p>
+                      <p class="text-[11px] text-slate-500 mt-0.5">Sign in to view your profile and requests.</p>
+                    </div>
+
+                    <div class="space-y-1">
+                      <a
+                        routerLink="/login"
+                        (click)="closeDropdown()"
+                        class="flex items-center justify-center gap-2 w-full px-3 py-2 rounded-xl bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-xs transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                        </svg>
+                        Login to Portal
+                      </a>
+                      <a
+                        routerLink="/services"
+                        (click)="closeDropdown()"
+                        class="flex items-center justify-center gap-2 w-full px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition">
+                        Browse Services
+                      </a>
+                    </div>
+                  }
+                </div>
+              </div>
+            </div>
+
+            <!-- Header Login button for quick access if guest -->
+            @if (!auth.isAuthenticated() || auth.mustChangePassword()) {
               <a routerLink="/login"
-                 class="ml-1 px-3 py-2 rounded-lg bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-xs sm:text-sm transition">
+                 class="ml-1 px-3 py-2 rounded-lg bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-xs sm:text-sm transition hidden sm:inline-flex">
                 Login
               </a>
             }
@@ -89,5 +247,57 @@ import { AuthService } from '../services/auth.service';
   `
 })
 export class PortalLayoutComponent {
+  isDropdownOpen = signal(false);
+  private hideTimeout: any = null;
+
   constructor(public auth: AuthService) {}
+
+  onMouseEnter(): void {
+    if (this.hideTimeout) {
+      clearTimeout(this.hideTimeout);
+      this.hideTimeout = null;
+    }
+    this.isDropdownOpen.set(true);
+  }
+
+  onMouseLeave(): void {
+    this.hideTimeout = setTimeout(() => {
+      this.isDropdownOpen.set(false);
+    }, 150);
+  }
+
+  toggleDropdown(event: Event): void {
+    event.stopPropagation();
+    this.isDropdownOpen.update(v => !v);
+  }
+
+  closeDropdown(): void {
+    this.isDropdownOpen.set(false);
+  }
+
+  onLogout(): void {
+    this.closeDropdown();
+    this.auth.logout();
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.profile-menu-container')) {
+      this.closeDropdown();
+    }
+  }
+
+  displayName(user: PortalAccount | null): string {
+    if (!user) return 'Resident';
+    return [user.first_name, user.last_name].filter(Boolean).join(' ') || user.email || 'Resident';
+  }
+
+  userInitials(user: PortalAccount | null): string {
+    if (!user) return 'R';
+    const first = user.first_name?.[0] || '';
+    const last = user.last_name?.[0] || '';
+    return (first + last).toUpperCase() || 'R';
+  }
 }
+

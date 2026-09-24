@@ -14,6 +14,11 @@
 | **Total** | **85** | **56** | **19** | **0** |
 
 > **Note:** TASK-BACKEND-012 (Payment API) and TASK-FRONTEND-011 (Payment UI) removed per DEC-008.
+> - **Interactive Profile Dropdown Menu in Online Portal Navigation** (`portal-layout.component.ts`):
+>   - **Hover & Click Dropdown Navigation**: Converted the Profile link into a modern dropdown menu trigger with responsive hover (zero-gap transition bridge and enter/leave debounce) and click/tap support with outside-click detection for tablets and mobile devices.
+>   - **Profile-Related Feature Shortcuts**: Integrates verified resident identity header (full name, verified badge, Account ID, photo/initials avatar) and clean, direct navigation links to Resident Profile (`/profile`), My Requests (`/requests`), Apply for Document (`/services`), and Logout action (`auth.logout()`).
+>   - **Guest Navigation**: Displays a clean resident portal prompt with direct Login and Browse Services actions when unauthenticated.
+>   - **Verification**: Verified zero TypeScript or Angular compiler errors (`npx ng build online-portal` completed with 0 errors).
 > - **Resolved Emergency Contact Name Validation & Simplified Password Requirements** (`transaction.service.js` L145-210, `field-validation.test.js` L305-345, `apply.component.ts` L1280-1340, `change-password.component.ts`, `login.component.ts`):
 >   - **Emergency Contact Validation Fix**: Fixed `validateServiceFormData` where any field key or label containing the substring `"contact"` (such as `emergency_contact_name`) was erroneously flagged as `isPhone`, causing full person names (e.g. "Hanna Marie Enrera") to fail with `"Emergency Contact Person must be a valid 11-digit contact number"`. Refined detection so `isPhone` only matches dedicated telephone/mobile fields (`tel`, `contact_number`, `phone_number`, `mobile_number`) when no person/name substrings are present. Increased phone max length threshold to avoid false length rejections on formatted numbers.
 >   - **Frontend Dynamic Validation**: Added matching `isPhoneField` and `isNameField` helpers to `apply.component.ts` in `validateAndProceedToReview()`, preventing client-side rejection of valid emergency contact person names.
