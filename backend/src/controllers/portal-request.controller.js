@@ -1,5 +1,5 @@
 const portalRequestService = require('../services/portal-request.service');
-const { successResponse, errorResponse } = require('../utils/response.util');
+const { successResponse, errorResponse } = require('../utils/apiResponse');
 
 const getRequests = async (req, res) => {
   try {
