@@ -14,6 +14,11 @@
 | **Total** | **85** | **56** | **19** | **0** |
 
 > **Note:** TASK-BACKEND-012 (Payment API) and TASK-FRONTEND-011 (Payment UI) removed per DEC-008.
+> - **Logout Confirmation Modal in Online Portal** (`portal-layout.component.ts` L248-288, `profile.component.ts` L94-135):
+>   - **Confirmation Dialog**: Added an accessible, responsive confirmation modal (`"Confirm Log Out"`) when residents click "Log out" from the Profile dropdown menu, the footer link, or the Resident Profile page.
+>   - **Balanced Button Sizing & Padding**: Standardized uniform padding (`px-5 py-2.5`), balanced gap (`gap-3`), and centered flex alignment across both "Cancel" and "Log Out" action buttons for clean, consistent spacing and positioning on mobile and desktop viewports.
+>   - **Safety & Usability**: Prevents accidental session termination with clear explanation (`"Are you sure you want to log out of your Barangay San Manuel Online Portal account?"`), backdrop click cancellation, Escape key dismissal, and distinct "Cancel" and "Log Out" actions.
+>   - **Verification**: Verified zero TypeScript or Angular build errors (`npx ng build --configuration=development` completed with 0 errors).
 > - **Interactive Profile Dropdown Menu in Online Portal Navigation** (`portal-layout.component.ts`):
 >   - **Hover & Click Dropdown Navigation**: Converted the Profile link into a modern dropdown menu trigger with responsive hover (zero-gap transition bridge and enter/leave debounce) and click/tap support with outside-click detection for tablets and mobile devices.
 >   - **Profile-Related Feature Shortcuts**: Integrates verified resident identity header (full name, verified badge, Account ID, photo/initials avatar) and clean, direct navigation links to Resident Profile (`/profile`), My Requests (`/requests`), Apply for Document (`/services`), and Logout action (`auth.logout()`).

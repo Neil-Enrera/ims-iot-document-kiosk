@@ -160,7 +160,7 @@ import { AuthService, PortalAccount } from '../services/auth.service';
                     <!-- Sign out Action -->
                     <button
                       type="button"
-                      (click)="onLogout()"
+                      (click)="openLogoutModal()"
                       class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 transition group/logout cursor-pointer">
                       <div class="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 group-hover/logout:bg-rose-100 flex items-center justify-center shrink-0 transition">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -231,7 +231,7 @@ import { AuthService, PortalAccount } from '../services/auth.service';
               <li><a routerLink="/contact" class="hover:text-orange-400 transition">Contact Us</a></li>
               <li>
                 @if (auth.isAuthenticated()) {
-                  <button type="button" (click)="auth.logout()" class="hover:text-orange-400 transition cursor-pointer">Logout</button>
+                  <button type="button" (click)="openLogoutModal()" class="hover:text-orange-400 transition cursor-pointer">Logout</button>
                 } @else {
                   <a routerLink="/login" class="hover:text-orange-400 transition">Login</a>
                 }
@@ -243,11 +243,55 @@ import { AuthService, PortalAccount } from '../services/auth.service';
           IMS Document Request Services &bull; Barangay San Manuel
         </div>
       </footer>
+
+      <!-- Logout Confirmation Modal -->
+      @if (isLogoutModalOpen()) {
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="logout-modal-title"
+             (click)="closeLogoutModal()">
+          <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-100 transform transition-all animate-in zoom-in-95 duration-150"
+               (click)="$event.stopPropagation()">
+            <div class="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto mb-4 border border-rose-100 shadow-2xs">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+              </svg>
+            </div>
+
+            <div class="text-center">
+              <h3 id="logout-modal-title" class="text-lg font-black text-slate-900">Confirm Log Out</h3>
+              <p class="text-sm text-slate-500 mt-2 leading-relaxed">
+                Are you sure you want to log out of your Barangay San Manuel Online Portal account?
+              </p>
+            </div>
+
+            <div class="mt-6 flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
+              <button
+                type="button"
+                (click)="closeLogoutModal()"
+                class="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-sm transition cursor-pointer flex items-center justify-center">
+                Cancel
+              </button>
+              <button
+                type="button"
+                (click)="confirmLogout()"
+                class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm transition shadow-xs flex items-center justify-center gap-2 cursor-pointer">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                </svg>
+                Log Out
+              </button>
+            </div>
+          </div>
+        </div>
+      }
     </div>
   `
 })
 export class PortalLayoutComponent {
   isDropdownOpen = signal(false);
+  isLogoutModalOpen = signal(false);
   private hideTimeout: any = null;
 
   constructor(public auth: AuthService) {}
@@ -275,9 +319,27 @@ export class PortalLayoutComponent {
     this.isDropdownOpen.set(false);
   }
 
-  onLogout(): void {
+  openLogoutModal(): void {
     this.closeDropdown();
+    this.isLogoutModalOpen.set(true);
+  }
+
+  closeLogoutModal(): void {
+    this.isLogoutModalOpen.set(false);
+  }
+
+  confirmLogout(): void {
+    this.closeLogoutModal();
     this.auth.logout();
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.isLogoutModalOpen()) {
+      this.closeLogoutModal();
+    } else if (this.isDropdownOpen()) {
+      this.closeDropdown();
+    }
   }
 
   @HostListener('document:click', ['$event'])
