@@ -79,6 +79,67 @@ const BARANGAY_UPDATES: BarangayUpdate[] = [
   }
 ];
 
+export interface UploadedRequirement {
+  requirement_name: string;
+  file_url: string;
+  file_name: string;
+  original_name: string;
+  size?: number;
+  mime_type?: string;
+}
+
+export interface RequestStatusHistoryItem {
+  history_id: number;
+  request_id: number;
+  old_status_id?: number;
+  new_status_id: number;
+  status_name: string;
+  remarks?: string;
+  changed_at: string;
+  changed_by_name?: string;
+}
+
+export interface PortalRequest {
+  request_id: number;
+  transaction_id: number;
+  request_number: string;
+  resident_id: number;
+  service_id: number;
+  service_name: string;
+  processing_fee: number;
+  service_description?: string;
+  source: 'Online' | 'Kiosk';
+  status_id: number;
+  status_name: string;
+  purpose?: string;
+  remarks?: string;
+  correction_remarks?: string;
+  form_data: Record<string, any>;
+  service_snapshot?: Record<string, any>;
+  requirements: UploadedRequirement[];
+  request_date: string;
+  reviewed_date?: string;
+  release_date?: string;
+  expires_at?: string;
+  created_at: string;
+  updated_at: string;
+  history?: RequestStatusHistoryItem[];
+}
+
+export interface SubmitRequestPayload {
+  service_id: number;
+  form_data: Record<string, any>;
+  requirements: UploadedRequirement[];
+  photo?: string;
+  idempotency_key?: string;
+}
+
+export interface ResubmitRequestPayload {
+  form_data?: Record<string, any>;
+  requirements?: UploadedRequirement[];
+  remarks?: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class PortalService {
   private get apiUrl(): string {
@@ -103,5 +164,41 @@ export class PortalService {
       message: 'Barangay updates retrieved.',
       data: BARANGAY_UPDATES
     });
+  }
+
+  uploadRequirement(file: File): Observable<ApiResponse<UploadedRequirement>> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<ApiResponse<UploadedRequirement>>(`${this.apiUrl}/portal/upload`, formData);
+  }
+
+  submitRequest(payload: SubmitRequestPayload): Observable<ApiResponse<any>> {
+    return this.http.post<ApiResponse<any>>(`${this.apiUrl}/portal/requests`, payload);
+  }
+
+  getMyRequests(params?: { page?: number; limit?: number; statusId?: number; search?: string }): Observable<ApiResponse<{ requests: PortalRequest[]; total: number; page: number; limit: number }>> {
+    let url = `${this.apiUrl}/portal/requests`;
+    const queryParts: string[] = [];
+    if (params?.page) queryParts.push(`page=${params.page}`);
+    if (params?.limit) queryParts.push(`limit=${params.limit}`);
+    if (params?.statusId) queryParts.push(`statusId=${params.statusId}`);
+    if (params?.search) queryParts.push(`search=${encodeURIComponent(params.search)}`);
+    if (queryParts.length) url += `?${queryParts.join('&')}`;
+
+    return this.http.get<ApiResponse<{ requests: PortalRequest[]; total: number; page: number; limit: number }>>(url);
+  }
+
+  getRequestById(id: number | string): Observable<ApiResponse<PortalRequest>> {
+    return this.http.get<ApiResponse<PortalRequest>>(`${this.apiUrl}/portal/requests/${id}`);
+  }
+
+  resubmitRequest(id: number | string, payload: ResubmitRequestPayload): Observable<ApiResponse<PortalRequest>> {
+    return this.http.put<ApiResponse<PortalRequest>>(`${this.apiUrl}/portal/requests/${id}/resubmit`, payload);
+  }
+
+  getPreviousServiceData(serviceId: number | string): Observable<ApiResponse<{ previous_request_id: number; previous_request_number: string; form_data: Record<string, any> }>> {
+    return this.http.get<ApiResponse<{ previous_request_id: number; previous_request_number: string; form_data: Record<string, any> }>>(
+      `${this.apiUrl}/portal/services/${serviceId}/previous-data`
+    );
   }
 }

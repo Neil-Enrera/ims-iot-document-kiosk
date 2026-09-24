@@ -18,4 +18,15 @@ router.post('/forgot-password', ...forgotPasswordValidation, validate, portalAut
 router.post('/verify-reset-code', ...verifyResetCodeValidation, validate, portalAuthController.verifyResetCode);
 router.post('/reset-password', ...resetPasswordValidation, validate, portalAuthController.resetPassword);
 
+// Digital requirement upload (PDF, JPG, JPEG, PNG)
+const { upload } = require('../middleware/upload.middleware');
+const portalRequestController = require('../controllers/portal-request.controller');
+
+router.post('/upload', authenticatePortal, upload.single('file'), portalRequestController.uploadFile);
+router.get('/requests', authenticatePortal, portalRequestController.getRequests);
+router.get('/requests/:id', authenticatePortal, portalRequestController.getRequestById);
+router.post('/requests', authenticatePortal, portalRequestController.createRequest);
+router.put('/requests/:id/resubmit', authenticatePortal, portalRequestController.resubmitRequest);
+router.get('/services/:serviceId/previous-data', authenticatePortal, portalRequestController.getPreviousData);
+
 module.exports = router;

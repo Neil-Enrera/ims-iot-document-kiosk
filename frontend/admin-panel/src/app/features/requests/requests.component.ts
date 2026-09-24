@@ -159,6 +159,7 @@ interface StatusOption {
           emptyMessage="No document requests found"
           [cellTemplates]="{
             request_number: reqNumCell,
+            source: sourceCell,
             resident_name: residentCell,
             service_name: serviceCell,
             request_date: dateCell,
@@ -174,6 +175,17 @@ interface StatusOption {
           <ng-template #reqNumCell let-row="row">
             <span class="text-sm font-semibold text-slate-900 font-mono">
               {{ row.request_number }}
+            </span>
+          </ng-template>
+
+          <!-- Source (Kiosk vs Online) -->
+          <ng-template #sourceCell let-row="row">
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold"
+                  [class.bg-blue-50]="row.source === 'Online'"
+                  [class.text-blue-700]="row.source === 'Online'"
+                  [class.bg-slate-100]="row.source !== 'Online'"
+                  [class.text-slate-700]="row.source !== 'Online'">
+              {{ row.source || 'Kiosk' }}
             </span>
           </ng-template>
 
@@ -505,6 +517,34 @@ interface StatusOption {
                         </div>
                       </div>
                     }
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Uploaded Digital Requirements (Online Portal Submissions) -->
+            @if (getUploadedRequirements(request.form_data).length > 0) {
+              <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs">
+                <div class="flex items-center justify-between mb-3">
+                  <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2">
+                    <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.373L8.552 18.32a1.5 1.5 0 01-2.121-2.121L13.879 8.75" />
+                    </svg>
+                    Uploaded Digital Requirements ({{ getUploadedRequirements(request.form_data).length }})
+                  </h4>
+                </div>
+                <div class="space-y-2">
+                  @for (reqDoc of getUploadedRequirements(request.form_data); track reqDoc.requirement_name) {
+                    <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+                      <div class="min-w-0 pr-3">
+                        <span class="font-bold text-slate-900 block truncate">{{ reqDoc.requirement_name }}</span>
+                        <span class="text-slate-500 text-[11px] block truncate">{{ reqDoc.original_name }}</span>
+                      </div>
+                      <a [href]="reqDoc.file_url" target="_blank"
+                         class="px-3 py-1 rounded-lg bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shrink-0 transition">
+                        View File
+                      </a>
+                    </div>
                   }
                 </div>
               </div>
@@ -1015,6 +1055,7 @@ export class RequestsComponent implements OnInit, OnDestroy {
 
   columns: TableColumn[] = [
     { key: 'request_number', label: 'Request #', sortable: true },
+    { key: 'source', label: 'Source' },
     { key: 'resident_name', label: 'Resident' },
     { key: 'service_name', label: 'Service' },
     { key: 'request_date', label: 'Date Submitted', sortable: true },
@@ -1032,7 +1073,9 @@ export class RequestsComponent implements OnInit, OnDestroy {
     { value: 6, label: 'Ready for Release' },
     { value: 7, label: 'Released' },
     { value: 8, label: 'Rejected' },
-    { value: 9, label: 'Cancelled' }
+    { value: 9, label: 'Cancelled' },
+    { value: 10, label: 'Returned for Correction' },
+    { value: 11, label: 'Resubmitted' }
   ];
 
   filterOptions = [
@@ -1121,6 +1164,10 @@ export class RequestsComponent implements OnInit, OnDestroy {
         return 'bg-rose-50 text-rose-700 border-rose-200';
       case 9: // Cancelled
         return 'bg-slate-100 text-slate-700 border-slate-200';
+      case 10: // Returned for Correction
+        return 'bg-amber-50 text-amber-800 border-amber-200';
+      case 11: // Resubmitted
+        return 'bg-purple-50 text-purple-800 border-purple-200';
       default:
         return 'bg-slate-50 text-slate-700 border-slate-200';
     }
@@ -1137,6 +1184,8 @@ export class RequestsComponent implements OnInit, OnDestroy {
       case 7: return 'bg-emerald-500';
       case 8: return 'bg-rose-500';
       case 9: return 'bg-slate-400';
+      case 10: return 'bg-amber-500';
+      case 11: return 'bg-purple-500';
       default: return 'bg-slate-400';
     }
   }
@@ -1154,19 +1203,23 @@ export class RequestsComponent implements OnInit, OnDestroy {
       case 1: // Submitted
         return [
           { value: 4, label: 'Under Review (Start Review)' },
-          { value: 2, label: 'Waiting for Requirements (Request Requirements)' }
+          { value: 2, label: 'Waiting for Requirements (Request Requirements)' },
+          { value: 10, label: 'Return for Correction (Request Resident Fix)' }
         ];
       case 2: // Waiting for Requirements
         return [
-          { value: 3, label: 'Requirements Received (Mark Requirements Received)' }
+          { value: 3, label: 'Requirements Received (Mark Requirements Received)' },
+          { value: 10, label: 'Return for Correction (Request Resident Fix)' }
         ];
       case 3: // Requirements Received
         return [
-          { value: 4, label: 'Under Review (Start Review)' }
+          { value: 4, label: 'Under Review (Start Review)' },
+          { value: 10, label: 'Return for Correction (Request Resident Fix)' }
         ];
       case 4: // Under Review
         return [
-          { value: 5, label: 'Document Processing (Start Processing)' }
+          { value: 5, label: 'Document Processing (Start Processing)' },
+          { value: 10, label: 'Return for Correction (Request Resident Fix)' }
         ];
       case 5: // Document Processing
         return [
@@ -1175,6 +1228,15 @@ export class RequestsComponent implements OnInit, OnDestroy {
       case 6: // Ready for Release
         return [
           { value: 7, label: 'Released (Release Document)' }
+        ];
+      case 10: // Returned for Correction
+        return [
+          { value: 11, label: 'Resubmitted (Mark Resubmitted)' }
+        ];
+      case 11: // Resubmitted
+        return [
+          { value: 4, label: 'Under Review (Review Resubmitted Info)' },
+          { value: 10, label: 'Return for Correction (Request Further Fixes)' }
         ];
       default:
         return [];
@@ -1998,6 +2060,16 @@ export class RequestsComponent implements OnInit, OnDestroy {
   // --- Grouped Form Data Helpers ---
   hasFormData(formData: Record<string, unknown>): boolean {
     return !!formData && Object.keys(formData).length > 0;
+  }
+
+  getUploadedRequirements(formData: unknown): Array<{ requirement_name: string; original_name: string; file_url: string; size?: number }> {
+    if (!formData || typeof formData !== 'object') return [];
+    const data = formData as Record<string, unknown>;
+    const list = data['_requirements'];
+    if (Array.isArray(list)) {
+      return list as Array<{ requirement_name: string; original_name: string; file_url: string; size?: number }>;
+    }
+    return [];
   }
 
   getGroupedFormData(formData: Record<string, unknown>): FormGroupSection[] {

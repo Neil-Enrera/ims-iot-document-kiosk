@@ -499,17 +499,19 @@ const submitTransaction = async (input) => {
         requires_photo: service.requires_photo ?? false
       };
 
+      const requestSource = input.source === 'Online' ? 'Online' : 'Kiosk';
       let requestId;
       try {
         const [result] = await conn.query(
           `INSERT INTO requests
-             (transaction_id, resident_id, service_id, request_number, status_id,
+             (transaction_id, resident_id, service_id, source, request_number, status_id,
               request_date, form_data, service_snapshot, idempotency_key, created_at)
-           VALUES (?, ?, ?, ?, ?, NOW(), ?, ?, ?, NOW())`,
+           VALUES (?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, NOW())`,
           [
             transactionId,
             residentId,
             service.service_id,
+            requestSource,
             requestNumber,
             SUBMITTED_STATUS_ID,
             JSON.stringify(storedFormData),
@@ -518,6 +520,12 @@ const submitTransaction = async (input) => {
           ]
         );
         requestId = result.insertId;
+
+        await conn.query(
+          `INSERT INTO request_status_history (request_id, old_status_id, new_status_id, remarks)
+           VALUES (?, NULL, ?, ?)`,
+          [requestId, SUBMITTED_STATUS_ID, requestSource === 'Online' ? 'Submitted online via Resident Portal' : 'Submitted via Kiosk']
+        );
       } catch (error) {
         // Legacy request besides the transaction already holds this key
         // (pre-transaction submissions). Roll back and return that request.
