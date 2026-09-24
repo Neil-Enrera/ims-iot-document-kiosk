@@ -122,21 +122,13 @@ import { AuthService } from '../../core/services/auth.service';
               }
 
               <div class="mt-auto pt-5">
-                <span
-                  class="block w-full text-center px-4 py-2.5 rounded-xl font-bold text-sm transition"
-                  [class.bg-[#ea580c]]="isSelected(service)"
-                  [class.text-white]="isSelected(service)"
-                  [class.bg-white]="!isSelected(service)"
-                  [class.border]="!isSelected(service)"
-                  [class.border-slate-300]="!isSelected(service)"
-                  [class.text-slate-700]="!isSelected(service)"
-                >
-                  @if (isSelected(service)) {
-                    Selected
-                  } @else {
-                    Select service
-                  }
-                </span>
+                <button
+                  type="button"
+                  (click)="continueRequest(service); $event.stopPropagation()"
+                  class="w-full text-center px-4 py-2.5 rounded-xl font-bold text-sm transition cursor-pointer bg-[#ea580c] hover:bg-[#c2410c] text-white shadow-xs flex items-center justify-center gap-1.5">
+                  <span>Select service</span>
+                  <span aria-hidden="true">&rarr;</span>
+                </button>
               </div>
             </article>
           } @empty {
@@ -271,12 +263,12 @@ export class ServicesComponent implements OnInit {
 
     if (!this.auth.isAuthenticated() || this.auth.mustChangePassword()) {
       this.router.navigate(['/login'], {
-        queryParams: { returnUrl: '/services' }
+        queryParams: { returnUrl: `/apply?service_id=${service.service_id}` }
       });
       return;
     }
 
-    this.router.navigate(['/requests'], {
+    this.router.navigate(['/apply'], {
       queryParams: { service_id: service.service_id }
     });
   }

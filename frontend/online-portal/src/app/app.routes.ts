@@ -20,6 +20,16 @@ export const routes: Routes = [
       { path: '', loadComponent: () => import('./features/home/home.component').then(m => m.HomeComponent) },
       { path: 'services', loadComponent: () => import('./features/services/services.component').then(m => m.ServicesComponent) },
       {
+        path: 'apply',
+        canActivate: [authGuard],
+        loadComponent: () => import('./features/apply/apply.component').then(m => m.ApplyComponent)
+      },
+      {
+        path: 'requests/new',
+        canActivate: [authGuard],
+        redirectTo: 'apply'
+      },
+      {
         path: 'requests',
         canActivate: [authGuard],
         loadComponent: () => import('./features/requests/requests.component').then(m => m.RequestsComponent)
