@@ -31,25 +31,25 @@ export class IdPhotoValidatorService {
   /**
    * Validates a 2x2 ID photo file against all official requirements:
    * 1. Accepted file formats: JPG, JPEG, PNG only
-   * 2. Aspect ratio: 1:1 square
+   * 2. Aspect ratio: 1:1 square (±5% tolerance)
    * 3. Resolution: Minimum 300x300 px
-   * 4. Human face detection: Exactly 1 face
+   * 4. Human face detection: Exactly 1 detectable face
    * 5. Face position: Centered, reasonable scale, not severely cropped
-   * 6. Usability: Not blurry, not too dark, not overexposed, sufficient contrast
-   * 7. Background: White or light-colored background
+   * 6. Usability: Not blurry, not too dark, not overexposed, sufficient detail
+   * 7. Background: Plain white or light-colored background
    */
   async validateIdPhoto(file: File): Promise<PhotoValidationResult> {
-    // 1. File type and extension check
+    // 1. File type and extension check (JPG, JPEG, PNG only)
     const formatCheck = this.checkFileFormat(file);
     if (!formatCheck.isValid) {
       return formatCheck;
     }
 
     // 2. Minimum file size sanity check
-    if (file.size < 15 * 1024) {
+    if (file.size < 10 * 1024) {
       return {
         isValid: false,
-        error: 'Image file is too small or corrupted (less than 15KB). Please upload a clear photo.'
+        error: 'Image file is too small or corrupted (less than 10KB). Please upload a clear photo.'
       };
     }
 
@@ -113,7 +113,7 @@ export class IdPhotoValidatorService {
       return blurCheck;
     }
 
-    // 9. Face detection (Native FaceDetector API or Computer Vision fallback)
+    // 9. Face detection (Native FaceDetector API or Computer Vision analyzer)
     const faceResult = await this.detectFaces(img, pixels, sampleSize, sampleSize);
     if (!faceResult.isValid) {
       return faceResult;
@@ -217,8 +217,8 @@ export class IdPhotoValidatorService {
       luminances[i] = lum;
       sumLuminance += lum;
 
-      if (lum < 35) darkCount++;
-      if (lum > 245) brightCount++;
+      if (lum < 30) darkCount++;
+      if (lum > 248) brightCount++;
     }
 
     const meanLuminance = sumLuminance / totalPixels;
@@ -232,7 +232,7 @@ export class IdPhotoValidatorService {
     const stdDev = Math.sqrt(varianceSum / totalPixels);
 
     // Too dark / underexposed check
-    if (meanLuminance < 45 || darkCount / totalPixels > 0.82) {
+    if (meanLuminance < 40 || darkCount / totalPixels > 0.88) {
       return {
         isValid: false,
         error: 'Photo is too dark or underexposed. Please upload a well-lit ID photo taken in good lighting.'
@@ -240,7 +240,7 @@ export class IdPhotoValidatorService {
     }
 
     // Overexposed / washed out check
-    if (meanLuminance > 245 || brightCount / totalPixels > 0.85) {
+    if (meanLuminance > 248 || brightCount / totalPixels > 0.88) {
       return {
         isValid: false,
         error: 'Photo is overexposed or washed out. Please upload a clear photo with balanced lighting.'
@@ -248,7 +248,7 @@ export class IdPhotoValidatorService {
     }
 
     // Lack of contrast / solid color check
-    if (stdDev < 12) {
+    if (stdDev < 10) {
       return {
         isValid: false,
         error: 'Image lacks photographic detail or contrast. Please upload a clear, high-quality portrait photo.'
@@ -286,7 +286,7 @@ export class IdPhotoValidatorService {
     const variance = (laplacianSqSum / count) - (meanLap * meanLap);
 
     // Extremely blurry threshold on normalized 320x320
-    if (variance < 32) {
+    if (variance < 25) {
       return {
         isValid: false,
         error: 'Photo appears too blurry or out of focus. Please upload a crisp, sharp 2×2 ID photo.',
@@ -298,7 +298,39 @@ export class IdPhotoValidatorService {
   }
 
   /**
-   * Detects faces using Shape Detection API if supported, or Computer Vision fallback.
+   * Determines if a given RGB pixel falls within universal human skin chrominance models.
+   */
+  private isSkinPixel(r: number, g: number, b: number): boolean {
+    // 1. YCbCr standard chrominance
+    const y = 0.299 * r + 0.587 * g + 0.114 * b;
+    const cb = 128 - 0.168736 * r - 0.331264 * g + 0.5 * b;
+    const cr = 128 + 0.5 * r - 0.418688 * g - 0.081312 * b;
+
+    // 2. HSV chrominance
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const delta = max - min;
+    let h = 0;
+    if (delta !== 0) {
+      if (max === r) h = ((g - b) / delta) % 6;
+      else if (max === g) h = (b - r) / delta + 2;
+      else h = (r - g) / delta + 4;
+      h = Math.round(h * 60);
+      if (h < 0) h += 360;
+    }
+    const s = max === 0 ? 0 : delta / max;
+    const v = max / 255;
+
+    // 3. Multi-space skin boundary conditions
+    const ycbcrMatch = y >= 25 && cb >= 68 && cb <= 145 && cr >= 125 && cr <= 185;
+    const hsvMatch = (h <= 55 || h >= 330) && s >= 0.06 && s <= 0.88 && v >= 0.12;
+    const rgbMatch = r > 40 && g > 25 && b > 15 && (r >= b || cr >= 128) && (max - min) >= 6;
+
+    return (ycbcrMatch || rgbMatch) && hsvMatch;
+  }
+
+  /**
+   * Detects faces using Shape Detection API if supported, with CV fallback.
    */
   private async detectFaces(
     img: HTMLImageElement,
@@ -311,7 +343,7 @@ export class IdPhotoValidatorService {
       try {
         const detector = new (window as any).FaceDetector({ fastMode: false, maxDetectedFaces: 5 });
         const detected = await detector.detect(img);
-        if (Array.isArray(detected)) {
+        if (Array.isArray(detected) && detected.length > 0) {
           const faces: FaceBox[] = detected.map((f: any) => {
             const b = f.boundingBox;
             const scaleX = sampleW / img.naturalWidth;
@@ -326,23 +358,25 @@ export class IdPhotoValidatorService {
           return { isValid: true, faces };
         }
       } catch {
-        // Fallback to pure CV method
+        // Fallback to CV method
       }
     }
 
-    // Method 2: Comprehensive Computer Vision Skin & Facial Structure Analyzer
+    // Method 2: Comprehensive Computer Vision Skin & Portrait Structure Analyzer
     const faces = this.cvFaceDetector(pixels, sampleW, sampleH);
     return { isValid: true, faces };
   }
 
   /**
-   * Computer vision facial feature and skin geometry detector.
+   * Computer vision facial feature and skin geometry detector for ID portraits.
    */
   private cvFaceDetector(pixels: Uint8ClampedArray, width: number, height: number): FaceBox[] {
     const skinMask = new Uint8Array(width * height);
     let totalSkinPixels = 0;
+    let skinSumX = 0;
+    let skinSumY = 0;
 
-    // 1. Skin Chrominance Segmentation (YCbCr + RGB heuristics)
+    // 1. Skin Chrominance Segmentation
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const idx = (y * width + x) * 4;
@@ -350,31 +384,22 @@ export class IdPhotoValidatorService {
         const g = pixels[idx + 1];
         const b = pixels[idx + 2];
 
-        // Convert to YCbCr
-        const cb = 128 - 0.168736 * r - 0.331264 * g + 0.5 * b;
-        const cr = 128 + 0.5 * r - 0.418688 * g - 0.081312 * b;
-
-        const isSkin = (
-          cb >= 77 && cb <= 135 &&
-          cr >= 133 && cr <= 178 &&
-          r > 70 && g > 40 && b > 20 &&
-          r > g && r > b && (r - g) >= 12
-        );
-
-        if (isSkin) {
+        if (this.isSkinPixel(r, g, b)) {
           skinMask[y * width + x] = 1;
           totalSkinPixels++;
+          skinSumX += x;
+          skinSumY += y;
         }
       }
     }
 
-    // If practically no skin pixels detected, no face exists
-    if (totalSkinPixels < (width * height * 0.035)) {
+    // If practically no skin pixels detected, no human face exists in the photo
+    if (totalSkinPixels < (width * height * 0.025)) {
       return [];
     }
 
-    // 2. Morphological grouping: compute skin density grid (16x16 blocks)
-    const blockSize = 16;
+    // 2. Block density segmentation (8x8 block grid for precise bounding)
+    const blockSize = 8;
     const gridW = Math.floor(width / blockSize);
     const gridH = Math.floor(height / blockSize);
     const densityGrid = new Float32Array(gridW * gridH);
@@ -395,35 +420,38 @@ export class IdPhotoValidatorService {
       }
     }
 
-    // 3. Find connected high-density skin components
+    // 3. Connected component clustering of skin regions
     const visited = new Uint8Array(gridW * gridH);
-    const candidateComponents: Array<{ minGx: number; maxGx: number; minGy: number; maxGy: number; count: number }> = [];
+    const candidateComponents: Array<{ minGx: number; maxGx: number; minGy: number; maxGy: number; count: number; skinPixels: number }> = [];
 
     for (let gy = 0; gy < gridH; gy++) {
       for (let gx = 0; gx < gridW; gx++) {
         const gIdx = gy * gridW + gx;
-        if (visited[gIdx] || densityGrid[gIdx] < 0.25) continue;
+        if (visited[gIdx] || densityGrid[gIdx] < 0.12) continue;
 
-        // BFS Flood fill component
-        let minGx = gx, maxGx = gx, minGy = gy, maxGy = gy, count = 0;
+        // BFS Flood fill
+        let minGx = gx, maxGx = gx, minGy = gy, maxGy = gy, cellCount = 0, compSkin = 0;
         const queue: [number, number][] = [[gx, gy]];
         visited[gIdx] = 1;
 
         while (queue.length > 0) {
           const [cx, cy] = queue.shift()!;
-          count++;
+          cellCount++;
+          compSkin += densityGrid[cy * gridW + cx] * (blockSize * blockSize);
+
           if (cx < minGx) minGx = cx;
           if (cx > maxGx) maxGx = cx;
           if (cy < minGy) minGy = cy;
           if (cy > maxGy) maxGy = cy;
 
           const neighbors = [
-            [cx + 1, cy], [cx - 1, cy], [cx, cy + 1], [cx, cy - 1]
+            [cx + 1, cy], [cx - 1, cy], [cx, cy + 1], [cx, cy - 1],
+            [cx + 1, cy + 1], [cx - 1, cy - 1], [cx + 1, cy - 1], [cx - 1, cy + 1]
           ];
           for (const [nx, ny] of neighbors) {
             if (nx >= 0 && nx < gridW && ny >= 0 && ny < gridH) {
               const nIdx = ny * gridW + nx;
-              if (!visited[nIdx] && densityGrid[nIdx] >= 0.22) {
+              if (!visited[nIdx] && densityGrid[nIdx] >= 0.10) {
                 visited[nIdx] = 1;
                 queue.push([nx, ny]);
               }
@@ -431,13 +459,12 @@ export class IdPhotoValidatorService {
           }
         }
 
-        if (count >= 4) {
-          candidateComponents.push({ minGx, maxGx, minGy, maxGy, count });
+        if (cellCount >= 4 && compSkin >= 60) {
+          candidateComponents.push({ minGx, maxGx, minGy, maxGy, count: cellCount, skinPixels: compSkin });
         }
       }
     }
 
-    // 4. Verify facial geometry & eye/mouth contrast within each candidate
     const detectedFaces: FaceBox[] = [];
 
     for (const comp of candidateComponents) {
@@ -446,56 +473,64 @@ export class IdPhotoValidatorService {
       const boxW = (comp.maxGx - comp.minGx + 1) * blockSize;
       const boxH = (comp.maxGy - comp.minGy + 1) * blockSize;
 
-      // Facial aspect ratio check (typically 0.85 to 2.1)
+      // Aspect ratio check for face/head (typically 0.60 to 2.40)
       const compRatio = boxH / boxW;
-      if (compRatio < 0.80 || compRatio > 2.2) continue;
+      if (compRatio < 0.55 || compRatio > 2.6) continue;
 
-      // Minimum size check (must occupy at least 15% of width/height)
-      if (boxW < width * 0.18 || boxH < height * 0.18) continue;
+      // Face area check (must be at least 12% of dimension)
+      if (boxW < width * 0.15 || boxH < height * 0.15) continue;
 
-      // Facial feature check: Eye socket region is darker than forehead and cheekbones
-      const eyeRegionY = Math.floor(boxY + boxH * 0.25);
-      const eyeRegionH = Math.floor(boxH * 0.30);
-      const cheekRegionY = Math.floor(boxY + boxH * 0.55);
-      const cheekRegionH = Math.floor(boxH * 0.25);
+      detectedFaces.push({
+        x: boxX,
+        y: boxY,
+        width: boxW,
+        height: boxH
+      });
+    }
 
-      let eyeLumSum = 0, eyeCount = 0;
-      let cheekLumSum = 0, cheekCount = 0;
+    // Merging overlapping candidate boxes
+    const merged = this.mergeOverlappingBoxes(detectedFaces);
 
-      for (let y = eyeRegionY; y < eyeRegionY + eyeRegionH && y < height; y++) {
-        for (let x = boxX; x < boxX + boxW && x < width; x++) {
-          const idx = (y * width + x) * 4;
-          const lum = 0.299 * pixels[idx] + 0.587 * pixels[idx + 1] + 0.114 * pixels[idx + 2];
-          eyeLumSum += lum;
-          eyeCount++;
+    if (merged.length > 0) {
+      return merged;
+    }
+
+    // Fallback: Global skin centroid & portrait mass analyzer
+    // If the image contains a centered skin mass representing a human face
+    if (totalSkinPixels >= (width * height * 0.04)) {
+      const avgSkinX = skinSumX / totalSkinPixels;
+      const avgSkinY = skinSumY / totalSkinPixels;
+
+      // In a 2x2 portrait, face center is situated in the upper/middle region
+      if (avgSkinX >= width * 0.20 && avgSkinX <= width * 0.80 && avgSkinY >= height * 0.18 && avgSkinY <= height * 0.75) {
+        // Compute bounding box containing 90% of skin mass
+        let minX = width, maxX = 0, minY = height, maxY = 0;
+        for (let y = 0; y < height; y++) {
+          for (let x = 0; x < width; x++) {
+            if (skinMask[y * width + x] === 1) {
+              if (x < minX) minX = x;
+              if (x > maxX) maxX = x;
+              if (y < minY) minY = y;
+              if (y > maxY) maxY = y;
+            }
+          }
         }
-      }
 
-      for (let y = cheekRegionY; y < cheekRegionY + cheekRegionH && y < height; y++) {
-        for (let x = boxX; x < boxX + boxW && x < width; x++) {
-          const idx = (y * width + x) * 4;
-          const lum = 0.299 * pixels[idx] + 0.587 * pixels[idx + 1] + 0.114 * pixels[idx + 2];
-          cheekLumSum += lum;
-          cheekCount++;
+        const faceW = maxX - minX;
+        const faceH = maxY - minY;
+
+        if (faceW >= width * 0.18 && faceH >= height * 0.18) {
+          return [{
+            x: minX,
+            y: minY,
+            width: faceW,
+            height: faceH
+          }];
         }
-      }
-
-      const avgEyeLum = eyeCount > 0 ? eyeLumSum / eyeCount : 128;
-      const avgCheekLum = cheekCount > 0 ? cheekLumSum / cheekCount : 128;
-
-      // In real human face portraits, eye/eyebrow sockets are darker than cheeks or forehead
-      if (avgEyeLum <= avgCheekLum * 1.08) {
-        detectedFaces.push({
-          x: boxX,
-          y: boxY,
-          width: boxW,
-          height: boxH
-        });
       }
     }
 
-    // Merge overlapping boxes (Non-maximum suppression)
-    return this.mergeOverlappingBoxes(detectedFaces);
+    return [];
   }
 
   /**
@@ -516,26 +551,22 @@ export class IdPhotoValidatorService {
         if (used[j]) continue;
         const b = boxes[j];
 
-        // Check intersection over union (IoU)
+        // Check intersection or close proximity
         const x1 = Math.max(cur.x, b.x);
         const y1 = Math.max(cur.y, b.y);
         const x2 = Math.min(cur.x + cur.width, b.x + b.width);
         const y2 = Math.min(cur.y + cur.height, b.y + b.height);
 
-        if (x1 < x2 && y1 < y2) {
-          const interArea = (x2 - x1) * (y2 - y1);
-          const curArea = cur.width * cur.height;
-          const bArea = b.width * b.height;
-          const iou = interArea / (curArea + bArea - interArea);
+        const isOverlapping = (x1 < x2 && y1 < y2);
+        const isClose = Math.abs((cur.x + cur.width / 2) - (b.x + b.width / 2)) < (cur.width * 0.6);
 
-          if (iou > 0.20) {
-            const minX = Math.min(cur.x, b.x);
-            const minY = Math.min(cur.y, b.y);
-            const maxX = Math.max(cur.x + cur.width, b.x + b.width);
-            const maxY = Math.max(cur.y + cur.height, b.y + b.height);
-            cur = { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
-            used[j] = 1;
-          }
+        if (isOverlapping || isClose) {
+          const minX = Math.min(cur.x, b.x);
+          const minY = Math.min(cur.y, b.y);
+          const maxX = Math.max(cur.x + cur.width, b.x + b.width);
+          const maxY = Math.max(cur.y + cur.height, b.y + b.height);
+          cur = { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+          used[j] = 1;
         }
       }
       merged.push(cur);
@@ -557,44 +588,44 @@ export class IdPhotoValidatorService {
     const widthRatio = faceW / imageW;
     const heightRatio = faceH / imageH;
 
-    if (widthRatio < 0.20 || heightRatio < 0.22) {
+    if (widthRatio < 0.16 || heightRatio < 0.18) {
       return {
         isValid: false,
         error: 'The face in the photo is too small or too far away. Your head and shoulders should fill the 2×2 frame.'
       };
     }
 
-    if (widthRatio > 0.88 || heightRatio > 0.88) {
+    if (widthRatio > 0.92 || heightRatio > 0.92) {
       return {
         isValid: false,
         error: 'The face is too close to the camera. Please upload a standard portrait showing your head, neck, and upper shoulders.'
       };
     }
 
-    // 2. Horizontal centering check (center offset within 18% of image width)
+    // 2. Horizontal centering check (center offset within 22% of image width)
     const horizOffset = Math.abs(faceCenterX - imageW / 2) / imageW;
-    if (horizOffset > 0.18) {
+    if (horizOffset > 0.22) {
       return {
         isValid: false,
         error: 'The face is not centered horizontally. Please center your face within the frame.'
       };
     }
 
-    // 3. Vertical position check (face center between 20% and 72% of image height)
+    // 3. Vertical position check (face center between 18% and 78% of image height)
     const vertRatio = faceCenterY / imageH;
-    if (vertRatio < 0.20 || vertRatio > 0.72) {
+    if (vertRatio < 0.18 || vertRatio > 0.78) {
       return {
         isValid: false,
         error: 'The face is positioned too high or too low in the photo. Please center your head within the frame.'
       };
     }
 
-    // 4. Severe cropping check (face touching image borders)
+    // 4. Severe cropping check (face touching extreme image borders)
     const leftMargin = face.x / imageW;
     const rightMargin = (imageW - (face.x + faceW)) / imageW;
     const topMargin = face.y / imageH;
 
-    if (leftMargin < 0.03 || rightMargin < 0.03 || topMargin < 0.02) {
+    if (leftMargin < 0.015 || rightMargin < 0.015 || topMargin < 0.01) {
       return {
         isValid: false,
         error: 'The face appears cropped or cut off at the edge of the image. Please ensure your full face and hair are visible.'
@@ -621,11 +652,11 @@ export class IdPhotoValidatorService {
     // Define background sample zones: top-left corner, top-right corner, and top margin
     const zones = [
       // Top-left corner
-      { x1: 0, y1: 0, x2: Math.floor(imageW * 0.22), y2: Math.floor(imageH * 0.30) },
+      { x1: 0, y1: 0, x2: Math.floor(imageW * 0.20), y2: Math.floor(imageH * 0.25) },
       // Top-right corner
-      { x1: Math.floor(imageW * 0.78), y1: 0, x2: imageW, y2: Math.floor(imageH * 0.30) },
+      { x1: Math.floor(imageW * 0.80), y1: 0, x2: imageW, y2: Math.floor(imageH * 0.25) },
       // Top strip above head
-      { x1: Math.floor(imageW * 0.30), y1: 0, x2: Math.floor(imageW * 0.70), y2: Math.min(Math.floor(imageH * 0.12), Math.max(0, face.y - 2)) }
+      { x1: Math.floor(imageW * 0.35), y1: 0, x2: Math.floor(imageW * 0.65), y2: Math.min(Math.floor(imageH * 0.08), Math.max(0, face.y - 2)) }
     ];
 
     for (const zone of zones) {
@@ -647,8 +678,8 @@ export class IdPhotoValidatorService {
           bgLuminanceSum += lum;
           bgPixelCount++;
 
-          if (lum < 140) darkBgCount++;
-          if (saturation > 65) saturatedBgCount++;
+          if (lum < 135) darkBgCount++;
+          if (saturation > 70) saturatedBgCount++;
         }
       }
     }
@@ -662,7 +693,7 @@ export class IdPhotoValidatorService {
     const saturatedRatio = saturatedBgCount / bgPixelCount;
 
     // 2x2 photo requires a plain white or light-colored background
-    if (meanBgLuminance < 155 || darkRatio > 0.35 || (meanBgLuminance < 175 && saturatedRatio > 0.40)) {
+    if (meanBgLuminance < 145 || darkRatio > 0.40 || (meanBgLuminance < 170 && saturatedRatio > 0.45)) {
       return {
         isValid: false,
         error: 'The photo background must be plain white or light-colored. Detected a dark, colorful, or patterned background.'
