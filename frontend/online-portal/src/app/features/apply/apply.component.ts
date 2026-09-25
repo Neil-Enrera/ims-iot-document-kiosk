@@ -606,23 +606,55 @@ import { IdPhotoValidatorService } from '../../core/services/id-photo-validator.
                 @if (uploadedRequirements().length === 0) {
                   <p class="text-xs text-slate-500 italic">No files attached (not required for this service).</p>
                 } @else {
-                  <ul class="space-y-2">
+                  <ul class="space-y-3">
                     @for (file of uploadedRequirements(); track file.requirement_name) {
-                      <li class="flex items-center justify-between text-xs bg-white border border-slate-200 rounded-xl p-2.5">
-                        <div class="flex items-center gap-2.5 min-w-0">
+                      <li class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs bg-white border border-slate-200 rounded-2xl p-3.5 shadow-2xs">
+                        <div class="flex items-center gap-3.5 min-w-0">
                           @if (is2x2PhotoReq(file.requirement_name)) {
-                            <img [src]="file.file_url" alt="Photo" class="w-8 h-8 rounded-lg object-cover border border-slate-200 shrink-0" />
+                            <button
+                              type="button"
+                              (click)="openFilePreview(file)"
+                              title="Click to inspect uploaded photo"
+                              class="relative group shrink-0 cursor-pointer">
+                              <img [src]="file.file_url" alt="2x2 Photo" class="w-14 h-14 rounded-xl object-cover border-2 border-orange-200 group-hover:border-orange-500 shadow-xs transition" />
+                              <div class="absolute inset-0 bg-black/30 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607zM10.5 7.5v6m3-3h-6" />
+                                </svg>
+                              </div>
+                            </button>
                           } @else {
-                            <svg class="w-5 h-5 text-slate-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                            </svg>
+                            <div class="w-12 h-12 rounded-xl bg-orange-50 border border-orange-200 text-orange-600 flex items-center justify-center shrink-0">
+                              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                              </svg>
+                            </div>
                           }
                           <div class="min-w-0">
-                            <span class="font-bold text-slate-800 block truncate">{{ file.requirement_name }}</span>
-                            <span class="text-slate-400 font-mono text-[10px] block truncate">{{ file.original_name }}</span>
+                            <div class="flex items-center gap-2">
+                              <span class="font-bold text-slate-900 block truncate text-sm">{{ file.requirement_name }}</span>
+                              @if (is2x2PhotoReq(file.requirement_name)) {
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                  Verified 2×2 ID Photo
+                                </span>
+                              }
+                            </div>
+                            <span class="text-slate-400 font-mono text-[11px] block truncate mt-0.5">{{ file.original_name }}</span>
                           </div>
                         </div>
-                        <span class="text-emerald-600 font-bold text-xs shrink-0">Attached</span>
+
+                        <div class="flex items-center gap-2 self-end sm:self-center shrink-0">
+                          <button
+                            type="button"
+                            (click)="openFilePreview(file)"
+                            class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 font-bold text-xs transition cursor-pointer border border-orange-200">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <span>{{ is2x2PhotoReq(file.requirement_name) ? 'Check & Enlarge Photo' : 'View Document' }}</span>
+                          </button>
+                        </div>
                       </li>
                     }
                   </ul>
@@ -723,6 +755,100 @@ import { IdPhotoValidatorService } from '../../core/services/id-photo-validator.
           </div>
         }
       }
+
+      <!-- ========================================================================= -->
+      <!-- PHOTO & REQUIREMENT PREVIEW MODAL -->
+      <!-- ========================================================================= -->
+      @if (previewModalFile(); as preview) {
+        <div class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6"
+             (click)="closeFilePreview()">
+          <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-lg w-full p-6 sm:p-7 relative overflow-hidden"
+               (click)="$event.stopPropagation()">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+              <div>
+                <span class="text-[10px] font-black uppercase tracking-wider text-orange-600 bg-orange-50 px-2.5 py-0.5 rounded-full border border-orange-200">
+                  {{ preview.isPhoto ? '2×2 ID Photo Preview' : 'Document Preview' }}
+                </span>
+                <h3 class="text-lg font-black text-slate-900 mt-1">{{ preview.title }}</h3>
+              </div>
+              <button
+                type="button"
+                (click)="closeFilePreview()"
+                class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition cursor-pointer">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Modal Image Preview Content -->
+            <div class="py-5 text-center">
+              @if (preview.isPhoto) {
+                <div class="inline-block relative p-2 bg-slate-50 rounded-2xl border border-slate-200 shadow-inner">
+                  <img
+                    [src]="preview.url"
+                    alt="Uploaded 2x2 ID Photo Preview"
+                    class="w-64 h-64 sm:w-72 sm:h-72 object-cover rounded-xl border border-slate-300 shadow-md mx-auto"
+                  />
+                  <span class="absolute bottom-4 right-4 bg-black/75 text-white text-[10px] font-bold px-2 py-0.5 rounded-md backdrop-blur-xs">
+                    1:1 Square &bull; 2×2 ID
+                  </span>
+                </div>
+
+                <!-- Verification Checklist Badges -->
+                <div class="mt-4 grid grid-cols-3 gap-2 text-[11px] font-semibold text-slate-600">
+                  <div class="p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center justify-center gap-1">
+                    <svg class="w-3.5 h-3.5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                    <span>1:1 Square</span>
+                  </div>
+                  <div class="p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center justify-center gap-1">
+                    <svg class="w-3.5 h-3.5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                    <span>Face Verified</span>
+                  </div>
+                  <div class="p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center justify-center gap-1">
+                    <svg class="w-3.5 h-3.5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                    <span>White BG</span>
+                  </div>
+                </div>
+              } @else {
+                <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 text-slate-700 space-y-3">
+                  <p class="text-sm font-semibold">Document is attached and ready for barangay staff review.</p>
+                  <a
+                    [href]="preview.url"
+                    target="_blank"
+                    class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-xs transition">
+                    <span>Open in New Window</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                    </svg>
+                  </a>
+                </div>
+              }
+            </div>
+
+            <!-- Modal Actions -->
+            <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
+              <a [href]="preview.url" target="_blank"
+                 class="text-xs font-bold text-orange-600 hover:text-orange-700 hover:underline">
+                Open full original file &rarr;
+              </a>
+              <button
+                type="button"
+                (click)="closeFilePreview()"
+                class="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition cursor-pointer">
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      }
     </div>
   `
 })
@@ -743,6 +869,7 @@ export class ApplyComponent implements OnInit {
   uploadedRequirements = signal<UploadedRequirement[]>([]);
   uploadingReq = signal<string | null>(null);
   uploadedPhotoUrl = signal<string | null>(null);
+  previewModalFile = signal<{ url: string; title: string; isPhoto: boolean } | null>(null);
 
   submitting = signal<boolean>(false);
   submissionError = signal<string | null>(null);
@@ -1265,6 +1392,18 @@ export class ApplyComponent implements OnInit {
         this.uploadingReq.set(null);
       }
     });
+  }
+
+  openFilePreview(file: UploadedRequirement): void {
+    this.previewModalFile.set({
+      url: file.file_url,
+      title: file.requirement_name,
+      isPhoto: this.is2x2PhotoReq(file.requirement_name)
+    });
+  }
+
+  closeFilePreview(): void {
+    this.previewModalFile.set(null);
   }
 
   getUploadedReq(reqName: string): UploadedRequirement | undefined {
