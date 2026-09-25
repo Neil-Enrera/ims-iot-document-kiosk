@@ -11,6 +11,7 @@ import {
 } from '../../core/services/portal.service';
 import { AuthService } from '../../core/services/auth.service';
 import { IdPhotoValidatorService } from '../../core/services/id-photo-validator.service';
+import { environment } from '../../../environments/environment';
 
 type ViewMode = 'list' | 'details' | 'correct';
 type FilterTab = 'all' | 'active' | 'corrections' | 'completed';
@@ -340,7 +341,7 @@ type FilterTab = 'all' | 'active' | 'corrections' | 'completed';
                           <p class="text-[11px] text-slate-500 truncate">{{ doc.original_name }}</p>
                         </div>
                         <a
-                          [href]="doc.file_url"
+                          [href]="resolveFileUrl(doc.file_url)"
                           target="_blank"
                           class="px-3 py-1 rounded-lg bg-orange-50 hover:bg-orange-100 text-orange-700 text-xs font-bold shrink-0 transition">
                           View File
@@ -434,7 +435,7 @@ type FilterTab = 'all' | 'active' | 'corrections' | 'completed';
                     @if (getUploadedReq(reqName); as up) {
                       <div class="flex items-center gap-2 mt-1">
                         @if (is2x2PhotoReq(reqName)) {
-                          <img [src]="up.file_url" alt="Preview" class="w-8 h-8 rounded-lg object-cover border border-slate-200" />
+                          <img [src]="resolveFileUrl(up.file_url)" alt="Preview" class="w-8 h-8 rounded-lg object-cover border border-slate-200" />
                         }
                         <p class="text-xs text-emerald-600 font-semibold">Current file: {{ up.original_name }}</p>
                       </div>
@@ -593,6 +594,16 @@ export class RequestsComponent implements OnInit {
     if (mode === 'list') {
       this.fetchRequests();
     }
+  }
+
+  resolveFileUrl(url?: string | null): string {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) {
+      return url;
+    }
+    const base = environment.apiUrl.replace(/\/api\/v1\/?$/, '');
+    const clean = url.startsWith('/') ? url : `/${url}`;
+    return `${base}${clean}`;
   }
 
   is2x2PhotoReq(reqName: string): boolean {

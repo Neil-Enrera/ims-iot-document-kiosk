@@ -11,6 +11,7 @@ import {
 } from '../../core/services/portal.service';
 import { AuthService, PortalAccount } from '../../core/services/auth.service';
 import { IdPhotoValidatorService } from '../../core/services/id-photo-validator.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'portal-apply',
@@ -170,7 +171,7 @@ import { IdPhotoValidatorService } from '../../core/services/id-photo-validator.
                       @if (getUploadedReq(reqName); as uploaded) {
                         <div class="flex items-center gap-3 bg-white border border-emerald-300 rounded-xl p-2.5 shadow-2xs shrink-0">
                           @if (is2x2PhotoReq(reqName)) {
-                            <img [src]="uploaded.file_url" alt="Uploaded 2x2 ID Photo"
+                            <img [src]="resolveFileUrl(uploaded.file_url)" alt="Uploaded 2x2 ID Photo"
                                  class="w-12 h-12 rounded-lg object-cover border border-slate-200 shrink-0" />
                           } @else {
                             <svg class="w-6 h-6 text-emerald-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -616,7 +617,7 @@ import { IdPhotoValidatorService } from '../../core/services/id-photo-validator.
                               (click)="openFilePreview(file)"
                               title="Click to inspect uploaded photo"
                               class="relative group shrink-0 cursor-pointer">
-                              <img [src]="file.file_url" alt="2x2 Photo" class="w-14 h-14 rounded-xl object-cover border-2 border-orange-200 group-hover:border-orange-500 shadow-xs transition" />
+                              <img [src]="resolveFileUrl(file.file_url)" alt="2x2 Photo" class="w-14 h-14 rounded-xl object-cover border-2 border-orange-200 group-hover:border-orange-500 shadow-xs transition" />
                               <div class="absolute inset-0 bg-black/30 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
                                 <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                   <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607zM10.5 7.5v6m3-3h-6" />
@@ -787,7 +788,7 @@ import { IdPhotoValidatorService } from '../../core/services/id-photo-validator.
               @if (preview.isPhoto) {
                 <div class="inline-block relative p-2 bg-slate-50 rounded-2xl border border-slate-200 shadow-inner">
                   <img
-                    [src]="preview.url"
+                    [src]="resolveFileUrl(preview.url)"
                     alt="Uploaded 2x2 ID Photo Preview"
                     class="w-64 h-64 sm:w-72 sm:h-72 object-cover rounded-xl border border-slate-300 shadow-md mx-auto"
                   />
@@ -818,31 +819,18 @@ import { IdPhotoValidatorService } from '../../core/services/id-photo-validator.
                   </div>
                 </div>
               } @else {
-                <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 text-slate-700 space-y-3">
+                <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 text-slate-700">
                   <p class="text-sm font-semibold">Document is attached and ready for barangay staff review.</p>
-                  <a
-                    [href]="preview.url"
-                    target="_blank"
-                    class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-xs transition">
-                    <span>Open in New Window</span>
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                    </svg>
-                  </a>
                 </div>
               }
             </div>
 
             <!-- Modal Actions -->
-            <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
-              <a [href]="preview.url" target="_blank"
-                 class="text-xs font-bold text-orange-600 hover:text-orange-700 hover:underline">
-                Open full original file &rarr;
-              </a>
+            <div class="pt-4 border-t border-slate-100 flex items-center justify-end">
               <button
                 type="button"
                 (click)="closeFilePreview()"
-                class="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition cursor-pointer">
+                class="px-6 py-2 rounded-xl bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-xs transition cursor-pointer shadow-xs">
                 Done
               </button>
             </div>
@@ -1394,9 +1382,19 @@ export class ApplyComponent implements OnInit {
     });
   }
 
+  resolveFileUrl(url?: string | null): string {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) {
+      return url;
+    }
+    const base = environment.apiUrl.replace(/\/api\/v1\/?$/, '');
+    const clean = url.startsWith('/') ? url : `/${url}`;
+    return `${base}${clean}`;
+  }
+
   openFilePreview(file: UploadedRequirement): void {
     this.previewModalFile.set({
-      url: file.file_url,
+      url: this.resolveFileUrl(file.file_url),
       title: file.requirement_name,
       isPhoto: this.is2x2PhotoReq(file.requirement_name)
     });
