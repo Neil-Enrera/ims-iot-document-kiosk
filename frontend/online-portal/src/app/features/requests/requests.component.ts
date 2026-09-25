@@ -10,6 +10,7 @@ import {
   FormField
 } from '../../core/services/portal.service';
 import { AuthService } from '../../core/services/auth.service';
+import { IdPhotoValidatorService } from '../../core/services/id-photo-validator.service';
 
 type ViewMode = 'list' | 'details' | 'correct';
 type FilterTab = 'all' | 'active' | 'corrections' | 'completed';
@@ -418,10 +419,25 @@ type FilterTab = 'all' | 'active' | 'corrections' | 'completed';
               @for (reqName of getServiceRequirementsList(req); track reqName; let idx = $index) {
                 <div class="rounded-2xl border border-slate-200 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
-                    <span class="text-[11px] font-bold text-slate-400 uppercase">Requirement #{{ idx + 1 }}</span>
-                    <h4 class="font-bold text-slate-900 text-sm">{{ reqName }}</h4>
+                    <div class="flex items-center gap-2">
+                      <span class="text-[11px] font-bold text-slate-400 uppercase">Requirement #{{ idx + 1 }}</span>
+                      @if (is2x2PhotoReq(reqName)) {
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-100 text-blue-800 border border-blue-200">
+                          2×2 ID Photo
+                        </span>
+                      }
+                    </div>
+                    <h4 class="font-bold text-slate-900 text-sm mt-0.5">{{ reqName }}</h4>
+                    @if (is2x2PhotoReq(reqName)) {
+                      <p class="text-[11px] text-slate-500 mt-0.5">JPG, JPEG, PNG only &bull; 1:1 Square &bull; Min 300×300 px &bull; White background</p>
+                    }
                     @if (getUploadedReq(reqName); as up) {
-                      <p class="text-xs text-emerald-600 font-semibold mt-0.5">Current file: {{ up.original_name }}</p>
+                      <div class="flex items-center gap-2 mt-1">
+                        @if (is2x2PhotoReq(reqName)) {
+                          <img [src]="up.file_url" alt="Preview" class="w-8 h-8 rounded-lg object-cover border border-slate-200" />
+                        }
+                        <p class="text-xs text-emerald-600 font-semibold">Current file: {{ up.original_name }}</p>
+                      </div>
                     }
                   </div>
 
@@ -431,12 +447,12 @@ type FilterTab = 'all' | 'active' | 'corrections' | 'completed';
                       <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
                       </svg>
-                      <span>Replace File</span>
+                      <span>{{ is2x2PhotoReq(reqName) ? 'Upload New 2×2 Photo' : 'Replace File' }}</span>
                     </label>
                     <input
                       [id]="'reupload-file-' + idx"
                       type="file"
-                      accept=".pdf,image/jpeg,image/png"
+                      [accept]="is2x2PhotoReq(reqName) ? 'image/jpeg,image/png' : '.pdf,image/jpeg,image/png'"
                       class="sr-only"
                       (change)="onFileSelected($event, reqName)"
                     />
@@ -490,6 +506,7 @@ export class RequestsComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   public auth = inject(AuthService);
+  private idPhotoValidator = inject(IdPhotoValidatorService);
 
   viewMode = signal<ViewMode>('list');
   activeTab = signal<FilterTab>('all');
@@ -578,14 +595,39 @@ export class RequestsComponent implements OnInit {
     }
   }
 
-  onFileSelected(event: Event, reqName: string): void {
+  is2x2PhotoReq(reqName: string): boolean {
+    const n = (reqName || '').toLowerCase();
+    return n.includes('2x2') || n.includes('photo') || n.includes('picture') || n.includes('id picture') || n.includes('passport-size');
+  }
+
+  async onFileSelected(event: Event, reqName: string): Promise<void> {
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) return;
 
     const file = input.files[0];
     if (file.size > 10 * 1024 * 1024) {
       alert('File size exceeds the 10MB limit. Please upload a smaller file.');
+      input.value = '';
       return;
+    }
+
+    // 2x2 Photo validation if applicable
+    if (this.is2x2PhotoReq(reqName)) {
+      this.uploadingReq.set(reqName);
+      try {
+        const validation = await this.idPhotoValidator.validateIdPhoto(file);
+        if (!validation.isValid) {
+          alert(validation.error || 'The uploaded file failed 2×2 ID photo validation.');
+          this.uploadingReq.set(null);
+          input.value = '';
+          return;
+        }
+      } catch {
+        alert('An unexpected error occurred during photo validation. Please try again.');
+        this.uploadingReq.set(null);
+        input.value = '';
+        return;
+      }
     }
 
     this.uploadingReq.set(reqName);

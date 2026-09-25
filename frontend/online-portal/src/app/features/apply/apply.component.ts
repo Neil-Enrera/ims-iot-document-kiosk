@@ -10,6 +10,7 @@ import {
   ApiResponse
 } from '../../core/services/portal.service';
 import { AuthService, PortalAccount } from '../../core/services/auth.service';
+import { IdPhotoValidatorService } from '../../core/services/id-photo-validator.service';
 
 @Component({
   selector: 'portal-apply',
@@ -151,13 +152,15 @@ import { AuthService, PortalAccount } from '../../core/services/auth.service';
                               <svg class="w-3.5 h-3.5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
                               </svg>
-                              <span>2×2 ID Photo Format Checklist:</span>
+                              <span>2×2 ID Photo Validation Requirements:</span>
                             </p>
                             <ul class="list-disc list-inside text-[11px] text-slate-600 space-y-0.5 pl-1">
+                              <li>Accepted formats: <strong>JPG, JPEG, PNG only</strong></li>
                               <li>Square 1:1 aspect ratio (min 300 × 300 px)</li>
-                              <li>Plain white or light background</li>
-                              <li>Front-facing, centered with neutral expression</li>
-                              <li>No eyeglasses, colored lenses, or hats obscuring the face</li>
+                              <li>Must contain <strong>exactly one</strong> detectable human face</li>
+                              <li>Face is centered, sufficiently visible, and not severely cropped</li>
+                              <li>Crisp, well-lit portrait (not blurry, dark, or overexposed)</li>
+                              <li>Plain white or light-colored background</li>
                             </ul>
                           </div>
                         }
@@ -197,7 +200,7 @@ import { AuthService, PortalAccount } from '../../core/services/auth.service';
                           <input
                             [id]="'file-upload-' + idx"
                             type="file"
-                            [accept]="is2x2PhotoReq(reqName) ? 'image/jpeg,image/png,image/webp' : '.pdf,image/jpeg,image/png'"
+                            [accept]="is2x2PhotoReq(reqName) ? 'image/jpeg,image/png' : '.pdf,image/jpeg,image/png'"
                             class="sr-only"
                             (change)="onFileSelected($event, reqName)"
                           />
@@ -728,6 +731,7 @@ export class ApplyComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   public auth = inject(AuthService);
+  private idPhotoValidator = inject(IdPhotoValidatorService);
 
   loadingService = signal<boolean>(true);
   selectedService = signal<Service | null>(null);
@@ -1145,6 +1149,30 @@ export class ApplyComponent implements OnInit {
   }
 
   proceedToStep(step: number): void {
+    if (step === 2) {
+      // Validate that all required requirements are uploaded and error-free
+      const svc = this.selectedService();
+      const reqs = svc?.requirements || [];
+      const uploaded = this.uploadedRequirements();
+      const errors = this.reqErrors();
+
+      // Block if active validation errors exist
+      if (Object.keys(errors).length > 0) {
+        return;
+      }
+
+      // Check each mandatory requirement
+      if (reqs.length > 0) {
+        for (const req of reqs) {
+          const isUploaded = uploaded.some(u => u.requirement_name === req);
+          if (!isUploaded) {
+            this.setReqError(req, `Please upload a valid ${req} before proceeding.`);
+            return;
+          }
+        }
+      }
+    }
+
     this.wizardStep.set(step);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -1166,7 +1194,7 @@ export class ApplyComponent implements OnInit {
     this.reqErrors.set(current);
   }
 
-  onFileSelected(event: Event, reqName: string): void {
+  async onFileSelected(event: Event, reqName: string): Promise<void> {
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) return;
 
@@ -1176,59 +1204,36 @@ export class ApplyComponent implements OnInit {
     // 1. General file size check
     if (file.size > 10 * 1024 * 1024) {
       this.setReqError(reqName, 'File size exceeds the 10MB limit. Please upload a smaller file.');
+      input.value = '';
       return;
     }
 
-    // 2. Specialized 2x2 ID Photo Validation
+    // 2. Specialized 2x2 ID Photo Comprehensive Validation
     if (this.is2x2PhotoReq(reqName)) {
-      if (!file.type.startsWith('image/')) {
-        this.setReqError(reqName, 'Invalid file format. 2×2 ID photos must be an image file (JPG, PNG, WEBP), not a document.');
-        return;
+      this.uploadingReq.set(reqName);
+      try {
+        const validation = await this.idPhotoValidator.validateIdPhoto(file);
+        if (!validation.isValid) {
+          this.setReqError(reqName, validation.error || 'The uploaded image failed 2×2 ID photo validation.');
+          this.uploadingReq.set(null);
+          input.value = '';
+          return;
+        }
+
+        // Passed all 2x2 ID photo validation rules -> proceed with upload
+        this.performUpload(file, reqName, true);
+      } catch {
+        this.setReqError(reqName, 'An unexpected error occurred while validating the ID photo. Please try again.');
+        this.uploadingReq.set(null);
+        input.value = '';
       }
-
-      if (file.size < 20 * 1024) {
-        this.setReqError(reqName, 'Image file is too small or corrupted (less than 20KB). Please upload a clear photo.');
-        return;
-      }
-
-      // Read image dimensions & aspect ratio
-      const reader = new FileReader();
-      reader.onload = (e: any) => {
-        const img = new Image();
-        img.onload = () => {
-          const width = img.naturalWidth;
-          const height = img.naturalHeight;
-          const ratio = width / height;
-
-          // Aspect ratio validation (1:1 square with 15% tolerance)
-          if (ratio < 0.85 || ratio > 1.15) {
-            this.setReqError(
-              reqName,
-              `Invalid photo aspect ratio (${width}×${height}px). A 2×2 ID photo must be square (1:1 aspect ratio). Please crop or upload a 2×2 square image.`
-            );
-            return;
-          }
-
-          // Resolution validation (at least 300x300px)
-          if (width < 300 || height < 300) {
-            this.setReqError(
-              reqName,
-              `Photo resolution is too low (${width}×${height}px). 2×2 ID photos must be at least 300×300px for clear ID printing.`
-            );
-            return;
-          }
-
-          // Valid image -> proceed with upload
-          this.performUpload(file, reqName, true);
-        };
-        img.onerror = () => {
-          this.setReqError(reqName, 'Unable to process image file. It may be corrupted.');
-        };
-        img.src = e.target.result;
-      };
-      reader.readAsDataURL(file);
     } else {
       // Non-photo digital requirement upload
+      if (file.type !== 'application/pdf' && !file.type.startsWith('image/')) {
+        this.setReqError(reqName, 'Invalid file format. Please upload a PDF, JPG, or PNG document.');
+        input.value = '';
+        return;
+      }
       this.performUpload(file, reqName, false);
     }
   }

@@ -60,6 +60,7 @@ export interface PortalApiResponse<T> {
 
 const TOKEN_KEY = 'portal_token';
 const MUST_CHANGE_KEY = 'portal_must_change_password';
+const USER_KEY = 'portal_account';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -78,6 +79,14 @@ export class AuthService {
   ) {
     this.isBrowser = isPlatformBrowser(platformId);
     if (this.isBrowser) {
+      const savedUser = localStorage.getItem(USER_KEY);
+      if (savedUser) {
+        try {
+          this.currentUser.set(JSON.parse(savedUser));
+        } catch {
+          localStorage.removeItem(USER_KEY);
+        }
+      }
       this.loadUser();
     } else {
       this.isInitialized.set(true);
@@ -87,6 +96,7 @@ export class AuthService {
   private loadUser(): void {
     const token = this.getToken();
     if (!token) {
+      this.clearSession();
       this.isInitialized.set(true);
       return;
     }
@@ -95,14 +105,17 @@ export class AuthService {
       .pipe(
         tap(res => {
           if (res.success && res.data) {
+            this.storeUser(res.data);
             this.currentUser.set(res.data);
           } else {
             this.clearSession();
+            this.currentUser.set(null);
           }
         }),
         catchError(err => {
           if (err.status === 401) {
             this.clearSession();
+            this.currentUser.set(null);
           }
           return of(null);
         })
@@ -125,6 +138,7 @@ export class AuthService {
         if (res.success && res.data) {
           this.storeToken(res.data.accessToken);
           this.setMustChange(res.data.mustChangePassword);
+          this.storeUser(res.data.account);
           this.currentUser.set(res.data.account);
         }
       })
@@ -141,7 +155,9 @@ export class AuthService {
           this.setMustChange(false);
           const user = this.currentUser();
           if (user) {
-            this.currentUser.set({ ...user, must_change_password: false });
+            const updated = { ...user, must_change_password: false };
+            this.storeUser(updated);
+            this.currentUser.set(updated);
           }
         }
       })
@@ -187,6 +203,10 @@ export class AuthService {
     if (this.isBrowser) localStorage.setItem(TOKEN_KEY, token);
   }
 
+  private storeUser(user: PortalAccount): void {
+    if (this.isBrowser) localStorage.setItem(USER_KEY, JSON.stringify(user));
+  }
+
   private setMustChange(value: boolean): void {
     if (!this.isBrowser) return;
     if (value) {
@@ -200,6 +220,7 @@ export class AuthService {
     if (this.isBrowser) {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(MUST_CHANGE_KEY);
+      localStorage.removeItem(USER_KEY);
     }
   }
 }

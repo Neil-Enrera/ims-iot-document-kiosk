@@ -14,6 +14,16 @@
 | **Total** | **85** | **56** | **19** | **0** |
 
 > **Note:** TASK-BACKEND-012 (Payment API) and TASK-FRONTEND-011 (Payment UI) removed per DEC-008.
+> - **Comprehensive 2×2 ID Photo Upload Validation for Barangay ID Applications** (`id-photo-validator.service.ts`, `apply.component.ts` L145-210, L725-735, L1140-1230, `requests.component.ts` L415-445, L575-620, `admin-panel/requests.component.ts` L535-565, L2055-2070):
+>   - **Dedicated Validation Service (`IdPhotoValidatorService`)**: Created a standalone, client-side computer vision validation service for 2×2 ID photos with zero external network dependencies.
+>   - **Format & Resolution**: Restricts file types strictly to JPG, JPEG, and PNG. Validates 1:1 square aspect ratio (±5% tolerance) and minimum resolution of 300×300 px for clear ID card printing.
+>   - **Human Face Detection & Single-Subject Rule**: Detects human faces using browser Shape Detection API with a robust fallback computer vision skin chrominance segmentation (YCbCr + RGB) and facial geometry/bilateral symmetry analyzer. Enforces exactly one detectable face, rejecting images with 0 faces or multiple faces.
+>   - **Framing, Centering, and Cropping**: Evaluates face bounding box scale (face must occupy 20%–88% of frame), horizontal centering (center offset within 18%), vertical positioning, and ensures the face is not cut off or cropped at the borders.
+>   - **Image Quality & Usability**: Analyzes pixel luminance to detect extremely dark (< 45 lum), overexposed (> 245 lum), or blank/solid color images. Employs discrete Laplacian variance convolution to reject blurry or out-of-focus photos.
+>   - **Plain White / Light Background**: Samples non-face boundary/corner zones to verify background brightness and low saturation, rejecting dark, outdoor, or busy backgrounds.
+>   - **Clear User Messaging & Guardrails**: Provides specific, actionable validation error banners for every failed criterion and blocks the resident from continuing to Step 2 if any mandatory requirement or 2×2 photo fails validation.
+>   - **Admin Review**: Enhanced the Admin Panel request details view with inline photo previews and direct high-resolution review links, enabling staff to inspect uploaded 2×2 ID photos before approving Barangay ID applications.
+>   - **Verification**: Verified zero Angular build errors (`npm run build:portal` and `npm run build:admin` passed with 0 errors) and all 90 backend tests pass (`npm test`).
 > - **Logout Confirmation Modal in Online Portal** (`portal-layout.component.ts` L248-288, `profile.component.ts` L94-135):
 >   - **Confirmation Dialog**: Added an accessible, responsive confirmation modal (`"Confirm Log Out"`) when residents click "Log out" from the Profile dropdown menu, the footer link, or the Resident Profile page.
 >   - **Balanced Button Sizing & Padding**: Standardized uniform padding (`px-5 py-2.5`), balanced gap (`gap-3`), and centered flex alignment across both "Cancel" and "Log Out" action buttons for clean, consistent spacing and positioning on mobile and desktop viewports.
