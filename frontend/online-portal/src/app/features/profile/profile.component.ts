@@ -2,6 +2,7 @@ import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'portal-profile',
@@ -20,7 +21,7 @@ import { AuthService } from '../../core/services/auth.service';
           <div class="flex items-center gap-4">
             <div class="w-14 h-14 rounded-full bg-orange-50 border border-orange-100 text-orange-600 flex items-center justify-center shrink-0 overflow-hidden">
               @if (user.photo) {
-                <img [src]="'/uploads/' + user.photo" alt="" class="w-full h-full object-cover" />
+                <img [src]="photoUrl(user.photo)" alt="" class="w-full h-full object-cover" />
               } @else {
                 <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
@@ -147,5 +148,18 @@ export class ProfileComponent {
 
   fullName(user: { first_name?: string; middle_name?: string | null; last_name?: string; suffix?: string | null }): string {
     return [user.first_name, user.middle_name, user.last_name, user.suffix].filter(Boolean).join(' ').trim() || 'Resident';
+  }
+
+  photoUrl(url?: string | null): string {
+    if (!url) return '';
+    if (url.startsWith('data:') || url.startsWith('blob:') || url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    const base = environment.apiUrl.replace(/\/api\/v1\/?$/, '');
+    const clean = url.replace(/^\/+/, '');
+    if (clean.startsWith('uploads/')) {
+      return `${base}/${clean}`;
+    }
+    return `${base}/uploads/${clean}`;
   }
 }

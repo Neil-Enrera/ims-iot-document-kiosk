@@ -14,6 +14,18 @@
 | **Total** | **85** | **56** | **19** | **0** |
 
 > **Note:** TASK-BACKEND-012 (Payment API) and TASK-FRONTEND-011 (Payment UI) removed per DEC-008.
+> - **Resolved Uploaded 2×2 ID Photo and Requirement Document Image Preview in Review & Submit Page** (`portal-request.controller.js` L95-108, `app.js` L55-75, `apply.component.ts` L565-595, L610-660, L770-835, L1400-1430, `requests.component.ts` L595-610, `portal-layout.component.ts` L55-95, L330-345, `profile.component.ts` L20-30, L145-160, `kiosk.component.ts` L2275-2280, L4135-4140, L4705-4715, L4905-4915, L9115-9130):
+>   - **End-to-End Image Flow Investigation**: Traced the complete lifecycle: `Image Capture/Upload → Form State → Review & Submit → Preview → Submit → Backend/Storage`.
+>   - **Root Causes Identified**:
+>     1. **URL Protocol & Relative Path Resolution**: Relative file paths stored in database and session (e.g. `resident-photos/xxx.png` or `/uploads/resident-photos/xxx.png`) were resolved without normalising the `/uploads/` prefix against the backend URL (`http://localhost:3000`), causing browser requests to omit the `/uploads/` segment or target the frontend development port (4202/4201), resulting in `404 Not Found`.
+>     2. **Upload Folder vs. URL Mismatch**: `upload.middleware.js` stored images under `uploads/resident-photos/`, while `portal-request.controller.js` returned `/uploads/documents/${filename}`.
+>     3. **Review & Submit Page Visual Hierarchy**: The Applicant profile section in Step 3 (Review & Submit) lacked an avatar / 2×2 photo card next to applicant details, and non-2×2 requirement images did not display inline thumbnails or modal image previews.
+>   - **Comprehensive Fix**:
+>     1. Updated `resolveFileUrl` / `photoUrl` across `apply.component.ts`, `requests.component.ts`, `portal-layout.component.ts`, `profile.component.ts`, and `kiosk.component.ts` to seamlessly handle `data:`, `blob:`, `http:`, and relative paths (`uploads/...` and `resident-photos/...`).
+>     2. Added Applicant Photo preview in the Review & Submit header (`apply.component.ts`) retrieving from `uploadedPhotoUrl()`, attached 2×2 requirement, or `currentUser()?.photo`.
+>     3. Enabled interactive thumbnail inspection and full modal preview for all uploaded requirement images.
+>     4. Added backend static fallback routing in `app.js` to cross-serve between `resident-photos` and `documents`.
+>   - **Verification**: Verified zero Angular build errors (`npx ng build online-portal` and `npx ng build kiosk-app` completed with 0 errors) and all 90 backend tests pass (`npm test`).
 > - **Comprehensive 2×2 ID Photo Upload Validation for Barangay ID Applications** (`id-photo-validator.service.ts`, `apply.component.ts` L145-210, L725-735, L1140-1230, `requests.component.ts` L415-445, L575-620, `admin-panel/requests.component.ts` L535-565, L2055-2070):
 >   - **Dedicated Validation Service (`IdPhotoValidatorService`)**: Created a standalone, client-side computer vision validation service for 2×2 ID photos with zero external network dependencies.
 >   - **Format & Resolution**: Restricts file types strictly to JPG, JPEG, and PNG. Validates 1:1 square aspect ratio (±5% tolerance) and minimum resolution of 300×300 px for clear ID card printing.

@@ -598,12 +598,15 @@ export class RequestsComponent implements OnInit {
 
   resolveFileUrl(url?: string | null): string {
     if (!url) return '';
-    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) {
+    if (url.startsWith('data:') || url.startsWith('blob:') || url.startsWith('http://') || url.startsWith('https://')) {
       return url;
     }
     const base = environment.apiUrl.replace(/\/api\/v1\/?$/, '');
-    const clean = url.startsWith('/') ? url : `/${url}`;
-    return `${base}${clean}`;
+    const clean = url.replace(/^\/+/, '');
+    if (clean.startsWith('uploads/')) {
+      return `${base}/${clean}`;
+    }
+    return `${base}/uploads/${clean}`;
   }
 
   is2x2PhotoReq(reqName: string): boolean {

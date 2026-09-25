@@ -2275,7 +2275,7 @@ export type BarangayStep =
                           <!-- Camera viewport -->
                           <div class="relative aspect-[4/3] rounded-[14px] overflow-hidden bg-[#0F172A]">
                             @if (capturedPhoto()) {
-                              <img [src]="capturedPhoto()" alt="Captured photo" class="absolute inset-0 w-full h-full object-cover" />
+                              <img [src]="resolvePhotoUrl(capturedPhoto())" alt="Captured photo" class="absolute inset-0 w-full h-full object-cover" />
                             } @else if ((errorMessage() || esp32Error()) && !cameraReady()) {
                               <!-- Camera unavailable warning (compact) -->
                               <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center bg-[#0F172A]">
@@ -4136,7 +4136,7 @@ export type BarangayStep =
                           <!-- Camera viewport -->
                           <div class="relative aspect-[4/3] rounded-[14px] overflow-hidden bg-[#0F172A]">
                             @if (capturedPhoto()) {
-                              <img [src]="capturedPhoto()" alt="Captured ID photo" class="absolute inset-0 w-full h-full object-cover" />
+                              <img [src]="resolvePhotoUrl(capturedPhoto())" alt="Captured ID photo" class="absolute inset-0 w-full h-full object-cover" />
                             } @else if ((errorMessage() || esp32Error()) && !cameraReady()) {
                               <!-- Camera unavailable warning (compact) -->
                               <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center bg-[#0F172A]">
@@ -4706,7 +4706,7 @@ export type BarangayStep =
                           <!-- Profile header -->
                           <div class="flex items-center gap-4 sm:gap-5">
                             @if (capturedPhoto()) {
-                              <img [src]="capturedPhoto()" alt="{{ t('bar.review.photoTitle') }}"
+                              <img [src]="resolvePhotoUrl(capturedPhoto())" alt="{{ t('bar.review.photoTitle') }}"
                                    class="shrink-0 w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-full object-cover border-2 border-[#F97316]/40 shadow-sm" />
                             } @else {
                               <div class="shrink-0 w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-full bg-[#FFF7ED] border-2 border-[#F97316]/40 flex items-center justify-center text-[#F97316] text-2xl font-bold" aria-hidden="true">
@@ -4904,7 +4904,7 @@ export type BarangayStep =
                           </div>
                           <div class="mx-auto w-full max-w-[220px]">
                             @if (capturedPhoto()) {
-                              <img [src]="capturedPhoto()" [alt]="t('bar.review.photoTitle')"
+                              <img [src]="resolvePhotoUrl(capturedPhoto())" [alt]="t('bar.review.photoTitle')"
                                    class="w-full aspect-[3/4] object-cover rounded-[14px] border border-[#E5E7EB] bg-[#F8FAFC]" />
                             } @else {
                               <div class="w-full aspect-[3/4] rounded-[14px] border-2 border-dashed border-[#CBD5E1] bg-[#F8FAFC] flex flex-col items-center justify-center gap-2 text-[#94A3B8]">
@@ -9121,5 +9121,18 @@ export class KioskComponent implements OnInit, OnDestroy {
         }
       }, 1000);
     }, idleBeforeWarningMs);
+  }
+
+  resolvePhotoUrl(url?: string | null): string {
+    if (!url) return '';
+    if (url.startsWith('data:') || url.startsWith('blob:') || url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    const apiBase = environment.apiUrl.replace(/\/api\/v1\/?$/, '');
+    const clean = url.replace(/^\/+/, '');
+    if (clean.startsWith('uploads/')) {
+      return `${apiBase}/${clean}`;
+    }
+    return `${apiBase}/uploads/${clean}`;
   }
 }

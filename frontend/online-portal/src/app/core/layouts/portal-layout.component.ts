@@ -2,6 +2,7 @@ import { Component, signal, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService, PortalAccount } from '../services/auth.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'portal-layout',
@@ -55,7 +56,7 @@ import { AuthService, PortalAccount } from '../services/auth.service';
                   <!-- Profile Avatar / Icon -->
                   <div class="w-7 h-7 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center shrink-0 overflow-hidden font-black text-xs border border-orange-200 shadow-2xs">
                     @if (auth.currentUser()?.photo) {
-                      <img [src]="'/uploads/' + auth.currentUser()?.photo" alt="Profile" class="w-full h-full object-cover" />
+                      <img [src]="photoUrl(auth.currentUser()?.photo)" alt="Profile" class="w-full h-full object-cover" />
                     } @else {
                       <span>{{ userInitials(auth.currentUser()) }}</span>
                     }
@@ -89,7 +90,7 @@ import { AuthService, PortalAccount } from '../services/auth.service';
                       <div class="flex items-center gap-2.5">
                         <div class="w-9 h-9 rounded-full bg-orange-500 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs overflow-hidden">
                           @if (auth.currentUser()?.photo) {
-                            <img [src]="'/uploads/' + auth.currentUser()?.photo" alt="Photo" class="w-full h-full object-cover" />
+                            <img [src]="photoUrl(auth.currentUser()?.photo)" alt="Photo" class="w-full h-full object-cover" />
                           } @else {
                             <span>{{ userInitials(auth.currentUser()) }}</span>
                           }
@@ -336,6 +337,19 @@ export class PortalLayoutComponent {
     const first = user.first_name?.[0] || '';
     const last = user.last_name?.[0] || '';
     return (first + last).toUpperCase() || 'R';
+  }
+
+  photoUrl(url?: string | null): string {
+    if (!url) return '';
+    if (url.startsWith('data:') || url.startsWith('blob:') || url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    const base = environment.apiUrl.replace(/\/api\/v1\/?$/, '');
+    const clean = url.replace(/^\/+/, '');
+    if (clean.startsWith('uploads/')) {
+      return `${base}/${clean}`;
+    }
+    return `${base}/uploads/${clean}`;
   }
 }
 

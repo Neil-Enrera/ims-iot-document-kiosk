@@ -95,7 +95,8 @@ const uploadFile = async (req, res) => {
       return errorResponse(res, 400, 'No file uploaded.');
     }
 
-    const fileUrl = `/uploads/documents/${req.file.filename}`;
+    const folder = req.file.mimetype && req.file.mimetype.startsWith('image/') ? 'resident-photos' : 'documents';
+    const fileUrl = `/uploads/${folder}/${req.file.filename}`;
     return successResponse(res, 'Requirement file uploaded successfully.', {
       file_url: fileUrl,
       file_name: req.file.filename,

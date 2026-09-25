@@ -170,8 +170,8 @@ import { environment } from '../../../environments/environment';
                       <!-- Uploaded Status or Upload Button -->
                       @if (getUploadedReq(reqName); as uploaded) {
                         <div class="flex items-center gap-3 bg-white border border-emerald-300 rounded-xl p-2.5 shadow-2xs shrink-0">
-                          @if (is2x2PhotoReq(reqName)) {
-                            <img [src]="resolveFileUrl(uploaded.file_url)" alt="Uploaded 2x2 ID Photo"
+                          @if (is2x2PhotoReq(reqName) || isImageFile(uploaded)) {
+                            <img [src]="resolveFileUrl(uploaded.file_url)" alt="Uploaded Requirement Preview"
                                  class="w-12 h-12 rounded-lg object-cover border border-slate-200 shrink-0" />
                           } @else {
                             <svg class="w-6 h-6 text-emerald-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -567,15 +567,24 @@ import { environment } from '../../../environments/environment';
               </div>
 
               <!-- Resident & Address Summary -->
-              <div class="grid sm:grid-cols-2 gap-3 text-xs">
-                <div>
-                  <span class="font-bold text-slate-400 uppercase text-[11px] block">Applicant Name</span>
-                  <p class="text-slate-800 font-bold mt-0.5">{{ residentFullName() }}</p>
+              <div class="flex flex-col sm:flex-row sm:items-center gap-4 pb-3 border-b border-slate-200">
+                <div class="flex items-center gap-3.5 min-w-0">
+                  @if (getApplicantPhotoUrl(); as photoSrc) {
+                    <img [src]="resolveFileUrl(photoSrc)" alt="Applicant Photo" class="w-14 h-14 rounded-2xl object-cover border-2 border-orange-300 shadow-xs shrink-0" />
+                  } @else {
+                    <div class="w-14 h-14 rounded-2xl bg-orange-100 border-2 border-orange-200 text-orange-600 flex items-center justify-center font-black text-base shrink-0">
+                      {{ (auth.currentUser()?.first_name || 'R').charAt(0) }}{{ (auth.currentUser()?.last_name || '').charAt(0) }}
+                    </div>
+                  }
+                  <div class="min-w-0">
+                    <span class="font-bold text-slate-400 uppercase text-[10px] block tracking-wide">Applicant Name</span>
+                    <p class="text-slate-900 font-extrabold text-sm sm:text-base leading-tight truncate">{{ residentFullName() }}</p>
+                    <p class="text-slate-500 font-mono text-[11px] mt-0.5 truncate">{{ auth.currentUser()?.resident_code || 'RES-00000' }} &bull; {{ auth.currentUser()?.account_id }}</p>
+                  </div>
                 </div>
-                <div>
-                  <span class="font-bold text-slate-400 uppercase text-[11px] block">Resident Code / Account</span>
-                  <p class="text-slate-800 font-bold mt-0.5 font-mono">{{ auth.currentUser()?.resident_code || 'RES-00000' }} &bull; {{ auth.currentUser()?.account_id }}</p>
-                </div>
+              </div>
+
+              <div class="grid sm:grid-cols-2 gap-3 text-xs pt-1">
                 <div class="sm:col-span-2">
                   <span class="font-bold text-slate-400 uppercase text-[11px] block">Delivery / Registered Address</span>
                   <p class="text-slate-800 font-semibold mt-0.5">{{ formData['address'] || auth.currentUser()?.address_line }}</p>
@@ -611,13 +620,13 @@ import { environment } from '../../../environments/environment';
                     @for (file of uploadedRequirements(); track file.requirement_name) {
                       <li class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs bg-white border border-slate-200 rounded-2xl p-3.5 shadow-2xs">
                         <div class="flex items-center gap-3.5 min-w-0">
-                          @if (is2x2PhotoReq(file.requirement_name)) {
+                          @if (is2x2PhotoReq(file.requirement_name) || isImageFile(file)) {
                             <button
                               type="button"
                               (click)="openFilePreview(file)"
-                              title="Click to inspect uploaded photo"
+                              [title]="is2x2PhotoReq(file.requirement_name) ? 'Click to inspect 2x2 ID photo' : 'Click to inspect document image'"
                               class="relative group shrink-0 cursor-pointer">
-                              <img [src]="resolveFileUrl(file.file_url)" alt="2x2 Photo" class="w-14 h-14 rounded-xl object-cover border-2 border-orange-200 group-hover:border-orange-500 shadow-xs transition" />
+                              <img [src]="resolveFileUrl(file.file_url)" [alt]="file.requirement_name" class="w-14 h-14 rounded-xl object-cover border-2 border-orange-200 group-hover:border-orange-500 shadow-xs transition" />
                               <div class="absolute inset-0 bg-black/30 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
                                 <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                   <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607zM10.5 7.5v6m3-3h-6" />
@@ -653,7 +662,7 @@ import { environment } from '../../../environments/environment';
                               <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
                               <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
-                            <span>{{ is2x2PhotoReq(file.requirement_name) ? 'Check & Enlarge Photo' : 'View Document' }}</span>
+                            <span>{{ is2x2PhotoReq(file.requirement_name) ? 'Check & Enlarge Photo' : (isImageFile(file) ? 'Preview Image' : 'View Details') }}</span>
                           </button>
                         </div>
                       </li>
@@ -769,7 +778,7 @@ import { environment } from '../../../environments/environment';
             <div class="flex items-center justify-between pb-4 border-b border-slate-100">
               <div>
                 <span class="text-[10px] font-black uppercase tracking-wider text-orange-600 bg-orange-50 px-2.5 py-0.5 rounded-full border border-orange-200">
-                  {{ preview.isPhoto ? '2×2 ID Photo Preview' : 'Document Preview' }}
+                  {{ preview.isPhoto ? '2×2 ID Photo Preview' : (preview.isImage ? 'Uploaded Document Image' : 'Document Preview') }}
                 </span>
                 <h3 class="text-lg font-black text-slate-900 mt-1">{{ preview.title }}</h3>
               </div>
@@ -788,7 +797,7 @@ import { environment } from '../../../environments/environment';
               @if (preview.isPhoto) {
                 <div class="inline-block relative p-2 bg-slate-50 rounded-2xl border border-slate-200 shadow-inner">
                   <img
-                    [src]="resolveFileUrl(preview.url)"
+                    [src]="preview.url"
                     alt="Uploaded 2x2 ID Photo Preview"
                     class="w-64 h-64 sm:w-72 sm:h-72 object-cover rounded-xl border border-slate-300 shadow-md mx-auto"
                   />
@@ -818,9 +827,26 @@ import { environment } from '../../../environments/environment';
                     <span>White BG</span>
                   </div>
                 </div>
+              } @else if (preview.isImage) {
+                <div class="inline-block relative p-2 bg-slate-50 rounded-2xl border border-slate-200 shadow-inner max-w-full">
+                  <img
+                    [src]="preview.url"
+                    alt="Uploaded Requirement Preview"
+                    class="max-h-80 sm:max-h-96 w-auto max-w-full object-contain rounded-xl border border-slate-300 shadow-md mx-auto"
+                  />
+                  <span class="absolute bottom-4 right-4 bg-black/75 text-white text-[10px] font-bold px-2.5 py-1 rounded-md backdrop-blur-xs">
+                    Uploaded Document Image
+                  </span>
+                </div>
               } @else {
-                <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 text-slate-700">
-                  <p class="text-sm font-semibold">Document is attached and ready for barangay staff review.</p>
+                <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 text-slate-700 max-w-md mx-auto">
+                  <div class="w-12 h-12 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center mx-auto mb-3">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                    </svg>
+                  </div>
+                  <p class="font-bold text-slate-900 text-sm">{{ preview.fileName || 'Document File' }}</p>
+                  <p class="text-xs text-slate-500 mt-1">Attached digital document is ready for barangay staff review.</p>
                 </div>
               }
             </div>
@@ -857,7 +883,7 @@ export class ApplyComponent implements OnInit {
   uploadedRequirements = signal<UploadedRequirement[]>([]);
   uploadingReq = signal<string | null>(null);
   uploadedPhotoUrl = signal<string | null>(null);
-  previewModalFile = signal<{ url: string; title: string; isPhoto: boolean } | null>(null);
+  previewModalFile = signal<{ url: string; title: string; fileName?: string; isPhoto: boolean; isImage: boolean } | null>(null);
 
   submitting = signal<boolean>(false);
   submissionError = signal<string | null>(null);
@@ -1384,19 +1410,40 @@ export class ApplyComponent implements OnInit {
 
   resolveFileUrl(url?: string | null): string {
     if (!url) return '';
-    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) {
+    if (url.startsWith('data:') || url.startsWith('blob:') || url.startsWith('http://') || url.startsWith('https://')) {
       return url;
     }
     const base = environment.apiUrl.replace(/\/api\/v1\/?$/, '');
-    const clean = url.startsWith('/') ? url : `/${url}`;
-    return `${base}${clean}`;
+    const clean = url.replace(/^\/+/, '');
+    if (clean.startsWith('uploads/')) {
+      return `${base}/${clean}`;
+    }
+    return `${base}/uploads/${clean}`;
+  }
+
+  getApplicantPhotoUrl(): string | null {
+    if (this.uploadedPhotoUrl()) return this.uploadedPhotoUrl();
+    const photoReq = this.uploadedRequirements().find(r => this.is2x2PhotoReq(r.requirement_name));
+    if (photoReq?.file_url) return photoReq.file_url;
+    return this.auth.currentUser()?.photo || null;
+  }
+
+  isImageFile(file?: UploadedRequirement | null): boolean {
+    if (!file) return false;
+    if (file.mime_type && file.mime_type.startsWith('image/')) return true;
+    const path = (file.file_url || file.file_name || file.original_name || '').toLowerCase();
+    return /\.(jpg|jpeg|png|webp|gif)$/i.test(path);
   }
 
   openFilePreview(file: UploadedRequirement): void {
+    const isPhoto = this.is2x2PhotoReq(file.requirement_name);
+    const isImage = isPhoto || this.isImageFile(file);
     this.previewModalFile.set({
       url: this.resolveFileUrl(file.file_url),
       title: file.requirement_name,
-      isPhoto: this.is2x2PhotoReq(file.requirement_name)
+      fileName: file.original_name || file.file_name,
+      isPhoto,
+      isImage
     });
   }
 
