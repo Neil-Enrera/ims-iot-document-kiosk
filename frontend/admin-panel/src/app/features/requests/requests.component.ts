@@ -14,6 +14,7 @@ import { ButtonComponent } from '../../shared/components/button.component';
 import { ModalComponent } from '../../shared/components/modal.component';
 import { DocumentPreviewModalComponent } from '../../shared/components/document-preview-modal.component';
 import { RequestFormComponent } from './request-form.component';
+import { environment } from '../../../environments/environment';
 
 interface RequestDetail extends DocumentRequest {
   history?: RequestStatusHistory[];
@@ -538,8 +539,8 @@ interface StatusOption {
                     <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs">
                       <div class="flex items-center gap-3 min-w-0 pr-3">
                         @if (isImageFile(reqDoc)) {
-                          <a [href]="reqDoc.file_url" target="_blank" title="Click to inspect 2×2 ID photo in full size" class="shrink-0">
-                            <img [src]="reqDoc.file_url" alt="Photo" class="w-12 h-12 rounded-lg object-cover border border-slate-300 shadow-2xs hover:scale-105 transition cursor-pointer" />
+                          <a [href]="resolveFileUrl(reqDoc.file_url)" target="_blank" title="Click to inspect 2×2 ID photo in full size" class="shrink-0">
+                            <img [src]="resolveFileUrl(reqDoc.file_url)" alt="Photo" class="w-12 h-12 rounded-lg object-cover border border-slate-300 shadow-2xs hover:scale-105 transition cursor-pointer" />
                           </a>
                         } @else {
                           <div class="w-10 h-10 rounded-lg bg-orange-100 border border-orange-200 text-orange-700 flex items-center justify-center shrink-0">
@@ -553,7 +554,7 @@ interface StatusOption {
                           <span class="text-slate-500 text-[11px] block truncate">{{ reqDoc.original_name }}</span>
                         </div>
                       </div>
-                      <a [href]="reqDoc.file_url" target="_blank"
+                      <a [href]="resolveFileUrl(reqDoc.file_url)" target="_blank"
                          class="px-3.5 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shrink-0 transition flex items-center gap-1.5">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
@@ -1012,6 +1013,8 @@ export class RequestsComponent implements OnInit, OnDestroy {
   requests = signal<DocumentRequest[]>([]);
   services = signal<Service[]>([]);
   loading = signal(true);
+  private readonly assetBase = environment.apiUrl.replace(/\/api\/v1\/?$/, '');
+
   search = signal('');
   page = signal(1);
   limit = 10;
@@ -2072,6 +2075,18 @@ export class RequestsComponent implements OnInit, OnDestroy {
     return this.daysRemaining(value) <= 2
       ? `${base} text-rose-800 bg-rose-50 border-rose-200`
       : `${base} text-amber-800 bg-amber-50 border-amber-200`;
+  }
+
+  resolveFileUrl(url?: string | null): string {
+    if (!url) return '';
+    if (url.startsWith('data:') || url.startsWith('blob:') || url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    const clean = url.replace(/^\/+/, '');
+    if (clean.startsWith('uploads/')) {
+      return `${this.assetBase}/${clean}`;
+    }
+    return `${this.assetBase}/uploads/${clean}`;
   }
 
   isImageFile(reqDoc: { requirement_name?: string; original_name?: string; file_url?: string }): boolean {

@@ -652,6 +652,12 @@ const allocateRequestNumbers = async (conn, count) => {
 // Photo storage must never fail the submission.
 const savePhoto = async (requestId, photo) => {
   try {
+    if (!photo || typeof photo !== 'string') return;
+    // If photo is already a saved file path / URL, do not re-save as base64
+    if (photo.startsWith('/uploads/') || photo.startsWith('uploads/') || photo.startsWith('resident-photos/')) {
+      return;
+    }
+
     const photoDir = path.join(__dirname, '../../uploads/kiosk-photos');
     if (!fs.existsSync(photoDir)) fs.mkdirSync(photoDir, { recursive: true });
 

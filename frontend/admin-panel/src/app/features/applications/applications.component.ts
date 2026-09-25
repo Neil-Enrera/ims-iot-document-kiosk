@@ -811,10 +811,14 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
 
   imageUrl(path: string | null): string {
     if (!path) return '';
-    if (path.startsWith('data:') || path.startsWith('http://') || path.startsWith('https://') || path.startsWith('/')) {
+    if (path.startsWith('data:') || path.startsWith('blob:') || path.startsWith('http://') || path.startsWith('https://')) {
       return path;
     }
-    return `${this.assetBase}/uploads/${path}`;
+    const clean = path.replace(/^\/+/, '');
+    if (clean.startsWith('uploads/')) {
+      return `${this.assetBase}/${clean}`;
+    }
+    return `${this.assetBase}/uploads/${clean}`;
   }
 
   imageZoom = signal(1);
