@@ -247,4 +247,18 @@ describe('ID card photo embedding (valid relay + inline drawing)', () => {
     const relForRid = new RegExp('Id="' + rId + '"[^>]*Target="media/image1.png"');
     assert.ok(relForRid.test(rels), 'the referenced rid should map to the image target');
   });
+
+  it('extractRequestPhoto properly finds renewal photo in form_data._requirements', () => {
+    const docxImageHelper = require('../src/services/docx-image.helper');
+    const request = {
+      form_data: {
+        _requirements: [
+          { requirement_name: 'Old Barangay ID', file_path: '/uploads/documents/doc-123.jpg' },
+          { requirement_name: '2x2 ID Photo (White Background)', file_path: '/uploads/resident-photos/res-photo-456.png' }
+        ]
+      }
+    };
+    const extracted = docxImageHelper.extractRequestPhoto(request);
+    assert.strictEqual(extracted, '/uploads/resident-photos/res-photo-456.png');
+  });
 });

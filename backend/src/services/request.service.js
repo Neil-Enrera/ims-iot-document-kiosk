@@ -164,6 +164,22 @@ const changeStatus = async (requestId, statusId, userId, remarks) => {
     }
   }
 
+  // When a document request with a newly uploaded photo is released, sync the new photo
+  // to the resident's master profile record.
+  if (statusId === STATUS_IDS.RELEASED && request.resident_id) {
+    try {
+      const docxImageHelper = require('./docx-image.helper');
+      const photoCandidate = docxImageHelper.extractRequestPhoto(request, null);
+      if (photoCandidate && typeof photoCandidate === 'string') {
+        const cleanPath = photoCandidate.replace(/^[/\\]+/, '').replace(/^uploads[/\\]+/, '');
+        const residentRepo = require('../repositories/resident.repository');
+        await residentRepo.updatePhoto(request.resident_id, cleanPath);
+      }
+    } catch (photoSyncErr) {
+      console.error('Failed to sync renewed photo to resident profile on release:', photoSyncErr);
+    }
+  }
+
   return { success: true, message: 'Request status updated successfully.', data: updated };
 };
 

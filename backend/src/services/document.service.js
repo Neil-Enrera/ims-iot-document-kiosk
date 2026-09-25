@@ -13,6 +13,8 @@ const documentRepository = require('../repositories/document.repository');
 // so every document template in the system uses the same generic,
 // extensible library (see placeholder.engine.js).
 const placeholderEngine = require('./placeholder.engine');
+const docxImageHelper = require('./docx-image.helper');
+
 
 // ============================================================
 // Document generation
@@ -156,11 +158,23 @@ const generateDocument = async ({ requestId, userId }) => {
   // explicit service mapping -> master placeholder library -> application form.
   const { data } = placeholderEngine.apply({ templateTags, service, context });
 
+  // If template contains a photo placeholder tag, inject the photo token for post-render drawing replacement
+  const hasPhotoTag = templateTags.includes('resident_photo') || templateTags.some(t => t.includes('resident_photo') || t.includes('photo'));
+  if (hasPhotoTag) {
+    data.resident_photo = docxImageHelper.PHOTO_TOKEN;
+  }
+
   // Render the template
   let renderedBuffer;
   try {
     const content = fs.readFileSync(templatePath, 'binary');
     const zip = new PizZip(content);
+
+    // Normalize legacy image-module markers ({{%resident_photo}} / {{%%resident_photo}})
+    const normalizedXml = (zip.file('word/document.xml')?.asText() || '')
+      .replace(/{{%%?resident_photo}}/g, '{{resident_photo}}');
+    if (normalizedXml) zip.file('word/document.xml', normalizedXml);
+
     const doc = new Docxtemplater(zip, {
       paragraphLoop: true,
       linebreaks: true,
@@ -168,6 +182,16 @@ const generateDocument = async ({ requestId, userId }) => {
       nullGetter: () => ''
     });
     doc.render(data);
+
+    // If template has photo tag, embed the resident or uploaded renewal photo
+    if (hasPhotoTag) {
+      const photoCandidate = docxImageHelper.extractRequestPhoto(request, resident);
+      const photoBuffer = docxImageHelper.resolveImageBuffer(photoCandidate);
+      if (photoBuffer) {
+        docxImageHelper.embedPhoto(doc, photoBuffer, 300);
+      }
+    }
+
     renderedBuffer = doc.getZip().generate({
       type: 'nodebuffer',
       mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
@@ -262,10 +286,22 @@ const renderRequestPreview = async ({ serviceId, formData, residentId, guest, pr
   const context = placeholderEngine.buildContext({ request, resident, service, barangay, processedBy });
   const { data } = placeholderEngine.apply({ templateTags, service, context });
 
+  // If template contains a photo placeholder tag, inject the photo token for post-render drawing replacement
+  const hasPhotoTag = templateTags.includes('resident_photo') || templateTags.some(t => t.includes('resident_photo') || t.includes('photo'));
+  if (hasPhotoTag) {
+    data.resident_photo = docxImageHelper.PHOTO_TOKEN;
+  }
+
   let renderedBuffer;
   try {
     const content = fs.readFileSync(templatePath, 'binary');
     const zip = new PizZip(content);
+
+    // Normalize legacy image-module markers ({{%resident_photo}} / {{%%resident_photo}})
+    const normalizedXml = (zip.file('word/document.xml')?.asText() || '')
+      .replace(/{{%%?resident_photo}}/g, '{{resident_photo}}');
+    if (normalizedXml) zip.file('word/document.xml', normalizedXml);
+
     const doc = new Docxtemplater(zip, {
       paragraphLoop: true,
       linebreaks: true,
@@ -273,6 +309,16 @@ const renderRequestPreview = async ({ serviceId, formData, residentId, guest, pr
       nullGetter: () => ''
     });
     doc.render(data);
+
+    // If template has photo tag, embed the resident or uploaded renewal photo
+    if (hasPhotoTag) {
+      const photoCandidate = docxImageHelper.extractRequestPhoto(request, resident);
+      const photoBuffer = docxImageHelper.resolveImageBuffer(photoCandidate);
+      if (photoBuffer) {
+        docxImageHelper.embedPhoto(doc, photoBuffer, 300);
+      }
+    }
+
     renderedBuffer = doc.getZip().generate({
       type: 'nodebuffer',
       mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'

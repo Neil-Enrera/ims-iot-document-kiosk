@@ -65,143 +65,15 @@ const scanTemplateTags = (templatePath) => {
   return [...new Set(tags)];
 };
 
-// Resolve an embedded image (relative upload path, or data URI) to a Buffer.
-const resolveImageBuffer = (tagValue) => {
-  if (!tagValue || typeof tagValue !== 'string') return null;
-  if (/^data:image\//i.test(tagValue)) {
-    try {
-      const base64 = tagValue.replace(/^data:image\/\w+;base64,/, '');
-      return Buffer.from(base64, 'base64');
-    } catch {
-      return null;
-    }
-  }
-  const fullPath = path.join(__dirname, '../../uploads', tagValue);
-  if (!fs.existsSync(fullPath)) return null;
-  try {
-    return fs.readFileSync(fullPath);
-  } catch {
-    return null;
-  }
-};
+const docxImageHelper = require('./docx-image.helper');
 
-// Read pixel dimensions from a PNG/JPEG header (with a safe fallback). Keeps
-// the embedded photo at its natural aspect instead of a default square.
-const getImageSize = (buffer) => {
-  const DEFAULT = { width: 200, height: 240 };
-  if (!buffer || buffer.length < 24) return DEFAULT;
-  // PNG: width/height at IHDR offset 16/20.
-  if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47) {
-    return { width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) };
-  }
-  // JPEG: scan SOF markers for dimensions.
-  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
-    let offset = 2;
-    while (offset + 9 < buffer.length) {
-      if (buffer[offset] !== 0xff) { offset += 1; continue; }
-      const marker = buffer[offset + 1];
-      if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc) {
-        return { width: buffer.readUInt16BE(offset + 7), height: buffer.readUInt16BE(offset + 5) };
-      }
-      const len = buffer.readUInt16BE(offset + 2);
-      offset += 2 + len;
-    }
-    return DEFAULT;
-  }
-  return DEFAULT;
-};
+const resolveImageBuffer = docxImageHelper.resolveImageBuffer;
+const getImageSize = docxImageHelper.getImageSize;
+const sniffImageExtension = docxImageHelper.sniffImageExtension;
+const buildDrawingXml = docxImageHelper.buildDrawingXml;
+const embedPhoto = docxImageHelper.embedPhoto;
+const PHOTO_TOKEN = docxImageHelper.PHOTO_TOKEN;
 
-// Guess a safe media extension from the image magic bytes.
-const sniffImageExtension = (buffer) => {
-  if (buffer && buffer[0] === 0x89 && buffer[1] === 0x50) return 'png';
-  if (buffer && buffer[0] === 0xff && buffer[1] === 0xd8) return 'jpg';
-  return 'png';
-};
-
-const PX_TO_EMU = 9525; // 1 pixel = 9525 EMUs
-
-// Placeholder substituted for the photo tag during the text render, then swapped
-// for the real embedded drawing afterwards. Keeps docxtemplater (which has no
-// native image support in its free core) focused on pure text substitution.
-const PHOTO_TOKEN = 'IMSPHOTOTOKEN2024';
-
-// Build the DrawingML XML that embeds image rId at a size (in EMUs). The
-// fragment is a bare <w:drawing> so it can be spliced into the run that held
-// the photo token (keeping any <w:rPr> and <w:br/> breaks) instead of nesting a
-// whole replacement paragraph — which produced invalid OOXML.
-const buildDrawingXml = ({ rId, emuW, emuH }) => {
-  return '<w:drawing xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"' +
-    ' xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"' +
-    ' xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"' +
-    ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
-    ' <wp:inline distT="0" distB="0" distL="0" distR="0">' +
-    ' <wp:extent cx="' + emuW + '" cy="' + emuH + '"/>' +
-    ' <wp:effectExtent l="0" t="0" r="0" b="0"/>' +
-    ' <wp:docPr id="1" name="resident_photo"/>' +
-    ' <wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"/></wp:cNvGraphicFramePr>' +
-    ' <a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">' +
-    ' <pic:pic><pic:nvPicPr><pic:cNvPr id="2" name="resident_photo"/><pic:cNvPicPr/></pic:nvPicPr>' +
-    ' <pic:blipFill><a:blip r:embed="' + rId + '"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>' +
-    ' <pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="' + emuW + '" cy="' + emuH + '"/></a:xfrm>' +
-    ' <a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic>' +
-    ' </a:graphicData></a:graphic></wp:inline></w:drawing>';
-};
-
-// Embed a photo into the rendered DOCX zip. Returns true on success.
-const embedPhoto = (doc, imageBuffer, maxPhotoPx = 480) => {
-  if (!imageBuffer) return false;
-  const zip = doc.getZip();
-  const docXmlPath = 'word/document.xml';
-  const docXml = zip.file(docXmlPath)?.asText();
-  if (!docXml || !docXml.includes(PHOTO_TOKEN)) return false;
-
-  // 1. Copy the image bytes into the zip as a media part.
-  const ext = sniffImageExtension(imageBuffer);
-  const used = [];
-  zip.file(/word\/media\//).forEach((f) => used.push(f.name));
-  const mediaName = 'word/media/image' + (used.length + 1) + '.' + ext;
-  zip.file(mediaName, imageBuffer);
-
-  // 2. Register the media part in the document's relationship file.
-  const relsPath = 'word/_rels/document.xml.rels';
-  let relsXml = zip.file(relsPath)?.asText() || '';
-  const nextRid = (relsXml.match(/Id="rId\d+"/g) || []).length + 1;
-  const rId = 'rId' + nextRid;
-  if (!relsXml) {
-    relsXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
-      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>';
-  }
-  relsXml = relsXml.replace('</Relationships>',
-    '<Relationship Id="' + rId + '"' +
-      ' Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"' +
-      ' Target="' + mediaName.replace(/^word\//, '') + '"/></Relationships>');
-  zip.file(relsPath, relsXml);
-
-  // 3. Keep [Content_Types].xml aware so Word opens the file cleanly.
-  const ctPath = '[Content_Types].xml';
-  const ctXml = zip.file(ctPath)?.asText();
-  if (ctXml && ext && !ctXml.includes('Extension="' + ext + '"')) {
-    const mimeByExt = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg' };
-    const ct = (mimeByExt[ext] || 'image/png');
-    zip.file(ctPath, ctXml.replace('</Types>', '<Default Extension="' + ext + '" ContentType="' + ct + '"/></Types>'));
-  }
-
-  // 4. Swap the token <w:t> for the drawing, keeping the surrounding run (its
-  //    properties and any <w:br/> line breaks stay intact). The resulting
-  //    run is valid OOXML and, inside this template's centered photo-cell
-  //    paragraph, places the photo in the designated 2×2 area.
-  const size = getImageSize(imageBuffer);
-  const maxEmu = (maxPhotoPx || 480) * PX_TO_EMU; // cap the longer side so the photo fits its box
-  const scale = Math.min(1, maxEmu / (Math.max(size.width, size.height) * PX_TO_EMU));
-  const emuW = Math.round(size.width * PX_TO_EMU * scale);
-  const emuH = Math.round(size.height * PX_TO_EMU * scale);
-  const drawing = buildDrawingXml({ rId, emuW, emuH });
-  const tokenText = new RegExp('<w:t\\b[^>]*>\\s*' + PHOTO_TOKEN + '\\s*<\\/w:t>');
-  const newDocXml = docXml.replace(tokenText, drawing);
-  if (newDocXml === docXml) return false;
-  zip.file(docXmlPath, newDocXml);
-  return true;
-};
 
 // Build the placeholder context for an approved application. The application
 // row fields (name, birth date, address, etc.) become the application context
