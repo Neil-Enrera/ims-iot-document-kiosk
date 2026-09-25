@@ -177,32 +177,54 @@ const extractRequestPhoto = (request = {}, resident = null) => {
   if (formData._photo && typeof formData._photo === 'string') return formData._photo;
   if (formData._photo_path && typeof formData._photo_path === 'string') return formData._photo_path;
 
-  // 2. Check requirements list for 2x2 photo or uploaded image
+  // 2. Check requirements list:
+  // Pass 1: Explicit 2x2 ID Photo or picture in requirement name
   const reqs = Array.isArray(formData._requirements) ? formData._requirements : [];
   for (const r of reqs) {
-    if (!r || !r.file_path) continue;
+    if (!r) continue;
+    const filePath = r.file_path || r.file_url || r.filePath || r.fileUrl || (r.file_name ? `resident-photos/${r.file_name}` : null);
+    if (!filePath) continue;
     const name = String(r.requirement_name || '').toLowerCase();
-    const pathStr = String(r.file_path || '').toLowerCase();
-    if (name.includes('photo') || name.includes('2x2') || name.includes('picture') ||
-        pathStr.includes('resident-photos') || pathStr.includes('kiosk-photos')) {
-      return r.file_path;
+    if (name.includes('2x2') || name.includes('photo') || name.includes('picture') || name.includes('portrait')) {
+      return filePath;
     }
   }
 
-  // 3. Any requirement with an image file path as fallback if only 1 image attached
+  // Pass 2: Check for image files in resident-photos / kiosk-photos folder
   for (const r of reqs) {
-    if (r && r.file_path && /\.(png|jpe?g)$/i.test(r.file_path)) {
-      return r.file_path;
+    if (!r) continue;
+    const filePath = r.file_path || r.file_url || r.filePath || r.fileUrl || (r.file_name ? `resident-photos/${r.file_name}` : null);
+    if (!filePath) continue;
+    const pathStr = String(filePath || '').toLowerCase();
+    if (pathStr.includes('resident-photos') || pathStr.includes('kiosk-photos')) {
+      return filePath;
     }
   }
 
-  // 4. Kiosk-saved photo by request_id
+  // Pass 3: Any requirement with an image file path as fallback
+  for (const r of reqs) {
+    if (!r) continue;
+    const filePath = r.file_path || r.file_url || r.filePath || r.fileUrl || (r.file_name ? `resident-photos/${r.file_name}` : null);
+    if (filePath && /\.(png|jpe?g)$/i.test(filePath)) {
+      return filePath;
+    }
+  }
+
+  // 4. Kiosk-saved photo by request_id (must be valid image > 500 bytes)
   if (request.request_id) {
     const photoDir = path.join(__dirname, '../../uploads/kiosk-photos');
     if (fs.existsSync(photoDir)) {
       try {
         const files = fs.readdirSync(photoDir);
-        const match = files.find(f => f.startsWith(`request_${request.request_id}_`));
+        const match = files.find(f => {
+          if (!f.startsWith(`request_${request.request_id}_`)) return false;
+          try {
+            const stat = fs.statSync(path.join(photoDir, f));
+            return stat.size > 500;
+          } catch {
+            return false;
+          }
+        });
         if (match) return `kiosk-photos/${match}`;
       } catch {
         // Continue

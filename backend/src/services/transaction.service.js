@@ -653,8 +653,8 @@ const allocateRequestNumbers = async (conn, count) => {
 const savePhoto = async (requestId, photo) => {
   try {
     if (!photo || typeof photo !== 'string') return;
-    // If photo is already a saved file path / URL, do not re-save as base64
-    if (photo.startsWith('/uploads/') || photo.startsWith('uploads/') || photo.startsWith('resident-photos/')) {
+    // If photo is already a saved file path / URL or not a base64 data URI, do not save
+    if (!photo.startsWith('data:image/')) {
       return;
     }
 
@@ -663,7 +663,8 @@ const savePhoto = async (requestId, photo) => {
 
     const base64Data = String(photo).replace(/^data:image\/\w+;base64,/, '');
     const buffer = Buffer.from(base64Data, 'base64');
-    if (!buffer.length) return;
+    if (!buffer.length || buffer.length < 500) return;
+
 
     const fileName = `request_${requestId}_${Date.now()}.jpg`;
     fs.writeFileSync(path.join(photoDir, fileName), buffer);
