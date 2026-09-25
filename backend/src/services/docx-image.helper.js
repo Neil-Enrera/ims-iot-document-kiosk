@@ -171,14 +171,44 @@ const extractRequestPhoto = (request = {}, resident = null) => {
     ? (() => { try { return JSON.parse(request.form_data); } catch { return {}; } })()
     : (request.form_data || {});
 
-  // 1. Direct photo on request / form_data
+  const source = request.source || formData._source || (formData._requirements ? 'Online' : 'Kiosk');
+
+  // 1. If application is from Kiosk, prioritize Kiosk/ESP32-CAM photo capture
+  if (source === 'Kiosk') {
+    if (request.photo && typeof request.photo === 'string') return request.photo;
+    if (formData.photo && typeof formData.photo === 'string') return formData.photo;
+    if (formData._photo && typeof formData._photo === 'string') return formData._photo;
+    if (formData._photo_path && typeof formData._photo_path === 'string') return formData._photo_path;
+
+    if (request.request_id) {
+      const photoDir = path.join(__dirname, '../../uploads/kiosk-photos');
+      if (fs.existsSync(photoDir)) {
+        try {
+          const files = fs.readdirSync(photoDir);
+          const match = files.find(f => {
+            if (!f.startsWith(`request_${request.request_id}_`)) return false;
+            try {
+              const stat = fs.statSync(path.join(photoDir, f));
+              return stat.size > 500;
+            } catch {
+              return false;
+            }
+          });
+          if (match) return `kiosk-photos/${match}`;
+        } catch {
+          // Continue
+        }
+      }
+    }
+  }
+
+  // 2. Direct photo on request / form_data
   if (request.photo && typeof request.photo === 'string') return request.photo;
   if (formData.photo && typeof formData.photo === 'string') return formData.photo;
   if (formData._photo && typeof formData._photo === 'string') return formData._photo;
   if (formData._photo_path && typeof formData._photo_path === 'string') return formData._photo_path;
 
-  // 2. Check requirements list:
-  // Pass 1: Explicit 2x2 ID Photo or picture in requirement name
+  // 3. Online Portal 2x2 ID Photo upload in _requirements
   const reqs = Array.isArray(formData._requirements) ? formData._requirements : [];
   for (const r of reqs) {
     if (!r) continue;
@@ -190,7 +220,7 @@ const extractRequestPhoto = (request = {}, resident = null) => {
     }
   }
 
-  // Pass 2: Check for image files in resident-photos / kiosk-photos folder
+  // 4. Check for image files in resident-photos / kiosk-photos folder
   for (const r of reqs) {
     if (!r) continue;
     const filePath = r.file_path || r.file_url || r.filePath || r.fileUrl || (r.file_name ? `resident-photos/${r.file_name}` : null);
@@ -201,7 +231,7 @@ const extractRequestPhoto = (request = {}, resident = null) => {
     }
   }
 
-  // Pass 3: Any requirement with an image file path as fallback
+  // 5. Any requirement with an image file path as fallback
   for (const r of reqs) {
     if (!r) continue;
     const filePath = r.file_path || r.file_url || r.filePath || r.fileUrl || (r.file_name ? `resident-photos/${r.file_name}` : null);
@@ -210,7 +240,7 @@ const extractRequestPhoto = (request = {}, resident = null) => {
     }
   }
 
-  // 4. Kiosk-saved photo by request_id (must be valid image > 500 bytes)
+  // 6. Kiosk-saved photo fallback by request_id (must be valid image > 500 bytes)
   if (request.request_id) {
     const photoDir = path.join(__dirname, '../../uploads/kiosk-photos');
     if (fs.existsSync(photoDir)) {
@@ -232,7 +262,7 @@ const extractRequestPhoto = (request = {}, resident = null) => {
     }
   }
 
-  // 5. Fallback to resident's existing profile photo
+  // 7. Fallback to resident's existing master profile photo
   if (resident && resident.photo) return resident.photo;
 
   return null;

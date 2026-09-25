@@ -216,6 +216,16 @@ const generateDocument = async ({ requestId, userId }) => {
 
   const validUserId = processedBy ? userId : null;
 
+  // Prune any previous documents for this request so exactly one artifact is generated & maintained
+  const existingDocs = await documentRepository.findByRequest(requestId);
+  for (const prevDoc of existingDocs) {
+    try {
+      await deleteDocument(prevDoc.document_id);
+    } catch (delErr) {
+      console.warn(`Could not prune previous document #${prevDoc.document_id}:`, delErr.message);
+    }
+  }
+
   for (const doc of generated) {
     const documentId = await documentRepository.create({
       requestId,
@@ -443,7 +453,9 @@ const parseJson = (value) => {
 
 const listDocuments = async (requestId) => {
   const documents = await documentRepository.findByRequest(requestId);
-  return { success: true, message: 'Documents retrieved successfully.', data: documents };
+  // Guarantee exactly one latest document artifact is returned per request
+  const single = documents.length > 1 ? [documents[documents.length - 1]] : documents;
+  return { success: true, message: 'Documents retrieved successfully.', data: single };
 };
 
 // Delete every generated document for a request EXCEPT those from the latest
