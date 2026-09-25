@@ -14,6 +14,10 @@
 | **Total** | **85** | **56** | **19** | **0** |
 
 > **Note:** TASK-BACKEND-012 (Payment API) and TASK-FRONTEND-011 (Payment UI) removed per DEC-008.
+> - **Resolved Additional Information Form Data Requirements Leakage in Admin Request Details** (`admin-panel/requests.component.ts` L2100-2150):
+>   - **Root Cause Identified**: In `requests.component.ts` `getGroupedFormData()`, `formData` entries were looped over without filtering internal metadata keys prefixed with `_` (such as `_requirements`, `_source`, `_correction_remarks`). Consequently, the `_requirements` JSON array of uploaded digital files was mistakenly classified under the "Additional Information" section and printed as an unformatted JSON string (`Requirements: [{"requirement_name": ...}]`).
+>   - **Fix Applied**: Updated `hasFormData()` and `getGroupedFormData()` to strictly ignore internal keys starting with `_` (`key.startsWith('_')`). Legitimate form inputs remain categorized under "Personal Information", "Application Information", or custom service fields, while attached digital requirements are exclusively displayed in the dedicated "Uploaded Digital Requirements" card with image thumbnails, document preview links, and status badges.
+>   - **Verification**: Verified zero TypeScript or Angular build errors (`npx ng build admin-panel` passed with 0 errors).
 > - **Resolved Uploaded 2×2 ID Photo and Requirement Document Image Preview in Review & Submit Page** (`portal-request.controller.js` L95-108, `app.js` L55-75, `apply.component.ts` L565-595, L610-660, L770-835, L1400-1430, `requests.component.ts` L595-610, `portal-layout.component.ts` L55-95, L330-345, `profile.component.ts` L20-30, L145-160, `kiosk.component.ts` L2275-2280, L4135-4140, L4705-4715, L4905-4915, L9115-9130):
 >   - **End-to-End Image Flow Investigation**: Traced the complete lifecycle: `Image Capture/Upload → Form State → Review & Submit → Preview → Submit → Backend/Storage`.
 >   - **Root Causes Identified**:

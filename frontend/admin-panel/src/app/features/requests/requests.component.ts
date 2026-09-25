@@ -2097,9 +2097,9 @@ export class RequestsComponent implements OnInit, OnDestroy {
            reqName.includes('2x2') || reqName.includes('photo') || reqName.includes('picture');
   }
 
-  // --- Grouped Form Data Helpers ---
   hasFormData(formData: Record<string, unknown>): boolean {
-    return !!formData && Object.keys(formData).length > 0;
+    if (!formData || typeof formData !== 'object') return false;
+    return Object.keys(formData).some(k => !k.startsWith('_') && formData[k] !== undefined && formData[k] !== null && formData[k] !== '');
   }
 
   getUploadedRequirements(formData: unknown): Array<{ requirement_name: string; original_name: string; file_url: string; size?: number }> {
@@ -2139,7 +2139,7 @@ export class RequestsComponent implements OnInit, OnDestroy {
     const otherFields: FormFieldEntry[] = [];
 
     for (const [key, rawVal] of Object.entries(formData)) {
-      if (key === '_guest' || rawVal === undefined || rawVal === null || rawVal === '') continue;
+      if (key.startsWith('_') || rawVal === undefined || rawVal === null || rawVal === '') continue;
       const formattedEntry: FormFieldEntry = {
         key,
         label: this.formatFieldLabel(key),
