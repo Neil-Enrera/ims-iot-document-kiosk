@@ -25,7 +25,7 @@ const generateTemporaryPassword = (length = 8) => {
 };
 
 // Called after Barangay ID approval + issuance. Idempotent per resident.
-const createAccountForResident = async ({ residentId, email, fullName }) => {
+const createAccountForResident = async ({ residentId, residentCode, email, fullName }) => {
   if (!residentId) {
     return { success: false, message: 'Resident ID is required.', data: null };
   }
@@ -44,9 +44,17 @@ const createAccountForResident = async ({ residentId, email, fullName }) => {
     };
   }
 
-  const accountId = await generateAccountId();
+  // Use the resident's master resident_code as the unified Account ID
+  let accountId = residentCode;
+  if (!accountId) {
+    const residentRepo = require('../repositories/resident.repository');
+    const resident = await residentRepo.findById(residentId);
+    accountId = resident?.resident_code || (await generateAccountId());
+  }
+
   const temporaryPassword = generateTemporaryPassword(8);
   const passwordHash = await bcrypt.hash(temporaryPassword, 10);
+
 
   let portalAccountId;
   try {

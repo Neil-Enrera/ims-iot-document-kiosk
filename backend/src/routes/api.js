@@ -35,5 +35,8 @@ router.use('/applications', applicationRoutes);
 router.use('/barangays', barangayRoutes);
 router.use('/resident-updates', residentUpdateRoutes);
 router.use('/portal', portalAuthRoutes);
+router.use('/portal/auth', portalAuthRoutes);
+router.use('/profile', portalAuthRoutes);
+router.use('/contact', portalAuthRoutes);
 
 module.exports = router;

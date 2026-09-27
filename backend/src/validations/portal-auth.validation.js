@@ -2,12 +2,12 @@ const { body } = require('express-validator');
 
 const loginValidation = [
   body().custom((_, { req }) => {
-    const id = req.body.email || req.body.identifier || req.body.accountId || req.body.account_id;
+    const id = req.body.email || req.body.identifier || req.body.accountId || req.body.account_id || req.body.residentCode || req.body.resident_code;
     if (!id || typeof id !== 'string' || !id.trim()) {
-      throw new Error('Email address or Account ID is required.');
+      throw new Error('Email address or Resident ID is required.');
     }
     if (id.trim().length > 100) {
-      throw new Error('Email or Account ID must not exceed 100 characters.');
+      throw new Error('Email or Resident ID must not exceed 100 characters.');
     }
     return true;
   }),

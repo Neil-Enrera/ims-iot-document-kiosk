@@ -10,8 +10,10 @@ const findById = async (portalAccountId) => {
 
 const findByAccountId = async (accountId) => {
   const [rows] = await pool.query(
-    'SELECT * FROM portal_accounts WHERE account_id = ? LIMIT 1',
-    [accountId]
+    `SELECT pa.* FROM portal_accounts pa
+     LEFT JOIN residents r ON pa.resident_id = r.resident_id
+     WHERE pa.account_id = ? OR r.resident_code = ? LIMIT 1`,
+    [accountId, accountId]
   );
   return rows[0] || null;
 };
@@ -33,6 +35,7 @@ const findByEmail = async (email) => {
 };
 
 const findProfileByAccountId = async (accountId) => {
+  const clean = (accountId || '').trim();
   const [rows] = await pool.query(
     `SELECT pa.portal_account_id, pa.account_id, pa.resident_id, pa.email, pa.password_hash, pa.status,
             pa.must_change_password, pa.last_login, pa.created_at,
@@ -47,8 +50,8 @@ const findProfileByAccountId = async (accountId) => {
      FROM portal_accounts pa
      JOIN residents r ON r.resident_id = pa.resident_id
      LEFT JOIN barangays b ON r.barangay_id = b.barangay_id
-     WHERE pa.account_id = ? LIMIT 1`,
-    [accountId]
+     WHERE pa.account_id = ? OR r.resident_code = ? LIMIT 1`,
+    [clean, clean]
   );
   return rows[0] || null;
 };
@@ -69,8 +72,8 @@ const findProfileByIdentifier = async (identifier) => {
      FROM portal_accounts pa
      JOIN residents r ON r.resident_id = pa.resident_id
      LEFT JOIN barangays b ON r.barangay_id = b.barangay_id
-     WHERE LOWER(pa.email) = LOWER(?) OR pa.account_id = ? LIMIT 1`,
-    [clean, clean.toUpperCase()]
+     WHERE LOWER(pa.email) = LOWER(?) OR pa.account_id = ? OR r.resident_code = ? LIMIT 1`,
+    [clean, clean.toUpperCase(), clean.toUpperCase()]
   );
   return rows[0] || null;
 };
@@ -95,6 +98,14 @@ const updatePassword = async (portalAccountId, passwordHash) => {
   const [result] = await pool.query(
     'UPDATE portal_accounts SET password_hash = ?, must_change_password = 0 WHERE portal_account_id = ?',
     [passwordHash, portalAccountId]
+  );
+  return result.affectedRows > 0;
+};
+
+const updateEmail = async (portalAccountId, email) => {
+  const [result] = await pool.query(
+    'UPDATE portal_accounts SET email = ? WHERE portal_account_id = ?',
+    [email, portalAccountId]
   );
   return result.affectedRows > 0;
 };
@@ -127,13 +138,14 @@ const findValidResetCode = async ({ email, accountId, code }) => {
   let sql = `SELECT pr.*, pa.account_id, pa.email AS account_email, pa.status AS account_status, pa.must_change_password
      FROM portal_password_resets pr
      JOIN portal_accounts pa ON pa.portal_account_id = pr.portal_account_id
+     LEFT JOIN residents r ON pa.resident_id = r.resident_id
      WHERE pr.verification_code = ?
        AND pr.used_at IS NULL AND pr.expires_at > NOW()`;
   const params = [code];
 
   if (accountId) {
-    sql += ' AND pa.account_id = ?';
-    params.push(accountId);
+    sql += ' AND (pa.account_id = ? OR r.resident_code = ?)';
+    params.push(accountId, accountId);
   } else if (email) {
     sql += ' AND LOWER(pr.email) = LOWER(?)';
     params.push(email);
@@ -158,13 +170,14 @@ const findValidResetToken = async ({ email, accountId, resetToken }) => {
   let sql = `SELECT pr.*, pa.account_id, pa.email AS account_email, pa.status AS account_status
      FROM portal_password_resets pr
      JOIN portal_accounts pa ON pa.portal_account_id = pr.portal_account_id
+     LEFT JOIN residents r ON pa.resident_id = r.resident_id
      WHERE pr.reset_token = ?
        AND pr.used_at IS NULL AND pr.expires_at > NOW()`;
   const params = [resetToken];
 
   if (accountId) {
-    sql += ' AND pa.account_id = ?';
-    params.push(accountId);
+    sql += ' AND (pa.account_id = ? OR r.resident_code = ?)';
+    params.push(accountId, accountId);
   } else if (email) {
     sql += ' AND LOWER(pr.email) = LOWER(?)';
     params.push(email);
@@ -195,6 +208,7 @@ module.exports = {
   findMaxAccountId,
   create,
   updatePassword,
+  updateEmail,
   updateLastLogin,
   createResetCode,
   findValidResetCode,

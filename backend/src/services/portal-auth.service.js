@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const portalAccountRepository = require('../repositories/portal-account.repository');
+const residentRepository = require('../repositories/resident.repository');
 const emailService = require('./email.service');
 const config = require('../config/environment');
 
@@ -48,13 +49,13 @@ const toPublicAccount = (row) => ({
 
 const login = async (identifier, password) => {
   if (!identifier || !password) {
-    return { success: false, message: 'Email address or Account ID and password are required.' };
+    return { success: false, message: 'Email address or Resident ID and password are required.' };
   }
 
   const cleanIdentifier = String(identifier).trim();
   const row = await portalAccountRepository.findProfileByIdentifier(cleanIdentifier);
   if (!row) {
-    return { success: false, message: 'Invalid email/Account ID or password.' };
+    return { success: false, message: 'Invalid email, Resident ID, or password.' };
   }
   if (row.status !== 'ACTIVE') {
     return { success: false, message: 'This portal account is inactive. Please contact the barangay office.' };
@@ -65,7 +66,7 @@ const login = async (identifier, password) => {
 
   const valid = await bcrypt.compare(password, row.password_hash);
   if (!valid) {
-    return { success: false, message: 'Invalid email/Account ID or password.' };
+    return { success: false, message: 'Invalid email, Resident ID, or password.' };
   }
 
   await portalAccountRepository.updateLastLogin(row.portal_account_id);
@@ -137,7 +138,7 @@ const changePassword = async (portalAccountId, newPassword) => {
 
 const forgotPassword = async (identifier) => {
   if (!identifier || typeof identifier !== 'string') {
-    return { success: false, message: 'Account ID is required.' };
+    return { success: false, message: 'Email or Resident ID is required.' };
   }
 
   const key = normalizeIdentifier(identifier);
@@ -175,7 +176,7 @@ const forgotPassword = async (identifier) => {
 
   return {
     success: true,
-    message: 'If an account with that Account ID exists, a 6-digit verification code has been sent to its registered email.'
+    message: 'If an account with that Email or Resident ID exists, a 6-digit verification code has been sent to its registered email.'
   };
 };
 
@@ -183,9 +184,6 @@ const normalizeIdentifier = (identifier) => {
   if (!identifier || typeof identifier !== 'string') return null;
   const clean = identifier.trim();
   if (!clean) return null;
-  if (clean.toUpperCase().startsWith('BSM-')) {
-    return { accountId: clean.toUpperCase(), email: null };
-  }
   if (clean.includes('@')) {
     return { accountId: null, email: clean };
   }
@@ -194,7 +192,7 @@ const normalizeIdentifier = (identifier) => {
 
 const verifyResetCode = async (identifier, code) => {
   if (!identifier || !code) {
-    return { success: false, message: 'Account ID and verification code are required.' };
+    return { success: false, message: 'Email or Resident ID and verification code are required.' };
   }
 
   const key = normalizeIdentifier(identifier);
@@ -227,7 +225,7 @@ const verifyResetCode = async (identifier, code) => {
 
 const resetPassword = async (identifier, resetToken, newPassword) => {
   if (!identifier || !resetToken || !newPassword) {
-    return { success: false, message: 'Account ID, reset token, and new password are required.' };
+    return { success: false, message: 'Email or Resident ID, reset token, and new password are required.' };
   }
   if (typeof newPassword !== 'string' || newPassword.length < 8) {
     return { success: false, message: 'Password must be at least 8 characters.' };
@@ -257,4 +255,72 @@ const resetPassword = async (identifier, resetToken, newPassword) => {
   };
 };
 
-module.exports = { login, getMe, changePassword, forgotPassword, verifyResetCode, resetPassword };
+const updateProfile = async (portalAccountId, updateData) => {
+  const account = await portalAccountRepository.findById(portalAccountId);
+  if (!account) {
+    return { success: false, message: 'Portal account not found.' };
+  }
+  if (account.status !== 'ACTIVE') {
+    return { success: false, message: 'This portal account is inactive.' };
+  }
+
+  const resident = await residentRepository.findById(account.resident_id);
+  if (!resident) {
+    return { success: false, message: 'Resident record not found.' };
+  }
+
+  // Validate contact number if provided
+  if (updateData.contact_number && String(updateData.contact_number).trim()) {
+    const cleanPhone = String(updateData.contact_number).trim().replace(/[\s\-()]/g, '');
+    if (!/^(09\d{9}|\+639\d{9})$/.test(cleanPhone)) {
+      return { success: false, message: 'Contact number must be a valid 11-digit mobile number (e.g. 09123456789).' };
+    }
+  }
+
+  // Validate email if provided
+  if (updateData.email && String(updateData.email).trim()) {
+    const cleanEmail = String(updateData.email).trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      return { success: false, message: 'Please provide a valid email address.' };
+    }
+    const existingAccount = await portalAccountRepository.findByEmail(cleanEmail);
+    if (existingAccount && Number(existingAccount.portal_account_id) !== Number(account.portal_account_id)) {
+      return { success: false, message: 'This email address is already associated with another portal account.' };
+    }
+  }
+
+  // Update resident fields
+  const residentUpdatePayload = {
+    contact_number: updateData.contact_number !== undefined ? updateData.contact_number : resident.contact_number,
+    email: updateData.email !== undefined ? updateData.email : resident.email,
+    civil_status: updateData.civil_status !== undefined ? updateData.civil_status : resident.civil_status,
+    occupation: updateData.occupation !== undefined ? updateData.occupation : resident.occupation,
+    religion: updateData.religion !== undefined ? updateData.religion : resident.religion,
+    birth_place: updateData.birth_place !== undefined ? updateData.birth_place : resident.birth_place,
+    blood_type: updateData.blood_type !== undefined ? updateData.blood_type : resident.blood_type,
+    house_number: updateData.house_number !== undefined ? updateData.house_number : resident.house_number,
+    street: updateData.street !== undefined ? updateData.street : resident.street,
+    subdivision: updateData.subdivision !== undefined ? updateData.subdivision : resident.subdivision,
+    block: updateData.block !== undefined ? updateData.block : resident.block,
+    lot: updateData.lot !== undefined ? updateData.lot : resident.lot,
+    purok_zone: updateData.purok_zone !== undefined ? updateData.purok_zone : resident.purok_zone,
+    sitio: updateData.sitio !== undefined ? updateData.sitio : resident.sitio,
+    emergency_contact_name: updateData.emergency_contact_name !== undefined ? updateData.emergency_contact_name : resident.emergency_contact_name,
+    emergency_contact_number: updateData.emergency_contact_number !== undefined ? updateData.emergency_contact_number : resident.emergency_contact_number
+  };
+
+  await residentRepository.update(account.resident_id, residentUpdatePayload);
+
+  if (updateData.email && String(updateData.email).trim()) {
+    await portalAccountRepository.updateEmail(portalAccountId, String(updateData.email).trim().toLowerCase());
+  }
+
+  const updatedProfile = await portalAccountRepository.findProfileByAccountId(account.account_id);
+  return {
+    success: true,
+    message: 'Profile updated successfully.',
+    data: toPublicAccount(updatedProfile)
+  };
+};
+
+module.exports = { login, getMe, changePassword, forgotPassword, verifyResetCode, resetPassword, updateProfile };
