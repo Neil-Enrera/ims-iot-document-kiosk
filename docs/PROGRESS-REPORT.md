@@ -484,6 +484,15 @@ All 11 backend modules fully implemented with real MySQL queries:
   - Included password match validation indicators and secure form submission.
 - Updated authentication state guards and build configurations; verified 0 Angular build errors and 94/94 backend unit tests passing.
 
+### Online Portal Application Form & Review Screen Simplification
+- **Application Form (`frontend/online-portal/src/app/features/apply/apply.component.ts`)**:
+  - Removed duplicate resident-information summary card (Applicant Name, Resident ID, Contact / Email, Registered Address, Demographics).
+  - Maintained all form field functionality, validations, and auto-population from resident profile records.
+- **Review & Submit Screen (`frontend/online-portal/src/app/features/apply/apply.component.ts`)**:
+  - Removed redundant applicant photo/identity block and all "Delivery" labels/references.
+  - Standardized the review page presentation to match the clean, unified **Service Details** tile layout (`Purpose of Request`, `Registered Address`, and custom form fields in matching white card tiles with small uppercase label headers).
+  - Preserved requirement review, file preview inspection modal, and application submission handlers.
+
 ---
 
 ## Known Issues
@@ -518,7 +527,11 @@ All 11 backend modules fully implemented with real MySQL queries:
 
 | File | Change |
 |------|--------|
-| `frontend/online-portal/src/app/features/auth/login.component.ts` | Updated — Full redesign of Login page UI, responsive feature cards, and modal styling |
+| `frontend/online-portal/src/app/features/apply/apply.component.ts` | Updated — Removed duplicate resident details card; unified Review & Submit into Service Details tile layout without delivery labels |
+| `frontend/online-portal/src/app/features/auth/login.component.ts` | Updated — Full redesign of Login page UI, centered form layout, and modal styling |
 | `frontend/online-portal/src/app/features/auth/change-password.component.ts` | Updated — Full redesign of First-Login Change Password screen with strength meter and requirement checklist |
+| `backend/src/routes/portal-auth.routes.js` | Updated — Registered contact endpoints |
+| `backend/src/controllers/portal-auth.controller.js` | Updated — Added Contact Us controller |
+| `backend/tests/portal-contact.test.js` | Created — Automated integration tests for Contact Us endpoints |
 | `docs/PROGRESS-REPORT.md` | Updated — Recorded session progress and testing status |
 

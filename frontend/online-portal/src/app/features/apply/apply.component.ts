@@ -31,7 +31,7 @@ import { environment } from '../../../environments/environment';
 
         @if (selectedService(); as svc) {
           <span class="text-xs font-semibold text-slate-500">
-            Account: <strong class="text-slate-700">{{ auth.currentUser()?.account_id }}</strong>
+            Resident ID: <strong class="text-slate-700">{{ auth.currentUser()?.resident_code || auth.currentUser()?.account_id }}</strong>
           </span>
         }
       </div>
@@ -259,51 +259,10 @@ import { environment } from '../../../environments/environment';
           <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-slate-100">
               <div>
-                <h2 class="text-xl sm:text-2xl font-black text-slate-900">Application Information</h2>
+                <h2 class="text-xl sm:text-2xl font-black text-slate-900">Application Form</h2>
                 <p class="text-slate-500 text-sm mt-0.5">
-                  Your registered resident profile and address are automatically populated. Review and adjust any details for this request.
+                  Fill in the required information for your <strong class="text-slate-800">{{ svc.service_name }}</strong> request.
                 </p>
-              </div>
-              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold shrink-0 self-start sm:self-auto">
-                <svg class="w-3.5 h-3.5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                </svg>
-                <span>Profile Auto-Filled</span>
-              </span>
-            </div>
-
-            <!-- Pre-filled Resident Profile Summary Card -->
-            <div class="mt-5 rounded-2xl bg-slate-50/70 border border-slate-200 p-4 sm:p-5 text-xs sm:text-sm">
-              <div class="grid sm:grid-cols-3 gap-4">
-                <div>
-                  <span class="text-slate-400 text-[11px] uppercase font-bold block">Applicant Name</span>
-                  <span class="font-bold text-slate-900">{{ residentFullName() }}</span>
-                </div>
-                <div>
-                  <span class="text-slate-400 text-[11px] uppercase font-bold block">Barangay Resident ID</span>
-                  <span class="font-bold text-slate-900 font-mono">{{ auth.currentUser()?.resident_code || 'BSM-RESIDENT' }}</span>
-                </div>
-                <div>
-                  <span class="text-slate-400 text-[11px] uppercase font-bold block">Contact / Email</span>
-                  <span class="font-bold text-slate-900 truncate block">{{ auth.currentUser()?.contact_number || 'N/A' }} &bull; {{ auth.currentUser()?.email || 'N/A' }}</span>
-                </div>
-              </div>
-
-              <div class="mt-3 pt-3 border-t border-slate-200/60 grid sm:grid-cols-2 gap-3">
-                <div>
-                  <span class="text-slate-400 text-[11px] uppercase font-bold block">Registered Address</span>
-                  <span class="font-medium text-slate-800">{{ auth.currentUser()?.address_line || 'Barangay San Manuel, Tarlac' }}</span>
-                </div>
-                <div>
-                  <span class="text-slate-400 text-[11px] uppercase font-bold block">Demographics</span>
-                  <span class="font-medium text-slate-800">
-                    {{ auth.currentUser()?.civil_status || 'Civil Status N/A' }} &bull;
-                    {{ auth.currentUser()?.gender || 'Gender N/A' }}
-                    @if (auth.currentUser()?.birth_date) {
-                      &bull; Born {{ formatDateDisplay(auth.currentUser()?.birth_date) }}
-                    }
-                  </span>
-                </div>
               </div>
             </div>
 
@@ -544,19 +503,21 @@ import { environment } from '../../../environments/environment';
         <!-- ========================================================================= -->
         @if (wizardStep() === 3) {
           <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
-            <h2 class="text-xl sm:text-2xl font-black text-slate-900">Review & Confirm Request</h2>
-            <p class="text-slate-500 text-sm mt-0.5">Please check your details before submitting your request to the barangay.</p>
+            <div class="pb-5 border-b border-slate-100">
+              <h2 class="text-xl sm:text-2xl font-black text-slate-900">Review & Confirm Request</h2>
+              <p class="text-slate-500 text-sm mt-0.5">Please check your details before submitting your request to the barangay.</p>
+            </div>
 
-            <div class="mt-6 rounded-2xl bg-slate-50 border border-slate-200 p-5 space-y-4">
-              <!-- Service & Fee Breakdown -->
-              <div class="flex items-center justify-between pb-3 border-b border-slate-200">
+            <div class="mt-6 rounded-2xl bg-slate-50/70 border border-slate-200 p-5 sm:p-6 space-y-6">
+              <!-- Service & Fee Summary -->
+              <div class="flex items-center justify-between pb-4 border-b border-slate-200/80">
                 <div>
-                  <span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Selected Service</span>
-                  <p class="font-black text-slate-900 text-base">{{ svc.service_name }}</p>
+                  <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Selected Service</span>
+                  <h3 class="font-black text-slate-900 text-base sm:text-lg mt-0.5 uppercase">{{ svc.service_name }}</h3>
                 </div>
                 <div class="text-right">
-                  <span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Fee</span>
-                  <p class="font-black text-orange-600 text-base">
+                  <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Processing Fee</span>
+                  <p class="font-black text-orange-600 text-base sm:text-lg mt-0.5">
                     @if (svc.processing_fee > 0) {
                       ₱{{ svc.processing_fee | number:'1.2-2' }}
                     } @else {
@@ -566,53 +527,37 @@ import { environment } from '../../../environments/environment';
                 </div>
               </div>
 
-              <!-- Resident & Address Summary -->
-              <div class="flex flex-col sm:flex-row sm:items-center gap-4 pb-3 border-b border-slate-200">
-                <div class="flex items-center gap-3.5 min-w-0">
-                  @if (getApplicantPhotoUrl(); as photoSrc) {
-                    <img [src]="resolveFileUrl(photoSrc)" alt="Applicant Photo" class="w-14 h-14 rounded-2xl object-cover border-2 border-orange-300 shadow-xs shrink-0" />
-                  } @else {
-                    <div class="w-14 h-14 rounded-2xl bg-orange-100 border-2 border-orange-200 text-orange-600 flex items-center justify-center font-black text-base shrink-0">
-                      {{ (auth.currentUser()?.first_name || 'R').charAt(0) }}{{ (auth.currentUser()?.last_name || '').charAt(0) }}
+              <!-- Service Details Section (Uniform tile layout matching Service Details) -->
+              <div>
+                <h4 class="text-xs font-black uppercase tracking-wider text-slate-500 mb-3">Service Details</h4>
+                <div class="grid gap-3 sm:grid-cols-2">
+                  <!-- Purpose -->
+                  <div class="sm:col-span-2 bg-white border border-slate-200 rounded-xl p-3.5 shadow-2xs">
+                    <span class="text-slate-400 block font-bold text-[10px] uppercase tracking-wider">Purpose of Request</span>
+                    <span class="font-bold text-slate-800 text-sm mt-0.5 block leading-relaxed">{{ formData['purpose'] || '—' }}</span>
+                  </div>
+
+                  <!-- Registered Address (if present) -->
+                  @if (formData['address']) {
+                    <div class="sm:col-span-2 bg-white border border-slate-200 rounded-xl p-3.5 shadow-2xs">
+                      <span class="text-slate-400 block font-bold text-[10px] uppercase tracking-wider">Registered Address</span>
+                      <span class="font-bold text-slate-800 text-sm mt-0.5 block leading-relaxed">{{ formData['address'] }}</span>
                     </div>
                   }
-                  <div class="min-w-0">
-                    <span class="font-bold text-slate-400 uppercase text-[10px] block tracking-wide">Applicant Name</span>
-                    <p class="text-slate-900 font-extrabold text-sm sm:text-base leading-tight truncate">{{ residentFullName() }}</p>
-                    <p class="text-slate-500 font-mono text-[11px] mt-0.5 truncate">{{ auth.currentUser()?.resident_code || 'RES-00000' }} &bull; {{ auth.currentUser()?.account_id }}</p>
-                  </div>
+
+                  <!-- Dynamic Service Fields -->
+                  @for (item of getReviewFields(); track item.label) {
+                    <div class="bg-white border border-slate-200 rounded-xl p-3.5 shadow-2xs" [class.sm:col-span-2]="item.isFullWidth">
+                      <span class="text-slate-400 block font-bold text-[10px] uppercase tracking-wider">{{ item.label }}</span>
+                      <span class="font-bold text-slate-800 text-sm mt-0.5 block">{{ item.value }}</span>
+                    </div>
+                  }
                 </div>
               </div>
 
-              <div class="grid sm:grid-cols-2 gap-3 text-xs pt-1">
-                <div class="sm:col-span-2">
-                  <span class="font-bold text-slate-400 uppercase text-[11px] block">Delivery / Registered Address</span>
-                  <p class="text-slate-800 font-semibold mt-0.5">{{ formData['address'] || auth.currentUser()?.address_line }}</p>
-                </div>
-                <div class="sm:col-span-2">
-                  <span class="font-bold text-slate-400 uppercase text-[11px] block">Purpose</span>
-                  <p class="text-slate-800 mt-0.5 leading-relaxed font-semibold">{{ formData['purpose'] }}</p>
-                </div>
-              </div>
-
-              <!-- Dynamic Service Field Entries -->
-              @if (getReviewFields().length > 0) {
-                <div class="border-t border-slate-200 pt-3">
-                  <span class="font-bold text-slate-400 uppercase text-[11px] block mb-2">Service Details</span>
-                  <div class="grid sm:grid-cols-2 gap-3 text-xs">
-                    @for (item of getReviewFields(); track item.label) {
-                      <div class="bg-white border border-slate-200 rounded-lg p-2.5">
-                        <span class="text-slate-400 block font-bold text-[10px] uppercase">{{ item.label }}</span>
-                        <span class="font-bold text-slate-800 mt-0.5 block">{{ item.value }}</span>
-                      </div>
-                    }
-                  </div>
-                </div>
-              }
-
-              <!-- Uploaded Requirements List -->
-              <div class="border-t border-slate-200 pt-3">
-                <span class="font-bold text-slate-400 uppercase text-[11px] block mb-2">Attached Digital Requirements</span>
+              <!-- Attached Digital Requirements List -->
+              <div class="pt-5 border-t border-slate-200/80">
+                <h4 class="text-xs font-black uppercase tracking-wider text-slate-500 mb-3">Attached Digital Requirements</h4>
                 @if (uploadedRequirements().length === 0) {
                   <p class="text-xs text-slate-500 italic">No files attached (not required for this service).</p>
                 } @else {
@@ -1274,16 +1219,21 @@ export class ApplyComponent implements OnInit {
     return k === 'address' || k === 'complete_address' || k === 'address_line' || k === 'full_name';
   }
 
-  getReviewFields(): { label: string; value: any }[] {
-    const list: { label: string; value: any }[] = [];
+  getReviewFields(): { label: string; value: any; isFullWidth?: boolean }[] {
+    const list: { label: string; value: any; isFullWidth?: boolean }[] = [];
     const svc = this.selectedService();
     if (!svc) return list;
 
     for (const field of svc.form_fields || []) {
-      if ((field.key || '').toLowerCase() === 'purpose') continue;
+      const k = (field.key || '').toLowerCase();
+      if (k === 'purpose' || k === 'address' || k === 'complete_address' || k === 'address_line') continue;
       const val = this.formData[field.key];
       if (val !== undefined && val !== null && String(val).trim() !== '') {
-        list.push({ label: field.label || field.key, value: val });
+        list.push({
+          label: field.label || field.key,
+          value: field.type === 'date' ? this.formatDateDisplay(val) : val,
+          isFullWidth: this.isFullWidthField(field)
+        });
       }
     }
     return list;
