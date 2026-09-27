@@ -6,17 +6,15 @@ import { RfidScanService } from './rfid-scan.service';
 import { KioskStateService, KioskState } from './kiosk-state.service';
 import { SignaturePadComponent } from './signature-pad.component';
 import { BarangayPreviewModalComponent } from './barangay-preview-modal.component';
-import { DocumentPreviewModalComponent } from './document-preview-modal.component';
 import { ResidentProfileComponent } from './resident-profile.component';
 import { TranslationService, KioskLanguage } from '../../i18n/translation.service';
 import { environment } from '../../../environments/environment';
 
-export type KioskMode = 'home' | 'rfid' | 'guest' | 'documents' | 'barangay';
+export type KioskMode = 'home' | 'rfid' | 'documents' | 'barangay';
 
-// Documents flow (shared by RFID-resident and guest temporary sessions)
+// Documents flow (RFID-authenticated resident session)
 export type DocStep =
-  | 'welcome'     // 0: resident welcome (RFID path only)
-  | 'guest-info'  // 0: guest basic info (temporary session path only)
+  | 'welcome'     // 0: resident profile & service hub
   | 'services'    // 1: select service
   | 'requirements'// 2: show service requirements
   | 'form'        // 3: dynamic form
@@ -39,7 +37,7 @@ export type BarangayStep =
 @Component({
   selector: 'app-kiosk',
   standalone: true,
-  imports: [CommonModule, FormsModule, SignaturePadComponent, BarangayPreviewModalComponent, DocumentPreviewModalComponent, ResidentProfileComponent],
+  imports: [CommonModule, FormsModule, SignaturePadComponent, BarangayPreviewModalComponent, ResidentProfileComponent],
   template: `
     <div class="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 text-white select-none flex">
 
@@ -106,22 +104,22 @@ export type BarangayStep =
                   </div>
                 </button>
 
-                <!-- Card 2: Continue Without Barangay ID -->
+                <!-- Card 2: Apply for Barangay ID -->
                 <button
-                  (click)="continueWithout()"
+                  (click)="startBarangay()"
                   class="group flex items-center gap-5 lg:gap-8 rounded-[18px] border border-[#F97316]/60 bg-white p-6 lg:p-8 text-left hover:shadow-md hover:border-[#F97316] transition-all duration-200 shadow-sm flex-1 min-w-[min(100%,320px)] max-w-[560px]">
                   <div class="shrink-0 w-16 h-16 lg:w-[72px] lg:h-[72px] rounded-xl bg-[#FFF7ED] flex items-center justify-center">
                     <svg class="w-10 h-10 lg:w-11 lg:h-11 text-[#F97316] transition-transform group-hover:scale-105" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                      <!-- Person + document/certificate -->
-                      <circle cx="9" cy="8" r="3.5"/>
-                      <path d="M4 20c0-3.3 2.2-5 5-5s5 1.7 5 5"/>
-                      <rect x="13" y="6" width="9" height="12" rx="1.5"/>
-                      <path d="M15 10h5M15 13h5M15 16h4"/>
+                      <!-- Person + ID card application -->
+                      <rect x="3" y="4" width="18" height="16" rx="3"/>
+                      <circle cx="9" cy="10" r="2.5"/>
+                      <path d="M5.5 16.5c0-1.8 1.6-3 3.5-3s3.5 1.2 3.5 3"/>
+                      <path d="M15 9h4M15 12h4M15 15h2" stroke-linecap="round"/>
                     </svg>
                   </div>
                   <div class="flex-1 min-w-0">
-                    <p class="text-[clamp(1.25rem,2.4vw,1.625rem)] font-bold text-[#0F172A] pb-2 lg:pb-3 leading-snug">{{ t('landing.continue.title') }}</p>
-                    <p class="text-[clamp(0.95rem,1.6vw,1.125rem)] text-[#64748B] leading-snug font-normal">{{ t('landing.continue.desc') }}</p>
+                    <p class="text-[clamp(1.25rem,2.4vw,1.625rem)] font-bold text-[#0F172A] pb-2 lg:pb-3 leading-snug">{{ t('landing.applyId.title') }}</p>
+                    <p class="text-[clamp(0.95rem,1.6vw,1.125rem)] text-[#64748B] leading-snug font-normal">{{ t('landing.applyId.desc') }}</p>
                   </div>
                   <div class="shrink-0 w-12 h-12 lg:w-14 lg:h-14 rounded-full bg-[#F97316] flex items-center justify-center shadow-sm ml-1 group-hover:shadow transition-shadow">
                     <svg class="w-6 h-6 lg:w-7 lg:h-7 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
@@ -329,9 +327,9 @@ export type BarangayStep =
                   </button>
 
                   <!-- Secondary action -->
-                  <button (click)="continueWithout()"
+                  <button (click)="startBarangay()"
                           class="mt-5 sm:mt-6 min-h-[56px] px-8 text-[#F97316] hover:text-[#EA580C] text-base sm:text-lg font-semibold hover:underline underline-offset-4 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[#F97316]/40">
-                    {{ t('rfid.continueWithout') }}
+                    {{ t('landing.applyId.title') }}
                   </button>
                 </div>
               </div>
@@ -408,14 +406,14 @@ export type BarangayStep =
                         <span>{{ t('common.scanAgain') }}</span>
                       </button>
 
-                      <!-- Continue Without Barangay ID: white with orange border -->
-                      <button (click)="continueWithout()"
+                      <!-- Apply for Barangay ID: white with orange border -->
+                      <button (click)="startBarangay()"
                               class="flex items-center justify-center gap-3 min-h-[58px] sm:min-h-[64px] px-6 rounded-2xl bg-white border-2 border-[#F97316] hover:bg-[#FFF7ED] active:scale-[0.98] text-[#0F172A] text-base sm:text-lg font-bold shadow-sm transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/20">
                         <!-- Person outline icon -->
                         <svg class="w-6 h-6 shrink-0 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
                         </svg>
-                        <span class="text-left leading-tight">{{ t('rfid.continueWithout') }}</span>
+                        <span class="text-left leading-tight">{{ t('landing.applyId.title') }}</span>
                       </button>
                     </div>
 
@@ -577,162 +575,7 @@ export type BarangayStep =
           }
         }
 
-        <!-- ============ GUEST: Continue Without Barangay ID options ============ -->
-        @if (mode() === 'guest') {
-          <div class="absolute inset-0 bg-[#F8FAFC] text-[#0F172A] select-none overflow-hidden [font-family:'Inter',sans-serif] flex flex-col">
 
-            <!-- Background image (same as the kiosk landing page) -->
-            <div class="absolute inset-0 bg-cover bg-center pointer-events-none" style="background-image: url('Background.png')" aria-hidden="true"></div>
-            <!-- Subtle radial glow keeps the text legible without washing the orange -->
-            <div class="absolute inset-0 pointer-events-none" aria-hidden="true"
-                 style="background: radial-gradient(ellipse 72% 58% at 50% 42%, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0.35) 55%, rgba(255,255,255,0.05) 100%);"></div>
-            <!-- Curved orange header accent (top-left, same as landing) -->
-            <div class="absolute top-0 left-0 w-64 h-40 pointer-events-none" aria-hidden="true">
-              <svg viewBox="0 0 256 160" class="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M0 0 H256 V40 C256 128 220 160 176 160 H0 Z" fill="#F97316" opacity="0.12"/>
-              </svg>
-            </div>
-
-            <!-- Back button (pinned top-left: circular icon + "Back" text outside) -->
-            <div class="fixed top-4 left-4 z-40 flex items-center gap-2.5 sm:gap-3">
-              <button (click)="goBack()"
-                      class="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px] rounded-full border-2 border-[#F97316]/60 bg-white flex items-center justify-center shadow-sm hover:bg-[#FFF7ED] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30"
-                      [attr.aria-label]="t('common.back')">
-                <svg class="w-6 h-6 sm:w-7 sm:h-7 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-                </svg>
-              </button>
-              <button (click)="goBack()"
-                      class="flex items-center min-h-[44px] rounded-xl px-1 text-[#0F172A] font-semibold text-[15px] sm:text-base hover:text-[#F97316] transition-colors focus:outline-none focus:ring-2 focus:ring-[#F97316]/40">
-                {{ t('common.back') }}
-              </button>
-            </div>
-
-            <!-- Main content -->
-            <div class="relative flex-1 overflow-y-auto">
-              <div class="min-h-full flex flex-col items-center justify-center px-4 sm:px-8 py-6 sm:py-10">
-
-                <!-- Centered logo + title -->
-                <div class="text-center mb-6 sm:mb-10 mt-10 sm:mt-6">
-                  <div class="mx-auto mb-5 sm:mb-6 w-[clamp(84px,11vw,116px)] h-[clamp(84px,11vw,116px)] rounded-full bg-white border-2 border-[#F97316]/40 overflow-hidden flex items-center justify-center shadow-sm">
-                    <img src="Barangay Logo.png" alt="Barangay San Manuel logo" class="w-full h-full object-cover">
-                  </div>
-                  <h1 class="text-[clamp(1.75rem,4vw,2.5rem)] font-bold tracking-tight text-[#0F172A] leading-tight">{{ t('guest.title') }}</h1>
-                  <p class="text-[clamp(1rem,1.9vw,1.25rem)] font-medium text-[#64748B] mt-2.5 sm:mt-3 px-2">{{ t('guest.subtitle') }}</p>
-                </div>
-
-                <!-- Two horizontal cards (same responsive layout as the landing page) -->
-                <div class="flex flex-wrap justify-center items-stretch gap-5 sm:gap-8 lg:gap-10 w-full max-w-6xl mb-5 sm:mb-6">
-
-                  <!-- Card 1: Request Documents -->
-                  <button class="group flex items-center gap-5 lg:gap-8 rounded-[18px] border border-[#F97316]/50 bg-white p-6 lg:p-8 shadow-sm hover:shadow-md hover:border-[#F97316] transition-all duration-200 text-left flex-1 min-w-[min(100%,320px)] max-w-[560px]"
-                          (click)="startGuestRequest()">
-                    <div class="shrink-0 w-16 h-16 lg:w-[72px] lg:h-[72px] rounded-xl bg-[#FFF7ED] flex items-center justify-center">
-                      <svg class="w-10 h-10 lg:w-11 lg:h-11 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
-                      </svg>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                      <p class="text-[clamp(1.25rem,2.4vw,1.625rem)] font-bold text-[#0F172A] pb-2 lg:pb-3 leading-snug">{{ t('guest.requestDocs.title') }}</p>
-                      <p class="text-[clamp(0.95rem,1.6vw,1.125rem)] text-[#64748B] leading-snug font-normal">{{ t('guest.requestDocs.desc') }}</p>
-                    </div>
-                    <div class="shrink-0 w-12 h-12 lg:w-14 lg:h-14 rounded-full bg-[#F97316] flex items-center justify-center shadow-sm group-hover:shadow transition-all ml-1">
-                      <svg class="w-6 h-6 lg:w-7 lg:h-7 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-                      </svg>
-                    </div>
-                  </button>
-
-                  <!-- Card 2: Apply for Barangay ID -->
-                  <button class="group flex items-center gap-5 lg:gap-8 rounded-[18px] border border-[#F97316]/50 bg-white p-6 lg:p-8 shadow-sm hover:shadow-md hover:border-[#F97316] transition-all duration-200 text-left flex-1 min-w-[min(100%,320px)] max-w-[560px]"
-                          (click)="startBarangay()">
-                    <div class="shrink-0 w-16 h-16 lg:w-[72px] lg:h-[72px] rounded-xl bg-[#FFF7ED] flex items-center justify-center">
-                      <svg class="w-10 h-10 lg:w-11 lg:h-11 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5zm6-10.125a1.875 1.875 0 11-3.75 0 1.875 1.875 0 013.75 0zm1.294 6.336a6.721 6.721 0 01-3.17.789 6.721 6.721 0 01-3.168-.789 3.376 3.376 0 016.338 0z"/>
-                      </svg>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                      <p class="text-[clamp(1.25rem,2.4vw,1.625rem)] font-bold text-[#0F172A] pb-2 lg:pb-3 leading-snug">{{ t('guest.applyId.title') }}</p>
-                      <p class="text-[clamp(0.95rem,1.6vw,1.125rem)] text-[#64748B] leading-snug font-normal">{{ t('guest.applyId.desc') }}</p>
-                    </div>
-                    <div class="shrink-0 w-12 h-12 lg:w-14 lg:h-14 rounded-full bg-[#F97316] flex items-center justify-center shadow-sm group-hover:shadow transition-all ml-1">
-                      <svg class="w-6 h-6 lg:w-7 lg:h-7 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-                      </svg>
-                    </div>
-                  </button>
-                </div>
-
-                <!-- Information card -->
-                <div class="flex items-start gap-3 w-full max-w-6xl bg-white/95 border border-[#E5E7EB] rounded-2xl px-4 sm:px-6 py-4 sm:py-5 shadow-sm">
-                  <div class="w-11 h-11 rounded-full bg-[#F8FAFC] border border-[#E5E7EB] flex items-center justify-center shrink-0">
-                    <svg class="w-6 h-6 text-[#64748B]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <circle cx="12" cy="12" r="9"/>
-                      <path d="M12 16v-4M12 8h.01" stroke-linecap="round"/>
-                    </svg>
-                  </div>
-                  <p class="text-sm sm:text-base text-[#64748B] leading-snug pt-1.5">{{ t('guest.info') }}</p>
-                </div>
-              </div>
-            </div>
-
-            <!-- Footer: four sections, outline icons only -->
-            <div class="relative border-t border-[#E5E7EB] bg-white/95 backdrop-blur-sm">
-              <div class="max-w-5xl mx-auto px-4 sm:px-8 py-1.5 lg:py-2 grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-2 lg:gap-y-3 items-center">
-
-                <!-- Need Assistance -->
-                <div class="flex flex-col items-center gap-1 text-center min-w-0">
-                  <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="9"/>
-                    <path d="M9.5 9a2.5 2.5 0 114.6 1.3c-.8 1-1.9 1.7-1.9 3.2" stroke-linecap="round"/>
-                    <path d="M12 17h.01" stroke-linecap="round"/>
-                  </svg>
-                  <div>
-                    <p class="text-[13px] lg:text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.assistance') }}</p>
-                    <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.assistanceDesc') }}</p>
-                  </div>
-                </div>
-
-                <!-- Office Hours -->
-                <div class="flex flex-col items-center gap-1 text-center min-w-0">
-                  <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="9"/>
-                    <path d="M12 7v5l3 2" stroke-linecap="round"/>
-                  </svg>
-                  <div>
-                    <p class="text-[13px] lg:text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.hours') }}</p>
-                    <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.monFri') }}</p>
-                    <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.hoursRange') }}</p>
-                  </div>
-                </div>
-
-                <!-- Current Date -->
-                <div class="flex flex-col items-center gap-1 text-center min-w-0">
-                  <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                    <rect x="3" y="5" width="18" height="16" rx="2"/>
-                    <path d="M8 3v4M16 3v4M3 10h18"/>
-                  </svg>
-                  <div class="min-w-0">
-                    <p class="text-[13px] lg:text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.date') }}</p>
-                    <p class="text-[11px] lg:text-[12px] text-[#64748B] leading-snug">{{ formatFooterDate() }}</p>
-                  </div>
-                </div>
-
-                <!-- Current Time -->
-                <div class="flex flex-col items-center gap-1 text-center min-w-0">
-                  <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="9"/>
-                    <path d="M12 7v5l3 2" stroke-linecap="round"/>
-                  </svg>
-                  <div class="min-w-0">
-                    <p class="text-[13px] lg:text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.time') }}</p>
-                    <p class="text-base lg:text-lg font-bold text-[#F97316] leading-tight">{{ formatFooterTime() }}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        }
 
         <!-- ============ DOCUMENTS: Request flow (resident + guest temporary session) ============ -->
         @if (mode() === 'documents') {
@@ -745,487 +588,7 @@ export type BarangayStep =
                [language]="language()"
                (onBack)="goBack()"
                (onContinue)="proceedToServices()"
-               (onUpdateResident)="onResidentUpdated($event)"
                (languageChange)="setLanguage($event)"></app-resident-profile>
-          }
-
-          <!-- DOC STEP 0b: Guest basic info (temporary session only) -->
-          @if (currentStep() === 'guest-info') {
-            <div class="absolute inset-0 bg-[#F8FAFC] text-[#0F172A] select-none overflow-hidden [font-family:'Inter',sans-serif] flex flex-col">
-
-              <!-- Background image (same as the kiosk landing page) -->
-              <div class="absolute inset-0 bg-cover bg-center pointer-events-none" style="background-image: url('Background.png')" aria-hidden="true"></div>
-              <!-- Subtle radial glow keeps the form legible without washing the orange -->
-              <div class="absolute inset-0 pointer-events-none" aria-hidden="true"
-                   style="background: radial-gradient(ellipse 72% 58% at 50% 42%, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0.35) 55%, rgba(255,255,255,0.05) 100%);"></div>
-              <!-- Curved orange header accent (top-left, same as landing) -->
-              <div class="absolute top-0 left-0 w-64 h-40 pointer-events-none" aria-hidden="true">
-                <svg viewBox="0 0 256 160" class="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M0 0 H256 V80 C256 124 220 160 176 160 H0 Z" fill="#F97316" opacity="0.12"/>
-                </svg>
-              </div>
-
-              <!-- Top navigation: back (left) + logo (center) -->
-              <div class="relative z-10 flex items-center justify-center px-6 pt-[18px] pb-2">
-                <div class="absolute left-4 sm:left-6 top-[26px] z-40 flex items-center gap-2.5 sm:gap-3">
-                  <button (click)="goBack()"
-                          class="w-[48px] h-[48px] sm:w-[52px] sm:h-[52px] rounded-full border-2 border-[#F97316]/60 bg-white flex items-center justify-center shadow-sm hover:bg-[#FFF7ED] active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/30"
-                          [attr.aria-label]="t('common.back')">
-                    <svg class="w-6 h-6 sm:w-7 sm:h-7 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-                    </svg>
-                  </button>
-                  <button (click)="goBack()"
-                          class="flex items-center min-h-[44px] rounded-xl px-1 text-[#0F172A] font-semibold text-[15px] sm:text-base hover:text-[#F97316] transition-colors focus:outline-none focus:ring-2 focus:ring-[#F97316]/40">
-                    {{ t('common.back') }}
-                  </button>
-                </div>
-
-                <div class="w-[76px] h-[76px] sm:w-[88px] sm:h-[88px] rounded-full bg-white border-2 border-[#F97316]/30 shadow-sm overflow-hidden flex items-center justify-center">
-                  <img src="Barangay Logo.png" alt="Barangay San Manuel logo" class="w-full h-full object-cover">
-                </div>
-              </div>
-
-              <!-- Progress indicator -->
-              <div class="relative z-10 flex items-center justify-center px-4 pb-1">
-                <ol class="flex items-center gap-1.5 sm:gap-2.5" aria-label="Kiosk progress">
-                  <li class="flex items-center gap-1.5 sm:gap-2.5">
-                    <span class="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-base sm:text-lg font-bold text-white bg-[#F97316] border-2 border-[#F97316] shadow-sm" aria-hidden="true">1</span>
-                    <span class="hidden lg:block text-[14px] font-bold text-[#0F172A] whitespace-nowrap">{{ t('progress.yourInfo') }}</span>
-                  </li>
-                  <li class="flex items-center gap-1.5 sm:gap-2.5" aria-hidden="true">
-                    <span class="w-6 sm:w-10 h-[3px] rounded-full bg-[#E5E7EB]"></span>
-                    <span class="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-base sm:text-lg font-bold text-[#94A3B8] bg-white border-2 border-[#CBD5E1]">2</span>
-                    <span class="hidden lg:block text-[14px] font-medium text-[#64748B] whitespace-nowrap">{{ t('progress.selectDoc') }}</span>
-                  </li>
-                  <li class="flex items-center gap-1.5 sm:gap-2.5" aria-hidden="true">
-                    <span class="w-6 sm:w-10 h-[3px] rounded-full bg-[#E5E7EB]"></span>
-                    <span class="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-base sm:text-lg font-bold text-[#94A3B8] bg-white border-2 border-[#CBD5E1]">3</span>
-                    <span class="hidden lg:block text-[14px] font-medium text-[#64748B] whitespace-nowrap">{{ t('progress.review') }}</span>
-                  </li>
-                  <li class="flex items-center gap-1.5 sm:gap-2.5" aria-hidden="true">
-                    <span class="w-6 sm:w-10 h-[3px] rounded-full bg-[#E5E7EB]"></span>
-                    <span class="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-base sm:text-lg font-bold text-[#94A3B8] bg-white border-2 border-[#CBD5E1]">4</span>
-                    <span class="hidden lg:block text-[14px] font-medium text-[#64748B] whitespace-nowrap">{{ t('progress.submit') }}</span>
-                  </li>
-                </ol>
-              </div>
-
-              <!-- Main content -->
-              <div class="relative flex-1 overflow-y-auto">
-                <div class="min-h-full flex items-center justify-center px-5 sm:px-10 py-5 sm:py-8">
-
-                  <div class="w-full max-w-[840px]">
-
-                    <!-- Page header -->
-                    <div class="text-center mb-5 sm:mb-7">
-                      <h1 class="text-[clamp(1.375rem,2.2vw,2rem)] font-bold tracking-tight text-[#0F172A] leading-tight">{{ t('doc.guestInfo.title') }}</h1>
-                      <p class="text-[clamp(0.925rem,1.1vw,1.075rem)] font-medium text-[#64748B] mt-1.5 sm:mt-2">{{ t('doc.guestInfo.desc') }}</p>
-                    </div>
-
-                    <!-- Form card -->
-                    <div class="bg-white border border-[#E5E7EB] rounded-[20px] shadow-[0_2px_14px_rgba(15,23,42,0.07)] px-5 sm:px-8 py-5 sm:py-7">
-                      
-                      <!-- Personal Information Section (2 columns on tablet/desktop) -->
-                      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-                        
-                        <!-- First Name -->
-                        <div>
-                          <label for="guest-firstName" class="block text-[14px] sm:text-[15px] font-semibold text-[#0F172A] mb-1.5">
-                            {{ t('doc.guestInfo.firstName') }} <span class="text-[#F97316]">*</span>
-                          </label>
-                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
-                               [class.border-[#DC2626]]="guestInvalid('firstName')">
-                            <input id="guest-firstName" type="text" name="firstName"
-                                   [value]="guestForm.firstName || ''"
-                                   (keydown)="filterNameKeyDown($event)"
-                                   (input)="onGuestNameFieldInput('firstName', $event)"
-                                   (paste)="onGuestNameFieldPaste('firstName', $event)"
-                                   [placeholder]="t('doc.guestInfo.firstNamePh')" autocomplete="given-name" maxlength="50"
-                                   class="flex-1 min-w-0 px-3.5 sm:px-4 py-2.5 sm:py-3 text-[15px] sm:text-[16px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
-                          </div>
-                          @if (guestInvalid('firstName')) {
-                            <p class="mt-1 text-xs sm:text-sm font-medium text-[#B91C1C]">{{ t('err.invalidName', { field: t('doc.guestInfo.firstName') }) }}</p>
-                          }
-                        </div>
-
-                        <!-- Middle Name -->
-                        <div>
-                          <label for="guest-middleName" class="block text-[14px] sm:text-[15px] font-semibold text-[#0F172A] mb-1.5">
-                            {{ t('doc.guestInfo.middleName') }}
-                          </label>
-                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
-                               [class.border-[#DC2626]]="guestInvalid('middleName')">
-                            <input id="guest-middleName" type="text" name="middleName"
-                                   [value]="guestForm.middleName || ''"
-                                   (keydown)="filterNameKeyDown($event)"
-                                   (input)="onGuestNameFieldInput('middleName', $event)"
-                                   (paste)="onGuestNameFieldPaste('middleName', $event)"
-                                   [placeholder]="t('doc.guestInfo.middleNamePh')" autocomplete="additional-name" maxlength="50"
-                                   class="flex-1 min-w-0 px-3.5 sm:px-4 py-2.5 sm:py-3 text-[15px] sm:text-[16px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
-                          </div>
-                          @if (guestInvalid('middleName')) {
-                            <p class="mt-1 text-xs sm:text-sm font-medium text-[#B91C1C]">{{ t('err.invalidName', { field: t('doc.guestInfo.middleName') }) }}</p>
-                          }
-                        </div>
-
-                        <!-- Last Name -->
-                        <div>
-                          <label for="guest-lastName" class="block text-[14px] sm:text-[15px] font-semibold text-[#0F172A] mb-1.5">
-                            {{ t('doc.guestInfo.lastName') }} <span class="text-[#F97316]">*</span>
-                          </label>
-                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
-                               [class.border-[#DC2626]]="guestInvalid('lastName')">
-                            <input id="guest-lastName" type="text" name="lastName"
-                                   [value]="guestForm.lastName || ''"
-                                   (keydown)="filterNameKeyDown($event)"
-                                   (input)="onGuestNameFieldInput('lastName', $event)"
-                                   (paste)="onGuestNameFieldPaste('lastName', $event)"
-                                   [placeholder]="t('doc.guestInfo.lastNamePh')" autocomplete="family-name" maxlength="50"
-                                   class="flex-1 min-w-0 px-3.5 sm:px-4 py-2.5 sm:py-3 text-[15px] sm:text-[16px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
-                          </div>
-                          @if (guestInvalid('lastName')) {
-                            <p class="mt-1 text-xs sm:text-sm font-medium text-[#B91C1C]">{{ t('err.invalidName', { field: t('doc.guestInfo.lastName') }) }}</p>
-                          }
-                        </div>
-
-                        <!-- Suffix -->
-                        <div>
-                          <label for="guest-suffix" class="block text-[14px] sm:text-[15px] font-semibold text-[#0F172A] mb-1.5">
-                            {{ t('doc.guestInfo.suffix') }}
-                          </label>
-                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden">
-                            <input id="guest-suffix" type="text" name="suffix"
-                                   [(ngModel)]="guestForm.suffix"
-                                   [placeholder]="t('doc.guestInfo.suffixPh')" maxlength="20"
-                                   class="flex-1 min-w-0 px-3.5 sm:px-4 py-2.5 sm:py-3 text-[15px] sm:text-[16px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
-                          </div>
-                        </div>
-
-                        <!-- Birth Date -->
-                        <div>
-                          <label for="guest-birthDate" class="block text-[14px] sm:text-[15px] font-semibold text-[#0F172A] mb-1.5">
-                            {{ t('doc.guestInfo.birthDate') }} <span class="text-[#F97316]">*</span>
-                          </label>
-                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
-                               [class.border-[#DC2626]]="guestInvalid('birthDate')">
-                            <input id="guest-birthDate" type="date" name="birthDate" [(ngModel)]="guestForm.birthDate"
-                                   (ngModelChange)="onDobChange($event)"
-                                   (change)="onDobChange($event)"
-                                   [placeholder]="t('doc.guestInfo.birthDatePh')" [max]="maxBirthDateString()"
-                                   class="flex-1 min-w-0 px-3.5 sm:px-4 py-2.5 sm:py-3 text-[15px] sm:text-[16px] font-medium text-[#0F172A] bg-transparent outline-none border-none" />
-                          </div>
-                          @if (guestInvalid('birthDate')) {
-                            <p class="mt-1 text-xs sm:text-sm font-medium text-[#B91C1C]">{{ getGuestDobErrorMessage() }}</p>
-                          }
-                        </div>
-
-                        <!-- Birth Place -->
-                        <div>
-                          <label for="guest-birthPlace" class="block text-[14px] sm:text-[15px] font-semibold text-[#0F172A] mb-1.5">
-                            {{ t('doc.guestInfo.birthPlace') }}
-                          </label>
-                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden">
-                            <input id="guest-birthPlace" type="text" name="birthPlace" [(ngModel)]="guestForm.birthPlace"
-                                   [placeholder]="t('doc.guestInfo.birthPlacePh')" maxlength="100"
-                                   class="flex-1 min-w-0 px-3.5 sm:px-4 py-2.5 sm:py-3 text-[15px] sm:text-[16px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
-                          </div>
-                        </div>
-
-                        <!-- Gender -->
-                        <div>
-                          <label for="guest-gender" class="block text-[14px] sm:text-[15px] font-semibold text-[#0F172A] mb-1.5">
-                            {{ t('doc.guestInfo.gender') }}
-                          </label>
-                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden px-3 sm:px-4 py-1.5 sm:py-2">
-                            <select id="guest-gender" name="gender" [(ngModel)]="guestForm.gender"
-                                    class="w-full text-[15px] sm:text-[16px] text-[#0F172A] bg-transparent outline-none border-none">
-                              <option value="Male">Male</option>
-                              <option value="Female">Female</option>
-                              <option value="Other">Other</option>
-                            </select>
-                          </div>
-                        </div>
-
-                        <!-- Civil Status -->
-                        <div>
-                          <label for="guest-civilStatus" class="block text-[14px] sm:text-[15px] font-semibold text-[#0F172A] mb-1.5">
-                            {{ t('doc.guestInfo.civilStatus') }}
-                          </label>
-                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden px-3 sm:px-4 py-1.5 sm:py-2">
-                            <select id="guest-civilStatus" name="civilStatus" [(ngModel)]="guestForm.civilStatus"
-                                    class="w-full text-[15px] sm:text-[16px] text-[#0F172A] bg-transparent outline-none border-none">
-                              <option value="Single">Single</option>
-                              <option value="Married">Married</option>
-                              <option value="Widowed">Widowed</option>
-                              <option value="Separated">Separated</option>
-                              <option value="Divorced">Divorced</option>
-                            </select>
-                          </div>
-                        </div>
-
-                        <!-- Nationality -->
-                        <div>
-                          <label for="guest-nationality" class="block text-[14px] sm:text-[15px] font-semibold text-[#0F172A] mb-1.5">
-                            {{ t('doc.guestInfo.nationality') }}
-                          </label>
-                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden">
-                            <input id="guest-nationality" type="text" name="nationality" [(ngModel)]="guestForm.nationality"
-                                   [placeholder]="t('doc.guestInfo.nationalityPh')" maxlength="50"
-                                   class="flex-1 min-w-0 px-3.5 sm:px-4 py-2.5 sm:py-3 text-[15px] sm:text-[16px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
-                          </div>
-                        </div>
-
-                        <!-- Religion -->
-                        <div>
-                          <label for="guest-religion" class="block text-[14px] sm:text-[15px] font-semibold text-[#0F172A] mb-1.5">
-                            {{ t('doc.guestInfo.religion') }}
-                          </label>
-                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden">
-                            <input id="guest-religion" type="text" name="religion" [(ngModel)]="guestForm.religion"
-                                   [placeholder]="t('doc.guestInfo.religionPh')" maxlength="50"
-                                   class="flex-1 min-w-0 px-3.5 sm:px-4 py-2.5 sm:py-3 text-[15px] sm:text-[16px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
-                          </div>
-                        </div>
-
-                        <!-- Occupation -->
-                        <div>
-                          <label for="guest-occupation" class="block text-[14px] sm:text-[15px] font-semibold text-[#0F172A] mb-1.5">
-                            {{ t('doc.guestInfo.occupation') }}
-                          </label>
-                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden">
-                            <input id="guest-occupation" type="text" name="occupation" [(ngModel)]="guestForm.occupation"
-                                   [placeholder]="t('doc.guestInfo.occupationPh')" maxlength="100"
-                                   class="flex-1 min-w-0 px-3.5 sm:px-4 py-2.5 sm:py-3 text-[15px] sm:text-[16px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
-                          </div>
-                        </div>
-
-                        <!-- Contact Number -->
-                        <div>
-                          <label for="guest-contactNumber" class="block text-[14px] sm:text-[15px] font-semibold text-[#0F172A] mb-1.5">
-                            {{ t('doc.guestInfo.contact') }} <span class="text-[#F97316]">*</span>
-                          </label>
-                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
-                               [class.border-[#DC2626]]="guestInvalid('contactNumber')">
-                            <input id="guest-contactNumber" type="tel" name="contactNumber"
-                                   [value]="guestForm.contactNumber || ''"
-                                   (keydown)="filterNumberKeyDown($event)"
-                                   (input)="onGuestPhoneInput($event)"
-                                   (paste)="onGuestPhonePaste($event)"
-                                   [placeholder]="t('doc.guestInfo.contactPh')" autocomplete="tel" inputmode="numeric" maxlength="11"
-                                   class="flex-1 min-w-0 px-3.5 sm:px-4 py-2.5 sm:py-3 text-[15px] sm:text-[16px] font-medium text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
-                          </div>
-                          @if (guestInvalid('contactNumber')) {
-                            <p class="mt-1 text-xs sm:text-sm font-medium text-[#B91C1C]">{{ t('err.invalidPhone', { field: t('doc.guestInfo.contact') }) }}</p>
-                          }
-                        </div>
-
-                        <!-- Email -->
-                        <div class="md:col-span-2">
-                          <label for="guest-email" class="block text-[14px] sm:text-[15px] font-semibold text-[#0F172A] mb-1.5">
-                            {{ t('doc.guestInfo.email') }}
-                          </label>
-                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
-                               [class.border-[#DC2626]]="guestInvalid('email')">
-                            <input id="guest-email" type="email" name="email" [(ngModel)]="guestForm.email"
-                                   [placeholder]="t('doc.guestInfo.emailPh')" autocomplete="email" inputmode="email" maxlength="100"
-                                   class="flex-1 min-w-0 px-3.5 sm:px-4 py-2.5 sm:py-3 text-[15px] sm:text-[16px] font-medium text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
-                          </div>
-                          @if (guestInvalid('email')) {
-                            <p class="mt-1 text-xs sm:text-sm font-medium text-[#B91C1C]">{{ t('err.invalidEmail', { field: 'Email' }) }}</p>
-                          }
-                        </div>
-                      </div>
-
-                      <!-- Divider -->
-                      <div class="border-t border-slate-200 mt-6 pt-5">
-                        
-                        <!-- Address Header -->
-                        <div class="mb-3.5">
-                          <h3 class="text-[16px] sm:text-[17px] font-bold text-[#0F172A]">{{ t('doc.guestInfo.addressSection') }}</h3>
-                        </div>
-
-                        <!-- Address Inputs (3-column grid) -->
-                        <div class="grid grid-cols-2 md:grid-cols-3 gap-3.5 sm:gap-4">
-                          <div>
-                            <label for="guest-subdivision" class="block text-[13px] sm:text-[14px] font-semibold text-[#0F172A] mb-1">{{ t('doc.guestInfo.subdivision') }}</label>
-                            <div class="rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm focus-within:border-[#F97316] overflow-hidden">
-                              <input id="guest-subdivision" type="text" [value]="guestForm.subdivision" (input)="updateGuestAddressField('subdivision', $any($event.target).value)" maxlength="100" [placeholder]="t('doc.guestInfo.subdivisionPh')" class="w-full px-3 py-2 text-[14px] sm:text-[15px] text-[#0F172A] bg-transparent outline-none" />
-                            </div>
-                          </div>
-                          <div>
-                            <label for="guest-street" class="block text-[13px] sm:text-[14px] font-semibold text-[#0F172A] mb-1">{{ t('doc.guestInfo.street') }}</label>
-                            <div class="rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm focus-within:border-[#F97316] overflow-hidden">
-                              <input id="guest-street" type="text" [value]="guestForm.street" (input)="updateGuestAddressField('street', $any($event.target).value)" maxlength="100" [placeholder]="t('doc.guestInfo.streetPh')" class="w-full px-3 py-2 text-[14px] sm:text-[15px] text-[#0F172A] bg-transparent outline-none" />
-                            </div>
-                          </div>
-                          <div>
-                            <label for="guest-block" class="block text-[13px] sm:text-[14px] font-semibold text-[#0F172A] mb-1">{{ t('doc.guestInfo.block') }}</label>
-                            <div class="rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm focus-within:border-[#F97316] overflow-hidden">
-                              <input id="guest-block" type="text" [value]="guestForm.block" (input)="updateGuestAddressField('block', $any($event.target).value)" maxlength="50" [placeholder]="t('doc.guestInfo.blockPh')" class="w-full px-3 py-2 text-[14px] sm:text-[15px] text-[#0F172A] bg-transparent outline-none" />
-                            </div>
-                          </div>
-                          <div>
-                            <label for="guest-lot" class="block text-[13px] sm:text-[14px] font-semibold text-[#0F172A] mb-1">{{ t('doc.guestInfo.lot') }}</label>
-                            <div class="rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm focus-within:border-[#F97316] overflow-hidden">
-                              <input id="guest-lot" type="text" [value]="guestForm.lot" (input)="updateGuestAddressField('lot', $any($event.target).value)" maxlength="50" [placeholder]="t('doc.guestInfo.lotPh')" class="w-full px-3 py-2 text-[14px] sm:text-[15px] text-[#0F172A] bg-transparent outline-none" />
-                            </div>
-                          </div>
-                          <div>
-                            <label for="guest-purokZone" class="block text-[13px] sm:text-[14px] font-semibold text-[#0F172A] mb-1">{{ t('doc.guestInfo.purokZone') }}</label>
-                            <div class="rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm focus-within:border-[#F97316] overflow-hidden">
-                              <input id="guest-purokZone" type="text" [value]="guestForm.purokZone" (input)="updateGuestAddressField('purokZone', $any($event.target).value)" maxlength="100" [placeholder]="t('doc.guestInfo.purokZonePh')" class="w-full px-3 py-2 text-[14px] sm:text-[15px] text-[#0F172A] bg-transparent outline-none" />
-                            </div>
-                          </div>
-                          <div>
-                            <label for="guest-sitio" class="block text-[13px] sm:text-[14px] font-semibold text-[#0F172A] mb-1">{{ t('doc.guestInfo.sitio') }}</label>
-                            <div class="rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm focus-within:border-[#F97316] overflow-hidden">
-                              <input id="guest-sitio" type="text" [value]="guestForm.sitio" (input)="updateGuestAddressField('sitio', $any($event.target).value)" maxlength="100" [placeholder]="t('doc.guestInfo.sitioPh')" class="w-full px-3 py-2 text-[14px] sm:text-[15px] text-[#0F172A] bg-transparent outline-none" />
-                            </div>
-                          </div>
-                          <div>
-                            <label for="guest-municipality" class="block text-[13px] sm:text-[14px] font-semibold text-[#0F172A] mb-1">{{ t('doc.guestInfo.municipality') }}</label>
-                            <div class="rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm focus-within:border-[#F97316] overflow-hidden">
-                              <input id="guest-municipality" type="text" [value]="guestForm.municipality" (input)="updateGuestAddressField('municipality', $any($event.target).value)" maxlength="100" [placeholder]="t('doc.guestInfo.municipalityPh')" class="w-full px-3 py-2 text-[14px] sm:text-[15px] text-[#0F172A] bg-transparent outline-none" />
-                            </div>
-                          </div>
-                          <div>
-                            <label for="guest-province" class="block text-[13px] sm:text-[14px] font-semibold text-[#0F172A] mb-1">{{ t('doc.guestInfo.province') }}</label>
-                            <div class="rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm focus-within:border-[#F97316] overflow-hidden">
-                              <input id="guest-province" type="text" [value]="guestForm.province" (input)="updateGuestAddressField('province', $any($event.target).value)" maxlength="100" [placeholder]="t('doc.guestInfo.provincePh')" class="w-full px-3 py-2 text-[14px] sm:text-[15px] text-[#0F172A] bg-transparent outline-none" />
-                            </div>
-                          </div>
-                          <div>
-                            <label for="guest-zipCode" class="block text-[13px] sm:text-[14px] font-semibold text-[#0F172A] mb-1">{{ t('doc.guestInfo.zipCode') }}</label>
-                            <div class="rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm focus-within:border-[#F97316] overflow-hidden">
-                              <input id="guest-zipCode" type="text" [value]="guestForm.zipCode" (keydown)="filterNumberKeyDown($event)" (input)="guestForm.zipCode = sanitizeDigits($any($event.target).value, 10)" maxlength="10" [placeholder]="t('doc.guestInfo.zipCodePh')" class="w-full px-3 py-2 text-[14px] sm:text-[15px] text-[#0F172A] bg-transparent outline-none" />
-                            </div>
-                          </div>
-                        </div>
-
-                        <!-- Full Address / Barangay Address Line -->
-                        <div class="mt-4">
-                          <label for="guest-address" class="block text-[14px] sm:text-[15px] font-semibold text-[#0F172A] mb-1.5">
-                            {{ t('doc.guestInfo.address') }} <span class="text-[#F97316]">*</span>
-                          </label>
-                          <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
-                               [class.border-[#DC2626]]="guestInvalid('address')">
-                            <input id="guest-address" type="text" name="address" [(ngModel)]="guestForm.address"
-                                   [placeholder]="t('doc.guestInfo.addressPh')" autocomplete="street-address" maxlength="255"
-                                   class="flex-1 min-w-0 px-3.5 sm:px-4 py-2.5 sm:py-3 text-[15px] sm:text-[16px] font-medium text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
-                          </div>
-                          @if (guestInvalid('address')) {
-                            <p class="mt-1 text-xs sm:text-sm font-medium text-[#B91C1C]">{{ t('err.guest.address') }}</p>
-                          }
-                        </div>
-                      </div>
-
-                      <!-- Validation error alert -->
-                      @if (formError()) {
-                        <div class="mt-5 sm:mt-6 flex items-start justify-between gap-3 rounded-xl border-2 border-[#DC2626] bg-[#FEF2F2] px-4 py-3.5" role="alert">
-                          <div class="flex items-start gap-3 min-w-0">
-                            <svg class="w-6 h-6 shrink-0 text-[#DC2626]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                              <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
-                            </svg>
-                            <p class="text-[15px] sm:text-base font-semibold text-[#B91C1C]">{{ formError() }}</p>
-                          </div>
-                          <button (click)="formError.set('')" type="button" class="text-[#DC2626] hover:text-[#991B1B] p-1 rounded-lg transition-colors focus:outline-none" aria-label="Dismiss error">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                            </svg>
-                          </button>
-                        </div>
-                      }
-
-                      <!-- Form actions -->
-                      <div class="flex items-center justify-center mt-5 sm:mt-6">
-                        <button (click)="validateGuestForm()"
-                                class="flex items-center justify-center gap-2.5 min-h-[56px] min-w-[200px] sm:min-w-[220px] px-6 sm:px-8 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white text-lg font-bold shadow-[0_4px_14px_rgba(249,115,22,0.35)] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40">
-                          {{ t('common.continue') }}
-                          <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Footer: same as the kiosk landing page (includes the language selector) -->
-              <div class="relative z-10 border-t border-[#E5E7EB] bg-white/90 backdrop-blur-sm">
-                <div class="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-1.5 lg:py-2 grid grid-cols-2 md:grid-cols-4 gap-x-6 lg:gap-x-8 gap-y-2 lg:gap-y-3 items-center">
-
-                  <!-- Section 1: Language (same as landing) -->
-                  <div class="flex flex-col items-center gap-1.5 text-center min-w-0">
-                    <div class="flex items-center gap-1.5 text-[#0F172A]">
-                      <svg class="w-[18px] h-[18px] text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                        <circle cx="12" cy="12" r="9"/><path d="M3.6 9h16.8M3.6 15h16.8M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/>
-                      </svg>
-                      <span class="text-[13px] font-semibold">{{ t('landing.footer.language') }}</span>
-                    </div>
-                    <div class="inline-flex rounded-lg overflow-hidden border border-[#E5E7EB] bg-white shadow-sm min-w-0">
-                      <button
-                        (click)="setLanguage('en')"
-                        class="px-3 sm:px-5 py-1.5 text-[13px] font-semibold transition-colors min-h-[34px]"
-                        [class.bg-[#F97316]]="language() === 'en'"
-                        [class.text-white]="language() === 'en'"
-                        [class.bg-white]="language() !== 'en'"
-                        [class.text-[#0F172A]]="language() !== 'en'">
-                        English
-                      </button>
-                      <button
-                        (click)="setLanguage('fil')"
-                        class="px-3 sm:px-5 py-1.5 text-[13px] border-l border-[#E5E7EB] font-semibold transition-colors min-h-[34px]"
-                        [class.bg-[#F97316]]="language() === 'fil'"
-                        [class.text-white]="language() === 'fil'"
-                        [class.bg-white]="language() !== 'fil'"
-                        [class.text-[#0F172A]]="language() !== 'fil'">
-                        Filipino
-                      </button>
-                    </div>
-                  </div>
-
-                  <!-- Section 2: Need Assistance -->
-                  <div class="flex flex-col items-center gap-1 text-center min-w-0">
-                    <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                      <circle cx="12" cy="12" r="9"/>
-                      <path d="M9.5 9a2.5 2.5 0 114.6 1.3c-.8 1-1.9 1.7-1.9 3.2" stroke-linecap="round"/>
-                      <path d="M12 17h.01" stroke-linecap="round"/>
-                    </svg>
-                    <div>
-                      <p class="text-[13px] lg:text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.assistance') }}</p>
-                      <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.assistanceDesc') }}</p>
-                    </div>
-                  </div>
-
-                  <!-- Section 3: Office Hours -->
-                  <div class="flex flex-col items-center gap-1 text-center min-w-0">
-                    <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                      <circle cx="12" cy="12" r="9"/>
-                      <path d="M12 7v5l3 2" stroke-linecap="round"/>
-                    </svg>
-                    <div>
-                      <p class="text-[13px] lg:text-[14px] font-semibold text-[#0F172A]">{{ t('landing.footer.hours') }}</p>
-                      <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.monFri') }}</p>
-                      <p class="text-[11px] lg:text-[12px] text-[#64748B]">{{ t('landing.footer.hoursRange') }}</p>
-                    </div>
-                  </div>
-
-                  <!-- Section 4: Date & Time -->
-                  <div class="flex flex-col items-center gap-1 text-center min-w-0">
-                    <svg class="w-5 h-5 mb-0.5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                      <rect x="3" y="5" width="18" height="16" rx="2"/>
-                      <path d="M8 3v4M16 3v4M3 10h18"/>
-                    </svg>
-                    <div class="min-w-0">
-                      <p class="text-[11px] lg:text-[12px] font-medium text-[#64748B] leading-snug">{{ formatFooterDate() }}</p>
-                      <p class="text-base lg:text-lg font-bold text-[#F97316] leading-tight">{{ formatFooterTime() }}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
           }
 
           <!-- DOC STEP 1: Service Selection -->
@@ -2721,26 +2084,6 @@ export type BarangayStep =
                           <div class="mb-2 [&:not(:last-child)]:pb-2 [&:not(:last-child)]:border-b [&:not(:last-child)]:border-[#F1F5F9]">
                             <div class="flex items-center justify-between gap-2">
                               <h3 class="text-[12px] sm:text-[13px] font-bold text-[#F97316] uppercase tracking-[0.02em] break-words">{{ svc.service_name }}</h3>
-                              @if (svc.has_template) {
-                                <button (click)="openDocPreview(svc)" [disabled]="docPreviewRendering()"
-                                        class="shrink-0 flex items-center gap-1 text-[12px] font-semibold text-[#0284C7] hover:underline disabled:opacity-60 disabled:cursor-not-allowed">
-                                  @if (docPreviewRendering()) {
-                                    <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                                    </svg>
-                                    {{ t('doc.review.previewLoading') }}
-                                  } @else {
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                      <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                    </svg>
-                                    {{ t('doc.review.previewDocument') }}
-                                  }
-                                </button>
-                              } @else {
-                                <span class="shrink-0 text-[11px] font-semibold text-[#64748B]">{{ t('doc.review.previewUnavailable') }}</span>
-                              }
                             </div>
                             @if (svc.form_fields && svc.form_fields.length > 0) {
                               <div class="divide-y divide-[#F1F5F9]">
@@ -2763,10 +2106,6 @@ export type BarangayStep =
                         }
                       </div>
                     </div>
-
-                    @if (docPreviewError()) {
-                      <p class="mt-3 text-[12px] sm:text-[13px] font-medium text-[#B91C1C]">{{ docPreviewError() }}</p>
-                    }
 
                     <!-- Error Message Alert -->
                     @if (errorMessage()) {
@@ -3071,14 +2410,23 @@ export type BarangayStep =
                     </div>
                   </section>
 
-                  <!-- Done button -->
-                  <button type="button" (click)="finish()"
-                          class="flex items-center justify-center gap-2.5 min-h-[64px] w-[300px] sm:w-[380px] px-7 rounded-2xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white text-lg sm:text-xl font-bold shadow-[0_4px_14px_rgba(249,115,22,0.35)] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40 mt-4 mb-1">
-                    <svg class="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-                    </svg>
-                    {{ t('common.done') }}
-                  </button>
+                  <!-- Actions: Request Another Document + Done -->
+                  <div class="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 w-full max-w-[700px] mt-4 mb-1">
+                    <button type="button" (click)="requestAnotherDocument()"
+                            class="flex items-center justify-center gap-2.5 min-h-[60px] w-full sm:w-1/2 px-6 rounded-2xl border-2 border-[#F97316] bg-white text-[#F97316] hover:bg-[#FFF7ED] active:scale-[0.98] text-base sm:text-lg font-bold shadow-sm transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/25">
+                      <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                      </svg>
+                      {{ t('doc.success.requestAnother') }}
+                    </button>
+                    <button type="button" (click)="finish()"
+                            class="flex items-center justify-center gap-2.5 min-h-[60px] w-full sm:w-1/2 px-6 rounded-2xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white text-base sm:text-lg font-bold shadow-[0_4px_14px_rgba(249,115,22,0.35)] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40">
+                      <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                      </svg>
+                      {{ t('common.done') }}
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -5340,14 +4688,6 @@ export type BarangayStep =
         }
 
         <app-barangay-preview-modal [open]="showPreview()" [title]="t('bar.preview.title')" [blob]="previewBlob()" (onClose)="closePreview()" />
-        <app-document-preview-modal
-          [open]="showDocPreview()"
-          [title]="t('doc.review.previewTitle')"
-          [blob]="docPreviewBlob()"
-          [submitting]="submitting()"
-          (onClose)="closeDocPreview()"
-          (onEdit)="editInformation()"
-          (onSubmit)="submitRequest()" />
 
         <!-- Request Again / Previous Request Modal -->
         @if (showRequestAgainModal() && previousRequests().length > 0) {
@@ -5623,10 +4963,6 @@ export class KioskComponent implements OnInit, OnDestroy {
   previewing = signal(false);
   showPreview = signal(false);
   previewBlob = signal<Blob | null>(null);
-  showDocPreview = signal(false);
-  docPreviewBlob = signal<Blob | null>(null);
-  docPreviewRendering = signal(false);
-  docPreviewError = signal('');
   copied = signal(false);
   searchResults = signal<any[]>([]);
   searching = signal(false);
@@ -5678,7 +5014,6 @@ export class KioskComponent implements OnInit, OnDestroy {
   // Form milestone.
   private readonly docStepIndexMap: Record<string, number> = {
     welcome: 1,
-    'guest-info': 1,
     services: 2,
     requirements: 3,
     form: 4,
@@ -5722,9 +5057,9 @@ export class KioskComponent implements OnInit, OnDestroy {
     houseNumber: '',
     purokZone: '',
     sitio: '',
-    municipality: 'San Manuel',
-    province: 'Tarlac',
-    zipCode: '',
+    municipality: 'City of San Jose del Monte',
+    province: 'Bulacan',
+    zipCode: '3023',
     address: ''
   };
 
@@ -5963,11 +5298,7 @@ export class KioskComponent implements OnInit, OnDestroy {
   }
 
   continueWithout() {
-    this.stopCamera();
-    this.errorMessage.set('');
-    this.mode.set('guest');
-    this.resetIdleTimer();
-    this.saveState();
+    this.startBarangay();
   }
 
   resetGuestForm() {
@@ -5994,9 +5325,9 @@ export class KioskComponent implements OnInit, OnDestroy {
       houseNumber: '',
       purokZone: '',
       sitio: '',
-      municipality: 'San Manuel',
-      province: 'Tarlac',
-      zipCode: '',
+      municipality: 'City of San Jose del Monte',
+      province: 'Bulacan',
+      zipCode: '3023',
       address: ''
     };
     this.guestSubmitted.set(false);
@@ -6014,28 +5345,9 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.reusedRequestInfo.set(null);
     this.serviceError.set('');
     this.serviceIndex.set(0);
-    this.showDocPreview.set(false);
-    this.docPreviewBlob.set(null);
-    this.docPreviewError.set('');
     this.inlinePhotos.set({});
     this.activePhotoField.set(null);
     this.submissionKey = '';
-  }
-
-  startGuestRequest() {
-    this.stopCamera();
-    this.errorMessage.set('');
-    this.formError.set('');
-    this.resetGuestForm();
-    this.clearDocumentRequestSession();
-    this.loadKioskSettings();
-    this.resident.set(null);
-    this.rfidCard.set(null);
-    this.selectedServices.set([]);
-    this.mode.set('documents');
-    this.currentStep.set('guest-info');
-    this.resetIdleTimer();
-    this.saveState();
   }
 
   startBarangay() {
@@ -6970,7 +6282,6 @@ export class KioskComponent implements OnInit, OnDestroy {
     }
     this.formErrors.set(newErrors);
     if (hasErrors) return;
-    this.clearDocPreview();
     const service = this.selectedService();
     if (!service) return;
 
@@ -8138,127 +7449,8 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.previewBlob.set(null);
   }
 
-  // ============================================================
-  // PRE-SUBMISSION DOCUMENT PREVIEW (document request flow)
-  // ============================================================
-  // Renders the service's actual document template (same template + placeholder
-  // mappings the admin will generate later) with the resident's in-progress form
-  // data. Buffer only — no request row, no status change, no file on disk. The
-  // resident can preview, restart preview (updated data), or go back and edit.
-  previewRequestDocument(service?: Service) {
-    if (this.docPreviewRendering()) return;
-    const svc = service || this.selectedService();
-    if (!svc || !svc.has_template) return;
-
-    const resident = this.resident();
-    const data: {
-      service_id: number;
-      form_data: Record<string, unknown>;
-      resident_id?: number;
-      guest?: GuestInfo;
-    } = {
-      service_id: svc.service_id,
-      form_data: service ? (this.serviceForms()[service.service_id] ?? {}) : this.formValues()
-    };
-    if (resident) {
-      data.resident_id = resident.resident_id;
-    } else {
-      const g = this.guestForm;
-      const computedFullName = (g.firstName || g.lastName)
-        ? [g.firstName, g.middleName, g.lastName, g.suffix].filter(Boolean).join(' ').trim()
-        : (g.fullName || '').trim();
-      data.guest = {
-        full_name: computedFullName,
-        first_name: g.firstName?.trim() || undefined,
-        middle_name: g.middleName?.trim() || undefined,
-        last_name: g.lastName?.trim() || undefined,
-        suffix: g.suffix?.trim() || undefined,
-        birth_date: g.birthDate || undefined,
-        birth_place: g.birthPlace?.trim() || undefined,
-        gender: g.gender || undefined,
-        civil_status: g.civilStatus || undefined,
-        nationality: g.nationality?.trim() || undefined,
-        religion: g.religion?.trim() || undefined,
-        occupation: g.occupation?.trim() || undefined,
-        blood_type: g.bloodType?.trim() || undefined,
-        contact_number: g.contactNumber.trim(),
-        email: g.email.trim() || undefined,
-        subdivision: g.subdivision?.trim() || undefined,
-        street: g.street?.trim() || undefined,
-        block: g.block?.trim() || undefined,
-        lot: g.lot?.trim() || undefined,
-        house_number: g.houseNumber?.trim() || undefined,
-        purok_zone: g.purokZone?.trim() || undefined,
-        sitio: g.sitio?.trim() || undefined,
-        municipality: g.municipality?.trim() || undefined,
-        province: g.province?.trim() || undefined,
-        zip_code: g.zipCode?.trim() || undefined,
-        address: g.address.trim()
-      };
-    }
-
-    this.docPreviewRendering.set(true);
-    this.docPreviewError.set('');
-    this.cdr.detectChanges();
-
-    this.kioskService.previewRequest(data).subscribe({
-      next: (blob) => {
-        this.docPreviewBlob.set(blob);
-        this.docPreviewRendering.set(false);
-        this.showDocPreview.set(true);
-        this.cdr.detectChanges();
-      },
-      error: (err: any) => {
-        this.docPreviewRendering.set(false);
-        const fallback = this.t('doc.review.previewFailed');
-        if (err?.error instanceof Blob) {
-          err.error.text().then((text: string) => {
-            let msg = fallback;
-            try {
-              const parsed = JSON.parse(text);
-              const firstErr = parsed?.errors?.[0];
-              msg = firstErr?.msg || parsed?.message || fallback;
-            } catch { /* ignore non-JSON error bodies */ }
-            this.docPreviewError.set(msg);
-          });
-        } else {
-          this.docPreviewError.set(err?.error?.message || err?.message || fallback);
-        }
-        console.error('Document request preview error:', err);
-      }
-    });
-  }
-
-  // Open the document preview modal. The blob is fetched on demand and rendered
-  // by the modal component (docx-preview), matching the admin panel's preview UX.
-  openDocPreview(service?: Service) {
-    if (this.docPreviewBlob()) {
-      this.showDocPreview.set(true);
-      return;
-    }
-    this.previewRequestDocument(service);
-  }
-
-  // Close the document preview modal. The blob is kept so the resident can
-  // reopen the same preview without re-fetching until they edit information.
-  closeDocPreview() {
-    this.showDocPreview.set(false);
-  }
-
-  // Clear the preview. Called whenever the resident edits information (so the
-  // next preview is regenerated from the updated form) and whenever the review
-  // step is re-entered with a fresh form.
-  private clearDocPreview() {
-    this.docPreviewBlob.set(null);
-    this.docPreviewRendering.set(false);
-    this.docPreviewError.set('');
-    this.showDocPreview.set(false);
-  }
-
-  // Edit Information: the application form is the single source of truth. All
-  // edits happen there; the preview is always regenerated from the form values.
+  // Edit Information: the application form is the single source of truth.
   editInformation() {
-    this.clearDocPreview();
     if (this.selectedServices().length > 0) {
       this.serviceIndex.set(this.selectedServices().length - 1);
       this.loadServiceForm();
@@ -8669,7 +7861,6 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.capturedPhoto.set(null);
     this.photoValid.set(false);
     this.stashActivePhoto();
-    this.clearDocPreview();
     this.advanceOrReview();
   }
 
@@ -8697,7 +7888,6 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.photoQualityError.set('');
     this.stopCamera();
     this.stashActivePhoto();
-    this.clearDocPreview();
     this.advanceOrReview();
   }
 
@@ -8772,30 +7962,13 @@ export class KioskComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (this.mode() === 'guest') {
-      this.resetGuestForm();
-      this.clearDocumentRequestSession();
-      this.mode.set('home');
-      this.saveState();
-      return;
-    }
-
     if (this.mode() === 'documents') {
       const step = this.currentStep();
       if (step === 'welcome') {
         this.clearDocumentRequestSession();
         this.resident.set(null);
         this.rfidCard.set(null);
-        this.mode.set('rfid');
-        this.rfidStep.set('scan');
-        this.rfidScanService.connect();
-        this.saveState();
-        return;
-      }
-      if (step === 'guest-info') {
-        this.resetGuestForm();
-        this.clearDocumentRequestSession();
-        this.mode.set('guest');
+        this.mode.set('home');
         this.saveState();
         return;
       }
@@ -8832,17 +8005,10 @@ export class KioskComponent implements OnInit, OnDestroy {
         this.saveState();
         return;
       }
-      // 'services' is reachable from either entry path. Back must return to the
-      // screen the resident actually came from: the profile/welcome screen for
-      // RFID/manual-search residents, or the guest info form for temporary sessions.
       if (step === 'services') {
         this.clearDocumentRequestSession();
         this.selectedServices.set([]);
-        if (this.resident()) {
-          this.currentStep.set('welcome');
-        } else {
-          this.currentStep.set('guest-info');
-        }
+        this.currentStep.set('welcome');
         this.saveState();
         return;
       }
@@ -8860,7 +8026,7 @@ export class KioskComponent implements OnInit, OnDestroy {
           this.mode.set('documents');
           this.currentStep.set('welcome');
         } else {
-          this.mode.set('guest');
+          this.mode.set('home');
         }
         this.saveState();
         return;
@@ -8894,7 +8060,6 @@ export class KioskComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.showDocPreview.set(false);
     this.submitting.set(true);
     this.errorMessage.set('');
     if (!this.submissionKey) this.submissionKey = this.newIdempotencyKey();
@@ -9007,6 +8172,20 @@ export class KioskComponent implements OnInit, OnDestroy {
     ta.select();
     try { document.execCommand('copy'); } catch { /* clipboard unavailable */ }
     document.body.removeChild(ta);
+  }
+
+  requestAnotherDocument() {
+    this.stopCamera();
+    this.clearDocumentRequestSession();
+    this.selectedServices.set([]);
+    this.requestNumbers.set([]);
+    this.requestNumber.set('');
+    this.errorMessage.set('');
+    this.formError.set('');
+    this.currentStep.set('services');
+    this.loadServices();
+    this.resetIdleTimer();
+    this.saveState();
   }
 
   finish() {

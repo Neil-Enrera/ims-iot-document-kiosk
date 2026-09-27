@@ -951,9 +951,9 @@ export class ApplyComponent implements OnInit {
       if (!defaults['subdivision'] && r.subdivision) defaults['subdivision'] = r.subdivision;
       if (!defaults['purok_zone'] && r.purok_zone) defaults['purok_zone'] = r.purok_zone;
       if (!defaults['barangay']) defaults['barangay'] = r.barangay_name || 'San Manuel';
-      if (!defaults['municipality']) defaults['municipality'] = r.municipality || 'Tarlac City';
-      if (!defaults['province']) defaults['province'] = r.province || 'Tarlac';
-      if (!defaults['zip_code']) defaults['zip_code'] = r.zip_code || '2300';
+      if (!defaults['municipality']) defaults['municipality'] = r.municipality || 'City of San Jose del Monte';
+      if (!defaults['province']) defaults['province'] = r.province || 'Bulacan';
+      if (!defaults['zip_code']) defaults['zip_code'] = r.zip_code || '3023';
 
       // 5. Fallback regex address parsing
       if (r.address_line) {
@@ -965,8 +965,8 @@ export class ApplyComponent implements OnInit {
       }
 
       // 6. Unified Address Line
-      if (!defaults['address']) defaults['address'] = r.address_line || 'Barangay San Manuel, Tarlac';
-      if (!defaults['address_line']) defaults['address_line'] = r.address_line || 'Barangay San Manuel, Tarlac';
+      if (!defaults['address']) defaults['address'] = r.address_line || 'Barangay San Manuel, City of San Jose del Monte, Bulacan';
+      if (!defaults['address_line']) defaults['address_line'] = r.address_line || 'Barangay San Manuel, City of San Jose del Monte, Bulacan';
     }
 
     // 7. Dynamic Service Field Matching
@@ -1068,16 +1068,16 @@ export class ApplyComponent implements OnInit {
       return r.barangay_name || 'San Manuel';
     }
     if (key === 'municipality' || key === 'city' || label.includes('municipality') || label.includes('city')) {
-      return r.municipality || 'Tarlac City';
+      return r.municipality || 'City of San Jose del Monte';
     }
     if (key === 'province' || label.includes('province')) {
-      return r.province || 'Tarlac';
+      return r.province || 'Bulacan';
     }
     if (key === 'zipcode' || key === 'postalcode' || label.includes('zipcode') || label.includes('postalcode')) {
-      return r.zip_code || '2300';
+      return r.zip_code || '3023';
     }
     if (key === 'address' || key === 'completeaddress' || key === 'addressline' || label.includes('address')) {
-      return r.address_line || 'Barangay San Manuel, Tarlac';
+      return r.address_line || 'Barangay San Manuel, City of San Jose del Monte, Bulacan';
     }
 
     return undefined;

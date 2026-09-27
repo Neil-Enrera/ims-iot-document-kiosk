@@ -39,9 +39,9 @@ import { Resident } from '../../shared/interfaces/api.interfaces';
           <app-input label="Lot" [value]="form.lot" (valueChange)="updateAddressField('lot', $event)" maxlength="50" placeholder="e.g. 5" />
           <app-input label="Purok / Zone" [value]="form.purokZone" (valueChange)="updateAddressField('purokZone', $event)" maxlength="100" placeholder="Purok 1" />
           <app-input label="Sitio" [value]="form.sitio" (valueChange)="updateAddressField('sitio', $event)" maxlength="100" placeholder="Sitio" />
-          <app-input label="Municipality" [value]="form.municipality" (valueChange)="updateAddressField('municipality', $event)" maxlength="100" placeholder="San Manuel" />
-          <app-input label="Province" [value]="form.province" (valueChange)="updateAddressField('province', $event)" maxlength="100" placeholder="Tarlac" />
-          <app-input label="ZIP Code" [value]="form.zipCode" (valueChange)="form.zipCode = $event" filterType="numeric" maxlength="10" placeholder="2301" />
+          <app-input label="Municipality" [value]="form.municipality" (valueChange)="updateAddressField('municipality', $event)" maxlength="100" placeholder="City of San Jose del Monte" />
+          <app-input label="Province" [value]="form.province" (valueChange)="updateAddressField('province', $event)" maxlength="100" placeholder="Bulacan" />
+          <app-input label="ZIP Code" [value]="form.zipCode" (valueChange)="form.zipCode = $event" filterType="numeric" maxlength="10" placeholder="3023" />
         </div>
         <div class="mt-4">
           <app-input label="Full Address / Barangay Address Line *" [value]="form.addressLine" (valueChange)="form.addressLine = $event" maxlength="255" [error]="errors['addressLine']" placeholder="Complete resident address line" />
