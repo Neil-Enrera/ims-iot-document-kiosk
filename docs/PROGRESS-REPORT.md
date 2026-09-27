@@ -14,6 +14,48 @@
 | **Total** | **85** | **56** | **19** | **0** |
 
 > **Note:** TASK-BACKEND-012 (Payment API) and TASK-FRONTEND-011 (Payment UI) removed per DEC-008.
+> - **Online Portal Contact Us Page UI Redesign & Official Barangay Information Integration** (`online-portal/src/app/features/contact/contact.component.ts` L1-285, `backend/src/services/email.service.js` L338-440, `backend/src/controllers/portal-auth.controller.js` L150-210, `backend/src/routes/portal-auth.routes.js` L20-30, `backend/src/routes/api.js` L35-42):
+>   - **Visual Layout & Panoramic Hero Banner**: Matched the reference design with a top panoramic hero header featuring `Barangay Hall.png`, the slogan callout `"Tulong sa bawat San Manuel!"`, curved brush underline styling, and the `We're Here to Help` typography.
+>   - **Official Barangay Information Binding**: Corrected the data binding on the right-hand information sidebar to display the official Barangay San Manuel Office details (Office Address: `Barangay San Manuel Hall, San Manuel, City of San Jose del Monte, 3023 Bulacan`, Contact: `(044) 307-8899 / 0917-123-4567`, Email: `barangaysanmanuel.csjdm@gmail.com`, Map: `https://maps.app.goo.gl/ShncDzyj6p411n5g6`), ensuring it is independent of whoever is logged in.
+>   - **Structured Contact Form**: Form input fields remain convenient for residents with instant validation and right-aligned "Send Message" action (omitting file attachments per instructions).
+>   - **Backend Email Service & API**: Added `getBarangayContactInfo` and `sendContactUsMessage` endpoints with Barangay San Manuel branding to deliver inquiries to barangay administration.
+>   - **Verification**: Verified 94/94 backend unit tests pass (`npm test`) and `online-portal` builds with 0 errors.
+>
+> - **Resident Profile Direct Inline Editing & Refined Unified Information Card** (`online-portal/src/app/features/profile/profile.component.ts` L1-385, `online-portal/src/app/core/services/auth.service.ts` L167-179, `portal-auth.routes.js` L15-17, `portal-auth.controller.js` L132-150, `portal-auth.service.js` L258-325, `kiosk-app/src/app/features/kiosk/resident-profile.component.ts` L280-310, `kiosk-app/src/app/features/kiosk/kiosk.component.ts` L585-595):
+>   - **Unified Information Card Layout**: Structured all resident data into a single continuous card organized into three clear sections: `Personal & Demographic Details`, `Contact & Residential Address`, and `Emergency Contact Details` (with Blood Type and redundant text banners removed).
+>   - **Sidebar Hierarchy Realignment**: Reordered right sidebar cards so `Account Status` appears first, followed by `Quick Access` and `Need Assistance?`.
+>   - **Direct Inline Profile Editing**: Clicking "Edit Profile" directly transforms fields into editable form inputs inside the Information Card while keeping master identity attributes locked. Centered "Update" and "Cancel" buttons handle saving to the resident database record and discarding changes respectively.
+>   - **Verification**: Verified 91/91 backend unit tests pass (`npm test`) and both `online-portal` and `kiosk-app` Angular workspaces build cleanly with 0 errors.
+>
+> - **Barangay San Manuel Logo Integration in System Email Templates** (`email.service.js` L6-300):
+>   - **Unified Email Header Branding**: Integrated the official Barangay San Manuel seal logo (`public/Barangay Logo.png`) into all system outgoing HTML emails (Admin password reset verification, Admin 2FA login verification code, and Online Portal resident account credentials).
+>   - **Horizontal Alignment Beside Title**: Positioned the official Barangay San Manuel seal logo directly beside (to the left of) the "Barangay San Manuel" title and subtitle using an email-safe presentation table structure (`vertical-align: middle`) with `width="56" height="56"` dimensions for balanced, clean header branding.
+>   - **Multi-Path Asset Resolution & RFC-Compliant MIME Headers**: Added multi-candidate path resolution (`public/`, `dist/`, `process.cwd()`) and explicit `contentType: 'image/png'` and `contentDisposition: 'inline'` attributes to ensure reliable image rendering across VPS deployments and external webmail proxies (Gmail, Outlook Web, Apple Mail).
+>   - **Verification**: Verified zero test regressions (91/91 backend unit tests passing in `npm test`) and confirmed clean, email-safe HTML template layout.
+>
+> - **Kiosk Request Completion Flow & Preview Document Removal** (`kiosk.component.ts` L2085-2125, L2415-2430, L7460-7475, L8185-8205, `i18n/en.ts` L240-245, `i18n/fil.ts` L230-235):
+>   - **Removed Document Preview from Review Page**: Removed the "Preview Document" button and preview modal trigger from the "Review Your Request" page. Residents review all entered information directly without pre-submission document previewing.
+>   - **Updated Request Completion Flow**: On the submission success screen, residents are now presented with two distinct actions:
+>     1. **"Request Another Document"** (`requestAnotherDocument()`): Resets temporary request form data while keeping the resident's RFID session active, returning directly to the Services page to pick another service.
+>     2. **"Done"** (`finish()`): Completely ends and clears the session and returns to the Kiosk Landing Page.
+>   - **Code Cleanliness**: Removed deprecated preview signals (`showDocPreview`, `docPreviewBlob`, `docPreviewRendering`, `docPreviewError`) and helper methods (`previewRequestDocument`, `openDocPreview`, `closeDocPreview`, `clearDocPreview`), and unlinked `DocumentPreviewModalComponent` from kiosk imports.
+>   - **Verification**: Verified zero TypeScript or Angular build errors (`npm run build:kiosk` passed with 0 errors) and all 91 backend tests pass (`npm test`).
+>
+> - **Kiosk Landing Page Update & Guest Access Removal** (`kiosk.component.ts` L1250-1310, L8115-8230, `kiosk-state.service.ts` L5-10, `i18n/en.ts` L45-55, `i18n/fil.ts` L45-55):
+>   - **Landing Page Refactor**: Replaced the previous 3-card landing layout ("Scan Barangay ID", "Request Documents", "Continue Without Barangay ID") with a streamlined 2-card layout:
+>     1. **Scan Barangay ID** (`startRfidScan()`): Direct RFID card tap/scan for existing residents to access document requests and personal profile.
+>     2. **Apply for Barangay ID** (`startBarangay()`): Direct pathway for new residents to begin their Barangay ID application with photo and signature capture.
+>   - **Complete Removal of Guest Document Flow**: Removed guest document request option and temporary user flow (`guest`, `guest-info`, guest demographic form) from the Kiosk. Document requests now strictly require resident authentication via Barangay ID.
+>   - **Navigation & Error Flow Updates**: Updated RFID scan and error fallback screens to offer "Apply for Barangay ID" directly. Refactored `goBack()` and `KioskState` to eliminate deprecated guest modes and steps.
+>   - **Verification**: Verified zero TypeScript or Angular build errors (`npm run build:kiosk` passed with 0 errors) and all 91 backend tests pass (`npm test`).
+>
+> - **Consolidation of Account ID and Resident Code into a Single Unified Identifier** (`portal-account.repository.js`, `portal-account.service.js`, `portal-auth.service.js`, `portal-auth.validation.js`, `placeholder.engine.js`, `portal-layout.component.ts`, `profile.component.ts`, `apply.component.ts`, `requests.component.ts`, `login.component.ts`):
+>   - **Architectural Unification**: Aligned the online portal account identifier with the resident's primary physical/civil identifier (`residents.resident_code`, e.g. `RES-00001`), eliminating redundant dual-identifier confusion (`RES-00002 • BSM-000001`).
+>   - **Database & Account Migration**: Synchronized existing `portal_accounts.account_id` entries to match `residents.resident_code`, and configured new portal account creation on Barangay ID approval (`portalAccountService.createAccountForResident`) to automatically assign `resident_code` as the account ID.
+>   - **Multi-Identifier Authentication Support**: Enhanced backend authentication repositories (`findProfileByIdentifier`, `findProfileByAccountId`, `findValidResetCode`, `findValidResetToken`) to accept `Resident Code` (e.g. `RES-00001`), `Email Address`, or legacy `BSM-*` accounts for both login and password reset flows with zero breaking changes.
+>   - **Portal UI Harmonization**: Cleaned up the Online Portal header dropdown, Resident Profile page, Service Application review page, Document Requests page, and Login/Forgot Password screens to consistently present a single unified `"Resident ID"` label.
+>   - **Verification**: Verified 91/91 backend unit tests pass (`npm test`) and both `admin-panel` and `online-portal` build cleanly with 0 errors.
+>
 > - **Barangay ID Renewal Photo Integration in Template Generation & Document Preview** (`docx-image.helper.js`, `document.service.js` L155-205, L265-315, `id-card.service.js` L65-80, `request.service.js` L160-180, `tests/id-card.service.test.js` L245-265):
 >   - **Unified Image Embedding Helper (`docx-image.helper.js`)**: Extracted and centralized OpenXML DrawingML photo embedding (`resolveImageBuffer`, `getImageSize`, `sniffImageExtension`, `buildDrawingXml`, `embedPhoto`, `extractRequestPhoto`), supporting Base64 data URIs (ESP32-CAM live capture), relative upload paths (`uploads/resident-photos/...`, `uploads/application-photos/...`, `uploads/kiosk-photos/...`), and absolute paths.
 >   - **Direct Template Photo Embedding in `document.service.js`**: Enhanced `generateDocument()` and `renderRequestPreview()` to scan for `resident_photo` (and legacy `%%?resident_photo`) placeholders, inject `PHOTO_TOKEN` during Docxtemplater text render, and embed the high-resolution 2×2 photo directly into the document drawing layer with proper EMU aspect scaling and media relationship registrations (`word/_rels/document.xml.rels`).
@@ -423,6 +465,27 @@ All 11 backend modules fully implemented with real MySQL queries:
 
 ---
 
+---
+
+## Recent Changes (September 27, 2026 Session)
+
+### Online Portal Login & First-Login Password UI Redesign
+- Redesigned **Online Portal Login** (`frontend/online-portal/src/app/features/auth/login.component.ts`):
+  - Applied full-screen background watermark (`Background.png`) and top header branding with official Barangay San Manuel logo, title, and tagline.
+  - Implemented modern floating modal card with circular user icon avatar badge, Account ID and Password input groups with icons and visibility toggle.
+  - Integrated full-width orange primary action button with hover glow and transition animations.
+  - Included 3 feature cards on the right side: *Request Documents*, *Barangay ID Services*, and *Safe & Secure*.
+  - Added bottom information callout card ("Don't have an online account?").
+  - Preserved complete authentication flow, error alerts, and "Forgot password?" modal workflow with step-by-step OTP verification and password reset.
+- Redesigned **First-Login Change Password Screen** (`frontend/online-portal/src/app/features/auth/change-password.component.ts`):
+  - Matched identical design layout and typography to the Login screen and admin logout modal style.
+  - Added real-time password strength indicator with animated 4-segment progress bar and dynamic strength labels (Weak, Fair, Good, Strong).
+  - Provided interactive password requirement checklist (8+ characters, uppercase, lowercase, number, special character).
+  - Included password match validation indicators and secure form submission.
+- Updated authentication state guards and build configurations; verified 0 Angular build errors and 94/94 backend unit tests passing.
+
+---
+
 ## Known Issues
 
 | Issue | Severity | Status |
@@ -455,17 +518,7 @@ All 11 backend modules fully implemented with real MySQL queries:
 
 | File | Change |
 |------|--------|
-| `src/environments/environment.ts` | Created — Dev API URL config |
-| `src/environments/environment.prod.ts` | Created — Prod API URL config |
-| `projects/kiosk-app/src/environments/environment.prod.ts` | Created — Kiosk prod config |
-| `angular.json` | Updated — fileReplacements for both apps |
-| `src/app/core/services/auth.service.ts` | Updated — Uses environment.apiUrl |
-| `src/app/core/services/api.service.ts` | Updated — Uses environment.apiUrl |
-| `backend/src/controllers/resident.controller.js` | Updated — Audit logging added |
-| `backend/src/controllers/request.controller.js` | Updated — Audit logging added |
-| `backend/src/controllers/kiosk.controller.js` | Updated — Audit logging added |
-| `backend/.env.example` | Updated — Fixed DB_NAME, added KIOSK_URL |
-| `.gitignore` | Updated — Added graphify-out/ |
-| `AGENTS.md` | Updated — Fixed broken doc references |
-| Multiple frontend files | Updated — Removed dead code and unused imports |
-| `docs/PROGRESS-REPORT.md` | Updated — Accurate task counts and status |
+| `frontend/online-portal/src/app/features/auth/login.component.ts` | Updated — Full redesign of Login page UI, responsive feature cards, and modal styling |
+| `frontend/online-portal/src/app/features/auth/change-password.component.ts` | Updated — Full redesign of First-Login Change Password screen with strength meter and requirement checklist |
+| `docs/PROGRESS-REPORT.md` | Updated — Recorded session progress and testing status |
+
