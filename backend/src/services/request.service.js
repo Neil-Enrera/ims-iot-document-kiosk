@@ -35,8 +35,8 @@ const STATUS_IDS = {
   RESUBMITTED: 11
 };
 
-const getAllRequests = async ({ search, statusId, residentId, serviceId, dateFrom, dateTo, page = 1, limit = 20, sortBy = 'request_id', sortOrder = 'DESC' }) => {
-  const result = await requestRepository.findAll({ search, statusId, residentId, serviceId, dateFrom, dateTo, page, limit, sortBy, sortOrder });
+const getAllRequests = async ({ search, statusId, residentId, serviceId, dateFrom, dateTo, page = 1, limit = 20, sortBy = 'request_id', sortOrder = 'DESC', excludeIdServices, idServicesOnly }) => {
+  const result = await requestRepository.findAll({ search, statusId, residentId, serviceId, dateFrom, dateTo, page, limit, sortBy, sortOrder, excludeIdServices, idServicesOnly });
   return { success: true, message: 'Requests retrieved successfully.', data: result };
 };
 
@@ -91,7 +91,7 @@ const updateRequest = async (requestId, body, userId) => {
   const targetServiceId = serviceId || request.service_id;
   const targetPurpose = purpose !== undefined ? purpose : request.purpose;
   const targetRemarks = remarks !== undefined ? remarks : request.remarks;
-  let finalFormData = formData !== undefined ? formData : request.form_data;
+  const finalFormData = formData !== undefined ? formData : request.form_data;
 
   if (finalFormData && request.resident_id === null) {
     const currentGuest = request.form_data?._guest || {};

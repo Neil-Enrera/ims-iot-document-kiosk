@@ -31,7 +31,7 @@ type FilterTab = 'all' | 'active' | 'corrections' | 'completed';
               Online Document Portal
             </span>
             <span class="text-slate-400 text-xs">&bull;</span>
-            <span class="text-xs font-semibold text-slate-500">Account ID: {{ auth.currentUser()?.account_id }}</span>
+            <span class="text-xs font-semibold text-slate-500">Resident ID: {{ auth.currentUser()?.resident_code || auth.currentUser()?.account_id }}</span>
           </div>
           <h1 class="text-3xl sm:text-4xl font-black text-[#0f172a] mt-1.5 tracking-tight">
             My Document Requests

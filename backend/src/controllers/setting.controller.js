@@ -6,7 +6,7 @@ const getAll = async (req, res) => {
   try {
     const result = await settingService.getAll();
     return successResponse(res, result.message, result.data);
-  } catch (error) {
+  } catch {
     return errorResponse(res, 500, 'Internal server error.');
   }
 };
@@ -15,7 +15,7 @@ const getByCategory = async (req, res) => {
   try {
     const result = await settingService.getByCategory(req.params.category);
     return successResponse(res, result.message, result.data);
-  } catch (error) {
+  } catch {
     return errorResponse(res, 500, 'Internal server error.');
   }
 };
@@ -25,7 +25,7 @@ const getByKey = async (req, res) => {
     const result = await settingService.getByKey(req.params.key);
     if (!result.success) return errorResponse(res, 404, result.message);
     return successResponse(res, result.message, result.data);
-  } catch (error) {
+  } catch {
     return errorResponse(res, 500, 'Internal server error.');
   }
 };
@@ -43,7 +43,7 @@ const update = async (req, res) => {
       ipAddress: req.ip
     });
     return successResponse(res, result.message);
-  } catch (error) {
+  } catch {
     return errorResponse(res, 500, 'Internal server error.');
   }
 };

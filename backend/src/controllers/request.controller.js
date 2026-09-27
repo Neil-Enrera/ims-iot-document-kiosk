@@ -6,7 +6,7 @@ const { broadcastStatusDisplayUpdate } = require('./kiosk.controller');
 
 const getAll = async (req, res) => {
   try {
-    const { search, statusId, residentId, serviceId, dateFrom, dateTo, page, limit, sortBy, sortOrder } = req.query;
+    const { search, statusId, residentId, serviceId, dateFrom, dateTo, page, limit, sortBy, sortOrder, excludeIdServices, idServicesOnly } = req.query;
     const result = await requestService.getAllRequests({
       search,
       statusId: statusId ? parseInt(statusId) : undefined,
@@ -17,7 +17,9 @@ const getAll = async (req, res) => {
       page: parseInt(page) || 1,
       limit: parseInt(limit) || 20,
       sortBy,
-      sortOrder
+      sortOrder,
+      excludeIdServices: excludeIdServices === 'true' || excludeIdServices === true,
+      idServicesOnly: idServicesOnly === 'true' || idServicesOnly === true
     });
     if (!result.success) return errorResponse(res, 400, result.message);
     return paginatedResponse(res, result.message, result.data.requests, result.data.total, result.data.page, result.data.limit);

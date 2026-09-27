@@ -1,9 +1,6 @@
 const kioskService = require('../services/kiosk.service');
-const requestService = require('../services/request.service');
 const applicationService = require('../services/application.service');
 const rfidService = require('../services/rfid.service');
-const notificationService = require('../services/notification.service');
-const sseManager = require('../services/notification-sse');
 const transactionService = require('../services/transaction.service');
 const idCardService = require('../services/id-card.service');
 const documentService = require('../services/document.service');
@@ -466,7 +463,7 @@ const getHardwareStatus = async (req, res) => {
   try {
     const status = await kioskService.getHardwareStatus();
     return successResponse(res, 'Hardware status retrieved.', status);
-  } catch (error) {
+  } catch {
     return errorResponse(res, 500, 'Internal server error.');
   }
 };

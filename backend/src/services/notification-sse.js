@@ -94,7 +94,7 @@ class NotificationSSEManager {
   broadcastUnreadCount() {
     // This is a simple approach - each client will get their own count
     // when they reconnect or poll. For now, we just notify that counts changed.
-    for (const [userId, clients] of this.clients) {
+    for (const clients of this.clients.values()) {
       const data = JSON.stringify({ changed: true });
       for (const res of clients) {
         res.write(`event: unread-count-changed\ndata: ${data}\n\n`);

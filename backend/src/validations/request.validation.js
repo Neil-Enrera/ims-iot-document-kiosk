@@ -31,7 +31,9 @@ const getAllValidation = [
   query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be 1-100.'),
   query('statusId').optional().isInt({ min: 1 }).withMessage('Invalid status ID.'),
   query('residentId').optional().isInt({ min: 1 }).withMessage('Invalid resident ID.'),
-  query('serviceId').optional().isInt({ min: 1 }).withMessage('Invalid service ID.')
+  query('serviceId').optional().isInt({ min: 1 }).withMessage('Invalid service ID.'),
+  query('excludeIdServices').optional().isBoolean().withMessage('excludeIdServices must be a boolean.'),
+  query('idServicesOnly').optional().isBoolean().withMessage('idServicesOnly must be a boolean.')
 ];
 
 module.exports = { createValidation, updateValidation, statusValidation, changeStatusValidation, getAllValidation };

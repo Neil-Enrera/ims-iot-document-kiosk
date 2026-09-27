@@ -160,7 +160,7 @@ const validateServiceFormData = (formFields, formData = {}, serviceName = 'Servi
     const isNameLabel = field.label && (field.label.toLowerCase().includes('name') || field.label.toLowerCase().includes('person') || field.label.toLowerCase().includes('relative') || field.label.toLowerCase().includes('father') || field.label.toLowerCase().includes('mother') || field.label.toLowerCase().includes('spouse') || field.label.toLowerCase().includes('guardian')) && !field.label.toLowerCase().includes('number') && !field.label.toLowerCase().includes('phone');
     const isName = !isPhone && !field.key.toLowerCase().includes('email') && !field.key.toLowerCase().includes('address') && (isNameKey || isNameLabel);
     if (isName) {
-      if (!/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(valStr)) {
+      if (!/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-'.]+$/.test(valStr)) {
         errors.push(`${field.label || field.key} must contain letters only.`);
       }
     }
@@ -241,7 +241,7 @@ const validateGuestInput = (guest) => {
 
   if (!fullName || fullName.length < 2) {
     errors.push('Guest full name must be at least 2 characters.');
-  } else if (!/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(fullName)) {
+  } else if (!/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-'.]+$/.test(fullName)) {
     errors.push('Guest full name must contain letters only.');
   }
   if (fullName.length > 100) {

@@ -3,9 +3,9 @@ import { isPlatformBrowser } from '@angular/common';
 import { Resident, Service, FormField, RfidCardInfo } from './kiosk.service';
 
 export interface KioskState {
-  mode: 'home' | 'rfid' | 'guest' | 'documents' | 'barangay';
+  mode: 'home' | 'rfid' | 'documents' | 'barangay';
   rfidStep: 'scan' | 'search' | 'error';
-  currentStep: 'welcome' | 'guest-info' | 'services' | 'requirements' | 'form' | 'photo' | 'review' | 'success';
+  currentStep: 'welcome' | 'services' | 'requirements' | 'form' | 'photo' | 'review' | 'success';
   barangayStep: 'requirements' | 'form' | 'photo' | 'signature' | 'review' | 'success';
   resident: Resident | null;
   rfidCard?: RfidCardInfo | null;

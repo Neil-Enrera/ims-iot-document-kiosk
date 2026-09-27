@@ -1,15 +1,14 @@
 import { Component, OnInit, OnDestroy, signal, ViewChild, ElementRef, AfterViewChecked } from '@angular/core';
-import { DatePipe } from '@angular/common';
+import { DatePipe, CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { renderAsync } from 'docx-preview';
 import { Observable, of } from 'rxjs';
 import { NotificationService } from '../notifications/notification.service';
-import { BarangayIdApplication, Service } from '../../shared/interfaces/api.interfaces';
-import { ApplicationService, ServiceService } from '../../shared/services';
+import { BarangayIdApplication, Service, DocumentRequest, RequestStatusHistory } from '../../shared/interfaces/api.interfaces';
+import { ApplicationService, ServiceService, RequestService, DocumentService } from '../../shared/services';
 import { TableComponent, TableColumn } from '../../shared/components/table.component';
 import { CardComponent } from '../../shared/components/card.component';
 import { InputComponent } from '../../shared/components/input.component';
-import { SelectComponent } from '../../shared/components/select.component';
 import { PaginationComponent } from '../../shared/components/pagination.component';
 import { ButtonComponent } from '../../shared/components/button.component';
 import { ModalComponent } from '../../shared/components/modal.component';
@@ -20,10 +19,19 @@ import { environment } from '../../../environments/environment';
 
 type ApplicationRow = BarangayIdApplication & { full_name: string; _photoError?: boolean };
 
+interface UploadedRequirement {
+  requirement_name: string;
+  original_name: string;
+  file_url: string;
+  mime_type: string;
+  file_size?: number;
+}
+
 @Component({
   selector: 'app-applications',
   standalone: true,
   imports: [
+    CommonModule,
     TableComponent, CardComponent, InputComponent, PaginationComponent,
     ButtonComponent, ModalComponent, ConfirmDialogComponent, DocumentPreviewModalComponent,
     DatePipe, ServiceFormComponent, RouterLink
@@ -34,7 +42,7 @@ type ApplicationRow = BarangayIdApplication & { full_name: string; _photoError?:
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Barangay ID Requests</h1>
-          <p class="text-sm text-slate-500 mt-1">Review and process Barangay ID applications submitted through the kiosk.</p>
+          <p class="text-sm text-slate-500 mt-1">Review and process new Barangay ID registrations, renewals, and card replacements.</p>
         </div>
         <button
           type="button"
@@ -48,185 +56,365 @@ type ApplicationRow = BarangayIdApplication & { full_name: string; _photoError?:
         </button>
       </div>
 
-      <app-card>
-        <div class="mb-4 flex flex-col gap-3">
-          <!-- Search & Filter Controls Row -->
-          <div class="flex flex-wrap items-center gap-3">
-            <!-- Large Search Input -->
-            <div class="flex-1 min-w-[240px]">
-              <app-input
-                placeholder="Search application number or applicant name..."
-                [value]="search()"
-                (valueChange)="onSearch($event)"
-              />
-            </div>
+      <!-- Navigation Tabs: New Applications vs Renewals & Replacements -->
+      <div class="flex items-center gap-2 mb-4 p-1.5 bg-slate-100 rounded-2xl w-fit border border-slate-200/80">
+        <button
+          type="button"
+          (click)="setTab('applications')"
+          [class]="activeTab() === 'applications'
+            ? 'px-4 py-2 rounded-xl text-xs font-bold bg-white text-orange-600 shadow-xs border border-slate-200 transition-all flex items-center gap-2 cursor-pointer'
+            : 'px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 transition-all flex items-center gap-2 cursor-pointer'">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+          </svg>
+          New ID Applications
+          @if (applicationsTotal() > 0) {
+            <span class="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-orange-700">{{ applicationsTotal() }}</span>
+          }
+        </button>
 
-            <!-- All Statuses Dropdown -->
-            <div class="w-44 sm:w-48">
-              <select
-                [value]="statusFilter()"
-                (change)="onStatusChange($any($event.target).value)"
-                class="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 cursor-pointer shadow-xs">
-                @for (opt of statusOptions; track opt.value) {
-                  <option [value]="opt.value">{{ opt.label }}</option>
-                }
-              </select>
-            </div>
+        <button
+          type="button"
+          (click)="setTab('renewals')"
+          [class]="activeTab() === 'renewals'
+            ? 'px-4 py-2 rounded-xl text-xs font-bold bg-white text-orange-600 shadow-xs border border-slate-200 transition-all flex items-center gap-2 cursor-pointer'
+            : 'px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 transition-all flex items-center gap-2 cursor-pointer'">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          ID Renewals & Replacements
+          @if (renewalsTotal() > 0) {
+            <span class="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-orange-700">{{ renewalsTotal() }}</span>
+          }
+        </button>
+      </div>
 
-            <!-- All Dates Dropdown -->
-            <div class="w-44 sm:w-48">
-              <select
-                [value]="datePreset()"
-                (change)="onDatePresetChange($any($event.target).value)"
-                class="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 cursor-pointer shadow-xs">
-                <option value="">All Dates</option>
-                <option value="today">Today</option>
-                <option value="yesterday">Yesterday</option>
-                <option value="last7days">Last 7 Days</option>
-                <option value="thisMonth">This Month</option>
-                <option value="custom">Custom Date Range...</option>
-              </select>
-            </div>
+      <!-- ================= TAB 1: NEW APPLICATIONS ================= -->
+      @if (activeTab() === 'applications') {
+        <app-card>
+          <div class="mb-4 flex flex-col gap-3">
+            <!-- Search & Filter Controls Row -->
+            <div class="flex flex-wrap items-center gap-3">
+              <!-- Search Input -->
+              <div class="flex-1 min-w-[240px]">
+                <app-input
+                  placeholder="Search application number or applicant name..."
+                  [value]="search()"
+                  (valueChange)="onSearch($event)"
+                />
+              </div>
 
-            <!-- Orange outlined Filter button -->
-            <button
-              type="button"
-              (click)="toggleCustomFilter()"
-              [class]="hasActiveFilters()
-                ? 'h-10 px-3.5 rounded-lg border border-orange-500 bg-orange-50 text-orange-700 hover:bg-orange-100 text-xs font-semibold flex items-center gap-1.5 transition shadow-xs cursor-pointer'
-                : 'h-10 px-3.5 rounded-lg border border-orange-500/80 text-orange-600 hover:bg-orange-50 text-xs font-semibold flex items-center gap-1.5 transition shadow-xs cursor-pointer'">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
-              </svg>
-              Filter
-              @if (activeFilterCount() > 0) {
-                <span class="w-4 h-4 rounded-full bg-orange-600 text-white text-[10px] flex items-center justify-center font-bold">{{ activeFilterCount() }}</span>
-              }
-            </button>
+              <!-- All Statuses Dropdown -->
+              <div class="w-44 sm:w-48">
+                <select
+                  [value]="statusFilter()"
+                  (change)="onStatusChange($any($event.target).value)"
+                  class="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 cursor-pointer shadow-xs">
+                  @for (opt of statusOptions; track opt.value) {
+                    <option [value]="opt.value">{{ opt.label }}</option>
+                  }
+                </select>
+              </div>
 
-            <!-- Reset Filters (when active) -->
-            @if (hasActiveFilters()) {
+              <!-- All Dates Dropdown -->
+              <div class="w-44 sm:w-48">
+                <select
+                  [value]="datePreset()"
+                  (change)="onDatePresetChange($any($event.target).value)"
+                  class="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 cursor-pointer shadow-xs">
+                  <option value="">All Dates</option>
+                  <option value="today">Today</option>
+                  <option value="yesterday">Yesterday</option>
+                  <option value="last7days">Last 7 Days</option>
+                  <option value="thisMonth">This Month</option>
+                  <option value="custom">Custom Date Range...</option>
+                </select>
+              </div>
+
+              <!-- Filter button -->
               <button
                 type="button"
-                (click)="resetFilters()"
-                class="h-10 px-3 rounded-lg border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50 text-xs font-medium flex items-center gap-1 transition cursor-pointer">
+                (click)="toggleCustomFilter()"
+                [class]="hasActiveFilters()
+                  ? 'h-10 px-3.5 rounded-lg border border-orange-500 bg-orange-50 text-orange-700 hover:bg-orange-100 text-xs font-semibold flex items-center gap-1.5 transition shadow-xs cursor-pointer'
+                  : 'h-10 px-3.5 rounded-lg border border-orange-500/80 text-orange-600 hover:bg-orange-50 text-xs font-semibold flex items-center gap-1.5 transition shadow-xs cursor-pointer'">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
                 </svg>
-                Clear
+                Filter
+                @if (activeFilterCount() > 0) {
+                  <span class="w-4 h-4 rounded-full bg-orange-600 text-white text-[10px] flex items-center justify-center font-bold">{{ activeFilterCount() }}</span>
+                }
               </button>
+
+              <!-- Reset Filters -->
+              @if (hasActiveFilters()) {
+                <button
+                  type="button"
+                  (click)="resetFilters()"
+                  class="h-10 px-3 rounded-lg border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50 text-xs font-medium flex items-center gap-1 transition cursor-pointer">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                  </svg>
+                  Clear
+                </button>
+              }
+            </div>
+
+            <!-- Custom Date Range Sub-row -->
+            @if (datePreset() === 'custom') {
+              <div class="flex flex-wrap items-center gap-3 p-2.5 bg-orange-50/40 border border-orange-200 rounded-xl">
+                <span class="text-xs font-bold text-orange-800 uppercase tracking-wide">Date Range:</span>
+                <div class="flex items-center gap-2">
+                  <label class="text-xs text-slate-500">From:</label>
+                  <input
+                    type="date"
+                    [value]="dateFrom()"
+                    (change)="onCustomDateChange('from', $any($event.target).value)"
+                    class="h-8 px-2.5 border border-slate-200 rounded-lg text-xs text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 shadow-xs"
+                  />
+                </div>
+                <div class="flex items-center gap-2">
+                  <label class="text-xs text-slate-500">To:</label>
+                  <input
+                    type="date"
+                    [value]="dateTo()"
+                    (change)="onCustomDateChange('to', $any($event.target).value)"
+                    class="h-8 px-2.5 border border-slate-200 rounded-lg text-xs text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 shadow-xs"
+                  />
+                </div>
+              </div>
             }
           </div>
 
-          <!-- Custom Date Range Sub-row -->
-          @if (datePreset() === 'custom') {
-            <div class="flex flex-wrap items-center gap-3 p-2.5 bg-orange-50/40 border border-orange-200 rounded-xl">
-              <span class="text-xs font-bold text-orange-800 uppercase tracking-wide">Date Range:</span>
-              <div class="flex items-center gap-2">
-                <label class="text-xs text-slate-500">From:</label>
-                <input
-                  type="date"
-                  [value]="dateFrom()"
-                  (change)="onCustomDateChange('from', $any($event.target).value)"
-                  class="h-8 px-2.5 border border-slate-200 rounded-lg text-xs text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 shadow-xs"
-                />
-              </div>
-              <div class="flex items-center gap-2">
-                <label class="text-xs text-slate-500">To:</label>
-                <input
-                  type="date"
-                  [value]="dateTo()"
-                  (change)="onCustomDateChange('to', $any($event.target).value)"
-                  class="h-8 px-2.5 border border-slate-200 rounded-lg text-xs text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 shadow-xs"
-                />
-              </div>
-            </div>
-          }
-        </div>
-
-        <app-table
-          [columns]="columns"
-          [data]="applications()"
-          [loading]="loading()"
-          [sortColumn]="sortColumn()"
-          [sortDirection]="sortDirection()"
-          trackBy="application_id"
-          emptyMessage="No applications found"
-          [cellTemplates]="{
-            application_number: appNumCell,
-            full_name: applicantCell,
-            created_at: dateCell,
-            status: statusCell
-          }"
-          (onSort)="onSort($event)"
-          (onRowClick)="openDetail($event)"
-        >
-          <!-- APPLICATION # Template -->
-          <ng-template #appNumCell let-row="row">
-            <span class="text-sm font-semibold text-slate-900">
-              {{ row.application_number }}
-            </span>
-          </ng-template>
-
-          <!-- APPLICANT Template -->
-          <ng-template #applicantCell let-row="row">
-            <div class="flex items-center gap-3">
-              @if (imageUrl(row.photo) && !row._photoError) {
-                <img
-                  [src]="imageUrl(row.photo)"
-                  (error)="row._photoError = true"
-                  (click)="$event.stopPropagation(); openImagePreview(imageUrl(row.photo), row.full_name + ' — Photo')"
-                  alt="Photo"
-                  title="Click to view full photo"
-                  class="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-orange-200 shadow-xs cursor-pointer hover:scale-110 hover:ring-2 hover:ring-orange-400 transition-all"
-                />
-              } @else {
-                <div class="w-9 h-9 rounded-full bg-orange-100 text-orange-700 font-bold text-xs flex items-center justify-center shrink-0 border border-orange-200 shadow-xs">
-                  {{ getInitials(row.full_name) }}
-                </div>
-              }
-              <div class="leading-tight min-w-0">
-                <p class="font-semibold text-slate-900 text-sm truncate">{{ row.full_name }}</p>
-                <p class="text-[11px] text-slate-400 capitalize">{{ row.gender ? row.gender.toLowerCase() : '' }}{{ row.civil_status ? ' · ' + row.civil_status.toLowerCase() : '' }}</p>
-              </div>
-            </div>
-          </ng-template>
-
-          <!-- DATE SUBMITTED Template (2 lines: Date on 1st line, Time underneath) -->
-          <ng-template #dateCell let-row="row">
-            <div class="leading-tight">
-              <p class="text-sm font-medium text-slate-800">{{ formatSubmissionDate(row.created_at) }}</p>
-              <p class="text-xs text-slate-400 mt-0.5">{{ formatSubmissionTime(row.created_at) }}</p>
-            </div>
-          </ng-template>
-
-          <!-- STATUS Template (Pill-shaped badges with subtle right chevron) -->
-          <ng-template #statusCell let-row="row">
-            <div class="flex items-center justify-between gap-3">
-              <span [class]="'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ' + statusChipClass(row.status)">
-                <span class="w-1.5 h-1.5 rounded-full" [class]="statusDotClass(row.status)"></span>
-                {{ formatStatusLabel(row.status) }}
+          <app-table
+            [columns]="columns"
+            [data]="applications()"
+            [loading]="loading()"
+            [sortColumn]="sortColumn()"
+            [sortDirection]="sortDirection()"
+            trackBy="application_id"
+            emptyMessage="No Barangay ID applications found"
+            [cellTemplates]="{
+              application_number: appNumCell,
+              full_name: applicantCell,
+              created_at: dateCell,
+              status: statusCell
+            }"
+            (onSort)="onSort($event)"
+            (onRowClick)="openDetail($event)"
+          >
+            <!-- APPLICATION # Template -->
+            <ng-template #appNumCell let-row="row">
+              <span class="text-sm font-semibold text-slate-900">
+                {{ row.application_number }}
               </span>
-              <svg class="w-4 h-4 text-slate-300 group-hover:text-orange-500 transition-colors shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-              </svg>
+            </ng-template>
+
+            <!-- APPLICANT Template -->
+            <ng-template #applicantCell let-row="row">
+              <div class="flex items-center gap-3">
+                @if (imageUrl(row.photo) && !row._photoError) {
+                  <img
+                    [src]="imageUrl(row.photo)"
+                    (error)="row._photoError = true"
+                    (click)="$event.stopPropagation(); openImagePreview(imageUrl(row.photo), row.full_name + ' — Photo')"
+                    alt="Photo"
+                    title="Click to view full photo"
+                    class="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-orange-200 shadow-xs cursor-pointer hover:scale-110 hover:ring-2 hover:ring-orange-400 transition-all"
+                  />
+                } @else {
+                  <div class="w-9 h-9 rounded-full bg-orange-100 text-orange-700 font-bold text-xs flex items-center justify-center shrink-0 border border-orange-200 shadow-xs">
+                    {{ getInitials(row.full_name) }}
+                  </div>
+                }
+                <div class="leading-tight min-w-0">
+                  <p class="font-semibold text-slate-900 text-sm truncate">{{ row.full_name }}</p>
+                  <p class="text-[11px] text-slate-400 capitalize">{{ row.gender ? row.gender.toLowerCase() : '' }}{{ row.civil_status ? ' · ' + row.civil_status.toLowerCase() : '' }}</p>
+                </div>
+              </div>
+            </ng-template>
+
+            <!-- DATE SUBMITTED Template -->
+            <ng-template #dateCell let-row="row">
+              <div class="leading-tight">
+                <p class="text-sm font-medium text-slate-800">{{ formatSubmissionDate(row.created_at) }}</p>
+                <p class="text-xs text-slate-400 mt-0.5">{{ formatSubmissionTime(row.created_at) }}</p>
+              </div>
+            </ng-template>
+
+            <!-- STATUS Template -->
+            <ng-template #statusCell let-row="row">
+              <div class="flex items-center justify-between gap-3">
+                <span [class]="'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ' + statusChipClass(row.status)">
+                  <span class="w-1.5 h-1.5 rounded-full" [class]="statusDotClass(row.status)"></span>
+                  {{ formatStatusLabel(row.status) }}
+                </span>
+                <svg class="w-4 h-4 text-slate-300 group-hover:text-orange-500 transition-colors shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                </svg>
+              </div>
+            </ng-template>
+          </app-table>
+
+          @if (applicationsTotal() > 0) {
+            <app-pagination
+              [total]="applicationsTotal()"
+              [currentPage]="page()"
+              [limit]="limit"
+              itemLabel="applications"
+              (onPageChange)="onPageChange($event)"
+              (onLimitChange)="onLimitChange($event)"
+            />
+          }
+        </app-card>
+      }
+
+      <!-- ================= TAB 2: RENEWALS & REPLACEMENTS ================= -->
+      @if (activeTab() === 'renewals') {
+        <app-card>
+          <div class="mb-4 flex flex-col gap-3">
+            <!-- Search & Filter Controls Row -->
+            <div class="flex flex-wrap items-center gap-3">
+              <!-- Search Input -->
+              <div class="flex-1 min-w-[240px]">
+                <app-input
+                  placeholder="Search request #, resident name, or reason..."
+                  [value]="renewalSearch()"
+                  (valueChange)="onRenewalSearch($event)"
+                />
+              </div>
+
+              <!-- Service Type Dropdown -->
+              <div class="w-48 sm:w-52">
+                <select
+                  [value]="renewalServiceFilter()"
+                  (change)="onRenewalServiceFilter($any($event.target).value)"
+                  class="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 cursor-pointer shadow-xs">
+                  <option value="">All ID Types</option>
+                  <option value="Barangay ID Renewal">Barangay ID Renewal</option>
+                  <option value="Barangay ID Replacement">Barangay ID Replacement</option>
+                </select>
+              </div>
+
+              <!-- Status Dropdown -->
+              <div class="w-44 sm:w-48">
+                <select
+                  [value]="renewalStatusFilter()"
+                  (change)="onRenewalStatusFilter($any($event.target).value)"
+                  class="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 cursor-pointer shadow-xs">
+                  @for (opt of renewalStatusOptions; track opt.value) {
+                    <option [value]="opt.value">{{ opt.label }}</option>
+                  }
+                </select>
+              </div>
+
+              <!-- Reset Filters -->
+              @if (hasRenewalActiveFilters()) {
+                <button
+                  type="button"
+                  (click)="resetRenewalFilters()"
+                  class="h-10 px-3 rounded-lg border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50 text-xs font-medium flex items-center gap-1 transition cursor-pointer">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                  </svg>
+                  Clear
+                </button>
+              }
             </div>
-          </ng-template>
-        </app-table>
+          </div>
 
-        @if (total() > 0) {
-          <app-pagination
-            [total]="total()"
-            [currentPage]="page()"
-            [limit]="limit"
-            itemLabel="applications"
-            (onPageChange)="onPageChange($event)"
-            (onLimitChange)="onLimitChange($event)"
-          />
-        }
-      </app-card>
+          <app-table
+            [columns]="renewalColumns"
+            [data]="renewals()"
+            [loading]="renewalsLoading()"
+            [sortColumn]="renewalSortColumn()"
+            [sortDirection]="renewalSortDirection()"
+            trackBy="request_id"
+            emptyMessage="No Barangay ID renewal or replacement requests found"
+            [cellTemplates]="{
+              request_number: reqNumCell,
+              resident_name: residentCell,
+              service_name: serviceTypeCell,
+              request_date: renewalDateCell,
+              status_id: renewalStatusCell
+            }"
+            (onSort)="onRenewalSort($event)"
+            (onRowClick)="openRenewalDetail($event)"
+          >
+            <!-- REQUEST # -->
+            <ng-template #reqNumCell let-row="row">
+              <span class="text-sm font-semibold text-slate-900">{{ row.request_number }}</span>
+            </ng-template>
 
-      <!-- Application Detail Modal -->
+            <!-- RESIDENT -->
+            <ng-template #residentCell let-row="row">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center justify-center shrink-0 border border-emerald-200 shadow-xs">
+                  {{ getInitials(row.resident_name) }}
+                </div>
+                <div class="leading-tight min-w-0">
+                  <p class="font-semibold text-slate-900 text-sm truncate">{{ row.resident_name }}</p>
+                  <p class="text-[11px] text-slate-400 font-mono">{{ row.resident_code || 'RESIDENT' }}</p>
+                </div>
+              </div>
+            </ng-template>
+
+            <!-- SERVICE TYPE -->
+            <ng-template #serviceTypeCell let-row="row">
+              @if (row.service_name?.includes('Renewal')) {
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                  </svg>
+                  ID Renewal
+                </span>
+              } @else {
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                  </svg>
+                  ID Replacement
+                </span>
+              }
+            </ng-template>
+
+            <!-- DATE SUBMITTED -->
+            <ng-template #renewalDateCell let-row="row">
+              <div class="leading-tight">
+                <p class="text-sm font-medium text-slate-800">{{ formatSubmissionDate(row.request_date) }}</p>
+                <p class="text-xs text-slate-400 mt-0.5">{{ formatSubmissionTime(row.request_date) }}</p>
+              </div>
+            </ng-template>
+
+            <!-- STATUS -->
+            <ng-template #renewalStatusCell let-row="row">
+              <div class="flex items-center justify-between gap-3">
+                <span [class]="'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ' + getRenewalStatusClass(row.status_id)">
+                  <span class="w-1.5 h-1.5 rounded-full" [class]="getRenewalStatusDotClass(row.status_id)"></span>
+                  {{ row.status_name }}
+                </span>
+                <svg class="w-4 h-4 text-slate-300 group-hover:text-orange-500 transition-colors shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                </svg>
+              </div>
+            </ng-template>
+          </app-table>
+
+          @if (renewalsTotal() > 0) {
+            <app-pagination
+              [total]="renewalsTotal()"
+              [currentPage]="renewalPage()"
+              [limit]="renewalLimit"
+              itemLabel="requests"
+              (onPageChange)="onRenewalPageChange($event)"
+              (onLimitChange)="onRenewalLimitChange($event)"
+            />
+          }
+        </app-card>
+      }
+
+      <!-- ================= MODAL: APPLICATION DETAIL (TAB 1) ================= -->
       <app-modal [open]="showDetail()" [title]="selected()?.application_number || 'Application Details'" (onClose)="closeDetail()" [containerClass]="(cardPreviewBlob() || cardPreviewUrl()) ? 'max-w-6xl' : 'max-w-2xl'" [bodyClass]="(cardPreviewBlob() || cardPreviewUrl()) ? '!overflow-hidden flex flex-col h-[75vh]' : ''">
         @if (selected(); as app) {
           <div class="flex flex-col lg:flex-row gap-6 h-full min-h-0">
@@ -404,7 +592,7 @@ type ApplicationRow = BarangayIdApplication & { full_name: string; _photoError?:
                         <p class="text-[10px] text-gray-400">Click to preview the live card template</p>
                       </div>
                       <div class="flex items-center gap-3">
-                        <button type="button" (click)="previewIdCard(app)" class="text-blue-600 hover:text-blue-800 text-xs font-bold">Preview</button>
+                        <button type="button" (click)="previewIdCard(app)" class="text-blue-600 hover:text-blue-800 text-xs font-bold cursor-pointer">Preview</button>
                         <a [href]="idCardUrl(app)" target="_blank" class="text-blue-600 hover:text-blue-800 text-xs font-bold">Download</a>
                       </div>
                     </div>
@@ -431,10 +619,10 @@ type ApplicationRow = BarangayIdApplication & { full_name: string; _photoError?:
                 <div class="px-4 py-2 bg-gray-100 border-b border-gray-200 flex items-center justify-between shrink-0">
                   <span class="text-xs font-bold text-gray-700 truncate" [title]="cardPreviewTitle()">{{ cardPreviewTitle() }}</span>
                   <div class="flex items-center gap-1 shrink-0">
-                    <button type="button" (click)="zoomOutPreview()" class="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 font-bold">-</button>
+                    <button type="button" (click)="zoomOutPreview()" class="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 font-bold cursor-pointer">-</button>
                     <span class="text-xs font-medium w-10 text-center tabular-nums">{{ zoomPercentPreview() }}</span>
-                    <button type="button" (click)="zoomInPreview()" class="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 font-bold">+</button>
-                    <button type="button" (click)="closePreviewPane()" class="text-gray-400 hover:text-gray-600 ml-2" title="Close Preview">
+                    <button type="button" (click)="zoomInPreview()" class="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 font-bold cursor-pointer">+</button>
+                    <button type="button" (click)="closePreviewPane()" class="text-gray-400 hover:text-gray-600 ml-2 cursor-pointer" title="Close Preview">
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                       </svg>
@@ -448,12 +636,138 @@ type ApplicationRow = BarangayIdApplication & { full_name: string; _photoError?:
                 </div>
               </div>
             }
-
           </div>
         }
       </app-modal>
 
-      <!-- Action Confirmation -->
+      <!-- ================= MODAL: RENEWAL / REPLACEMENT DETAIL (TAB 2) ================= -->
+      <app-modal
+        [open]="showRenewalDetail()"
+        [title]="selectedRenewal()?.request_number || 'ID Request Details'"
+        (onClose)="closeRenewalDetail()"
+        containerClass="max-w-3xl"
+      >
+        @if (selectedRenewal(); as req) {
+          <div class="space-y-6">
+            <!-- Header: Request Type & Status Banner -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-lg font-bold text-slate-900">{{ req.resident_name }}</span>
+                  <span class="text-xs font-mono px-2 py-0.5 rounded-md bg-slate-200 text-slate-700 font-semibold">{{ req.resident_code || 'RESIDENT' }}</span>
+                </div>
+                <p class="text-xs text-slate-500 mt-1 font-medium">{{ req.service_name }} · Submitted on {{ formatSubmissionDate(req.request_date) }} at {{ formatSubmissionTime(req.request_date) }}</p>
+              </div>
+              <span [class]="'inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold border ' + getRenewalStatusClass(req.status_id)">
+                <span class="w-2 h-2 rounded-full" [class]="getRenewalStatusDotClass(req.status_id)"></span>
+                {{ req.status_name }}
+              </span>
+            </div>
+
+            <!-- Uploaded Digital Requirements (Photos, Old ID, Affidavit) -->
+            @if (getUploadedRequirements(req.form_data).length > 0) {
+              <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs">
+                <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 mb-3">
+                  <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.373L8.552 18.32a1.5 1.5 0 01-2.121-2.121L13.879 8.75" />
+                  </svg>
+                  Uploaded Verification Documents ({{ getUploadedRequirements(req.form_data).length }})
+                </h4>
+                <div class="space-y-2">
+                  @for (doc of getUploadedRequirements(req.form_data); track doc.requirement_name) {
+                    <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+                      <div class="flex items-center gap-3 min-w-0 pr-3">
+                        @if (isImageFile(doc)) {
+                          <img [src]="resolveFileUrl(doc.file_url)" alt="Requirement" class="w-12 h-12 rounded-lg object-cover border border-slate-300 shadow-2xs shrink-0 cursor-pointer" (click)="openImagePreview(resolveFileUrl(doc.file_url), doc.requirement_name)" />
+                        } @else {
+                          <div class="w-10 h-10 rounded-lg bg-orange-100 border border-orange-200 text-orange-700 flex items-center justify-center shrink-0">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                            </svg>
+                          </div>
+                        }
+                        <div class="min-w-0">
+                          <span class="font-bold text-slate-900 block truncate">{{ doc.requirement_name }}</span>
+                          <span class="text-slate-500 text-[11px] block truncate">{{ doc.original_name }}</span>
+                        </div>
+                      </div>
+                      <a [href]="resolveFileUrl(doc.file_url)" target="_blank" class="px-3.5 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shrink-0 transition flex items-center gap-1.5 cursor-pointer">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                        </svg>
+                        <span>View Document</span>
+                      </a>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Application Form Data Summary -->
+            <div class="bg-gray-50 rounded-2xl border border-slate-200 p-4 space-y-3">
+              <p class="text-xs font-bold uppercase tracking-wide text-slate-600 pb-2 border-b border-slate-200">Resident & Request Information</p>
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                <div><span class="text-slate-500 block">Resident Name:</span><span class="font-bold text-slate-800">{{ req.resident_name }}</span></div>
+                <div><span class="text-slate-500 block">Processing Fee:</span><span class="font-bold text-slate-800">₱{{ req.processing_fee | number: '1.2-2' }}</span></div>
+                <div><span class="text-slate-500 block">Purpose / Reason:</span><span class="font-bold text-slate-800">{{ req.purpose || req.form_data?.['replacement_reason'] || '-' }}</span></div>
+                @if (req.form_data?.['address']) {
+                  <div class="col-span-2 sm:col-span-3"><span class="text-slate-500 block">Address:</span><span class="font-bold text-slate-800">{{ req.form_data?.['address'] }}</span></div>
+                }
+                @if (req.form_data?.['emergency_contact_name']) {
+                  <div><span class="text-slate-500 block">Emergency Contact:</span><span class="font-bold text-slate-800">{{ req.form_data?.['emergency_contact_name'] }}</span></div>
+                  <div><span class="text-slate-500 block">Emergency Phone:</span><span class="font-bold text-slate-800">{{ req.form_data?.['emergency_contact_number'] }}</span></div>
+                }
+              </div>
+            </div>
+
+            <!-- Workflow Status Controls -->
+            <div class="border border-orange-200 rounded-2xl bg-orange-50/50 p-5 space-y-4">
+              <h4 class="text-xs font-bold text-orange-900 uppercase tracking-wide">ID Request Status & Actions</h4>
+              
+              <!-- Quick Status Change Buttons -->
+              <div class="flex flex-wrap items-center gap-2">
+                @if (req.status_id === 1 || req.status_id === 11) {
+                  <button type="button" [disabled]="renewalActionLoading()" (click)="updateRenewalStatus(4, 'Started review of ID request')" class="px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-xs transition cursor-pointer">Start Review (Under Review)</button>
+                }
+                @if (req.status_id === 4) {
+                  <button type="button" [disabled]="renewalActionLoading()" (click)="updateRenewalStatus(5, 'Generating and printing ID Card')" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition cursor-pointer">Process ID (Document Processing)</button>
+                }
+                @if (req.status_id === 5) {
+                  <button type="button" [disabled]="renewalActionLoading()" (click)="updateRenewalStatus(6, 'ID card is printed and ready for pickup')" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs transition cursor-pointer">Mark Ready for Release</button>
+                }
+                @if (req.status_id === 6) {
+                  <button type="button" [disabled]="renewalActionLoading()" (click)="updateRenewalStatus(7, 'ID card successfully claimed and released')" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition cursor-pointer">Mark Released</button>
+                }
+                @if (req.status_id !== 7 && req.status_id !== 8 && req.status_id !== 9) {
+                  <button type="button" [disabled]="renewalActionLoading()" (click)="updateRenewalStatus(8, 'ID request rejected')" class="px-3.5 py-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 font-semibold text-xs transition cursor-pointer">Reject Request</button>
+                  <button type="button" [disabled]="renewalActionLoading()" (click)="updateRenewalStatus(10, 'Returned for requirement correction')" class="px-3.5 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100 font-semibold text-xs transition cursor-pointer">Return for Correction</button>
+                }
+              </div>
+
+              <!-- RFID Quick Linking -->
+              @if (req.resident_id) {
+                <div class="flex items-center justify-between pt-3 border-t border-orange-200/80">
+                  <p class="text-xs text-slate-700 font-medium">Assign or update physical RFID card:</p>
+                  <a [routerLink]="['/rfid']" [queryParams]="{ new: '1', residentId: req.resident_id }" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-600 hover:bg-orange-700 text-white text-xs font-semibold shadow-xs transition">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 9.5h8M7 12h8" stroke-linecap="round"/>
+                    </svg>
+                    Assign RFID Card
+                  </a>
+                </div>
+              }
+            </div>
+
+            <!-- Footer -->
+            <div class="flex justify-end pt-2">
+              <button type="button" (click)="closeRenewalDetail()" class="px-5 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold text-xs transition cursor-pointer">Close</button>
+            </div>
+          </div>
+        }
+      </app-modal>
+
+      <!-- Action Confirmation Dialog -->
       <app-confirm-dialog
         [open]="showActionConfirm()"
         [title]="actionTitle()"
@@ -546,13 +860,16 @@ type ApplicationRow = BarangayIdApplication & { full_name: string; _photoError?:
   `
 })
 export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecked {
+  activeTab = signal<'applications' | 'renewals'>('applications');
+
+  // --- Tab 1: New ID Applications State ---
   applications = signal<ApplicationRow[]>([]);
   loading = signal(true);
   search = signal('');
   statusFilter = signal('');
   page = signal(1);
   limit = 10;
-  total = signal(0);
+  applicationsTotal = signal(0);
   sortColumn = signal('application_id');
   sortDirection = signal<'ASC' | 'DESC'>('DESC');
 
@@ -602,11 +919,48 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
     { key: 'status', label: 'STATUS', sortable: true }
   ];
 
+  // --- Tab 2: Renewals & Replacements State ---
+  renewals = signal<DocumentRequest[]>([]);
+  renewalsLoading = signal(false);
+  renewalsTotal = signal(0);
+  renewalSearch = signal('');
+  renewalServiceFilter = signal('');
+  renewalStatusFilter = signal('');
+  renewalPage = signal(1);
+  renewalLimit = 10;
+  renewalSortColumn = signal('request_id');
+  renewalSortDirection = signal<'ASC' | 'DESC'>('DESC');
+
+  selectedRenewal = signal<DocumentRequest | null>(null);
+  showRenewalDetail = signal(false);
+  renewalActionLoading = signal(false);
+
+  renewalColumns: TableColumn[] = [
+    { key: 'request_number', label: 'REQUEST #', sortable: true },
+    { key: 'resident_name', label: 'RESIDENT', sortable: true },
+    { key: 'service_name', label: 'SERVICE TYPE', sortable: true },
+    { key: 'request_date', label: 'DATE SUBMITTED', sortable: true },
+    { key: 'status_id', label: 'STATUS', sortable: true }
+  ];
+
+  renewalStatusOptions = [
+    { value: '', label: 'All Statuses' },
+    { value: '1', label: 'Submitted' },
+    { value: '4', label: 'Under Review' },
+    { value: '5', label: 'Document Processing' },
+    { value: '6', label: 'Ready for Release' },
+    { value: '7', label: 'Released' },
+    { value: '8', label: 'Rejected' },
+    { value: '10', label: 'Returned for Correction' }
+  ];
+
   private sseSubscription: any = null;
   private readonly assetBase = environment.apiUrl.replace(/\/api\/v1$/, '');
 
   constructor(
     private applicationService: ApplicationService,
+    private requestService: RequestService,
+    private documentService: DocumentService,
     private notificationService: NotificationService,
     private serviceService: ServiceService,
     private route: ActivatedRoute,
@@ -615,12 +969,17 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
 
   ngOnInit() {
     this.loadApplications();
+    this.loadRenewals();
     this.connectToUpdates();
     this.loadBarangayIdService();
     this.route.queryParams.subscribe(params => {
+      if (params['tab']) {
+        this.activeTab.set(params['tab'] === 'renewals' ? 'renewals' : 'applications');
+      }
       if (params['applicationId']) {
         const appId = parseInt(params['applicationId'], 10);
         if (appId) {
+          this.activeTab.set('applications');
           this.applicationService.getById(appId).subscribe({
             next: (res) => {
               if (res.data) {
@@ -635,14 +994,19 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
           });
         }
         this.router.navigate([], { queryParams: { applicationId: null }, queryParamsHandling: 'merge' });
-      } else if (params['status']) {
-        const status = params['status'];
-        if (status) {
-          this.statusFilter.set(status);
-          this.page.set(1);
-          this.loadApplications();
+      } else if (params['requestId']) {
+        const reqId = parseInt(params['requestId'], 10);
+        if (reqId) {
+          this.activeTab.set('renewals');
+          this.requestService.getById(reqId).subscribe({
+            next: (res) => {
+              if (res.data) {
+                this.openRenewalDetail(res.data);
+              }
+            }
+          });
         }
-        this.router.navigate([], { queryParams: { status: null }, queryParamsHandling: 'merge' });
+        this.router.navigate([], { queryParams: { requestId: null }, queryParamsHandling: 'merge' });
       }
     });
   }
@@ -654,26 +1018,30 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
     }
   }
 
+  setTab(tab: 'applications' | 'renewals') {
+    this.activeTab.set(tab);
+    if (tab === 'applications') {
+      this.loadApplications();
+    } else {
+      this.loadRenewals();
+    }
+  }
+
   ngAfterViewChecked() {
     const blob = this.cardPreviewBlob();
     const url = this.cardPreviewUrl();
     if ((blob || url) && (this.renderedBlobKey !== blob || this.renderedUrlKey !== url)) {
-      // Mark as scheduled immediately to avoid re-scheduling on every CD cycle.
-      const blobToRender = blob;
-      const urlToRender = url;
-      this.renderedBlobKey = blobToRender;
-      this.renderedUrlKey = urlToRender;
+      this.renderedBlobKey = blob;
+      this.renderedUrlKey = url;
 
-      // Defer one tick so Angular finishes rendering the @if(cardPreviewBlob || cardPreviewUrl)
-      // block and #previewContainer is guaranteed to exist in the DOM.
       setTimeout(() => {
         if (!this.previewContainer?.nativeElement) return;
         const container = this.previewContainer.nativeElement;
         container.innerHTML = '';
 
-        if (blobToRender) {
-          if (blobToRender.type === 'application/pdf') {
-            const blobUrl = URL.createObjectURL(blobToRender);
+        if (blob) {
+          if (blob.type === 'application/pdf') {
+            const blobUrl = URL.createObjectURL(blob);
             const iframe = document.createElement('iframe');
             iframe.style.width = '100%';
             iframe.style.height = '60vh';
@@ -682,23 +1050,23 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
             iframe.src = blobUrl;
             container.appendChild(iframe);
           } else {
-            renderAsync(blobToRender, container).catch(err => {
+            renderAsync(blob, container).catch(err => {
               console.error('Error rendering ID draft preview:', err);
             });
           }
-        } else if (urlToRender) {
-          const isPdf = urlToRender.toLowerCase().endsWith('.pdf');
+        } else if (url) {
+          const isPdf = url.toLowerCase().endsWith('.pdf');
           if (isPdf) {
             const iframe = document.createElement('iframe');
             iframe.style.width = '100%';
             iframe.style.height = '60vh';
             iframe.style.minHeight = '450px';
             iframe.style.border = '0';
-            iframe.src = urlToRender;
+            iframe.src = url;
             container.appendChild(iframe);
           } else {
             const img = document.createElement('img');
-            img.src = urlToRender;
+            img.src = url;
             img.style.maxWidth = '100%';
             img.style.height = 'auto';
             img.style.border = '1px solid #e2e8f0';
@@ -735,6 +1103,9 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
       if (event?.type?.startsWith('application-')) {
         this.loadApplications();
       }
+      if (event?.type?.startsWith('request-')) {
+        this.loadRenewals();
+      }
     });
   }
 
@@ -752,10 +1123,31 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
     }).subscribe({
       next: (res) => {
         this.applications.set(res.data.map(a => ({ ...a, full_name: this.fullName(a) })));
-        this.total.set(res.pagination.total);
+        this.applicationsTotal.set(res.pagination.total);
         this.loading.set(false);
       },
       error: () => this.loading.set(false)
+    });
+  }
+
+  loadRenewals() {
+    this.renewalsLoading.set(true);
+    this.requestService.getAll({
+      search: this.renewalSearch() || undefined,
+      serviceName: this.renewalServiceFilter() || undefined,
+      statusId: this.renewalStatusFilter() ? parseInt(this.renewalStatusFilter()) : undefined,
+      idServicesOnly: true,
+      page: this.renewalPage(),
+      limit: this.renewalLimit,
+      sortBy: this.renewalSortColumn(),
+      sortOrder: this.renewalSortDirection()
+    }).subscribe({
+      next: (res) => {
+        this.renewals.set(res.data || []);
+        this.renewalsTotal.set(res.pagination?.total || 0);
+        this.renewalsLoading.set(false);
+      },
+      error: () => this.renewalsLoading.set(false)
     });
   }
 
@@ -809,6 +1201,142 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
     this.closePreviewPane();
   }
 
+  // --- Renewal Handlers ---
+  onRenewalSearch(value: string) {
+    this.renewalSearch.set(value);
+    this.renewalPage.set(1);
+    this.loadRenewals();
+  }
+
+  onRenewalServiceFilter(value: string) {
+    this.renewalServiceFilter.set(value);
+    this.renewalPage.set(1);
+    this.loadRenewals();
+  }
+
+  onRenewalStatusFilter(value: string) {
+    this.renewalStatusFilter.set(value);
+    this.renewalPage.set(1);
+    this.loadRenewals();
+  }
+
+  onRenewalSort(column: string) {
+    if (this.renewalSortColumn() === column) {
+      this.renewalSortDirection.set(this.renewalSortDirection() === 'ASC' ? 'DESC' : 'ASC');
+    } else {
+      this.renewalSortColumn.set(column);
+      this.renewalSortDirection.set('ASC');
+    }
+    this.loadRenewals();
+  }
+
+  onRenewalPageChange(page: number) {
+    this.renewalPage.set(page);
+    this.loadRenewals();
+  }
+
+  onRenewalLimitChange(limit: number) {
+    this.renewalLimit = limit;
+    this.renewalPage.set(1);
+    this.loadRenewals();
+  }
+
+  hasRenewalActiveFilters(): boolean {
+    return !!(this.renewalSearch() || this.renewalServiceFilter() || this.renewalStatusFilter());
+  }
+
+  resetRenewalFilters() {
+    this.renewalSearch.set('');
+    this.renewalServiceFilter.set('');
+    this.renewalStatusFilter.set('');
+    this.renewalPage.set(1);
+    this.loadRenewals();
+  }
+
+  openRenewalDetail(req: DocumentRequest) {
+    this.selectedRenewal.set(req);
+    this.showRenewalDetail.set(true);
+  }
+
+  closeRenewalDetail() {
+    this.showRenewalDetail.set(false);
+    this.selectedRenewal.set(null);
+  }
+
+  updateRenewalStatus(statusId: number, remarks: string) {
+    const req = this.selectedRenewal();
+    if (!req) return;
+    this.renewalActionLoading.set(true);
+    this.requestService.changeStatus(req.request_id, statusId, remarks).subscribe({
+      next: () => {
+        this.renewalActionLoading.set(false);
+        this.loadRenewals();
+        // Refresh selected renewal
+        this.requestService.getById(req.request_id).subscribe({
+          next: (res) => {
+            if (res.data) this.selectedRenewal.set(res.data);
+          }
+        });
+      },
+      error: (err) => {
+        this.renewalActionLoading.set(false);
+        alert(err.error?.message || 'Failed to update status.');
+      }
+    });
+  }
+
+  getRenewalStatusClass(statusId: number): string {
+    switch (statusId) {
+      case 1: return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 4: return 'bg-orange-50 text-orange-700 border-orange-200';
+      case 5: return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+      case 6: return 'bg-purple-50 text-purple-700 border-purple-200';
+      case 7: return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 8: return 'bg-rose-50 text-rose-700 border-rose-200';
+      case 10: return 'bg-amber-50 text-amber-800 border-amber-200';
+      case 11: return 'bg-purple-50 text-purple-800 border-purple-200';
+      default: return 'bg-slate-50 text-slate-700 border-slate-200';
+    }
+  }
+
+  getRenewalStatusDotClass(statusId: number): string {
+    switch (statusId) {
+      case 1: return 'bg-blue-500';
+      case 4: return 'bg-orange-500';
+      case 5: return 'bg-indigo-500';
+      case 6: return 'bg-purple-500';
+      case 7: return 'bg-emerald-500';
+      case 8: return 'bg-rose-500';
+      case 10: return 'bg-amber-500';
+      case 11: return 'bg-purple-500';
+      default: return 'bg-slate-400';
+    }
+  }
+
+  getUploadedRequirements(formData: any): UploadedRequirement[] {
+    if (!formData) return [];
+    const files = formData._uploaded_requirements || formData._uploaded_files || [];
+    if (Array.isArray(files)) return files;
+    return [];
+  }
+
+  isImageFile(doc: UploadedRequirement): boolean {
+    if (!doc) return false;
+    const mime = (doc.mime_type || '').toLowerCase();
+    const url = (doc.file_url || '').toLowerCase();
+    return mime.startsWith('image/') || url.endsWith('.jpg') || url.endsWith('.jpeg') || url.endsWith('.png') || url.endsWith('.webp');
+  }
+
+  resolveFileUrl(fileUrl: string): string {
+    if (!fileUrl) return '';
+    if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://') || fileUrl.startsWith('data:')) {
+      return fileUrl;
+    }
+    const clean = fileUrl.replace(/^\/+/, '');
+    return `${this.assetBase}/${clean}`;
+  }
+
+  // --- Image Lightbox Helpers ---
   imageUrl(path: string | null): string {
     if (!path) return '';
     if (path.startsWith('data:') || path.startsWith('blob:') || path.startsWith('http://') || path.startsWith('https://')) {
@@ -1027,9 +1555,6 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
     this.showCardPreview.set(true);
   }
 
-  // Draft preview: render the ID card from the application's submitted data
-  // WITHOUT approving it. The server returns a DOCX buffer (no resident record,
-  // no ID number, nothing persisted), which we display inline for review.
   previewDraft(app: ApplicationRow) {
     if (this.previewing()) return;
     this.previewing.set(true);

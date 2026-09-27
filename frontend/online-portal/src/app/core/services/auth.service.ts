@@ -164,6 +164,20 @@ export class AuthService {
     );
   }
 
+  updateProfile(data: Partial<PortalAccount>): Observable<PortalApiResponse<PortalAccount>> {
+    return this.http.put<PortalApiResponse<PortalAccount>>(
+      `${this.apiUrl}/portal/profile`,
+      data
+    ).pipe(
+      tap(res => {
+        if (res.success && res.data) {
+          this.storeUser(res.data);
+          this.currentUser.set(res.data);
+        }
+      })
+    );
+  }
+
   forgotPassword(identifier: string): Observable<PortalApiResponse<{ maskedEmail?: string }>> {
     return this.http.post<PortalApiResponse<{ maskedEmail?: string }>>(
       `${this.apiUrl}/portal/forgot-password`,

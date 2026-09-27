@@ -206,7 +206,9 @@ const getEquivalentUids = (rawUid) => {
         candidates.add(clean.padStart(10, '0'));
         candidates.add(String(Number(clean)));
       }
-    } catch {}
+    } catch {
+      // ignore conversion errors
+    }
   }
 
   // 2. If valid hex string (e.g. '490C98E5', 'C9463D05', or 14-char hex from ESP8266/MFRC522)
@@ -230,7 +232,9 @@ const getEquivalentUids = (rawUid) => {
             candidates.add(decLE.toString().padStart(10, '0'));
           }
         }
-      } catch {}
+      } catch {
+        // ignore conversion errors
+      }
     }
   }
 

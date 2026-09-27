@@ -1,4 +1,4 @@
-const { body, param } = require('express-validator');
+const { body } = require('express-validator');
 
 const parseBirthDate = (birthDate) => {
   if (!birthDate) return null;
@@ -63,17 +63,17 @@ const barangayIdApplicationValidation = [
     .trim()
     .notEmpty().withMessage('First name is required.')
     .isLength({ min: 2, max: 50 }).withMessage('First name must be between 2 and 50 characters.')
-    .matches(/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/).withMessage('First name must contain letters only.'),
+    .matches(/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-'.]+$/).withMessage('First name must contain letters only.'),
   body('middleName')
     .optional({ values: 'falsy' })
     .trim()
     .isLength({ max: 50 }).withMessage('Middle name must not exceed 50 characters.')
-    .matches(/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/).withMessage('Middle name must contain letters only.'),
+    .matches(/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-'.]+$/).withMessage('Middle name must contain letters only.'),
   body('lastName')
     .trim()
     .notEmpty().withMessage('Last name is required.')
     .isLength({ min: 2, max: 50 }).withMessage('Last name must be between 2 and 50 characters.')
-    .matches(/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/).withMessage('Last name must contain letters only.'),
+    .matches(/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-'.]+$/).withMessage('Last name must contain letters only.'),
   body('suffix').optional().trim().isLength({ max: 20 }).withMessage('Suffix must not exceed 20 characters.'),
   body('birthDate').optional({ values: 'null' }).isISO8601().withMessage('Invalid birth date format.').custom(async (val) => {
     if (!val) return true;
@@ -119,7 +119,7 @@ const barangayIdApplicationValidation = [
     .optional({ values: 'falsy' })
     .trim()
     .isLength({ max: 100 }).withMessage('Emergency contact name must not exceed 100 characters.')
-    .matches(/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/).withMessage('Emergency contact name must contain letters only.'),
+    .matches(/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-'.]+$/).withMessage('Emergency contact name must contain letters only.'),
   body('emergencyContactNumber').optional({ values: 'falsy' }).trim().custom(val => {
     if (!val) return true;
     const clean = String(val).replace(/[\s\-()]/g, '');

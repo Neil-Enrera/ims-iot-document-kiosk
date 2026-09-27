@@ -1297,7 +1297,8 @@ export class RequestsComponent implements OnInit, OnDestroy {
   loadServices() {
     this.serviceService.getAll({ limit: 100 }).subscribe({
       next: (res) => {
-        this.services.set(res.data || []);
+        const docServices = (res.data || []).filter((s: Service) => !s.service_name.toLowerCase().startsWith('barangay id'));
+        this.services.set(docServices);
       }
     });
   }
@@ -1308,6 +1309,7 @@ export class RequestsComponent implements OnInit, OnDestroy {
       search: this.search() || undefined,
       statusId: this.statusFilter() ? parseInt(this.statusFilter()) : undefined,
       serviceId: this.serviceFilter() ? parseInt(this.serviceFilter()) : undefined,
+      excludeIdServices: true,
       dateFrom: this.dateFrom() || undefined,
       dateTo: this.dateTo() || undefined,
       page: this.page(),

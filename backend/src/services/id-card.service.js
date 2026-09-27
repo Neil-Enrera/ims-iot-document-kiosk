@@ -69,8 +69,6 @@ const docxImageHelper = require('./docx-image.helper');
 
 const resolveImageBuffer = docxImageHelper.resolveImageBuffer;
 const getImageSize = docxImageHelper.getImageSize;
-const sniffImageExtension = docxImageHelper.sniffImageExtension;
-const buildDrawingXml = docxImageHelper.buildDrawingXml;
 const embedPhoto = docxImageHelper.embedPhoto;
 const PHOTO_TOKEN = docxImageHelper.PHOTO_TOKEN;
 

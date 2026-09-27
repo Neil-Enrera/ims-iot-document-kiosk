@@ -1,6 +1,6 @@
 const { body, param, query } = require('express-validator');
 
-const nameRegex = /^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/;
+const nameRegex = /^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-'.]+$/;
 
 const parseBirthDate = (birthDate) => {
   if (!birthDate) return null;

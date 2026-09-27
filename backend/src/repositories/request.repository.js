@@ -1,6 +1,6 @@
 const pool = require('../config/database');
 
-const findAll = async ({ search, statusId, residentId, serviceId, dateFrom, dateTo, page, limit, sortBy, sortOrder }) => {
+const findAll = async ({ search, statusId, residentId, serviceId, dateFrom, dateTo, page, limit, sortBy, sortOrder, excludeIdServices, idServicesOnly }) => {
   let query = `SELECT rq.*, rs.status_name, s.service_name, s.processing_fee,
     (rq.status_id = 6 AND rq.expires_at IS NOT NULL AND rq.expires_at < NOW()) AS is_expired,
     COALESCE(
@@ -105,6 +105,14 @@ const findAll = async ({ search, statusId, residentId, serviceId, dateFrom, date
     conditions.push('rq.request_date <= ?');
     params.push(toVal);
     countParams.push(toVal);
+  }
+
+  if (excludeIdServices) {
+    conditions.push("s.service_name NOT LIKE 'Barangay ID%'");
+  }
+
+  if (idServicesOnly) {
+    conditions.push("s.service_name LIKE 'Barangay ID%'");
   }
 
   if (conditions.length > 0) {

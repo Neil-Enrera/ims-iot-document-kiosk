@@ -102,7 +102,7 @@ import { environment } from '../../../environments/environment';
                               Verified
                             </span>
                           </div>
-                          <p class="text-[11px] text-slate-500 font-mono truncate mt-0.5">{{ auth.currentUser()?.account_id }}</p>
+                          <p class="text-[11px] text-slate-500 font-mono truncate mt-0.5">{{ auth.currentUser()?.resident_code || auth.currentUser()?.account_id }}</p>
                         </div>
                       </div>
                     </div>

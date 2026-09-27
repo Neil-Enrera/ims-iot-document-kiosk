@@ -388,7 +388,7 @@ const PLACEHOLDERS = [
   { key: 'id_issued', category: 'barangay_id', source: 'system', label: 'ID issue date', aliases: ['id_date_issued'], description: 'ID issue date (same as date issued).', resolve: (c) => formatDate(c.system.date) },
   { key: 'id_expiration', category: 'barangay_id', source: 'application', label: 'ID expiration date', aliases: ['id_expiry', 'barangay_id_expiration'], description: 'ID expiration date (from application).', resolve: (c) => pick(formatDate(c.application?.id_expiration), c.application?.expiration_date) || '' },
   { key: 'id_type', category: 'barangay_id', source: 'system', label: 'ID type', description: 'Type of ID document.', resolve: () => 'Barangay ID' },
-  { key: 'account_id', category: 'barangay_id', source: 'system', label: 'Online Account ID', aliases: ['portal_account_id', 'online_account', 'bsm_account_id'], description: 'Online portal Account ID (BSM-000001).', resolve: (c) => pick(c.application?.account_id, c.resident?.account_id) || '' },
+  { key: 'account_id', category: 'barangay_id', source: 'system', label: 'Online Account ID', aliases: ['portal_account_id', 'online_account', 'bsm_account_id'], description: 'Online portal Account ID / Resident ID.', resolve: (c) => pick(c.resident?.resident_code, c.application?.account_id, c.resident?.account_id) || '' },
   { key: 'rfid_uid', category: 'barangay_id', source: 'application', label: 'RFID UID', future: true, description: 'RFID tag UID (planned).', resolve: (c) => c.application?.rfid_uid || '' },
   { key: 'resident_photo', category: 'barangay_id', source: 'resident', label: 'Resident photo', future: true, description: 'Resident photo (image embedding planned).', resolve: () => '' }
 ];
@@ -625,7 +625,7 @@ const auditServiceConfiguration = (service, tags = []) => {
     return !templateSet.has(normKey) && !mappedFieldKeys.has(normKey);
   });
 
-  const { unknown, known, used } = classifyTags(templateTags, service);
+  const { unknown, known } = classifyTags(templateTags, service);
 
   const warnings = [];
   if (!templateTags.length && service?.template_path) {

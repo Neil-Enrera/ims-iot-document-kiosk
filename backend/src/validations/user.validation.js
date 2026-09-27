@@ -1,6 +1,6 @@
 const { body, param, query } = require('express-validator');
 
-const nameRegex = /^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/;
+const nameRegex = /^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-'.]+$/;
 
 const createValidation = [
   body('roleId').isInt({ min: 1 }).withMessage('Role ID is required.'),

@@ -2,7 +2,6 @@ const pool = require('../config/database');
 const transactionService = require('./transaction.service');
 const notificationService = require('./notification.service');
 const sseManager = require('./notification-sse');
-const auditRepository = require('../repositories/audit.repository');
 
 const parseJson = (val) => {
   if (!val) return null;

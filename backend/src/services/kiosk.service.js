@@ -1,5 +1,6 @@
 const kioskRepository = require('../repositories/kiosk.repository');
 const http = require('http');
+const { URL } = require('url');
 
 const KIOSK_SERVER_URL = process.env.KIOSK_SERVER_URL || 'http://localhost:3001';
 
