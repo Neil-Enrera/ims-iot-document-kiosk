@@ -384,7 +384,7 @@ const PLACEHOLDERS = [
   { key: 'day_of_week', category: 'system', source: 'system', label: 'Day of the week', aliases: ['weekday'], description: "Today's weekday (e.g. Thursday).", resolve: (c) => WEEKDAYS[c.system.date.getDay()] },
 
   // ---------------- Barangay ID Information ----------------
-  { key: 'id_number', category: 'barangay_id', source: 'application', label: 'Barangay ID number', aliases: ['barangay_id_number', 'brgy_id_no', 'id_no'], description: 'Barangay ID number (from the application form).', resolve: (c) => pick(c.application?.id_number, c.application?.barangay_id_number) || '' },
+  { key: 'id_number', category: 'barangay_id', source: 'application', label: 'Barangay ID number', aliases: ['barangay_id_number', 'brgy_id_no', 'id_no'], description: 'Barangay ID number (from the application form).', resolve: (c) => pick(c.application?.id_number, c.application?.barangay_id_number, c.resident?.resident_code, c.request?.request_number) || '' },
   { key: 'id_issued', category: 'barangay_id', source: 'system', label: 'ID issue date', aliases: ['id_date_issued'], description: 'ID issue date (same as date issued).', resolve: (c) => formatDate(c.system.date) },
   { key: 'id_expiration', category: 'barangay_id', source: 'application', label: 'ID expiration date', aliases: ['id_expiry', 'barangay_id_expiration'], description: 'ID expiration date (from application).', resolve: (c) => pick(formatDate(c.application?.id_expiration), c.application?.expiration_date) || '' },
   { key: 'id_type', category: 'barangay_id', source: 'system', label: 'ID type', description: 'Type of ID document.', resolve: () => 'Barangay ID' },

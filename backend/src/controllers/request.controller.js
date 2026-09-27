@@ -144,6 +144,24 @@ const release = async (req, res) => {
   }
 };
 
+const preview = async (req, res) => {
+  try {
+    const documentService = require('../services/document.service');
+    const result = await documentService.renderExistingRequestPreview(req.params.id);
+    if (!result.success) return errorResponse(res, 400, result.message);
+
+    res.set({
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'Content-Disposition': 'inline; filename="document-preview.docx"',
+      'Cache-Control': 'no-store'
+    });
+    return res.send(result.buffer);
+  } catch (error) {
+    console.error('Request preview error:', error);
+    return errorResponse(res, 500, 'Internal server error.');
+  }
+};
+
 const stats = async (req, res) => {
   try {
     const result = await requestService.getStats();
@@ -153,4 +171,4 @@ const stats = async (req, res) => {
   }
 };
 
-module.exports = { getAll, getById, create, update, approve, reject, cancel, changeStatus, release, stats };
+module.exports = { getAll, getById, create, update, approve, reject, cancel, changeStatus, release, preview, stats };

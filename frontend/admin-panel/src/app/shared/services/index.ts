@@ -177,7 +177,7 @@ export class DocumentService {
 
 @Injectable({ providedIn: 'root' })
 export class RequestService {
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService, private http: HttpClient) {}
 
   getAll(params?: any) {
     return this.api.getList<DocumentRequest>('/requests', params);
@@ -185,6 +185,10 @@ export class RequestService {
 
   getById(id: number) {
     return this.api.get<DocumentRequest>(`/requests/${id}`);
+  }
+
+  previewBlob(id: number) {
+    return this.http.post(`${this.api.baseUrl}/requests/${id}/preview`, {}, { responseType: 'blob' });
   }
 
   create(data: { residentId: number; serviceId: number; purpose?: string }) {

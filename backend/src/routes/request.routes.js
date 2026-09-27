@@ -17,6 +17,8 @@ router.post('/:id/approve', authenticate, authorize('Administrator', 'Barangay S
 router.post('/:id/reject', authenticate, authorize('Administrator', 'Barangay Secretary', 'Barangay Captain'), ...statusValidation, validate, requestController.reject);
 router.post('/:id/cancel', authenticate, authorize('Administrator', 'Barangay Secretary'), ...statusValidation, validate, requestController.cancel);
 router.post('/:id/release', authenticate, authorize('Administrator', 'Barangay Secretary'), ...statusValidation, validate, requestController.release);
+router.post('/:id/preview', authenticate, authorize('Administrator', 'Barangay Secretary', 'Barangay Captain', 'Staff'), requestController.preview);
+router.get('/:id/preview', authenticate, authorize('Administrator', 'Barangay Secretary', 'Barangay Captain', 'Staff'), requestController.preview);
 
 // Automatic document generation endpoints
 router.use('/:id/documents', documentRoutes);

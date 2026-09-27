@@ -209,7 +209,11 @@ const extractRequestPhoto = (request = {}, resident = null) => {
   if (formData._photo_path && typeof formData._photo_path === 'string') return formData._photo_path;
 
   // 3. Online Portal 2x2 ID Photo upload in _requirements
-  const reqs = Array.isArray(formData._requirements) ? formData._requirements : [];
+  const reqs = Array.isArray(formData._requirements) ? formData._requirements
+    : (Array.isArray(formData._uploaded_requirements) ? formData._uploaded_requirements
+    : (Array.isArray(formData._uploaded_files) ? formData._uploaded_files
+    : (Array.isArray(formData.requirements) ? formData.requirements
+    : (Array.isArray(request.requirements) ? request.requirements : []))));
   for (const r of reqs) {
     if (!r) continue;
     const filePath = r.file_path || r.file_url || r.filePath || r.fileUrl || (r.file_name ? `resident-photos/${r.file_name}` : null);

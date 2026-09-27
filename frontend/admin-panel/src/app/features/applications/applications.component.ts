@@ -14,6 +14,7 @@ import { ButtonComponent } from '../../shared/components/button.component';
 import { ModalComponent } from '../../shared/components/modal.component';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.component';
 import { DocumentPreviewModalComponent } from '../../shared/components/document-preview-modal.component';
+import { ToastService } from '../../shared/components/toast.service';
 import { ServiceFormComponent } from '../services/service-form.component';
 import { environment } from '../../../environments/environment';
 
@@ -643,12 +644,12 @@ interface UploadedRequirement {
       <!-- ================= MODAL: RENEWAL / REPLACEMENT DETAIL (TAB 2) ================= -->
       <app-modal
         [open]="showRenewalDetail()"
-        [title]="selectedRenewal()?.request_number || 'ID Request Details'"
+        [title]="selectedRenewal()?.request_number || 'Barangay ID Renewal Details'"
         (onClose)="closeRenewalDetail()"
-        containerClass="max-w-3xl"
+        containerClass="max-w-4xl"
       >
         @if (selectedRenewal(); as req) {
-          <div class="space-y-6">
+          <div class="space-y-5">
             <!-- Header: Request Type & Status Banner -->
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
               <div>
@@ -664,49 +665,91 @@ interface UploadedRequirement {
               </span>
             </div>
 
-            <!-- Uploaded Digital Requirements (Photos, Old ID, Affidavit) -->
-            @if (getUploadedRequirements(req.form_data).length > 0) {
-              <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs">
-                <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 mb-3">
-                  <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.373L8.552 18.32a1.5 1.5 0 01-2.121-2.121L13.879 8.75" />
-                  </svg>
-                  Uploaded Verification Documents ({{ getUploadedRequirements(req.form_data).length }})
-                </h4>
-                <div class="space-y-2">
-                  @for (doc of getUploadedRequirements(req.form_data); track doc.requirement_name) {
-                    <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs">
-                      <div class="flex items-center gap-3 min-w-0 pr-3">
-                        @if (isImageFile(doc)) {
-                          <img [src]="resolveFileUrl(doc.file_url)" alt="Requirement" class="w-12 h-12 rounded-lg object-cover border border-slate-300 shadow-2xs shrink-0 cursor-pointer" (click)="openImagePreview(resolveFileUrl(doc.file_url), doc.requirement_name)" />
-                        } @else {
-                          <div class="w-10 h-10 rounded-lg bg-orange-100 border border-orange-200 text-orange-700 flex items-center justify-center shrink-0">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                            </svg>
-                          </div>
-                        }
-                        <div class="min-w-0">
-                          <span class="font-bold text-slate-900 block truncate">{{ doc.requirement_name }}</span>
-                          <span class="text-slate-500 text-[11px] block truncate">{{ doc.original_name }}</span>
-                        </div>
+            <!-- Uploaded Verification Documents & 2x2 ID Photo -->
+            <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4">
+              <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2">
+                <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.373L8.552 18.32a1.5 1.5 0 01-2.121-2.121L13.879 8.75" />
+                </svg>
+                Uploaded Verification Documents & ID Photo
+              </h4>
+
+              <!-- Uploaded 2x2 Photo Highlight Card -->
+              @if (getPhotoRequirement(req.form_data, req); as photo) {
+                <div class="flex items-center justify-between p-3.5 rounded-xl bg-gradient-to-r from-orange-50/80 to-amber-50/40 border border-orange-200 text-xs">
+                  <div class="flex items-center gap-4 min-w-0 pr-3">
+                    <img
+                      [src]="photo.url"
+                      alt="Uploaded 2x2 ID Photo"
+                      class="w-16 h-16 rounded-xl object-cover border-2 border-orange-300 shadow-xs shrink-0 cursor-pointer hover:scale-105 transition"
+                      (click)="openImagePreview(photo.url, '2×2 ID Photo (White Background)')"
+                    />
+                    <div class="min-w-0">
+                      <div class="flex items-center gap-2">
+                        <span class="font-bold text-slate-900 block truncate">2×2 ID Photo (White Background)</span>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-orange-800 border border-orange-200">New Upload</span>
                       </div>
-                      <a [href]="resolveFileUrl(doc.file_url)" target="_blank" class="px-3.5 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shrink-0 transition flex items-center gap-1.5 cursor-pointer">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                      <span class="text-slate-500 text-[11px] block truncate mt-0.5">{{ photo.original_name }}</span>
+                      <p class="text-[11px] text-emerald-700 font-medium mt-0.5 flex items-center gap-1">
+                        <svg class="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/>
                         </svg>
-                        <span>View Document</span>
-                      </a>
+                        Will be embedded into the Barangay ID renewal card
+                      </p>
                     </div>
+                  </div>
+                  <button
+                    type="button"
+                    (click)="openImagePreview(photo.url, '2×2 ID Photo (White Background)')"
+                    class="px-3.5 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shrink-0 transition flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                    </svg>
+                    <span>View Photo</span>
+                  </button>
+                </div>
+              }
+
+              <!-- Other Uploaded Requirement Documents List -->
+              @if (getUploadedRequirements(req.form_data, req).length > 0) {
+                <div class="space-y-2">
+                  @for (doc of getUploadedRequirements(req.form_data, req); track doc.requirement_name) {
+                    @if (!doc.requirement_name?.toLowerCase()?.includes('2x2') && !doc.requirement_name?.toLowerCase()?.includes('photo')) {
+                      <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+                        <div class="flex items-center gap-3 min-w-0 pr-3">
+                          @if (isImageFile(doc)) {
+                            <img [src]="resolveFileUrl(doc.file_url)" alt="Requirement" class="w-12 h-12 rounded-lg object-cover border border-slate-300 shadow-2xs shrink-0 cursor-pointer" (click)="openImagePreview(resolveFileUrl(doc.file_url), doc.requirement_name)" />
+                          } @else {
+                            <div class="w-10 h-10 rounded-lg bg-orange-100 border border-orange-200 text-orange-700 flex items-center justify-center shrink-0">
+                              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                              </svg>
+                            </div>
+                          }
+                          <div class="min-w-0">
+                            <span class="font-bold text-slate-900 block truncate">{{ doc.requirement_name }}</span>
+                            <span class="text-slate-500 text-[11px] block truncate">{{ doc.original_name }}</span>
+                          </div>
+                        </div>
+                        <a [href]="resolveFileUrl(doc.file_url)" target="_blank" class="px-3.5 py-2 rounded-xl bg-slate-700 hover:bg-slate-800 text-white font-bold text-xs shrink-0 transition flex items-center gap-1.5 cursor-pointer">
+                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                          </svg>
+                          <span>View Document</span>
+                        </a>
+                      </div>
+                    }
                   }
                 </div>
-              </div>
-            }
+              }
+            </div>
 
             <!-- Application Form Data Summary -->
             <div class="bg-gray-50 rounded-2xl border border-slate-200 p-4 space-y-3">
-              <p class="text-xs font-bold uppercase tracking-wide text-slate-600 pb-2 border-b border-slate-200">Resident & Request Information</p>
+              <p class="text-xs font-bold uppercase tracking-wide text-slate-600 pb-2 border-b border-slate-200">Resident & Renewal Information</p>
               <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
                 <div><span class="text-slate-500 block">Resident Name:</span><span class="font-bold text-slate-800">{{ req.resident_name }}</span></div>
                 <div><span class="text-slate-500 block">Processing Fee:</span><span class="font-bold text-slate-800">₱{{ req.processing_fee | number: '1.2-2' }}</span></div>
@@ -721,40 +764,128 @@ interface UploadedRequirement {
               </div>
             </div>
 
-            <!-- Workflow Status Controls -->
-            <div class="border border-orange-200 rounded-2xl bg-orange-50/50 p-5 space-y-4">
-              <h4 class="text-xs font-bold text-orange-900 uppercase tracking-wide">ID Request Status & Actions</h4>
-              
-              <!-- Quick Status Change Buttons -->
-              <div class="flex flex-wrap items-center gap-2">
-                @if (req.status_id === 1 || req.status_id === 11) {
-                  <button type="button" [disabled]="renewalActionLoading()" (click)="updateRenewalStatus(4, 'Started review of ID request')" class="px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-xs transition cursor-pointer">Start Review (Under Review)</button>
-                }
-                @if (req.status_id === 4) {
-                  <button type="button" [disabled]="renewalActionLoading()" (click)="updateRenewalStatus(5, 'Generating and printing ID Card')" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition cursor-pointer">Process ID (Document Processing)</button>
-                }
-                @if (req.status_id === 5) {
-                  <button type="button" [disabled]="renewalActionLoading()" (click)="updateRenewalStatus(6, 'ID card is printed and ready for pickup')" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs transition cursor-pointer">Mark Ready for Release</button>
-                }
-                @if (req.status_id === 6) {
-                  <button type="button" [disabled]="renewalActionLoading()" (click)="updateRenewalStatus(7, 'ID card successfully claimed and released')" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition cursor-pointer">Mark Released</button>
-                }
-                @if (req.status_id !== 7 && req.status_id !== 8 && req.status_id !== 9) {
-                  <button type="button" [disabled]="renewalActionLoading()" (click)="updateRenewalStatus(8, 'ID request rejected')" class="px-3.5 py-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 font-semibold text-xs transition cursor-pointer">Reject Request</button>
-                  <button type="button" [disabled]="renewalActionLoading()" (click)="updateRenewalStatus(10, 'Returned for requirement correction')" class="px-3.5 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100 font-semibold text-xs transition cursor-pointer">Return for Correction</button>
-                }
-              </div>
-
-              <!-- RFID Quick Linking -->
-              @if (req.resident_id) {
-                <div class="flex items-center justify-between pt-3 border-t border-orange-200/80">
-                  <p class="text-xs text-slate-700 font-medium">Assign or update physical RFID card:</p>
-                  <a [routerLink]="['/rfid']" [queryParams]="{ new: '1', residentId: req.resident_id }" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-600 hover:bg-orange-700 text-white text-xs font-semibold shadow-xs transition">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 9.5h8M7 12h8" stroke-linecap="round"/>
+            <!-- Barangay ID Template Preview & Verification Section -->
+            <div class="border border-indigo-200 rounded-2xl bg-indigo-50/50 p-5 space-y-3">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h4 class="text-xs font-bold text-indigo-900 uppercase tracking-wide flex items-center gap-2">
+                    <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M15 8h2M15 12h2M7 16h10"/>
                     </svg>
-                    Assign RFID Card
-                  </a>
+                    Barangay ID Template Preview
+                  </h4>
+                  <p class="text-xs text-indigo-700/80 mt-0.5">Preview the generated ID card with resident data and newly uploaded 2×2 photo before approval.</p>
+                </div>
+                <button
+                  type="button"
+                  [disabled]="previewing()"
+                  (click)="previewRenewalTemplate(req)"
+                  class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition cursor-pointer shrink-0 disabled:opacity-50"
+                >
+                  @if (previewing()) {
+                    <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                    <span>Generating Preview...</span>
+                  } @else {
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    <span>Preview ID Template</span>
+                  }
+                </button>
+              </div>
+            </div>
+
+            <!-- Workflow Status & Actions (Approve / Reject / RFID Registration) -->
+            <div class="border border-slate-200 rounded-2xl bg-white p-5 space-y-4">
+              <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wide">Review & Verification Decision</h4>
+
+              <!-- If Pending / Under Review: Approve or Reject buttons -->
+              @if (req.status_id === 1 || req.status_id === 4 || req.status_id === 11) {
+                <div class="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl bg-slate-50 border border-slate-200">
+                  <div>
+                    <p class="text-xs font-bold text-slate-800">Complete Admin Verification</p>
+                    <p class="text-[11px] text-slate-500 mt-0.5">Verify the resident details, uploaded 2×2 photo, and template preview above.</p>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <button
+                      type="button"
+                      [disabled]="renewalActionLoading()"
+                      (click)="rejectRenewal(req)"
+                      class="px-4 py-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 font-bold text-xs transition cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                      </svg>
+                      <span>Reject</span>
+                    </button>
+                    <button
+                      type="button"
+                      [disabled]="renewalActionLoading()"
+                      (click)="approveRenewal(req)"
+                      class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/>
+                      </svg>
+                      <span>Approve Renewal</span>
+                    </button>
+                  </div>
+                </div>
+              }
+
+              <!-- If Approved / Ready for Release: Link to RFID Registration -->
+              @if (req.status_id === 6) {
+                <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 space-y-3">
+                  <div class="flex items-center gap-2 text-emerald-900 font-bold text-xs">
+                    <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span>Renewal Approved — Resident is ready for physical RFID Card Registration</span>
+                  </div>
+                  <p class="text-xs text-emerald-800">
+                    The renewal has been approved. The Admin can now register the resident's new RFID card UID in the RFID Card Registration page.
+                  </p>
+                  <div class="flex items-center gap-2 pt-1">
+                    <a
+                      [routerLink]="['/rfid']"
+                      [queryParams]="{ new: '1', residentId: req.resident_id }"
+                      class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-xs transition"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 9.5h8M7 12h8" stroke-linecap="round"/>
+                      </svg>
+                      <span>Proceed to RFID Card Registration</span>
+                    </a>
+                    <button
+                      type="button"
+                      [disabled]="renewalActionLoading()"
+                      (click)="updateRenewalStatus(7, 'ID card successfully claimed and released')"
+                      class="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs shadow-xs transition cursor-pointer"
+                    >
+                      Mark Released / Claimed
+                    </button>
+                  </div>
+                </div>
+              }
+
+              <!-- If Rejected: Display rejection message -->
+              @if (req.status_id === 8) {
+                <div class="p-4 rounded-xl bg-rose-50 border border-rose-200">
+                  <p class="text-xs font-bold text-rose-800">Renewal Request Rejected</p>
+                  @if (req.remarks) {
+                    <p class="text-xs text-rose-700 mt-1">Reason: {{ req.remarks }}</p>
+                  }
+                </div>
+              }
+
+              <!-- If Released: Display completed banner -->
+              @if (req.status_id === 7) {
+                <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold">
+                  ✓ ID card has been issued and claimed by the resident.
                 </div>
               }
             </div>
@@ -947,11 +1078,9 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
     { value: '', label: 'All Statuses' },
     { value: '1', label: 'Submitted' },
     { value: '4', label: 'Under Review' },
-    { value: '5', label: 'Document Processing' },
-    { value: '6', label: 'Ready for Release' },
+    { value: '6', label: 'Approved (Ready for RFID)' },
     { value: '7', label: 'Released' },
-    { value: '8', label: 'Rejected' },
-    { value: '10', label: 'Returned for Correction' }
+    { value: '8', label: 'Rejected' }
   ];
 
   private sseSubscription: any = null;
@@ -963,6 +1092,7 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
     private documentService: DocumentService,
     private notificationService: NotificationService,
     private serviceService: ServiceService,
+    private toast: ToastService,
     private route: ActivatedRoute,
     private router: Router
   ) {}
@@ -1270,6 +1400,7 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
     this.requestService.changeStatus(req.request_id, statusId, remarks).subscribe({
       next: () => {
         this.renewalActionLoading.set(false);
+        this.toast.success('Status updated successfully.');
         this.loadRenewals();
         // Refresh selected renewal
         this.requestService.getById(req.request_id).subscribe({
@@ -1280,7 +1411,90 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
       },
       error: (err) => {
         this.renewalActionLoading.set(false);
-        alert(err.error?.message || 'Failed to update status.');
+        this.toast.error(err.error?.message || 'Failed to update status.');
+      }
+    });
+  }
+
+  approveRenewal(req: DocumentRequest) {
+    if (this.renewalActionLoading()) return;
+    const confirmApprove = confirm(`Approve Barangay ID Renewal request for ${req.resident_name}?\n\nOnce approved, the resident will appear in RFID Card Registration for physical card assignment.`);
+    if (!confirmApprove) return;
+
+    this.renewalActionLoading.set(true);
+    this.requestService.changeStatus(req.request_id, 6, 'Barangay ID Renewal approved and ready for RFID Card Registration.').subscribe({
+      next: () => {
+        this.renewalActionLoading.set(false);
+        this.toast.success('ID Renewal request approved! Resident is now ready for RFID Card Registration.');
+        this.loadRenewals();
+        if (this.selectedRenewal()?.request_id === req.request_id) {
+          this.requestService.getById(req.request_id).subscribe({
+            next: (res) => { if (res.data) this.selectedRenewal.set(res.data); }
+          });
+        }
+      },
+      error: (err) => {
+        this.renewalActionLoading.set(false);
+        this.toast.error(err?.error?.message || 'Failed to approve ID renewal request.');
+      }
+    });
+  }
+
+  rejectRenewal(req: DocumentRequest) {
+    if (this.renewalActionLoading()) return;
+    const reason = prompt(`Enter rejection reason for ${req.resident_name}'s ID Renewal request:`);
+    if (reason === null) return;
+    const cleanReason = reason.trim();
+    if (!cleanReason) {
+      alert('A rejection reason is required.');
+      return;
+    }
+
+    this.renewalActionLoading.set(true);
+    this.requestService.reject(req.request_id, cleanReason).subscribe({
+      next: () => {
+        this.renewalActionLoading.set(false);
+        this.toast.success('ID Renewal request rejected.');
+        this.loadRenewals();
+        if (this.selectedRenewal()?.request_id === req.request_id) {
+          this.requestService.getById(req.request_id).subscribe({
+            next: (res) => { if (res.data) this.selectedRenewal.set(res.data); }
+          });
+        }
+      },
+      error: (err) => {
+        this.renewalActionLoading.set(false);
+        this.toast.error(err?.error?.message || 'Failed to reject ID renewal request.');
+      }
+    });
+  }
+
+  previewRenewalTemplate(req: DocumentRequest) {
+    if (this.previewing()) return;
+    this.previewing.set(true);
+    this.cardPreviewBlob.set(null);
+    this.requestService.previewBlob(req.request_id).subscribe({
+      next: (blob) => {
+        this.previewing.set(false);
+        this.cardPreviewTitle.set(`${req.resident_name} — Barangay ID Renewal (Template Preview)`);
+        this.cardPreviewBlob.set(blob);
+        this.cardPreviewUrl.set(null);
+        this.showCardPreview.set(true);
+      },
+      error: (err: any) => {
+        this.previewing.set(false);
+        let msg = 'Could not render the ID renewal template preview.';
+        if (err?.error instanceof Blob) {
+          err.error.text().then((text: string) => {
+            try {
+              const parsed = JSON.parse(text);
+              msg = parsed?.message || msg;
+            } catch { /* ignore */ }
+            this.toast.error(msg);
+          });
+        } else {
+          this.toast.error(err?.error?.message || msg);
+        }
       }
     });
   }
@@ -1290,7 +1504,7 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
       case 1: return 'bg-blue-50 text-blue-700 border-blue-200';
       case 4: return 'bg-orange-50 text-orange-700 border-orange-200';
       case 5: return 'bg-indigo-50 text-indigo-700 border-indigo-200';
-      case 6: return 'bg-purple-50 text-purple-700 border-purple-200';
+      case 6: return 'bg-emerald-50 text-emerald-700 border-emerald-200';
       case 7: return 'bg-emerald-50 text-emerald-700 border-emerald-200';
       case 8: return 'bg-rose-50 text-rose-700 border-rose-200';
       case 10: return 'bg-amber-50 text-amber-800 border-amber-200';
@@ -1304,7 +1518,7 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
       case 1: return 'bg-blue-500';
       case 4: return 'bg-orange-500';
       case 5: return 'bg-indigo-500';
-      case 6: return 'bg-purple-500';
+      case 6: return 'bg-emerald-500';
       case 7: return 'bg-emerald-500';
       case 8: return 'bg-rose-500';
       case 10: return 'bg-amber-500';
@@ -1313,11 +1527,32 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
     }
   }
 
-  getUploadedRequirements(formData: any): UploadedRequirement[] {
-    if (!formData) return [];
-    const files = formData._uploaded_requirements || formData._uploaded_files || [];
+  getUploadedRequirements(formData: any, req?: any): UploadedRequirement[] {
+    if (!formData && !req) return [];
+    const files = formData?._requirements || formData?._uploaded_requirements || formData?._uploaded_files || formData?.requirements || req?.requirements || [];
     if (Array.isArray(files)) return files;
     return [];
+  }
+
+  getPhotoRequirement(formData: any, req?: any): { url: string; original_name?: string } | null {
+    if (!formData && !req) return null;
+    if (formData?._photo) return { url: this.resolveFileUrl(formData._photo), original_name: 'Uploaded 2×2 ID Photo' };
+    if (formData?.photo) return { url: this.resolveFileUrl(formData.photo), original_name: 'Uploaded 2×2 ID Photo' };
+    if (req?.photo_path) return { url: this.resolveFileUrl(req.photo_path), original_name: '2×2 ID Photo' };
+
+    const reqs = this.getUploadedRequirements(formData, req);
+    const match = reqs.find(r => {
+      const name = (r.requirement_name || '').toLowerCase();
+      return name.includes('2x2') || name.includes('photo') || name.includes('picture') || name.includes('portrait');
+    });
+    if (match) {
+      return { url: this.resolveFileUrl(match.file_url), original_name: match.original_name || match.requirement_name };
+    }
+    const photoMatch = reqs.find(r => (r.file_url || '').toLowerCase().includes('resident-photos'));
+    if (photoMatch) {
+      return { url: this.resolveFileUrl(photoMatch.file_url), original_name: photoMatch.original_name || photoMatch.requirement_name };
+    }
+    return null;
   }
 
   isImageFile(doc: UploadedRequirement): boolean {

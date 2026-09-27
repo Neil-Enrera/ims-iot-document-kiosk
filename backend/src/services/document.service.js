@@ -348,6 +348,29 @@ const renderRequestPreview = async ({ serviceId, formData, residentId, guest, pr
   };
 };
 
+const renderExistingRequestPreview = async (requestId) => {
+  const [requestRows] = await pool.query(
+    `SELECT rq.*, rs.status_name
+     FROM requests rq
+     JOIN request_statuses rs ON rq.status_id = rs.status_id
+     WHERE rq.request_id = ?`,
+    [requestId]
+  );
+  const request = requestRows[0];
+  if (!request) {
+    return { success: false, message: 'Request not found.' };
+  }
+  const formData = parseJson(request.form_data) || {};
+
+  return renderRequestPreview({
+    serviceId: request.service_id,
+    formData,
+    residentId: request.resident_id,
+    guest: formData._guest || null,
+    processedBy: 'PREVIEW'
+  });
+};
+
 const tryConvertToPdf = async (docxPath) => {
   const soffice = findLibreOffice();
   if (!soffice) return null;
@@ -583,6 +606,7 @@ const getDocumentAsPdf = async (documentId) => {
 module.exports = {
   generateDocument,
   renderRequestPreview,
+  renderExistingRequestPreview,
   listDocuments,
   getDocument,
   getDocumentAsPdf,

@@ -8,7 +8,7 @@ const documentService = require('./document.service');
 //           -> Under Review -> Document Processing -> Ready for Release -> Released
 //           (Returned for Correction -> Resubmitted loop supported for online & kiosk requests)
 const VALID_TRANSITIONS = {
-  1: [2, 4, 8, 9, 10],     // Submitted -> Waiting for Requirements, Under Review, Rejected, Cancelled, Returned for Correction
+  1: [2, 4, 6, 8, 9, 10],  // Submitted -> Waiting for Requirements, Under Review, Ready for Release, Rejected, Cancelled, Returned for Correction
   2: [3, 8, 9, 10],        // Waiting for Requirements -> Requirements Received, Rejected, Cancelled, Returned for Correction
   3: [4, 8, 9, 10],        // Requirements Received -> Under Review, Rejected, Cancelled, Returned for Correction
   4: [5, 6, 8, 9, 10],     // Under Review -> Document Processing, Ready for Release, Rejected, Cancelled, Returned for Correction
@@ -18,7 +18,7 @@ const VALID_TRANSITIONS = {
   8: [],                   // Rejected -> (end)
   9: [],                   // Cancelled -> (end)
   10: [11, 4, 8, 9],       // Returned for Correction -> Resubmitted, Under Review, Rejected, Cancelled
-  11: [4, 5, 8, 9, 10]     // Resubmitted -> Under Review, Document Processing, Rejected, Cancelled, Returned for Correction
+  11: [4, 5, 6, 8, 9, 10]  // Resubmitted -> Under Review, Document Processing, Ready for Release, Rejected, Cancelled, Returned for Correction
 };
 
 const STATUS_IDS = {
