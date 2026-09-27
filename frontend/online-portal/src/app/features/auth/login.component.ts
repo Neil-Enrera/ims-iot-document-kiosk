@@ -30,12 +30,10 @@ import { AuthService } from '../../core/services/auth.service';
         </a>
       </header>
 
-      <!-- Center Content Area: Login Card + Right Features Highlight -->
-      <main class="relative z-10 w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-center">
-        <div class="w-full flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-14">
-          
-          <!-- ============ MAIN LOGIN / AUTH CARD ============ -->
-          <div class="w-full max-w-md rounded-3xl border border-slate-100 bg-white/95 backdrop-blur-md p-7 sm:p-9 shadow-xl shadow-slate-200/50">
+      <!-- Center Content Area: Login Card -->
+      <main class="relative z-10 w-full max-w-md mx-auto px-4 sm:px-6 py-6 flex items-center justify-center">
+        <!-- ============ MAIN LOGIN / AUTH CARD ============ -->
+        <div class="w-full rounded-3xl border border-slate-100 bg-white/95 backdrop-blur-md p-7 sm:p-9 shadow-xl shadow-slate-200/50">
             
             <!-- Top Avatar Badge -->
             <div class="w-14 h-14 rounded-full bg-orange-50 border border-orange-200 text-orange-600 mx-auto flex items-center justify-center shadow-2xs">
@@ -321,52 +319,6 @@ import { AuthService } from '../../core/services/auth.service';
             }
 
           </div>
-
-          <!-- ============ RIGHT SIDE FEATURES (Matching Screenshot) ============ -->
-          <div class="hidden lg:flex flex-col gap-4 max-w-xs">
-            
-            <!-- Feature 1: Request Documents -->
-            <div class="flex items-start gap-3.5 p-4 rounded-2xl bg-white/80 backdrop-blur-xs border border-slate-100 shadow-xs">
-              <div class="w-10 h-10 rounded-2xl bg-orange-50 border border-orange-200 text-orange-600 flex items-center justify-center shrink-0 shadow-2xs">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                </svg>
-              </div>
-              <div>
-                <h3 class="text-sm font-bold text-slate-900 leading-tight">Request Documents</h3>
-                <p class="text-xs text-slate-500 mt-0.5 leading-snug">Get your certificates and clearances faster and easier.</p>
-              </div>
-            </div>
-
-            <!-- Feature 2: Barangay ID Services -->
-            <div class="flex items-start gap-3.5 p-4 rounded-2xl bg-white/80 backdrop-blur-xs border border-slate-100 shadow-xs">
-              <div class="w-10 h-10 rounded-2xl bg-orange-50 border border-orange-200 text-orange-600 flex items-center justify-center shrink-0 shadow-2xs">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/>
-                </svg>
-              </div>
-              <div>
-                <h3 class="text-sm font-bold text-slate-900 leading-tight">Barangay ID Services</h3>
-                <p class="text-xs text-slate-500 mt-0.5 leading-snug">Apply and manage your Barangay ID online.</p>
-              </div>
-            </div>
-
-            <!-- Feature 3: Safe & Secure -->
-            <div class="flex items-start gap-3.5 p-4 rounded-2xl bg-white/80 backdrop-blur-xs border border-slate-100 shadow-xs">
-              <div class="w-10 h-10 rounded-2xl bg-orange-50 border border-orange-200 text-orange-600 flex items-center justify-center shrink-0 shadow-2xs">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-                </svg>
-              </div>
-              <div>
-                <h3 class="text-sm font-bold text-slate-900 leading-tight">Safe & Secure</h3>
-                <p class="text-xs text-slate-500 mt-0.5 leading-snug">Your information is protected and confidential.</p>
-              </div>
-            </div>
-
-          </div>
-
-        </div>
       </main>
 
       <!-- Bottom Footer -->
