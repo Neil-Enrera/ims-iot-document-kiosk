@@ -338,7 +338,8 @@ interface UploadedRequirement {
               resident_name: residentCell,
               service_name: serviceTypeCell,
               request_date: renewalDateCell,
-              status_id: renewalStatusCell
+              status_id: renewalStatusCell,
+              actions: renewalActionsCell
             }"
             (onSort)="onRenewalSort($event)"
             (onRowClick)="openRenewalDetail($event)"
@@ -390,14 +391,26 @@ interface UploadedRequirement {
 
             <!-- STATUS -->
             <ng-template #renewalStatusCell let-row="row">
-              <div class="flex items-center justify-between gap-3">
-                <span [class]="'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ' + getRenewalStatusClass(row.status_id)">
-                  <span class="w-1.5 h-1.5 rounded-full" [class]="getRenewalStatusDotClass(row.status_id)"></span>
-                  {{ row.status_name }}
-                </span>
-                <svg class="w-4 h-4 text-slate-300 group-hover:text-orange-500 transition-colors shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-                </svg>
+              <span [class]="'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ' + getRenewalStatusClass(row.status_id)">
+                <span class="w-1.5 h-1.5 rounded-full" [class]="getRenewalStatusDotClass(row.status_id)"></span>
+                {{ row.status_name }}
+              </span>
+            </ng-template>
+
+            <!-- ACTIONS -->
+            <ng-template #renewalActionsCell let-row="row">
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  (click)="$event.stopPropagation(); openRenewalDetail(row)"
+                  class="px-3 py-1.5 rounded-lg bg-orange-50 hover:bg-orange-100 text-orange-700 font-bold text-xs border border-orange-200 shadow-2xs transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <svg class="w-3.5 h-3.5 text-orange-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  </svg>
+                  <span>Review & Verify</span>
+                </button>
               </div>
             </ng-template>
           </app-table>
@@ -1071,7 +1084,8 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
     { key: 'resident_name', label: 'RESIDENT', sortable: true },
     { key: 'service_name', label: 'SERVICE TYPE', sortable: true },
     { key: 'request_date', label: 'DATE SUBMITTED', sortable: true },
-    { key: 'status_id', label: 'STATUS', sortable: true }
+    { key: 'status_id', label: 'STATUS', sortable: true },
+    { key: 'actions', label: 'ACTIONS', sortable: false }
   ];
 
   renewalStatusOptions = [
