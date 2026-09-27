@@ -249,6 +249,7 @@ const createBarangayIdApplication = async (req, res) => {
     if (!result.success) return errorResponse(res, 400, result.message);
 
     const app = result.data;
+    broadcastStatusDisplayUpdate().catch(() => {});
     return createdResponse(res, result.message, {
       application_id: app.application_id,
       application_number: app.application_number,
@@ -353,7 +354,7 @@ const verifyRfid = async (req, res) => {
 // Public status display board (no auth required)
 // Returns request numbers and details grouped by board column for public display.
 const fetchStatusDisplayData = async () => {
-  const [rows] = await pool.query(
+  const [docRows] = await pool.query(
     `SELECT rq.request_number, rq.request_id, rs.status_name, s.service_name, rq.request_date
      FROM requests rq
      JOIN request_statuses rs ON rq.status_id = rs.status_id
@@ -363,9 +364,26 @@ const fetchStatusDisplayData = async () => {
      ORDER BY rq.request_id ASC`
   );
 
+  const [appRows] = await pool.query(
+    `SELECT a.application_number AS request_number, a.application_id AS request_id,
+            CASE 
+              WHEN a.status = 'PENDING' THEN 'Under Review'
+              WHEN a.status = 'APPROVED' THEN 'Ready for Release'
+              ELSE a.status
+            END AS status_name,
+            'Barangay ID' AS service_name,
+            a.created_at AS request_date
+     FROM barangay_id_applications a
+     WHERE a.status IN ('PENDING', 'APPROVED')
+       AND (a.status = 'PENDING' OR a.reviewed_at >= DATE_SUB(NOW(), INTERVAL 7 DAY))
+     ORDER BY a.application_id ASC`
+  );
+
+  const allRows = [...docRows, ...appRows];
+
   return {
     updatedAt: new Date().toISOString(),
-    underReview: rows
+    underReview: allRows
       .filter(r => r.status_name !== 'Ready for Release' && r.status_name !== 'Released' && r.status_name !== 'Rejected' && r.status_name !== 'Cancelled')
       .map(r => ({
         request_id: r.request_id,
@@ -375,7 +393,7 @@ const fetchStatusDisplayData = async () => {
         status_name: r.status_name,
         request_date: r.request_date
       })),
-    readyForRelease: rows
+    readyForRelease: allRows
       .filter(r => r.status_name === 'Ready for Release')
       .map(r => ({
         request_id: r.request_id,

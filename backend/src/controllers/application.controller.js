@@ -56,6 +56,8 @@ const approve = async (req, res) => {
   try {
     const result = await applicationService.approveApplication(req.params.id, req.user.userId, req.body.remarks, req.ip);
     if (!result.success) return errorResponse(res, 400, result.message);
+    const { broadcastStatusDisplayUpdate } = require('./kiosk.controller');
+    broadcastStatusDisplayUpdate().catch(() => {});
     return successResponse(res, result.message, result.data);
   } catch (error) {
     console.error('Application approve error:', error);
@@ -67,6 +69,8 @@ const reject = async (req, res) => {
   try {
     const result = await applicationService.rejectApplication(req.params.id, req.user.userId, req.body.remarks, req.ip);
     if (!result.success) return errorResponse(res, 400, result.message);
+    const { broadcastStatusDisplayUpdate } = require('./kiosk.controller');
+    broadcastStatusDisplayUpdate().catch(() => {});
     return successResponse(res, result.message, result.data);
   } catch (error) {
     console.error('Application reject error:', error);
