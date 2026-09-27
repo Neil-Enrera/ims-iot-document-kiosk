@@ -201,14 +201,45 @@ import { environment } from '../../../environments/environment';
             <div class="space-y-2 pt-1">
               <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400 px-1">Barangay ID / RFID Card Registration</p>
               
-              @if (!isRegistered(res)) {
-                <!-- Registration Form (When Resident Has No Active Card) -->
+              <!-- Renewal / Replacement Link Banner -->
+              @if (fromRenewal() || reissueMode()) {
+                <div class="p-3.5 bg-orange-50 border border-orange-200 rounded-xl text-orange-950 text-xs flex items-center justify-between gap-3 shadow-2xs">
+                  <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="w-8 h-8 rounded-lg bg-orange-500 text-white flex items-center justify-center shrink-0">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
+                    </div>
+                    <div>
+                      <div class="flex items-center gap-1.5 flex-wrap">
+                        <span class="font-bold text-slate-900">Barangay ID Renewal Request</span>
+                        @if (currentRequestId()) {
+                          <span class="px-2 py-0.5 rounded-full bg-orange-200/80 text-orange-900 font-mono font-bold text-[10px]">#REQ-{{ currentRequestId() }}</span>
+                        }
+                      </div>
+                      <p class="text-[11px] text-orange-800 mt-0.5">
+                        Tap or enter the new physical RFID Card UID below. Once confirmed, the renewal will automatically mark as <strong>Released</strong>.
+                      </p>
+                    </div>
+                  </div>
+                  @if (isRegistered(res)) {
+                    <button
+                      type="button"
+                      (click)="reissueMode.set(false); fromRenewal.set(false)"
+                      class="px-2.5 py-1 text-[11px] font-bold text-orange-800 hover:text-orange-950 underline shrink-0 cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                  }
+                </div>
+              }
+
+              @if (!isRegistered(res) || fromRenewal() || reissueMode()) {
+                <!-- Registration Form (When Resident Has No Active Card OR in Renewal/Reissue mode) -->
                 <div class="bg-orange-50/50 border border-orange-200 rounded-xl p-4 space-y-3">
                   <div class="flex items-center gap-2 text-orange-900 font-bold text-sm">
                     <svg class="w-4 h-4 text-orange-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                       <rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 9.5h8M7 12h8" stroke-linecap="round"/>
                     </svg>
-                    <span>Register New RFID Card</span>
+                    <span>{{ (fromRenewal() || reissueMode()) ? 'Register Renewal / Replacement RFID Card' : 'Register New RFID Card' }}</span>
                   </div>
                   <p class="text-xs text-slate-600">
                     Scan the resident's physical RFID card on the reader or enter the card UID below to activate their Barangay ID.
@@ -336,10 +367,18 @@ import { environment } from '../../../environments/environment';
                     This resident is already linked to an active RFID card. Duplicate registration for this resident is prevented.
                   </p>
 
-                  @if (res.rfid_card_id) {
-                    <div class="flex items-center justify-between pt-2 border-t border-emerald-100 text-xs">
-                      <span class="text-slate-500 font-medium">Card Status Actions:</span>
-                      <div class="flex gap-2">
+                  <div class="flex flex-wrap items-center justify-between pt-2 border-t border-emerald-100 text-xs gap-2">
+                    <span class="text-slate-500 font-medium">Actions:</span>
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        (click)="reissueMode.set(true); regCardUid.set(''); regError.set('');"
+                        class="px-2.5 py-1 text-xs font-bold rounded-lg bg-orange-600 hover:bg-orange-700 text-white shadow-2xs transition cursor-pointer flex items-center gap-1"
+                      >
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
+                        <span>Re-issue / Renew Card</span>
+                      </button>
+                      @if (res.rfid_card_id) {
                         <button
                           type="button"
                           [disabled]="res.status === 'Active' || res.status === 'ACTIVE' || updating()"
@@ -364,9 +403,9 @@ import { environment } from '../../../environments/environment';
                         >
                           Revoke
                         </button>
-                      </div>
+                      }
                     </div>
-                  }
+                  </div>
                 </div>
               }
             </div>
@@ -430,6 +469,11 @@ export class RfidComponent implements OnInit, OnDestroy {
   registering = signal(false);
   updating = signal(false);
 
+  // Renewal / Reissue request linking state
+  currentRequestId = signal<number | null>(null);
+  fromRenewal = signal<boolean>(false);
+  reissueMode = signal<boolean>(false);
+
   // USB RFID Reader scanner detection & duplicate validation state
   scanDetected = signal(false);
   uidChecking = signal(false);
@@ -476,9 +520,20 @@ export class RfidComponent implements OnInit, OnDestroy {
 
     this.route.queryParams.subscribe(params => {
       const resId = params['residentId'] ? parseInt(params['residentId'], 10) : undefined;
+      const reqId = params['requestId'] ? parseInt(params['requestId'], 10) : undefined;
+      const isFromRenewal = params['fromRenewal'] === '1' || params['fromRenewal'] === 'true';
+
+      if (reqId) {
+        this.currentRequestId.set(reqId);
+      }
+      if (isFromRenewal) {
+        this.fromRenewal.set(true);
+        this.reissueMode.set(true);
+      }
+
       if (resId) {
         this.openModalForResidentId(resId);
-        this.router.navigate([], { queryParams: { new: null, residentId: null }, queryParamsHandling: 'merge' });
+        this.router.navigate([], { queryParams: { new: null, residentId: null, requestId: null, fromRenewal: null }, queryParamsHandling: 'merge' });
       }
     });
   }
@@ -627,6 +682,9 @@ export class RfidComponent implements OnInit, OnDestroy {
     this.uidChecking.set(false);
     this.scanBuffer = '';
     this.lastKeyTime = 0;
+    this.fromRenewal.set(false);
+    this.reissueMode.set(false);
+    this.currentRequestId.set(null);
   }
 
   @HostListener('window:keydown', ['$event'])
@@ -816,15 +874,21 @@ export class RfidComponent implements OnInit, OnDestroy {
     this.regError.set('');
     this.registering.set(true);
 
+    const linkedReqId = this.currentRequestId();
+
     this.rfidService.register({
       residentId: res.resident_id,
       cardUid: uid,
-      expirationDate: this.regExpirationDate() || undefined
+      expirationDate: this.regExpirationDate() || undefined,
+      requestId: linkedReqId || undefined
     } as any).subscribe({
       next: (result) => {
         this.registering.set(false);
         const cardData = result.data || {};
-        this.toastService.success('RFID Registered', `Card UID ${uid} assigned to ${this.formatResidentName(res)}`);
+        const successMsg = linkedReqId
+          ? `Card UID ${uid} assigned to ${this.formatResidentName(res)}. Renewal request #${linkedReqId} marked as Released!`
+          : `Card UID ${uid} assigned to ${this.formatResidentName(res)}.`;
+        this.toastService.success('RFID Registered', successMsg);
         
         // Update the modal resident state to reflect newly registered card
         const updated: RfidCard = {
@@ -838,6 +902,9 @@ export class RfidComponent implements OnInit, OnDestroy {
           expiration_date: this.regExpirationDate() || null
         };
         this.selectedResident.set(updated);
+        this.fromRenewal.set(false);
+        this.reissueMode.set(false);
+        this.currentRequestId.set(null);
         this.uidStatus.set(null);
         this.scanDetected.set(false);
         this.loadCards();

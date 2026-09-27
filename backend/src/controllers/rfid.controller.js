@@ -27,7 +27,10 @@ const getById = async (req, res) => {
 
 const register = async (req, res) => {
   try {
-    const result = await rfidService.registerCard(req.body);
+    const result = await rfidService.registerCard({
+      ...req.body,
+      userId: req.user?.userId
+    });
     if (!result.success) return errorResponse(res, 400, result.message);
     const uid = result.data?.card_uid || req.body.cardUid || req.body.rfidUid || '';
     auditRepository.log({
@@ -44,7 +47,10 @@ const register = async (req, res) => {
 
 const assign = async (req, res) => {
   try {
-    const result = await rfidService.assignCard(req.body);
+    const result = await rfidService.assignCard({
+      ...req.body,
+      userId: req.user?.userId
+    });
     if (!result.success) return errorResponse(res, 400, result.message);
     const uid = req.body.cardUid || req.body.rfidUid || '';
     auditRepository.log({
@@ -97,7 +103,7 @@ const updateStatus = async (req, res) => {
 
 const replace = async (req, res) => {
   try {
-    const result = await rfidService.replaceCard(req.params.id, req.body.newCardUid, req.body.expirationDate);
+    const result = await rfidService.replaceCard(req.params.id, req.body.newCardUid, req.body.expirationDate, req.user?.userId, req.body.requestId);
     if (!result.success) return errorResponse(res, 400, result.message);
     auditRepository.log({
       userId: req.user?.userId,

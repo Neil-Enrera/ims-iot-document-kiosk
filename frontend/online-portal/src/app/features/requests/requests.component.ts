@@ -247,10 +247,25 @@ type FilterTab = 'all' | 'active' | 'corrections' | 'completed';
                       </div>
                     }
 
-                    <!-- Ready for Release Alert -->
+                    <!-- Ready for Release Alert / RFID Registration -->
                     @if (req.status_id === 6) {
-                      <div class="mt-3 rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-xs text-emerald-900">
-                        <span class="font-bold">Ready for Pickup:</span> Your document is prepared. Please present a valid ID at Barangay San Manuel to claim your official document.
+                      <div class="mt-3 rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-xs text-emerald-900 flex items-start gap-2">
+                        <svg class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <div>
+                          @if ((req.service_name || '').toLowerCase().includes('id')) {
+                            <span class="font-bold">Approved & Ready for RFID Registration:</span> Your ID request has been approved! Please proceed to Barangay San Manuel Hall for physical RFID card registration and card release.
+                          } @else {
+                            <span class="font-bold">Ready for Pickup:</span> Your document is prepared. Please present a valid ID at Barangay San Manuel to claim your official document.
+                          }
+                        </div>
+                      </div>
+                    }
+
+                    <!-- Released / Completed Status -->
+                    @if (req.status_id === 7) {
+                      <div class="mt-3 rounded-xl bg-emerald-50/70 border border-emerald-200 p-2.5 text-xs text-emerald-800 flex items-center gap-1.5 font-medium">
+                        <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+                        <span>{{ (req.service_name || '').toLowerCase().includes('id') ? 'Barangay ID successfully registered, issued, and claimed.' : 'Document successfully released and claimed.' }}</span>
                       </div>
                     }
                   </div>

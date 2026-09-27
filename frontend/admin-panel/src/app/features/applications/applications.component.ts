@@ -816,8 +816,8 @@ interface UploadedRequirement {
             <div class="border border-slate-200 rounded-2xl bg-white p-5 space-y-4">
               <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wide">Review & Verification Decision</h4>
 
-              <!-- If Pending / Under Review: Approve or Reject buttons -->
-              @if (req.status_id === 1 || req.status_id === 4 || req.status_id === 11) {
+              <!-- If Pending / Under Review / Processing: Approve or Reject buttons -->
+              @if (req.status_id === 1 || req.status_id === 2 || req.status_id === 3 || req.status_id === 4 || req.status_id === 5 || req.status_id === 11) {
                 <div class="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl bg-slate-50 border border-slate-200">
                   <div>
                     <p class="text-xs font-bold text-slate-800">Complete Admin Verification</p>
@@ -857,7 +857,7 @@ interface UploadedRequirement {
                     <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
-                    <span>Renewal Approved — Resident is ready for physical RFID Card Registration</span>
+                    <span>Renewal Approved — Ready for physical RFID Card Registration</span>
                   </div>
                   <p class="text-xs text-emerald-800">
                     The renewal has been approved. The Admin can now register the resident's new RFID card UID in the RFID Card Registration page.
@@ -865,7 +865,8 @@ interface UploadedRequirement {
                   <div class="flex items-center gap-2 pt-1">
                     <a
                       [routerLink]="['/rfid']"
-                      [queryParams]="{ new: '1', residentId: req.resident_id }"
+                      [queryParams]="{ new: '1', residentId: req.resident_id, requestId: req.request_id, fromRenewal: '1' }"
+                      (click)="closeRenewalDetail()"
                       class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-xs transition"
                     >
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -1432,20 +1433,24 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
 
   approveRenewal(req: DocumentRequest) {
     if (this.renewalActionLoading()) return;
-    const confirmApprove = confirm(`Approve Barangay ID Renewal request for ${req.resident_name}?\n\nOnce approved, the resident will appear in RFID Card Registration for physical card assignment.`);
+    const confirmApprove = confirm(`Approve Barangay ID Renewal request for ${req.resident_name}?\n\nOnce approved, you will be directed to RFID Card Registration to confirm and assign the physical card.`);
     if (!confirmApprove) return;
 
     this.renewalActionLoading.set(true);
     this.requestService.changeStatus(req.request_id, 6, 'Barangay ID Renewal approved and ready for RFID Card Registration.').subscribe({
       next: () => {
         this.renewalActionLoading.set(false);
-        this.toast.success('ID Renewal request approved! Resident is now ready for RFID Card Registration.');
+        this.toast.success('ID Renewal approved! Directing to RFID ID Registration...');
         this.loadRenewals();
-        if (this.selectedRenewal()?.request_id === req.request_id) {
-          this.requestService.getById(req.request_id).subscribe({
-            next: (res) => { if (res.data) this.selectedRenewal.set(res.data); }
-          });
-        }
+        this.closeRenewalDetail();
+        this.router.navigate(['/rfid'], {
+          queryParams: {
+            residentId: req.resident_id,
+            requestId: req.request_id,
+            fromRenewal: '1',
+            new: '1'
+          }
+        });
       },
       error: (err) => {
         this.renewalActionLoading.set(false);
