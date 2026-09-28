@@ -2117,10 +2117,13 @@ export class RequestsComponent implements OnInit, OnDestroy {
   getGroupedFormData(formData: Record<string, unknown>): FormGroupSection[] {
     if (!formData) return [];
 
+    const addressAliasKeys = ['complete_address', 'full_address', 'residential_address', 'address_line', 'address'];
+
     const personalKeys = [
       'full_name', 'first_name', 'middle_name', 'last_name', 'suffix',
       'birth_date', 'birthdate', 'birth_place', 'gender', 'sex', 'civil_status',
-      'contact_number', 'contact', 'email', 'address_line', 'address',
+      'contact_number', 'contact', 'email',
+      ...addressAliasKeys,
       'house_number', 'street', 'purok_zone', 'sitio', 'barangay',
       'years_of_residency', 'blood_type', 'nationality', 'religion',
       'emergency_contact_name', 'emergency_contact_number'
@@ -2140,15 +2143,48 @@ export class RequestsComponent implements OnInit, OnDestroy {
     const applicationFields: FormFieldEntry[] = [];
     const otherFields: FormFieldEntry[] = [];
 
+    // Extract single consolidated address
+    let resolvedAddress: string | null = null;
+    for (const addrKey of addressAliasKeys) {
+      const val = formData[addrKey];
+      if (val !== undefined && val !== null && String(val).trim() !== '') {
+        resolvedAddress = String(val).trim();
+        break;
+      }
+    }
+
+    if (resolvedAddress) {
+      personalFields.push({
+        key: 'address',
+        label: 'Address',
+        value: resolvedAddress
+      });
+    }
+
+    const seenLabels = new Set<string>();
+    if (resolvedAddress) {
+      seenLabels.add('Address');
+    }
+
     for (const [key, rawVal] of Object.entries(formData)) {
       if (key.startsWith('_') || rawVal === undefined || rawVal === null || rawVal === '') continue;
+      const lowerKey = key.toLowerCase();
+
+      // Skip address alias keys since address is already consolidated above
+      if (addressAliasKeys.includes(lowerKey)) continue;
+
+      const label = this.formatFieldLabel(key);
+
+      // Skip duplicates of the same label in the section
+      if (seenLabels.has(label.toLowerCase())) continue;
+      seenLabels.add(label.toLowerCase());
+
       const formattedEntry: FormFieldEntry = {
         key,
-        label: this.formatFieldLabel(key),
+        label,
         value: typeof rawVal === 'object' ? JSON.stringify(rawVal) : String(rawVal)
       };
 
-      const lowerKey = key.toLowerCase();
       if (personalKeys.includes(lowerKey)) {
         personalFields.push(formattedEntry);
       } else if (applicationKeys.includes(lowerKey)) {
@@ -2185,6 +2221,8 @@ export class RequestsComponent implements OnInit, OnDestroy {
       gender: 'Gender',
       sex: 'Gender',
       civil_status: 'Civil Status',
+      complete_address: 'Address',
+      full_address: 'Address',
       address_line: 'Address',
       address: 'Address',
       house_number: 'House #',
