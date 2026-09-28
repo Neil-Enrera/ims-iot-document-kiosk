@@ -14,9 +14,10 @@
 | **Total** | **85** | **56** | **19** | **0** |
 
 > **Note:** TASK-BACKEND-012 (Payment API) and TASK-FRONTEND-011 (Payment UI) removed per DEC-008.
-> - **GCash Payment Section UI Consolidation & Official QR Code Asset Update** (`online-portal/src/app/features/apply/apply.component.ts` L560-730, `public/gcash-qr.png`):
+> - **GCash Payment Section UI Consolidation & 13-Digit Numeric Reference Number Restriction** (`online-portal/src/app/features/apply/apply.component.ts` L560-730, L1695-1715, L1935-1995, `public/gcash-qr.png`):
 >   - **Updated Official GCash QR Asset**: Replaced `public/gcash-qr.png` with the high-clarity official GCash QR image, styled at `w-52 h-52 sm:w-60 sm:h-60` with crisp contrast, clean borders, and clear account labels for immediate phone scanning.
 >   - **Consolidated Payment Verification Section**: Unified the GCash Reference Number input and Receipt Upload / Screenshot dropzone into a single coherent **"Payment Verification Details"** card in Step 3 of the application wizard, grouping all verification inputs in one continuous step.
+>   - **13-Digit Numeric Restriction**: Enforced strict numbers-only limitation with a hard cap of 13 digits via `maxlength="13"`, `inputmode="numeric"`, regex filtering on keypress/input events, dynamic `X/13 digits` badge, and step validation requiring exactly 13 digits before proceeding.
 >   - **Verification**: Verified `online-portal` builds with 0 errors (`npx ng build online-portal --configuration=development`).
 >
 > - **GCash Payment & Receipt Upload for Online Portal & Admin Verification Review** (`online-portal/src/app/features/apply/apply.component.ts`, `online-portal/src/app/features/requests/requests.component.ts`, `admin-panel/src/app/features/requests/requests.component.ts`, `public/gcash-qr.png`):

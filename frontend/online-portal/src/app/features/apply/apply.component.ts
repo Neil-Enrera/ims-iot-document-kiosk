@@ -608,20 +608,34 @@ export interface UploadedReceipt {
                   <div class="space-y-4">
                     <!-- 1. Reference Number Input -->
                     <div>
-                      <label for="gcash-ref-input" class="block text-xs font-bold text-slate-800 mb-1">
-                        GCash Reference Number <span class="text-red-500">*</span>
-                      </label>
+                      <div class="flex items-center justify-between mb-1">
+                        <label for="gcash-ref-input" class="block text-xs font-bold text-slate-800">
+                          GCash Reference Number <span class="text-red-500">*</span>
+                        </label>
+                        <span class="text-[10px] font-mono font-bold"
+                              [class.text-emerald-600]="paymentRefNumber.length === 13"
+                              [class.text-amber-600]="paymentRefNumber.length > 0 && paymentRefNumber.length < 13"
+                              [class.text-slate-400]="paymentRefNumber.length === 0">
+                          {{ paymentRefNumber.length }}/13 digits
+                        </span>
+                      </div>
                       <p class="text-[11px] text-slate-500 mb-1.5">
-                        Enter the 13-digit Reference Number found on your GCash transaction receipt.
+                        Enter the 13-digit Reference Number found on your GCash transaction receipt (numbers only).
                       </p>
-                      <input
-                        id="gcash-ref-input"
-                        type="text"
-                        [(ngModel)]="paymentRefNumber"
-                        (ngModelChange)="onRefNumberChange()"
-                        placeholder="e.g. 1002 9384 7561 or 100293847561"
-                        class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition"
-                      />
+                      <div class="relative">
+                        <input
+                          id="gcash-ref-input"
+                          type="text"
+                          inputmode="numeric"
+                          pattern="[0-9]*"
+                          maxlength="13"
+                          [(ngModel)]="paymentRefNumber"
+                          (input)="onRefNumberInput($event)"
+                          (keypress)="onRefNumberKeyPress($event)"
+                          placeholder="e.g. 1002938475612"
+                          class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white font-mono text-sm tracking-wide focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition"
+                        />
+                      </div>
                       @if (paymentErrors['reference_number']) {
                         <p class="text-xs text-red-600 mt-1.5 font-semibold">{{ paymentErrors['reference_number'] }}</p>
                       }
@@ -1695,7 +1709,25 @@ export class ApplyComponent implements OnInit {
   }
 
   // --- GCash Receipt Upload & Handling ---
+  onRefNumberKeyPress(event: KeyboardEvent): void {
+    // Block any non-digit character from being entered
+    if (!/^\d$/.test(event.key) && !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(event.key)) {
+      event.preventDefault();
+    }
+  }
+
+  onRefNumberInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const digitsOnly = (input.value || '').replace(/\D/g, '').slice(0, 13);
+    this.paymentRefNumber = digitsOnly;
+    input.value = digitsOnly;
+    if (this.paymentErrors['reference_number']) {
+      delete this.paymentErrors['reference_number'];
+    }
+  }
+
   onRefNumberChange(): void {
+    this.paymentRefNumber = (this.paymentRefNumber || '').replace(/\D/g, '').slice(0, 13);
     if (this.paymentErrors['reference_number']) {
       delete this.paymentErrors['reference_number'];
     }
@@ -1939,11 +1971,13 @@ export class ApplyComponent implements OnInit {
   validateAndProceedFromPayment(): void {
     this.paymentErrors = {};
 
-    const ref = this.paymentRefNumber.trim();
-    if (!ref) {
-      this.paymentErrors['reference_number'] = 'Please enter your GCash Reference Number.';
-    } else if (ref.length < 6) {
-      this.paymentErrors['reference_number'] = 'Please enter a valid GCash Reference Number.';
+    const cleanRef = (this.paymentRefNumber || '').replace(/\D/g, '').slice(0, 13);
+    this.paymentRefNumber = cleanRef;
+
+    if (!cleanRef) {
+      this.paymentErrors['reference_number'] = 'Please enter your 13-digit GCash Reference Number.';
+    } else if (cleanRef.length !== 13) {
+      this.paymentErrors['reference_number'] = `GCash Reference Number must be exactly 13 digits (currently ${cleanRef.length}/13).`;
     }
 
     if (!this.uploadedReceipt()) {
@@ -1957,7 +1991,7 @@ export class ApplyComponent implements OnInit {
     // Update receipt object with current ref number
     const r = this.uploadedReceipt();
     if (r) {
-      r.reference_number = ref;
+      r.reference_number = cleanRef;
     }
 
     this.proceedToStep(4);
