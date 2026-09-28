@@ -14,6 +14,11 @@
 | **Total** | **85** | **56** | **19** | **0** |
 
 > **Note:** TASK-BACKEND-012 (Payment API) and TASK-FRONTEND-011 (Payment UI) removed per DEC-008.
+> - **RFID WebSocket Server & Online Portal Services Restoration on Cloud VPS** (`hardware/kiosk-server/index.js` L500-520, `backend/src/routes/kiosk.routes.js` L18-24, `database/migrations/026-029`):
+>   - **Kiosk Hardware WebSocket Service (`ims-kiosk-server`)**: Resolved PM2 crash caused by duplicate declaration in `index.js`, installed npm dependencies on the VPS, and started `ims-kiosk-server` on port 3001. Restored WebSocket connectivity for the ESP8266 RFID reader (`ws://13.250.176.247:3001/ws?type=arduino`) and kiosk tablet frontend.
+>   - **Database Migrations Executed on VPS**: Executed migrations `026` (`portal_accounts`), `027` (`source`), `028` (`Barangay ID Renewal`), and `029` (`remove replacement`) on the production MySQL database.
+>   - **Online Portal Services Restoration**: Restored `Barangay ID Renewal` service in the Online Portal services directory and enabled `/kiosk/barangay-id/config` route in `kiosk.routes.js`.
+>
 > - **Cloud VPS Hosting Configuration & Dual Camera Integration** (`frontend/kiosk-app/src/environments/environment.prod.ts`, `hardware/kiosk-server/index.js`, `hardware/arduino/kiosk_rfid_esp8266/src/main.cpp`):
 >   - **AWS Lightsail Cloud Production Environment**: Configured `environment.prod.ts` with AWS Lightsail static IP (`13.250.176.247`), connecting the backend API (port 3000) and Hardware WebSocket (port 3001) directly to the cloud instance, eliminating the need for staff to run servers locally.
 >   - **Dual Camera Setup with Seamless Switching**: Enabled dual-camera architecture supporting both the **Tablet's Built-in Front Camera** (`navigator.mediaDevices.getUserMedia`) and the external **ESP32-CAM**, with automatic fallback if the ESP32-CAM is offline.
