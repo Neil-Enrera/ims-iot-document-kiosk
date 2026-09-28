@@ -42,7 +42,18 @@ export class RfidScanService {
   }
 
   private getHardwareWsUrl(): string {
-    return environment.hardwareWsUrl;
+    const raw = environment.hardwareWsUrl;
+    if (raw && (raw.startsWith('ws://') || raw.startsWith('wss://'))) {
+      if (typeof window !== 'undefined' && window.location.protocol === 'https:' && raw.startsWith('ws://')) {
+        return `wss://${window.location.host}/ws?type=kiosk`;
+      }
+      return raw;
+    }
+    if (typeof window !== 'undefined') {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      return `${protocol}//${window.location.host}/ws?type=kiosk`;
+    }
+    return 'ws://13.250.176.247:3001/ws?type=kiosk';
   }
 
   connect() {
