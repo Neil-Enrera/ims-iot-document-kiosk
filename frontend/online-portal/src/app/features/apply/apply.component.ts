@@ -13,6 +13,16 @@ import { AuthService, PortalAccount } from '../../core/services/auth.service';
 import { IdPhotoValidatorService } from '../../core/services/id-photo-validator.service';
 import { environment } from '../../../environments/environment';
 
+export interface UploadedReceipt {
+  file_url: string;
+  file_name: string;
+  original_name: string;
+  size?: number;
+  mime_type?: string;
+  reference_number?: string;
+  uploaded_at?: string;
+}
+
 @Component({
   selector: 'portal-apply',
   standalone: true,
@@ -75,7 +85,7 @@ import { environment } from '../../../environments/environment';
             <div class="sm:text-right shrink-0">
               <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Processing Fee</span>
               <span class="text-2xl font-black text-orange-600 mt-0.5 block">
-                @if (svc.processing_fee > 0) {
+                @if (isPaidService()) {
                   ₱{{ svc.processing_fee | number:'1.2-2' }}
                 } @else {
                   FREE
@@ -85,19 +95,28 @@ import { environment } from '../../../environments/environment';
           </div>
         </div>
 
-        <!-- Wizard Progress Bar (Steps 1 to 3) -->
-        @if (wizardStep() <= 3) {
+        <!-- Wizard Progress Bar (Steps 1 to 4) -->
+        @if (wizardStep() <= 4) {
           <div class="mb-8">
             <div class="flex items-center justify-between text-xs font-bold uppercase tracking-wider mb-2">
               <span [class.text-orange-600]="wizardStep() >= 1" [class.text-slate-400]="wizardStep() < 1">
-                1. Upload Requirements
+                1. Application Form
               </span>
               <span [class.text-orange-600]="wizardStep() >= 2" [class.text-slate-400]="wizardStep() < 2">
-                2. Application Form
+                2. Requirements
               </span>
-              <span [class.text-orange-600]="wizardStep() >= 3" [class.text-slate-400]="wizardStep() < 3">
-                3. Review & Submit
-              </span>
+              @if (isPaidService()) {
+                <span [class.text-orange-600]="wizardStep() >= 3" [class.text-slate-400]="wizardStep() < 3">
+                  3. GCash Payment
+                </span>
+                <span [class.text-orange-600]="wizardStep() >= 4" [class.text-slate-400]="wizardStep() < 4">
+                  4. Review & Submit
+                </span>
+              } @else {
+                <span [class.text-orange-600]="wizardStep() >= 4" [class.text-slate-400]="wizardStep() < 4">
+                  3. Review & Submit
+                </span>
+              }
             </div>
             <div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
               <div
@@ -109,153 +128,9 @@ import { environment } from '../../../environments/environment';
         }
 
         <!-- ========================================================================= -->
-        <!-- STEP 1: UPLOAD / REVIEW REQUIREMENTS -->
+        <!-- STEP 1: APPLICATION FORM -->
         <!-- ========================================================================= -->
         @if (wizardStep() === 1) {
-          <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-slate-100">
-              <div>
-                <h2 class="text-xl sm:text-2xl font-black text-slate-900">Upload Digital Requirements</h2>
-                <p class="text-slate-500 text-sm mt-0.5">
-                  Provide digital photos or PDF copies of the required documents for <strong class="text-slate-800">{{ svc.service_name }}</strong>.
-                </p>
-              </div>
-              <span class="text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full font-medium shrink-0 self-start sm:self-auto">
-                Accepted: PDF, JPG, PNG (Max 10MB)
-              </span>
-            </div>
-
-            @if (!svc.requirements || svc.requirements.length === 0) {
-              <div class="mt-6 rounded-2xl bg-emerald-50 border border-emerald-200 p-5 text-emerald-900 text-sm">
-                <p class="font-bold">No mandatory documents required for this service.</p>
-                <p class="text-xs mt-1 text-emerald-800">You may proceed directly to the application form.</p>
-              </div>
-            } @else {
-              <div class="mt-6 space-y-5">
-                @for (reqName of svc.requirements; track reqName; let idx = $index) {
-                  <div class="rounded-2xl border border-slate-200 p-5 bg-slate-50/50">
-                    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                      <div class="flex-1">
-                        <div class="flex items-center gap-2">
-                          <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider">Requirement #{{ idx + 1 }}</p>
-                          @if (is2x2PhotoReq(reqName)) {
-                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-100 text-blue-800 border border-blue-200">
-                              2×2 ID Photo (1:1 Ratio)
-                            </span>
-                          }
-                        </div>
-                        <h3 class="text-base font-bold text-slate-900 mt-0.5">{{ reqName }}</h3>
-
-                        <!-- 2x2 Photo Specific Guidelines -->
-                        @if (is2x2PhotoReq(reqName)) {
-                          <div class="mt-2 text-xs text-slate-500 space-y-1 bg-white/70 border border-slate-200/60 rounded-xl p-3">
-                            <p class="font-semibold text-slate-700 flex items-center gap-1.5">
-                              <svg class="w-3.5 h-3.5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-                              </svg>
-                              <span>2×2 ID Photo Validation Requirements:</span>
-                            </p>
-                            <ul class="list-disc list-inside text-[11px] text-slate-600 space-y-0.5 pl-1">
-                              <li>Accepted formats: <strong>JPG, JPEG, PNG only</strong></li>
-                              <li>Square 1:1 aspect ratio (min 300 × 300 px)</li>
-                              <li>Must contain <strong>exactly one</strong> detectable human face</li>
-                              <li>Face is centered, sufficiently visible, and not severely cropped</li>
-                              <li>Crisp, well-lit portrait (not blurry, dark, or overexposed)</li>
-                              <li>Plain white or light-colored background</li>
-                            </ul>
-                          </div>
-                        }
-                      </div>
-
-                      <!-- Uploaded Status or Upload Button -->
-                      @if (getUploadedReq(reqName); as uploaded) {
-                        <div class="flex items-center gap-3 bg-white border border-emerald-300 rounded-xl p-2.5 shadow-2xs shrink-0">
-                          @if (is2x2PhotoReq(reqName) || isImageFile(uploaded)) {
-                            <img [src]="resolveFileUrl(uploaded.file_url)" alt="Uploaded Requirement Preview"
-                                 class="w-12 h-12 rounded-lg object-cover border border-slate-200 shrink-0" />
-                          } @else {
-                            <svg class="w-6 h-6 text-emerald-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                          }
-                          <div class="text-left text-xs min-w-0 max-w-[180px]">
-                            <p class="font-bold text-slate-800 truncate">{{ uploaded.original_name }}</p>
-                            <p class="text-[10px] text-emerald-600 font-semibold">{{ formatSize(uploaded.size) }} &bull; Verified</p>
-                          </div>
-                          <button
-                            type="button"
-                            (click)="removeUploadedReq(reqName)"
-                            class="text-red-500 hover:text-red-700 text-xs font-bold cursor-pointer ml-1">
-                            Remove
-                          </button>
-                        </div>
-                      } @else {
-                        <div class="shrink-0">
-                          <label [for]="'file-upload-' + idx"
-                                 class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-300 hover:border-orange-500 text-slate-700 font-bold text-xs transition cursor-pointer shadow-2xs">
-                            <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-                            </svg>
-                            <span>{{ is2x2PhotoReq(reqName) ? 'Upload 2×2 Photo' : 'Upload Document' }}</span>
-                          </label>
-                          <input
-                            [id]="'file-upload-' + idx"
-                            type="file"
-                            [accept]="is2x2PhotoReq(reqName) ? 'image/jpeg,image/png' : '.pdf,image/jpeg,image/png'"
-                            class="sr-only"
-                            (change)="onFileSelected($event, reqName)"
-                          />
-                        </div>
-                      }
-                    </div>
-
-                    <!-- Upload Error Banner for this requirement -->
-                    @if (reqErrors()[reqName]) {
-                      <div class="mt-3 rounded-xl bg-red-50 border border-red-200 p-3 text-xs text-red-700 flex items-start gap-2">
-                        <svg class="w-4 h-4 text-red-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                        </svg>
-                        <div>
-                          <p class="font-bold">Validation Error</p>
-                          <p class="mt-0.5 leading-relaxed">{{ reqErrors()[reqName] }}</p>
-                        </div>
-                      </div>
-                    }
-
-                    @if (uploadingReq() === reqName) {
-                      <div class="mt-3 flex items-center gap-2 text-xs text-orange-600 font-semibold">
-                        <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                        </svg>
-                        <span>Validating and uploading file...</span>
-                      </div>
-                    }
-                  </div>
-                }
-              </div>
-            }
-
-            <div class="mt-8 flex items-center justify-between pt-5 border-t border-slate-100">
-              <a routerLink="/services"
-                 class="px-5 py-2.5 rounded-xl border border-slate-300 hover:border-slate-400 text-slate-700 font-bold text-sm transition cursor-pointer">
-                Cancel
-              </a>
-              <button
-                type="button"
-                (click)="proceedToStep(2)"
-                class="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-sm transition cursor-pointer">
-                <span>Continue to Application Form</span>
-                <span>&rarr;</span>
-              </button>
-            </div>
-          </div>
-        }
-
-        <!-- ========================================================================= -->
-        <!-- STEP 2: APPLICATION FORM -->
-        <!-- ========================================================================= -->
-        @if (wizardStep() === 2) {
           <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-slate-100">
               <div>
@@ -481,17 +356,15 @@ import { environment } from '../../../environments/environment';
             }
 
             <div class="mt-8 flex items-center justify-between pt-5 border-t border-slate-100">
+              <a routerLink="/services"
+                 class="px-5 py-2.5 rounded-xl border border-slate-300 hover:border-slate-400 text-slate-700 font-bold text-sm transition cursor-pointer">
+                Cancel
+              </a>
               <button
                 type="button"
-                (click)="proceedToStep(1)"
-                class="px-5 py-2.5 rounded-xl border border-slate-300 hover:border-slate-400 text-slate-700 font-bold text-sm transition cursor-pointer">
-                &larr; Back to Requirements
-              </button>
-              <button
-                type="button"
-                (click)="validateAndProceedToReview()"
-                class="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-sm transition cursor-pointer">
-                <span>Review Application</span>
+                (click)="validateAndProceedToRequirements()"
+                class="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-sm transition cursor-pointer shadow-sm">
+                <span>Continue to Requirements</span>
                 <span>&rarr;</span>
               </button>
             </div>
@@ -499,13 +372,393 @@ import { environment } from '../../../environments/environment';
         }
 
         <!-- ========================================================================= -->
-        <!-- STEP 3: REVIEW & SUBMIT -->
+        <!-- STEP 2: UPLOAD / REVIEW REQUIREMENTS -->
         <!-- ========================================================================= -->
-        @if (wizardStep() === 3) {
+        @if (wizardStep() === 2) {
+          <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-slate-100">
+              <div>
+                <h2 class="text-xl sm:text-2xl font-black text-slate-900">Upload Digital Requirements</h2>
+                <p class="text-slate-500 text-sm mt-0.5">
+                  Provide digital photos or PDF copies of the required documents for <strong class="text-slate-800">{{ svc.service_name }}</strong>.
+                </p>
+              </div>
+              <span class="text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full font-medium shrink-0 self-start sm:self-auto">
+                Accepted: PDF, JPG, PNG (Max 10MB)
+              </span>
+            </div>
+
+            @if (!svc.requirements || svc.requirements.length === 0) {
+              <div class="mt-6 rounded-2xl bg-emerald-50 border border-emerald-200 p-5 text-emerald-900 text-sm">
+                <p class="font-bold">No mandatory documents required for this service.</p>
+                <p class="text-xs mt-1 text-emerald-800">You may proceed directly to the next step.</p>
+              </div>
+            } @else {
+              <div class="mt-6 space-y-5">
+                @for (reqName of svc.requirements; track reqName; let idx = $index) {
+                  <div class="rounded-2xl border border-slate-200 p-5 bg-slate-50/50">
+                    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                      <div class="flex-1">
+                        <div class="flex items-center gap-2">
+                          <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider">Requirement #{{ idx + 1 }}</p>
+                          @if (is2x2PhotoReq(reqName)) {
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-100 text-blue-800 border border-blue-200">
+                              2×2 ID Photo (1:1 Ratio)
+                            </span>
+                          }
+                        </div>
+                        <h3 class="text-base font-bold text-slate-900 mt-0.5">{{ reqName }}</h3>
+
+                        <!-- 2x2 Photo Specific Guidelines -->
+                        @if (is2x2PhotoReq(reqName)) {
+                          <div class="mt-2 text-xs text-slate-500 space-y-1 bg-white/70 border border-slate-200/60 rounded-xl p-3">
+                            <p class="font-semibold text-slate-700 flex items-center gap-1.5">
+                              <svg class="w-3.5 h-3.5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                              </svg>
+                              <span>2×2 ID Photo Validation Requirements:</span>
+                            </p>
+                            <ul class="list-disc list-inside text-[11px] text-slate-600 space-y-0.5 pl-1">
+                              <li>Accepted formats: <strong>JPG, JPEG, PNG only</strong></li>
+                              <li>Square 1:1 aspect ratio (min 300 × 300 px)</li>
+                              <li>Must contain <strong>exactly one</strong> detectable human face</li>
+                              <li>Face is centered, sufficiently visible, and not severely cropped</li>
+                              <li>Crisp, well-lit portrait (not blurry, dark, or overexposed)</li>
+                              <li>Plain white or light-colored background</li>
+                            </ul>
+                          </div>
+                        }
+                      </div>
+
+                      <!-- Uploaded Status or Upload Button -->
+                      @if (getUploadedReq(reqName); as uploaded) {
+                        <div class="flex items-center gap-3 bg-white border border-emerald-300 rounded-xl p-2.5 shadow-2xs shrink-0">
+                          @if (is2x2PhotoReq(reqName) || isImageFile(uploaded)) {
+                            <img [src]="resolveFileUrl(uploaded.file_url)" alt="Uploaded Requirement Preview"
+                                 class="w-12 h-12 rounded-lg object-cover border border-slate-200 shrink-0" />
+                          } @else {
+                            <svg class="w-6 h-6 text-emerald-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          }
+                          <div class="text-left text-xs min-w-0 max-w-[180px]">
+                            <p class="font-bold text-slate-800 truncate">{{ uploaded.original_name }}</p>
+                            <p class="text-[10px] text-emerald-600 font-semibold">{{ formatSize(uploaded.size) }} &bull; Verified</p>
+                          </div>
+                          <button
+                            type="button"
+                            (click)="removeUploadedReq(reqName)"
+                            class="text-red-500 hover:text-red-700 text-xs font-bold cursor-pointer ml-1">
+                            Remove
+                          </button>
+                        </div>
+                      } @else {
+                        <div class="shrink-0">
+                          <label [for]="'file-upload-' + idx"
+                                 class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-300 hover:border-orange-500 text-slate-700 font-bold text-xs transition cursor-pointer shadow-2xs">
+                            <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                            </svg>
+                            <span>{{ is2x2PhotoReq(reqName) ? 'Upload 2×2 Photo' : 'Upload Document' }}</span>
+                          </label>
+                          <input
+                            [id]="'file-upload-' + idx"
+                            type="file"
+                            [accept]="is2x2PhotoReq(reqName) ? 'image/jpeg,image/png' : '.pdf,image/jpeg,image/png'"
+                            class="sr-only"
+                            (change)="onFileSelected($event, reqName)"
+                          />
+                        </div>
+                      }
+                    </div>
+
+                    <!-- Upload Error Banner for this requirement -->
+                    @if (reqErrors()[reqName]) {
+                      <div class="mt-3 rounded-xl bg-red-50 border border-red-200 p-3 text-xs text-red-700 flex items-start gap-2">
+                        <svg class="w-4 h-4 text-red-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                        </svg>
+                        <div>
+                          <p class="font-bold">Validation Error</p>
+                          <p class="mt-0.5 leading-relaxed">{{ reqErrors()[reqName] }}</p>
+                        </div>
+                      </div>
+                    }
+
+                    @if (uploadingReq() === reqName) {
+                      <div class="mt-3 flex items-center gap-2 text-xs text-orange-600 font-semibold">
+                        <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                        </svg>
+                        <span>Validating and uploading file...</span>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+
+            <div class="mt-8 flex items-center justify-between pt-5 border-t border-slate-100">
+              <button
+                type="button"
+                (click)="proceedToStep(1)"
+                class="px-5 py-2.5 rounded-xl border border-slate-300 hover:border-slate-400 text-slate-700 font-bold text-sm transition cursor-pointer">
+                &larr; Back to Form
+              </button>
+              <button
+                type="button"
+                (click)="validateAndProceedFromRequirements()"
+                class="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-sm transition cursor-pointer shadow-sm">
+                @if (isPaidService()) {
+                  <span>Continue to Payment</span>
+                } @else {
+                  <span>Continue to Review</span>
+                }
+                <span>&rarr;</span>
+              </button>
+            </div>
+          </div>
+        }
+
+        <!-- ========================================================================= -->
+        <!-- STEP 3: GCASH PAYMENT & RECEIPT UPLOAD (Only for Paid Services) -->
+        <!-- ========================================================================= -->
+        @if (wizardStep() === 3 && isPaidService()) {
+          <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
+            <div class="pb-5 border-b border-slate-100">
+              <div class="flex items-center gap-2">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-blue-100 text-blue-800">
+                  GCash Official Payment
+                </span>
+              </div>
+              <h2 class="text-xl sm:text-2xl font-black text-slate-900 mt-1">Pay Processing Fee via GCash</h2>
+              <p class="text-slate-500 text-sm mt-0.5">
+                Scan the official QR code or send payment to the Barangay San Manuel GCash account, then upload your transaction receipt.
+              </p>
+            </div>
+
+            <!-- 2-Column Payment Card: Left QR & Account Info, Right Upload Receipt -->
+            <div class="mt-6 grid grid-cols-1 md:grid-cols-12 gap-6">
+
+              <!-- Left: Official GCash QR Code & Instructions (5 cols) -->
+              <div class="md:col-span-5 bg-blue-50/60 border border-blue-200/80 rounded-3xl p-5 sm:p-6 flex flex-col items-center text-center">
+                <div class="w-full flex items-center justify-between pb-3 border-b border-blue-200/60">
+                  <div class="flex items-center gap-2 text-left">
+                    <div class="w-8 h-8 rounded-lg bg-blue-600 text-white font-black flex items-center justify-center text-sm shadow-2xs">
+                      G
+                    </div>
+                    <div>
+                      <h3 class="text-xs font-black text-blue-950 uppercase tracking-wide">GCash QR</h3>
+                      <p class="text-[10px] text-blue-700 font-semibold">Scan to Pay</p>
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Amount Due</span>
+                    <span class="text-lg font-black text-blue-900 block">₱{{ svc.processing_fee | number:'1.2-2' }}</span>
+                  </div>
+                </div>
+
+                <!-- QR Code Box -->
+                <div class="mt-4 p-3 bg-white rounded-2xl border border-blue-200 shadow-sm relative group">
+                  <img
+                    src="/gcash-qr.png"
+                    alt="Official Barangay San Manuel GCash QR Code"
+                    class="w-48 h-48 sm:w-56 sm:h-56 object-contain rounded-xl"
+                  />
+                  <div class="mt-2 text-center">
+                    <p class="text-[11px] font-bold text-slate-700">Barangay San Manuel Treasurer</p>
+                    <p class="text-xs font-mono font-black text-blue-700">0917-827-4638</p>
+                  </div>
+                </div>
+
+                <!-- Payment Guidelines -->
+                <div class="mt-4 w-full text-left bg-white/80 border border-blue-100 rounded-xl p-3.5 text-xs space-y-2">
+                  <p class="font-bold text-slate-800 text-[11px] uppercase tracking-wider flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                    </svg>
+                    <span>How to Pay:</span>
+                  </p>
+                  <ol class="list-decimal list-inside text-[11px] text-slate-600 space-y-1 pl-0.5">
+                    <li>Open your <strong>GCash App</strong> & select <strong>Scan QR</strong> or <strong>Express Send</strong>.</li>
+                    <li>Enter the exact amount: <strong class="text-blue-900">₱{{ svc.processing_fee | number:'1.2-2' }}</strong>.</li>
+                    <li>Save / screenshot your <strong>GCash confirmation receipt</strong>.</li>
+                    <li>Upload the receipt and enter the <strong>Reference Number</strong> on the right.</li>
+                  </ol>
+                </div>
+              </div>
+
+              <!-- Right: Upload Receipt & Reference Number (7 cols) -->
+              <div class="md:col-span-7 flex flex-col justify-between space-y-6">
+
+                <!-- Reference Number Input -->
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5">
+                  <label for="gcash-ref-input" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                    GCash Reference Number <span class="text-red-500">*</span>
+                  </label>
+                  <p class="text-[11px] text-slate-500 mb-2">
+                    Enter the 13-digit Reference Number found on your GCash transaction receipt.
+                  </p>
+                  <input
+                    id="gcash-ref-input"
+                    type="text"
+                    [(ngModel)]="paymentRefNumber"
+                    (ngModelChange)="onRefNumberChange()"
+                    placeholder="e.g. 1002 9384 7561 or 100293847561"
+                    class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition"
+                  />
+                  @if (paymentErrors['reference_number']) {
+                    <p class="text-xs text-red-600 mt-1.5 font-semibold">{{ paymentErrors['reference_number'] }}</p>
+                  }
+                </div>
+
+                <!-- Receipt Upload Box -->
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5">
+                  <div class="flex items-center justify-between mb-2">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                      Upload GCash Payment Receipt / Screenshot <span class="text-red-500">*</span>
+                    </label>
+                    <span class="text-[10px] text-slate-400 font-medium">JPG, PNG, WEBP (Max 10MB)</span>
+                  </div>
+                  <p class="text-[11px] text-slate-500 mb-3">
+                    Ensure that the Reference Number, Amount, and Date are clearly visible on the receipt image.
+                  </p>
+
+                  @if (uploadedReceipt(); as receipt) {
+                    <!-- Uploaded Receipt Preview Box -->
+                    <div class="bg-white border-2 border-emerald-300 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-4">
+                      <button
+                        type="button"
+                        (click)="openReceiptPreview()"
+                        title="Click to inspect uploaded receipt"
+                        class="relative group shrink-0 cursor-pointer">
+                        <img
+                          [src]="resolveFileUrl(receipt.file_url)"
+                          alt="GCash Receipt Preview"
+                          class="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-xl border border-slate-200 group-hover:border-orange-500 shadow-2xs transition"
+                        />
+                        <div class="absolute inset-0 bg-black/30 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607zM10.5 7.5v6m3-3h-6" />
+                          </svg>
+                        </div>
+                      </button>
+
+                      <div class="flex-1 min-w-0 text-center sm:text-left">
+                        <div class="flex items-center justify-center sm:justify-start gap-2">
+                          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <svg class="w-3 h-3 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
+                              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                            <span>Receipt Attached</span>
+                          </span>
+                        </div>
+                        <p class="font-bold text-slate-900 text-sm mt-1 truncate">{{ receipt.original_name }}</p>
+                        <p class="text-[11px] text-slate-500 mt-0.5">{{ formatSize(receipt.size) }} &bull; Ready for barangay verification</p>
+
+                        <div class="mt-2.5 flex items-center justify-center sm:justify-start gap-3">
+                          <button
+                            type="button"
+                            (click)="openReceiptPreview()"
+                            class="text-xs font-bold text-orange-600 hover:text-orange-700 hover:underline cursor-pointer flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <span>Inspect Image</span>
+                          </button>
+                          <span class="text-slate-300">|</span>
+                          <button
+                            type="button"
+                            (click)="removeUploadedReceipt()"
+                            class="text-xs font-bold text-red-500 hover:text-red-700 cursor-pointer">
+                            Change Receipt
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  } @else {
+                    <!-- Drag & Drop / Upload Trigger Area -->
+                    <div>
+                      <label
+                        for="receipt-file-upload"
+                        class="border-2 border-dashed border-slate-300 hover:border-orange-500 rounded-2xl p-6 bg-white flex flex-col items-center justify-center text-center cursor-pointer transition group">
+                        <div class="w-12 h-12 rounded-xl bg-orange-50 border border-orange-200 text-orange-600 flex items-center justify-center mb-2 group-hover:scale-105 transition">
+                          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                          </svg>
+                        </div>
+                        <span class="text-xs font-bold text-slate-800">
+                          Click to select GCash Receipt image
+                        </span>
+                        <span class="text-[11px] text-slate-400 mt-1">
+                          Upload screenshot or downloaded official receipt (JPG, PNG)
+                        </span>
+                      </label>
+                      <input
+                        id="receipt-file-upload"
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        class="sr-only"
+                        (change)="onReceiptFileSelected($event)"
+                      />
+                    </div>
+                  }
+
+                  @if (uploadingReceipt()) {
+                    <div class="mt-3 flex items-center gap-2 text-xs text-orange-600 font-semibold">
+                      <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                      </svg>
+                      <span>Validating and uploading GCash receipt...</span>
+                    </div>
+                  }
+
+                  @if (paymentErrors['receipt']) {
+                    <div class="mt-3 rounded-xl bg-red-50 border border-red-200 p-3 text-xs text-red-700 flex items-start gap-2">
+                      <svg class="w-4 h-4 text-red-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                      </svg>
+                      <div>
+                        <p class="font-bold">Receipt Error</p>
+                        <p class="mt-0.5 leading-relaxed">{{ paymentErrors['receipt'] }}</p>
+                      </div>
+                    </div>
+                  }
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Navigation Buttons -->
+            <div class="mt-8 flex items-center justify-between pt-5 border-t border-slate-100">
+              <button
+                type="button"
+                (click)="proceedToStep(2)"
+                class="px-5 py-2.5 rounded-xl border border-slate-300 hover:border-slate-400 text-slate-700 font-bold text-sm transition cursor-pointer">
+                &larr; Back to Requirements
+              </button>
+              <button
+                type="button"
+                (click)="validateAndProceedFromPayment()"
+                class="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-sm transition cursor-pointer shadow-sm">
+                <span>Continue to Review</span>
+                <span>&rarr;</span>
+              </button>
+            </div>
+          </div>
+        }
+
+        <!-- ========================================================================= -->
+        <!-- STEP 4: REVIEW & SUBMIT -->
+        <!-- ========================================================================= -->
+        @if (wizardStep() === 4) {
           <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
             <div class="pb-5 border-b border-slate-100">
               <h2 class="text-xl sm:text-2xl font-black text-slate-900">Review & Confirm Request</h2>
-              <p class="text-slate-500 text-sm mt-0.5">Please check your details before submitting your request to the barangay.</p>
+              <p class="text-slate-500 text-sm mt-0.5">Please check your details and payment evidence before submitting your request.</p>
             </div>
 
             <div class="mt-6 rounded-2xl bg-slate-50/70 border border-slate-200 p-5 sm:p-6 space-y-6">
@@ -518,7 +771,7 @@ import { environment } from '../../../environments/environment';
                 <div class="text-right">
                   <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Processing Fee</span>
                   <p class="font-black text-orange-600 text-base sm:text-lg mt-0.5">
-                    @if (svc.processing_fee > 0) {
+                    @if (isPaidService()) {
                       ₱{{ svc.processing_fee | number:'1.2-2' }}
                     } @else {
                       FREE
@@ -527,7 +780,68 @@ import { environment } from '../../../environments/environment';
                 </div>
               </div>
 
-              <!-- Service Details Section (Uniform tile layout matching Service Details) -->
+              <!-- GCash Payment Summary Card (if paid service) -->
+              @if (isPaidService()) {
+                <div class="bg-blue-50/70 border border-blue-200 rounded-2xl p-4 sm:p-5">
+                  <div class="flex items-center justify-between pb-3 border-b border-blue-200/60 mb-3">
+                    <h4 class="text-xs font-black uppercase tracking-wider text-blue-900 flex items-center gap-2">
+                      <div class="w-5 h-5 rounded-md bg-blue-600 text-white font-black flex items-center justify-center text-[10px]">
+                        G
+                      </div>
+                      <span>GCash Payment Evidence</span>
+                    </h4>
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">
+                      Receipt Verified
+                    </span>
+                  </div>
+
+                  <div class="grid sm:grid-cols-2 gap-4 items-center">
+                    <div class="space-y-2 text-xs">
+                      <div>
+                        <span class="text-slate-400 block font-bold text-[10px] uppercase tracking-wider">Payment Method</span>
+                        <span class="font-bold text-slate-800">GCash QR / Mobile</span>
+                      </div>
+                      <div>
+                        <span class="text-slate-400 block font-bold text-[10px] uppercase tracking-wider">GCash Reference Number</span>
+                        <span class="font-mono font-bold text-blue-800 text-sm">{{ paymentRefNumber || '—' }}</span>
+                      </div>
+                      <div>
+                        <span class="text-slate-400 block font-bold text-[10px] uppercase tracking-wider">Amount Paid</span>
+                        <span class="font-bold text-slate-900">₱{{ svc.processing_fee | number:'1.2-2' }}</span>
+                      </div>
+                    </div>
+
+                    @if (uploadedReceipt(); as r) {
+                      <div class="flex items-center gap-3 bg-white border border-blue-200 rounded-xl p-3 shadow-2xs">
+                        <button
+                          type="button"
+                          (click)="openReceiptPreview()"
+                          class="relative group shrink-0 cursor-pointer">
+                          <img [src]="resolveFileUrl(r.file_url)" alt="Receipt Thumbnail" class="w-16 h-16 rounded-lg object-cover border border-slate-200 group-hover:border-orange-500 shadow-2xs" />
+                          <div class="absolute inset-0 bg-black/30 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607zM10.5 7.5v6m3-3h-6" />
+                            </svg>
+                          </div>
+                        </button>
+                        <div class="min-w-0 text-xs">
+                          <p class="font-bold text-slate-900 truncate">{{ r.original_name }}</p>
+                          <p class="text-[10px] text-slate-500">{{ formatSize(r.size) }}</p>
+                          <button
+                            type="button"
+                            (click)="openReceiptPreview()"
+                            class="text-orange-600 hover:text-orange-700 font-bold text-[11px] mt-1 cursor-pointer flex items-center gap-1">
+                            <span>Inspect Full Receipt</span>
+                            <span>&rarr;</span>
+                          </button>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+
+              <!-- Service Details Section -->
               <div>
                 <h4 class="text-xs font-black uppercase tracking-wider text-slate-500 mb-3">Service Details</h4>
                 <div class="grid gap-3 sm:grid-cols-2">
@@ -626,9 +940,9 @@ import { environment } from '../../../environments/environment';
             <div class="mt-8 flex items-center justify-between pt-5 border-t border-slate-100">
               <button
                 type="button"
-                (click)="proceedToStep(2)"
+                (click)="proceedToStep(isPaidService() ? 3 : 2)"
                 class="px-5 py-2.5 rounded-xl border border-slate-300 hover:border-slate-400 text-slate-700 font-bold text-sm transition cursor-pointer">
-                &larr; Back to Edit
+                &larr; Back to {{ isPaidService() ? 'Payment' : 'Requirements' }}
               </button>
               <button
                 type="button"
@@ -651,9 +965,9 @@ import { environment } from '../../../environments/environment';
         }
 
         <!-- ========================================================================= -->
-        <!-- STEP 4: CONFIRMATION -->
+        <!-- STEP 5: CONFIRMATION -->
         <!-- ========================================================================= -->
-        @if (wizardStep() === 4) {
+        @if (wizardStep() === 5) {
           <div class="rounded-3xl border border-emerald-200 bg-white p-6 sm:p-10 shadow-xs text-center">
             <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-3xl flex items-center justify-center mx-auto shadow-xs">
               <svg class="w-9 h-9" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
@@ -669,7 +983,7 @@ import { environment } from '../../../environments/environment';
               Your request is being processed
             </h2>
             <p class="text-slate-500 text-sm max-w-md mx-auto mt-2 leading-relaxed">
-              Barangay personnel will review your application and digital requirements. You can track status updates in your resident dashboard.
+              Barangay personnel will review your application, digital requirements, and GCash payment verification. You can track status updates in your resident dashboard.
             </p>
 
             @if (submittedResult(); as res) {
@@ -685,13 +999,19 @@ import { environment } from '../../../environments/environment';
                     <span class="text-slate-400">Service:</span>
                     <span class="font-bold text-slate-800">{{ svc.service_name }}</span>
                   </div>
+                  @if (isPaidService()) {
+                    <div class="flex justify-between">
+                      <span class="text-slate-400">Payment:</span>
+                      <span class="font-bold text-blue-700">GCash (Ref: {{ paymentRefNumber }})</span>
+                    </div>
+                  }
                   <div class="flex justify-between">
                     <span class="text-slate-400">Status:</span>
                     <span class="font-bold text-amber-600">Pending Staff Review</span>
                   </div>
                   <div class="flex justify-between">
                     <span class="text-slate-400">Submitted:</span>
-                    <span class="font-semibold text-slate-800">{{ res.requests?.[0]?.created_at | date:'mediumDate' }}</span>
+                    <span class="font-semibold text-slate-800">{{ res.requests?.[0]?.request_date || (res.requests?.[0]?.created_at | date:'mediumDate') }}</span>
                   </div>
                 </div>
               </div>
@@ -712,18 +1032,18 @@ import { environment } from '../../../environments/environment';
       }
 
       <!-- ========================================================================= -->
-      <!-- PHOTO & REQUIREMENT PREVIEW MODAL -->
+      <!-- PHOTO, RECEIPT & REQUIREMENT PREVIEW MODAL -->
       <!-- ========================================================================= -->
       @if (previewModalFile(); as preview) {
         <div class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6"
              (click)="closeFilePreview()">
-          <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-lg w-full p-6 sm:p-7 relative overflow-hidden"
+          <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-lg w-full p-6 sm:p-7 relative overflow-hidden max-h-[90vh] flex flex-col"
                (click)="$event.stopPropagation()">
             <!-- Modal Header -->
-            <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100 shrink-0">
               <div>
                 <span class="text-[10px] font-black uppercase tracking-wider text-orange-600 bg-orange-50 px-2.5 py-0.5 rounded-full border border-orange-200">
-                  {{ preview.isPhoto ? '2×2 ID Photo Preview' : (preview.isImage ? 'Uploaded Document Image' : 'Document Preview') }}
+                  {{ preview.isReceipt ? 'GCash Payment Receipt Preview' : (preview.isPhoto ? '2×2 ID Photo Preview' : (preview.isImage ? 'Uploaded Document Image' : 'Document Preview')) }}
                 </span>
                 <h3 class="text-lg font-black text-slate-900 mt-1">{{ preview.title }}</h3>
               </div>
@@ -738,8 +1058,19 @@ import { environment } from '../../../environments/environment';
             </div>
 
             <!-- Modal Image Preview Content -->
-            <div class="py-5 text-center">
-              @if (preview.isPhoto) {
+            <div class="py-5 text-center overflow-y-auto flex-1">
+              @if (preview.isReceipt) {
+                <div class="inline-block relative p-2 bg-slate-50 rounded-2xl border border-slate-200 shadow-inner max-w-full">
+                  <img
+                    [src]="preview.url"
+                    alt="Uploaded GCash Receipt Preview"
+                    class="max-h-96 sm:max-h-[28rem] w-auto max-w-full object-contain rounded-xl border border-slate-300 shadow-md mx-auto"
+                  />
+                  <span class="absolute bottom-4 right-4 bg-blue-900/80 text-white text-[10px] font-bold px-2.5 py-1 rounded-md backdrop-blur-xs">
+                    GCash Receipt &bull; Ref: {{ paymentRefNumber || 'N/A' }}
+                  </span>
+                </div>
+              } @else if (preview.isPhoto) {
                 <div class="inline-block relative p-2 bg-slate-50 rounded-2xl border border-slate-200 shadow-inner">
                   <img
                     [src]="preview.url"
@@ -797,7 +1128,7 @@ import { environment } from '../../../environments/environment';
             </div>
 
             <!-- Modal Actions -->
-            <div class="pt-4 border-t border-slate-100 flex items-center justify-end">
+            <div class="pt-4 border-t border-slate-100 flex items-center justify-end shrink-0">
               <button
                 type="button"
                 (click)="closeFilePreview()"
@@ -828,7 +1159,14 @@ export class ApplyComponent implements OnInit {
   uploadedRequirements = signal<UploadedRequirement[]>([]);
   uploadingReq = signal<string | null>(null);
   uploadedPhotoUrl = signal<string | null>(null);
-  previewModalFile = signal<{ url: string; title: string; fileName?: string; isPhoto: boolean; isImage: boolean } | null>(null);
+
+  // GCash Payment & Receipt signals
+  paymentRefNumber = '';
+  uploadedReceipt = signal<UploadedReceipt | null>(null);
+  uploadingReceipt = signal<boolean>(false);
+  paymentErrors: Record<string, string> = {};
+
+  previewModalFile = signal<{ url: string; title: string; fileName?: string; isPhoto: boolean; isImage: boolean; isReceipt?: boolean } | null>(null);
 
   submitting = signal<boolean>(false);
   submissionError = signal<string | null>(null);
@@ -840,8 +1178,15 @@ export class ApplyComponent implements OnInit {
     return [u.first_name, u.middle_name, u.last_name, u.suffix].filter(Boolean).join(' ');
   });
 
+  isPaidService = computed(() => {
+    const svc = this.selectedService();
+    return !!svc && (Number(svc.processing_fee) || 0) > 0;
+  });
+
   wizardProgress = computed(() => {
-    return Math.min(100, Math.round((this.wizardStep() / 3) * 100));
+    const totalSteps = this.isPaidService() ? 4 : 3;
+    const current = Math.min(this.wizardStep(), totalSteps);
+    return Math.min(100, Math.round((current / totalSteps) * 100));
   });
 
   constructor() {
@@ -1159,9 +1504,6 @@ export class ApplyComponent implements OnInit {
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
-  /**
-   * Synchronizes composite address whenever individual components change.
-   */
   updateCompositeAddress(): void {
     const parts = [
       this.formData['block'] ? (String(this.formData['block']).toLowerCase().startsWith('blk') ? this.formData['block'] : `Blk ${this.formData['block']}`) : null,
@@ -1240,30 +1582,6 @@ export class ApplyComponent implements OnInit {
   }
 
   proceedToStep(step: number): void {
-    if (step === 2) {
-      // Validate that all required requirements are uploaded and error-free
-      const svc = this.selectedService();
-      const reqs = svc?.requirements || [];
-      const uploaded = this.uploadedRequirements();
-      const errors = this.reqErrors();
-
-      // Block if active validation errors exist
-      if (Object.keys(errors).length > 0) {
-        return;
-      }
-
-      // Check each mandatory requirement
-      if (reqs.length > 0) {
-        for (const req of reqs) {
-          const isUploaded = uploaded.some(u => u.requirement_name === req);
-          if (!isUploaded) {
-            this.setReqError(req, `Please upload a valid ${req} before proceeding.`);
-            return;
-          }
-        }
-      }
-    }
-
     this.wizardStep.set(step);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -1358,6 +1676,73 @@ export class ApplyComponent implements OnInit {
     });
   }
 
+  // --- GCash Receipt Upload & Handling ---
+  onRefNumberChange(): void {
+    if (this.paymentErrors['reference_number']) {
+      delete this.paymentErrors['reference_number'];
+    }
+  }
+
+  onReceiptFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+
+    const file = input.files[0];
+    delete this.paymentErrors['receipt'];
+
+    if (file.size > 10 * 1024 * 1024) {
+      this.paymentErrors['receipt'] = 'Receipt image exceeds the 10MB limit. Please upload a smaller file.';
+      input.value = '';
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      this.paymentErrors['receipt'] = 'Invalid format. Please upload an image file (JPG, PNG, WEBP) of your GCash receipt.';
+      input.value = '';
+      return;
+    }
+
+    this.uploadingReceipt.set(true);
+    this.portalService.uploadRequirement(file).subscribe({
+      next: (res: ApiResponse<UploadedRequirement>) => {
+        if (res.success && res.data) {
+          this.uploadedReceipt.set({
+            file_url: res.data.file_url,
+            file_name: res.data.file_name,
+            original_name: res.data.original_name,
+            size: res.data.size,
+            mime_type: res.data.mime_type,
+            reference_number: this.paymentRefNumber.trim(),
+            uploaded_at: new Date().toISOString()
+          });
+        }
+        this.uploadingReceipt.set(false);
+      },
+      error: (err: any) => {
+        this.paymentErrors['receipt'] = err?.error?.message || 'Failed to upload GCash receipt. Please try again.';
+        this.uploadingReceipt.set(false);
+      }
+    });
+  }
+
+  removeUploadedReceipt(): void {
+    this.uploadedReceipt.set(null);
+    delete this.paymentErrors['receipt'];
+  }
+
+  openReceiptPreview(): void {
+    const receipt = this.uploadedReceipt();
+    if (!receipt) return;
+    this.previewModalFile.set({
+      url: this.resolveFileUrl(receipt.file_url),
+      title: 'GCash Payment Confirmation Receipt',
+      fileName: receipt.original_name || receipt.file_name,
+      isPhoto: false,
+      isImage: true,
+      isReceipt: true
+    });
+  }
+
   resolveFileUrl(url?: string | null): string {
     if (!url) return '';
     if (url.startsWith('data:') || url.startsWith('blob:') || url.startsWith('http://') || url.startsWith('https://')) {
@@ -1393,7 +1778,8 @@ export class ApplyComponent implements OnInit {
       title: file.requirement_name,
       fileName: file.original_name || file.file_name,
       isPhoto,
-      isImage
+      isImage,
+      isReceipt: false
     });
   }
 
@@ -1446,7 +1832,7 @@ export class ApplyComponent implements OnInit {
            label.includes('father') || label.includes('mother') || label.includes('spouse') || label.includes('guardian');
   }
 
-  validateAndProceedToReview(): void {
+  validateAndProceedToRequirements(): void {
     this.formErrors = {};
 
     // Validate purpose
@@ -1455,7 +1841,7 @@ export class ApplyComponent implements OnInit {
       this.formErrors['purpose'] = 'Purpose of request is required.';
     }
 
-    // Validate any required service fields
+    // Validate dynamic service fields
     const svc = this.selectedService();
     if (svc?.form_fields) {
       for (const field of svc.form_fields) {
@@ -1500,7 +1886,63 @@ export class ApplyComponent implements OnInit {
     }
 
     this.updateCompositeAddress();
-    this.proceedToStep(3);
+    this.proceedToStep(2);
+  }
+
+  validateAndProceedFromRequirements(): void {
+    const svc = this.selectedService();
+    const reqs = svc?.requirements || [];
+    const uploaded = this.uploadedRequirements();
+    const errors = this.reqErrors();
+
+    // Block if active validation errors exist
+    if (Object.keys(errors).length > 0) {
+      return;
+    }
+
+    // Check each mandatory requirement
+    if (reqs.length > 0) {
+      for (const req of reqs) {
+        const isUploaded = uploaded.some(u => u.requirement_name === req);
+        if (!isUploaded) {
+          this.setReqError(req, `Please upload a valid ${req} before proceeding.`);
+          return;
+        }
+      }
+    }
+
+    if (this.isPaidService()) {
+      this.proceedToStep(3);
+    } else {
+      this.proceedToStep(4);
+    }
+  }
+
+  validateAndProceedFromPayment(): void {
+    this.paymentErrors = {};
+
+    const ref = this.paymentRefNumber.trim();
+    if (!ref) {
+      this.paymentErrors['reference_number'] = 'Please enter your GCash Reference Number.';
+    } else if (ref.length < 6) {
+      this.paymentErrors['reference_number'] = 'Please enter a valid GCash Reference Number.';
+    }
+
+    if (!this.uploadedReceipt()) {
+      this.paymentErrors['receipt'] = 'Please upload a screenshot or photo of your GCash payment receipt.';
+    }
+
+    if (Object.keys(this.paymentErrors).length > 0) {
+      return;
+    }
+
+    // Update receipt object with current ref number
+    const r = this.uploadedReceipt();
+    if (r) {
+      r.reference_number = ref;
+    }
+
+    this.proceedToStep(4);
   }
 
   submitOnlineRequest(): void {
@@ -1512,9 +1954,27 @@ export class ApplyComponent implements OnInit {
 
     const idempotencyKey = 'portal-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
 
+    // Prepare complete form_data package
+    const payloadFormData: Record<string, any> = { ...this.formData };
+
+    if (this.isPaidService()) {
+      const receipt = this.uploadedReceipt();
+      const refNum = this.paymentRefNumber.trim();
+      payloadFormData['_receipt'] = receipt;
+      payloadFormData['_payment'] = {
+        method: 'GCash',
+        amount: svc.processing_fee,
+        reference_number: refNum,
+        receipt_url: receipt?.file_url || null,
+        paid_at: new Date().toISOString()
+      };
+      payloadFormData['gcash_reference_number'] = refNum;
+      payloadFormData['payment_method'] = 'GCash';
+    }
+
     this.portalService.submitRequest({
       service_id: svc.service_id,
-      form_data: this.formData,
+      form_data: payloadFormData,
       requirements: this.uploadedRequirements(),
       photo: this.uploadedPhotoUrl() || undefined,
       idempotency_key: idempotencyKey
@@ -1522,7 +1982,7 @@ export class ApplyComponent implements OnInit {
       next: (res: ApiResponse<any>) => {
         this.submitting.set(false);
         this.submittedResult.set(res.data);
-        this.proceedToStep(4);
+        this.proceedToStep(5);
       },
       error: (err: any) => {
         this.submitting.set(false);

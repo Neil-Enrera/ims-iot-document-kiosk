@@ -523,6 +523,86 @@ interface StatusOption {
               </div>
             }
 
+            <!-- ================= GCASH PAYMENT VERIFICATION CARD ================= -->
+            @if (getUploadedReceipt(request.form_data); as receipt) {
+              <div class="bg-blue-50/70 border border-blue-200 rounded-2xl p-5 shadow-2xs">
+                <div class="flex items-center justify-between pb-3 border-b border-blue-200/60 mb-4">
+                  <div class="flex items-center gap-2.5">
+                    <div class="w-7 h-7 rounded-xl bg-blue-600 text-white font-black flex items-center justify-center text-xs shadow-2xs">
+                      G
+                    </div>
+                    <div>
+                      <h4 class="text-xs font-bold text-blue-950 uppercase tracking-wide">
+                        GCash Payment Verification
+                      </h4>
+                      <p class="text-[10px] text-blue-700 font-semibold">Online Resident Payment</p>
+                    </div>
+                  </div>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-100 text-blue-800 border border-blue-200">
+                    GCash Transfer
+                  </span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
+                  <!-- Payment Info Summary -->
+                  <div class="sm:col-span-7 space-y-2.5 text-xs">
+                    <div class="flex justify-between py-1 border-b border-blue-100">
+                      <span class="font-medium text-slate-500">Service Fee:</span>
+                      <span class="font-bold text-slate-900">₱{{ getReceiptAmount(request) | number:'1.2-2' }}</span>
+                    </div>
+                    <div class="flex justify-between py-1 border-b border-blue-100">
+                      <span class="font-medium text-slate-500">GCash Ref #:</span>
+                      <span class="font-mono font-bold text-blue-800 text-xs">{{ receipt.reference_number || getReceiptRefNumber(request) || 'N/A' }}</span>
+                    </div>
+                    <div class="flex justify-between py-1 border-b border-blue-100">
+                      <span class="font-medium text-slate-500">Receipt File:</span>
+                      <span class="font-semibold text-slate-800 truncate max-w-[170px]">{{ receipt.original_name || receipt.file_name || 'receipt.jpg' }}</span>
+                    </div>
+                    <div class="flex justify-between py-1">
+                      <span class="font-medium text-slate-500">Evidence Status:</span>
+                      <span class="font-bold text-emerald-700 flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                        </svg>
+                        Attached for Staff Review
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Receipt Image Preview & Modal Action -->
+                  <div class="sm:col-span-5 flex flex-col items-center sm:items-end justify-center">
+                    <div class="p-2 bg-white border border-blue-200 rounded-xl shadow-xs text-center">
+                      <button
+                        type="button"
+                        (click)="openReceiptInspection(request, receipt)"
+                        class="relative group cursor-pointer block">
+                        <img
+                          [src]="resolveFileUrl(receipt.file_url)"
+                          alt="GCash Receipt"
+                          class="w-28 h-28 object-cover rounded-lg border border-slate-200 group-hover:border-blue-500 shadow-2xs transition"
+                        />
+                        <div class="absolute inset-0 bg-blue-950/40 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607zM10.5 7.5v6m3-3h-6" />
+                          </svg>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        (click)="openReceiptInspection(request, receipt)"
+                        class="text-[11px] font-bold text-blue-700 hover:text-blue-900 hover:underline mt-1.5 cursor-pointer inline-flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span>Inspect Receipt</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+
             <!-- Uploaded Digital Requirements (Online Portal Submissions) -->
             @if (getUploadedRequirements(request.form_data).length > 0) {
               <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs">
@@ -539,9 +619,18 @@ interface StatusOption {
                     <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs">
                       <div class="flex items-center gap-3 min-w-0 pr-3">
                         @if (isImageFile(reqDoc)) {
-                          <a [href]="resolveFileUrl(reqDoc.file_url)" target="_blank" title="Click to inspect 2×2 ID photo in full size" class="shrink-0">
-                            <img [src]="resolveFileUrl(reqDoc.file_url)" alt="Photo" class="w-12 h-12 rounded-lg object-cover border border-slate-300 shadow-2xs hover:scale-105 transition cursor-pointer" />
-                          </a>
+                          <button
+                            type="button"
+                            (click)="openImageModal(resolveFileUrl(reqDoc.file_url), reqDoc.requirement_name, reqDoc.original_name)"
+                            title="Click to inspect requirement image in full size"
+                            class="shrink-0 relative group cursor-pointer">
+                            <img [src]="resolveFileUrl(reqDoc.file_url)" alt="Requirement Preview" class="w-12 h-12 rounded-lg object-cover border border-slate-300 shadow-2xs group-hover:border-orange-500 transition" />
+                            <div class="absolute inset-0 bg-black/30 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                              <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607zM10.5 7.5v6m3-3h-6" />
+                              </svg>
+                            </div>
+                          </button>
                         } @else {
                           <div class="w-10 h-10 rounded-lg bg-orange-100 border border-orange-200 text-orange-700 flex items-center justify-center shrink-0">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -554,14 +643,28 @@ interface StatusOption {
                           <span class="text-slate-500 text-[11px] block truncate">{{ reqDoc.original_name }}</span>
                         </div>
                       </div>
-                      <a [href]="resolveFileUrl(reqDoc.file_url)" target="_blank"
-                         class="px-3.5 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shrink-0 transition flex items-center gap-1.5">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        <span>{{ isImageFile(reqDoc) ? 'Review Photo' : 'View File' }}</span>
-                      </a>
+                      <div class="flex items-center gap-2 shrink-0">
+                        @if (isImageFile(reqDoc)) {
+                          <button
+                            type="button"
+                            (click)="openImageModal(resolveFileUrl(reqDoc.file_url), reqDoc.requirement_name, reqDoc.original_name)"
+                            class="px-3.5 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs transition flex items-center gap-1.5 cursor-pointer shadow-2xs">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <span>Inspect Photo</span>
+                          </button>
+                        } @else {
+                          <a [href]="resolveFileUrl(reqDoc.file_url)" target="_blank"
+                             class="px-3.5 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-2xs">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                            </svg>
+                            <span>View File</span>
+                          </a>
+                        }
+                      </div>
                     </div>
                   }
                 </div>
@@ -1006,6 +1109,44 @@ interface StatusOption {
         (onDownload)="downloadPreviewDocument()"
       />
 
+      <!-- ================= IMAGE INSPECTION MODAL (2x2 Photo & Receipt) ================= -->
+      <app-modal
+        [open]="showImageModal()"
+        [title]="imageModalData()?.title || 'Inspect Image'"
+        (onClose)="closeImageModal()"
+        containerClass="max-w-xl"
+      >
+        <div class="text-center">
+          @if (imageModalData()?.subtitle) {
+            <p class="text-xs font-bold text-slate-500 mb-3">{{ imageModalData()?.subtitle }}</p>
+          }
+          <div class="p-2 bg-slate-50 rounded-2xl border border-slate-200 inline-block max-w-full">
+            <img
+              [src]="imageModalData()?.url"
+              [alt]="imageModalData()?.title"
+              class="max-h-[30rem] w-auto max-w-full object-contain rounded-xl border border-slate-300 shadow-md mx-auto"
+            />
+          </div>
+          <div class="mt-4 flex items-center justify-between pt-3 border-t border-slate-200">
+            <a
+              [href]="imageModalData()?.url"
+              target="_blank"
+              class="text-xs font-bold text-orange-600 hover:text-orange-700 hover:underline flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+              </svg>
+              <span>Open Original File</span>
+            </a>
+            <button
+              type="button"
+              (click)="closeImageModal()"
+              class="px-5 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-xs cursor-pointer">
+              Close
+            </button>
+          </div>
+        </div>
+      </app-modal>
+
     </div>
   `
 })
@@ -1053,6 +1194,8 @@ export class RequestsComponent implements OnInit, OnDestroy {
   showRejectModal = signal(false);
   showCancelModal = signal(false);
   showJsonModal = signal(false);
+  showImageModal = signal(false);
+  imageModalData = signal<{ url: string; title: string; subtitle?: string } | null>(null);
   rejectionReason = signal('');
   cancelReason = signal('');
   activeRequestForAction = signal<DocumentRequest | null>(null);
@@ -2077,6 +2220,53 @@ export class RequestsComponent implements OnInit, OnDestroy {
     return this.daysRemaining(value) <= 2
       ? `${base} text-rose-800 bg-rose-50 border-rose-200`
       : `${base} text-amber-800 bg-amber-50 border-amber-200`;
+  }
+
+  openImageModal(url: string, title: string, subtitle?: string) {
+    this.imageModalData.set({ url, title, subtitle });
+    this.showImageModal.set(true);
+  }
+
+  closeImageModal() {
+    this.showImageModal.set(false);
+    this.imageModalData.set(null);
+  }
+
+  getUploadedReceipt(formData: unknown): { file_url: string; original_name?: string; file_name?: string; size?: number; reference_number?: string } | null {
+    if (!formData || typeof formData !== 'object') return null;
+    const data = formData as Record<string, any>;
+    if (data['_receipt'] && typeof data['_receipt'] === 'object' && data['_receipt'].file_url) {
+      return data['_receipt'];
+    }
+    if (data['_payment'] && typeof data['_payment'] === 'object' && data['_payment'].receipt_url) {
+      return {
+        file_url: data['_payment'].receipt_url,
+        reference_number: data['_payment'].reference_number,
+        original_name: 'GCash Payment Receipt'
+      };
+    }
+    return null;
+  }
+
+  openReceiptInspection(request: DocumentRequest, receipt: any) {
+    const ref = receipt.reference_number || this.getReceiptRefNumber(request) || 'N/A';
+    const amt = this.getReceiptAmount(request).toFixed(2);
+    this.openImageModal(
+      this.resolveFileUrl(receipt.file_url),
+      'GCash Payment Confirmation Receipt',
+      `GCash Reference #: ${ref} • Amount: ₱${amt}`
+    );
+  }
+
+  getReceiptAmount(request: DocumentRequest): number {
+    const data = (request.form_data || {}) as Record<string, any>;
+    if (data['_payment']?.amount) return Number(data['_payment'].amount);
+    return Number(request.processing_fee) || 0;
+  }
+
+  getReceiptRefNumber(request: DocumentRequest): string {
+    const data = (request.form_data || {}) as Record<string, any>;
+    return data['_payment']?.reference_number || data['_receipt']?.reference_number || data['gcash_reference_number'] || '';
   }
 
   resolveFileUrl(url?: string | null): string {

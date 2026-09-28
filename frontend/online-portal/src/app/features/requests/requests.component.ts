@@ -335,6 +335,38 @@ type FilterTab = 'all' | 'active' | 'corrections' | 'completed';
                 </div>
               </div>
 
+              <!-- GCash Payment Evidence Card (if paid request) -->
+              @if (getUploadedReceipt(req); as receipt) {
+                <div>
+                  <h3 class="text-xs font-black uppercase tracking-wider text-blue-900 mb-2 flex items-center gap-1.5">
+                    <div class="w-4 h-4 rounded bg-blue-600 text-white font-black flex items-center justify-center text-[9px]">G</div>
+                    <span>GCash Payment Evidence</span>
+                  </h3>
+                  <div class="rounded-2xl border border-blue-200 bg-blue-50/60 p-4 space-y-3 text-xs">
+                    <div class="flex items-center justify-between">
+                      <span class="text-slate-500 font-medium">Payment Method:</span>
+                      <span class="font-bold text-slate-900">GCash QR</span>
+                    </div>
+                    @if (receipt.reference_number || req.form_data?.['gcash_reference_number']) {
+                      <div class="flex items-center justify-between">
+                        <span class="text-slate-500 font-medium">Reference Number:</span>
+                        <span class="font-mono font-bold text-blue-800">{{ receipt.reference_number || req.form_data?.['gcash_reference_number'] }}</span>
+                      </div>
+                    }
+                    <div class="flex items-center justify-between pt-2 border-t border-blue-200/60">
+                      <div class="flex items-center gap-2 min-w-0">
+                        <img [src]="resolveFileUrl(receipt.file_url)" alt="Receipt" class="w-10 h-10 rounded-lg object-cover border border-slate-300 shrink-0" />
+                        <span class="font-medium text-slate-700 truncate max-w-[140px]">{{ receipt.original_name || 'GCash Receipt' }}</span>
+                      </div>
+                      <a [href]="resolveFileUrl(receipt.file_url)" target="_blank"
+                         class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shrink-0 transition">
+                        View Receipt
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              }
+
               <div>
                 <h3 class="text-xs font-black uppercase tracking-wider text-slate-400 mb-2">Attached Documents</h3>
                 @if (!req.requirements || req.requirements.length === 0) {
@@ -745,6 +777,22 @@ export class RequestsComponent implements OnInit {
         reuse: '1'
       }
     });
+  }
+
+  getUploadedReceipt(req: PortalRequest): { file_url: string; original_name?: string; reference_number?: string } | null {
+    if (!req || !req.form_data) return null;
+    const data = req.form_data;
+    if (data['_receipt'] && typeof data['_receipt'] === 'object' && data['_receipt'].file_url) {
+      return data['_receipt'];
+    }
+    if (data['_payment'] && typeof data['_payment'] === 'object' && data['_payment'].receipt_url) {
+      return {
+        file_url: data['_payment'].receipt_url,
+        reference_number: data['_payment'].reference_number,
+        original_name: 'GCash Payment Receipt'
+      };
+    }
+    return null;
   }
 
   getStatusBadgeClass(statusId: number): string {

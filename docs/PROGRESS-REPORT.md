@@ -14,6 +14,14 @@
 | **Total** | **85** | **56** | **19** | **0** |
 
 > **Note:** TASK-BACKEND-012 (Payment API) and TASK-FRONTEND-011 (Payment UI) removed per DEC-008.
+> - **GCash Payment & Receipt Upload for Online Portal & Admin Verification Review** (`online-portal/src/app/features/apply/apply.component.ts`, `online-portal/src/app/features/requests/requests.component.ts`, `admin-panel/src/app/features/requests/requests.component.ts`, `public/gcash-qr.png`):
+>   - **Resident Wizard Flow**: Reordered application steps to: `Application Form (Step 1)` &rarr; `Requirements (Step 2)` &rarr; `GCash Payment & Receipt Upload (Step 3, paid services only)` &rarr; `Review & Submit (Step 4)` &rarr; `Confirmation (Step 5)`. Free services automatically skip Step 3.
+>   - **Official GCash QR & Instructions**: Displayed high-resolution official Barangay San Manuel GCash QR code (`public/gcash-qr.png`), account details (`Barangay San Manuel Treasurer`, `0917-827-4638`), dynamic fee amount (`₱{{ svc.processing_fee }}`), and step-by-step payment instructions.
+>   - **Receipt Upload & Image Validation**: Added client-side image validation (JPG/PNG/WEBP, max 10MB), receipt image thumbnail preview, reference number input validation, and full receipt inspection modal.
+>   - **Review & Submit Integration**: Displays dedicated GCash Payment Evidence summary card in Step 4 before submission, attaching `form_data._receipt`, `form_data._payment`, and `form_data.gcash_reference_number`.
+>   - **Admin Review Modal**: Added prominent **GCash Payment Verification** card in Admin Request Details modal, displaying payment method, exact amount, GCash reference number, receipt thumbnail, and interactive full-size receipt inspect modal for staff review.
+>   - **Verification**: Verified 98/98 backend unit tests pass (`npm test`) and both `online-portal` and `admin-panel` compile with 0 errors.
+>
 > - **Automated "Ready for Release" Email Notification & Release Confirmation Message Removal** (`email.service.js` L435-595, `request.service.js` L180-215, `application.service.js` L215-235, `online-portal/src/app/features/requests/requests.component.ts` L250-275):
 >   - **Automated Email Notification on "Ready for Release"**: Added `sendReadyForReleaseNotification` in `email.service.js`, sending a notification to the resident's registered email whenever an Admin transitions a document request or Barangay ID request to "Ready for Release". Includes request number, service/document name, status badge, processing fee breakdown, claim location (Barangay San Manuel Hall), office hours, and what to bring.
 >   - **Deduplication / State Transition Guard**: Email is dispatched strictly on status transition to `READY_FOR_RELEASE` (status `6` for requests, `APPROVED` for applications), preventing duplicate emails upon page refreshes or repeated views.
