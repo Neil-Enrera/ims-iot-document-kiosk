@@ -180,6 +180,39 @@ const changeStatus = async (requestId, statusId, userId, remarks) => {
     }
   }
 
+  // When status changes to Ready for Release, trigger automated email notification
+  if (statusId === STATUS_IDS.READY_FOR_RELEASE && request.status_id !== STATUS_IDS.READY_FOR_RELEASE) {
+    try {
+      const emailService = require('./email.service');
+      let targetEmail = updated?.email || request.email;
+      
+      // If resident email is missing from the request/resident row, check portal_accounts as fallback
+      if (!targetEmail && (updated?.resident_id || request.resident_id)) {
+        const portalAccountRepo = require('../repositories/portal-account.repository');
+        const acc = await portalAccountRepo.findByResidentId(updated?.resident_id || request.resident_id);
+        if (acc && acc.email) {
+          targetEmail = acc.email;
+        }
+      }
+
+      if (targetEmail) {
+        const isId = (updated?.service_name || request.service_name || '').toLowerCase().includes('id');
+        await emailService.sendReadyForReleaseNotification({
+          email: targetEmail,
+          name: updated?.resident_name || request.resident_name,
+          requestNumber: updated?.request_number || request.request_number,
+          serviceName: updated?.service_name || request.service_name || 'Document Request',
+          fee: updated?.processing_fee || request.processing_fee || 0,
+          isIdRequest: isId
+        });
+      } else {
+        console.log(`[REQUEST SERVICE] No email on record for request ${requestId}; skipping Ready for Release notification.`);
+      }
+    } catch (emailErr) {
+      console.error(`Failed to send Ready for Release email for request ${requestId}:`, emailErr.message);
+    }
+  }
+
   return { success: true, message: 'Request status updated successfully.', data: updated };
 };
 

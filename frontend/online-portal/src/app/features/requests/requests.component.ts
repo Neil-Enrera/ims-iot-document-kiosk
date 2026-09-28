@@ -260,14 +260,6 @@ type FilterTab = 'all' | 'active' | 'corrections' | 'completed';
                         </div>
                       </div>
                     }
-
-                    <!-- Released / Completed Status -->
-                    @if (req.status_id === 7) {
-                      <div class="mt-3 rounded-xl bg-emerald-50/70 border border-emerald-200 p-2.5 text-xs text-emerald-800 flex items-center gap-1.5 font-medium">
-                        <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
-                        <span>{{ (req.service_name || '').toLowerCase().includes('id') ? 'Barangay ID successfully registered, issued, and claimed.' : 'Document successfully released and claimed.' }}</span>
-                      </div>
-                    }
                   </div>
 
                   <!-- Actions -->

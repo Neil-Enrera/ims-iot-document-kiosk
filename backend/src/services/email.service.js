@@ -435,6 +435,163 @@ const sendContactUsMessage = async ({ fullName, email, phoneNumber, subject, mes
   return { success: true, mode: 'dev' };
 };
 
-module.exports = { sendVerificationCode, sendLoginVerificationCode, sendPortalCredentials, sendContactUsMessage };
+const sendReadyForReleaseNotification = async ({
+  email,
+  name,
+  requestNumber,
+  serviceName,
+  fee = 0,
+  isIdRequest = false,
+  claimLocation = 'Barangay San Manuel Hall, San Manuel, City of San Jose del Monte, Bulacan',
+  officeHours = 'Monday – Friday, 8:00 AM – 5:00 PM',
+  portalUrl = ''
+}) => {
+  const mailTransporter = getTransporter();
+  const dateStr = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila', dateStyle: 'medium' });
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; margin: 0; padding: 24px; color: #1e293b; }
+        .card { max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; padding: 32px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .header { border-bottom: 2px solid #f97316; padding-bottom: 16px; margin-bottom: 24px; text-align: center; }
+        .logo-img { display: block; width: 56px; height: 56px; max-width: 56px; border: 0; outline: none; text-decoration: none; }
+        .logo-title { font-size: 20px; font-weight: bold; color: #0f172a; margin: 0; line-height: 1.2; }
+        .sub-title { font-size: 12px; color: #ea580c; font-weight: 700; text-transform: uppercase; margin: 4px 0 0 0; letter-spacing: 0.5px; }
+        .greeting { font-size: 15px; color: #334155; margin-bottom: 16px; }
+        
+        .status-badge { display: inline-block; background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; font-weight: 800; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; padding: 6px 14px; border-radius: 9999px; margin-bottom: 16px; }
+        
+        .info-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin: 20px 0; }
+        .info-row { display: flex; justify-content: space-between; gap: 12px; margin: 8px 0; font-size: 13px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; }
+        .info-row:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
+        .info-label { color: #64748b; font-weight: 600; }
+        .info-val { font-weight: 700; color: #0f172a; text-align: right; }
+        
+        .claim-box { background: #fff7ed; border: 1.5px solid #fed7aa; border-radius: 12px; padding: 18px; margin: 20px 0; }
+        .claim-title { font-size: 13px; font-weight: 800; color: #c2410c; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+        .claim-list { margin: 0; padding-left: 20px; font-size: 13px; color: #7c2d12; line-height: 1.6; }
+        .claim-list li { margin-bottom: 4px; }
+        
+        .info-text { font-size: 13px; color: #475569; line-height: 1.6; }
+        .cta { display: inline-block; margin-top: 12px; padding: 10px 20px; background: #ea580c; color: #ffffff !important; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 13px; }
+        .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #f1f5f9; text-align: center; font-size: 11px; color: #94a3b8; }
+      </style>
+    </head>
+    <body>
+      <div class="card">
+        <div class="header">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto; text-align: left;">
+            <tr>
+              <td style="vertical-align: middle; padding-right: 14px;">
+                <img src="cid:barangayLogo" alt="Barangay San Manuel Seal" width="56" height="56" class="logo-img" />
+              </td>
+              <td style="vertical-align: middle; text-align: left;">
+                <h1 class="logo-title">Barangay San Manuel</h1>
+                <p class="sub-title">IMS Document Request Services</p>
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <div style="text-align: center;">
+          <span class="status-badge">&#10003; Ready for Release</span>
+        </div>
+
+        <p class="greeting">Hello <strong>${name || 'Resident'}</strong>,</p>
+        
+        <p class="info-text">
+          Good news! Your request for <strong>${serviceName}</strong> has been processed and is now <strong>Ready for Release</strong>.
+          ${isIdRequest 
+            ? 'You may now proceed to Barangay San Manuel Hall for physical card issuance / RFID card registration.' 
+            : 'You may now claim your official document at Barangay San Manuel Hall during office hours.'}
+        </p>
+
+        <div class="info-box">
+          <div class="info-row">
+            <span class="info-label">Request Reference #</span>
+            <span class="info-val" style="font-family: monospace; font-size: 14px; color: #ea580c;">${requestNumber}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Service / Document</span>
+            <span class="info-val">${serviceName}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Status</span>
+            <span class="info-val" style="color: #15803d;">Ready for Release</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Processing Fee</span>
+            <span class="info-val">${fee > 0 ? '₱' + Number(fee).toFixed(2) : 'FREE'}</span>
+          </div>
+        </div>
+
+        <div class="claim-box">
+          <div class="claim-title">Claiming Instructions</div>
+          <ul class="claim-list">
+            <li><strong>Location:</strong> ${claimLocation}</li>
+            <li><strong>Office Hours:</strong> ${officeHours}</li>
+            <li><strong>What to Bring:</strong>
+              <ul style="margin-top: 4px; padding-left: 16px;">
+                <li>Valid Government-issued ID or Student ID</li>
+                <li>Your Request Reference Number (<strong>${requestNumber}</strong>)</li>
+                ${fee > 0 ? `<li>Exact processing fee of <strong>₱${Number(fee).toFixed(2)}</strong></li>` : ''}
+                ${isIdRequest ? '<li>If Renewal/Replacement: Bring your previous Barangay ID card</li>' : ''}
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+        <div class="footer">
+          <p>Barangay San Manuel Information Management System &bull; Bulacan City</p>
+          <p>This is an automated system notification. Please do not reply directly to this email.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const subject = `Ready for Release: ${serviceName} (${requestNumber}) - Barangay San Manuel`;
+  const text = `Hello ${name || 'Resident'},\n\nYour request for ${serviceName} (${requestNumber}) is now READY FOR RELEASE.\n\nClaim Location: ${claimLocation}\nOffice Hours: ${officeHours}\n\nPlease bring a valid ID and reference number ${requestNumber}.\n\nBarangay San Manuel IMS`;
+
+  if (mailTransporter) {
+    try {
+      const info = await mailTransporter.sendMail({
+        from: config.smtp.from,
+        to: email,
+        subject,
+        text,
+        html: htmlContent,
+        attachments: getLogoAttachments()
+      });
+      console.log(`[EMAIL SERVICE] Ready for Release notification sent to ${email} (MessageID: ${info.messageId})`);
+      return { success: true, mode: 'smtp' };
+    } catch (err) {
+      console.error(`[EMAIL SERVICE] Ready for Release SMTP delivery failed to ${email}:`, err.message);
+      console.log(`[EMAIL SERVICE (FALLBACK)] Ready for Release for ${email}: Request ${requestNumber} (${serviceName})`);
+      return { success: true, mode: 'fallback' };
+    }
+  }
+
+  console.log(`=======================================================`);
+  console.log(`[EMAIL SERVICE (DEV MODE)] Ready for Release Notification`);
+  console.log(`Recipient: ${name || 'Resident'} <${email}>`);
+  console.log(`Request #: ${requestNumber}`);
+  console.log(`Service: ${serviceName}`);
+  console.log(`Status: Ready for Release`);
+  console.log(`=======================================================`);
+  return { success: true, mode: 'dev' };
+};
+
+module.exports = {
+  sendVerificationCode,
+  sendLoginVerificationCode,
+  sendPortalCredentials,
+  sendContactUsMessage,
+  sendReadyForReleaseNotification
+};
 
 

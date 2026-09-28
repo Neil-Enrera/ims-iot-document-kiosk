@@ -213,6 +213,28 @@ const approveApplication = async (applicationId, userId, remarks, ipAddress) => 
 
   const finalApplication = await applicationRepository.findById(applicationId);
 
+  // Send Ready for Release / ID approval email notification to the applicant
+  try {
+    const emailService = require('./email.service');
+    const targetEmail = application.email || resident?.email;
+    if (targetEmail) {
+      const fullName = [application.first_name, application.middle_name, application.last_name]
+        .filter(Boolean)
+        .join(' ')
+        .trim();
+      await emailService.sendReadyForReleaseNotification({
+        email: targetEmail,
+        name: fullName,
+        requestNumber: application.application_number,
+        serviceName: 'Barangay ID Application',
+        fee: 0,
+        isIdRequest: true
+      });
+    }
+  } catch (emailErr) {
+    console.error(`Failed to send Barangay ID application approval email for #${applicationId}:`, emailErr.message);
+  }
+
   try {
     const auditRepository = require('../repositories/audit.repository');
     await auditRepository.log({

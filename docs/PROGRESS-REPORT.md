@@ -14,6 +14,12 @@
 | **Total** | **85** | **56** | **19** | **0** |
 
 > **Note:** TASK-BACKEND-012 (Payment API) and TASK-FRONTEND-011 (Payment UI) removed per DEC-008.
+> - **Automated "Ready for Release" Email Notification & Release Confirmation Message Removal** (`email.service.js` L435-595, `request.service.js` L180-215, `application.service.js` L215-235, `online-portal/src/app/features/requests/requests.component.ts` L250-275):
+>   - **Automated Email Notification on "Ready for Release"**: Added `sendReadyForReleaseNotification` in `email.service.js`, sending a notification to the resident's registered email whenever an Admin transitions a document request or Barangay ID request to "Ready for Release". Includes request number, service/document name, status badge, processing fee breakdown, claim location (Barangay San Manuel Hall), office hours, and what to bring.
+>   - **Deduplication / State Transition Guard**: Email is dispatched strictly on status transition to `READY_FOR_RELEASE` (status `6` for requests, `APPROVED` for applications), preventing duplicate emails upon page refreshes or repeated views.
+>   - **Removed Release Confirmation Banner**: Removed `"Document successfully released and claimed."` banner from the Online Portal My Requests list (`requests.component.ts`), eliminating redundant release confirmation text after completion.
+>   - **Verification**: Verified 98/98 backend unit tests pass (`npm test`) and `online-portal` builds cleanly with 0 errors (`npm run build:portal`).
+>
 > - **Removal of Quick Access Card in Online Portal Resident Profile** (`online-portal/src/app/features/profile/profile.component.ts` L350-385):
 >   - Removed the redundant "Quick Access" sidebar card from the Resident Profile page, leaving a cleaner sidebar with Account Status and Need Assistance.
 >   - Verified `online-portal` builds with 0 errors (`npm run build:portal`).
