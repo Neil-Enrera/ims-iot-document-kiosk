@@ -45,10 +45,11 @@ app.use(cors({
     if (!origin) return callback(null, true);
     if (allowedOrigins.indexOf(origin) !== -1 ||
         origin.startsWith('http://192.168.') || origin.startsWith('https://192.168.') ||
-        origin.startsWith('http://172.20.') || origin.startsWith('https://172.20.')) {
+        origin.startsWith('http://172.') || origin.startsWith('https://172.') ||
+        origin.startsWith('http://10.') || origin.startsWith('https://10.')) {
       return callback(null, true);
     }
-    return callback(null, true); // Permissive CORS for local LAN development
+    return callback(null, true); // Permissive CORS for development & hybrid kiosk connectivity
   },
   credentials: true
 }));
