@@ -510,7 +510,6 @@ server.listen(PORT, () => console.log(`[Kiosk Server] HTTP + WS on port ${PORT}`
 // ============================================================
 
 const HTTPS_PORT = process.env.KIOSK_HTTPS_PORT || 3002;
-const ESP32_CAM_IP = process.env.ESP32_CAM_IP || '192.168.100.200';
 
 const keyPath = path.join(__dirname, 'key.pem');
 const certPath = path.join(__dirname, 'cert.pem');
