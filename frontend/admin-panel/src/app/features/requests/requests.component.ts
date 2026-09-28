@@ -510,7 +510,7 @@ interface StatusOption {
                         </p>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                           @for (field of section.fields; track field.key) {
-                            <div class="flex flex-col sm:flex-row sm:justify-between py-1 border-b border-slate-100 last:border-0">
+                            <div [class]="(field.key === 'address' || field.key === 'business_address' || field.key === 'office_address') ? 'sm:col-span-2 flex flex-col sm:flex-row sm:justify-between py-1 border-b border-slate-100 last:border-0' : 'flex flex-col sm:flex-row sm:justify-between py-1 border-b border-slate-100 last:border-0'">
                               <span class="font-medium text-slate-500">{{ field.label }}:</span>
                               <span class="font-bold text-slate-900 sm:text-right">{{ field.value }}</span>
                             </div>
@@ -2120,7 +2120,7 @@ export class RequestsComponent implements OnInit, OnDestroy {
     const addressAliasKeys = ['complete_address', 'full_address', 'residential_address', 'address_line', 'address'];
 
     const personalKeys = [
-      'full_name', 'first_name', 'middle_name', 'last_name', 'suffix',
+      'first_name', 'middle_name', 'last_name', 'suffix',
       'birth_date', 'birthdate', 'birth_place', 'gender', 'sex', 'civil_status',
       'contact_number', 'contact', 'email',
       ...addressAliasKeys,
@@ -2153,25 +2153,17 @@ export class RequestsComponent implements OnInit, OnDestroy {
       }
     }
 
-    if (resolvedAddress) {
-      personalFields.push({
-        key: 'address',
-        label: 'Address',
-        value: resolvedAddress
-      });
-    }
-
     const seenLabels = new Set<string>();
-    if (resolvedAddress) {
-      seenLabels.add('Address');
-    }
 
     for (const [key, rawVal] of Object.entries(formData)) {
       if (key.startsWith('_') || rawVal === undefined || rawVal === null || rawVal === '') continue;
       const lowerKey = key.toLowerCase();
 
-      // Skip address alias keys since address is already consolidated above
+      // Skip address alias keys since address will be placed at the bottom of Personal Information
       if (addressAliasKeys.includes(lowerKey)) continue;
+
+      // Skip Full Name since First Name, Middle Name, and Last Name are present
+      if (lowerKey === 'full_name' || lowerKey === 'fullname') continue;
 
       const label = this.formatFieldLabel(key);
 
@@ -2192,6 +2184,15 @@ export class RequestsComponent implements OnInit, OnDestroy {
       } else {
         otherFields.push(formattedEntry);
       }
+    }
+
+    // Place single consolidated address at the bottom of Personal Information
+    if (resolvedAddress) {
+      personalFields.push({
+        key: 'address',
+        label: 'Address',
+        value: resolvedAddress
+      });
     }
 
     const sections: FormGroupSection[] = [];
