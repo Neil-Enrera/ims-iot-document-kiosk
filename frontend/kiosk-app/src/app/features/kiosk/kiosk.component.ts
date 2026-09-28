@@ -5766,14 +5766,6 @@ export class KioskComponent implements OnInit, OnDestroy {
     return '';
   }
 
-  onResidentUpdated(updated: Resident) {
-    console.log('[Kiosk Component] Resident profile updated for session:', updated.first_name, updated.last_name);
-    this.resident.set(updated);
-    this.serviceForms.set({});
-    this.formValues.set({});
-    this.saveState();
-  }
-
   // Load (or initialize) the form values for the currently active service.
   // Automatically populates all matching fields from the verified Resident Record.
   private loadServiceForm() {

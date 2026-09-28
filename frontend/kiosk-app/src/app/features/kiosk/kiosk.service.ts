@@ -243,14 +243,6 @@ export class KioskService {
     return this.http.get<ApiResponse<Resident>>(`${this.apiUrl}/kiosk/residents/${id}`);
   }
 
-  updateResident(id: number, data: Partial<Resident>): Observable<ApiResponse<Resident>> {
-    return this.http.put<ApiResponse<Resident>>(`${this.apiUrl}/kiosk/residents/${id}`, data);
-  }
-
-  submitResidentUpdateRequest(payload: { resident_id: number; requested_changes: Record<string, any>; reason: string }): Observable<ApiResponse<any>> {
-    return this.http.post<ApiResponse<any>>(`${this.apiUrl}/kiosk/residents/update-requests`, payload);
-  }
-
   getPreviousRequestsForService(residentId: number, serviceId: number, limit = 5): Observable<ApiResponse<PreviousRequest[]>> {
     const params = new HttpParams()
       .set('service_id', serviceId.toString())

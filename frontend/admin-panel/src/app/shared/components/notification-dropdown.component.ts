@@ -205,8 +205,8 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
     } else if (notif.reference_type === 'application' && notif.reference_id) {
       this.router.navigate(['/applications'], { queryParams: { applicationId: notif.reference_id } });
       this.closeDropdown();
-    } else if ((notif.reference_type === 'resident_update' || notif.reference_type === 'resident_update_request') && notif.reference_id) {
-      this.router.navigate(['/residents'], { queryParams: { tab: 'updates', updateId: notif.reference_id } });
+    } else if ((notif.reference_type === 'resident_update' || notif.reference_type === 'resident_update_request')) {
+      this.router.navigate(['/residents']);
       this.closeDropdown();
     }
   }
