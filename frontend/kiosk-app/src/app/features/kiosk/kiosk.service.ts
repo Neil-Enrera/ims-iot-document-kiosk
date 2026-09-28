@@ -227,7 +227,7 @@ export interface PreviousRequest {
 @Injectable({ providedIn: 'root' })
 export class KioskService {
   private get apiUrl(): string {
-    return '/api/v1';
+    return environment.apiUrl;
   }
 
   constructor(private http: HttpClient) {}

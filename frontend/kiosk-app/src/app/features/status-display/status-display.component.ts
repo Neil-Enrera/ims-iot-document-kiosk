@@ -413,7 +413,7 @@ export class StatusDisplayComponent implements OnInit, OnDestroy {
   }
 
   private getApiBaseUrl(): string {
-    return '/api/v1';
+    return environment.apiUrl;
   }
 
   private fetchSnapshot() {
