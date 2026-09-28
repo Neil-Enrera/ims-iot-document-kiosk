@@ -14,6 +14,10 @@
 | **Total** | **85** | **56** | **19** | **0** |
 
 > **Note:** TASK-BACKEND-012 (Payment API) and TASK-FRONTEND-011 (Payment UI) removed per DEC-008.
+> - **Removal of Quick Access Card in Online Portal Resident Profile** (`online-portal/src/app/features/profile/profile.component.ts` L350-385):
+>   - Removed the redundant "Quick Access" sidebar card from the Resident Profile page, leaving a cleaner sidebar with Account Status and Need Assistance.
+>   - Verified `online-portal` builds with 0 errors (`npm run build:portal`).
+>
 > - **Removal of Redundant Information Update Requests & Online Portal Single Source of Truth** (`residents.component.ts` L25-80, L650-840, `kiosk.service.ts` L240-255, `kiosk.component.ts` L5760-5775, `kiosk.routes.js` L20-28, `kiosk.controller.js` L170-205, L455-525, `api.js` L15-38, `notification-dropdown.component.ts` L205-212, `i18n/en.ts` L490-505, `i18n/fil.ts` L470-485):
 >   - **Architectural Streamlining**: Removed the redundant "Information Update Requests" review tab, table, modal, and state from the Admin Residents page (`residents.component.ts`), establishing the authenticated Online Portal (`profile.component.ts`) as the single source of truth for resident-managed contact and residential updates.
 >   - **Kiosk Clean Up**: Removed deprecated kiosk update endpoints (`PUT /kiosk/residents/:id`, `POST /kiosk/residents/update-requests`), obsolete `submitResidentUpdateRequest` and `updateResident` service methods, and unused translation strings.
