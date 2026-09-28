@@ -560,14 +560,14 @@ export interface UploadedReceipt {
                 </div>
 
                 <!-- QR Code Box -->
-                <div class="mt-4 p-3 bg-white rounded-2xl border border-blue-200 shadow-sm relative group">
+                <div class="mt-4 p-3.5 bg-white rounded-2xl border border-blue-200 shadow-sm relative group flex flex-col items-center">
                   <img
                     src="/gcash-qr.png"
                     alt="Official Barangay San Manuel GCash QR Code"
-                    class="w-48 h-48 sm:w-56 sm:h-56 object-contain rounded-xl"
+                    class="w-52 h-52 sm:w-60 sm:h-60 object-contain rounded-xl"
                   />
-                  <div class="mt-2 text-center">
-                    <p class="text-[11px] font-bold text-slate-700">Barangay San Manuel Treasurer</p>
+                  <div class="mt-2.5 text-center">
+                    <p class="text-xs font-bold text-slate-800">Barangay San Manuel Treasurer</p>
                     <p class="text-xs font-mono font-black text-blue-700">0917-827-4638</p>
                   </div>
                 </div>
@@ -584,151 +584,169 @@ export interface UploadedReceipt {
                     <li>Open your <strong>GCash App</strong> & select <strong>Scan QR</strong> or <strong>Express Send</strong>.</li>
                     <li>Enter the exact amount: <strong class="text-blue-900">₱{{ svc.processing_fee | number:'1.2-2' }}</strong>.</li>
                     <li>Save / screenshot your <strong>GCash confirmation receipt</strong>.</li>
-                    <li>Upload the receipt and enter the <strong>Reference Number</strong> on the right.</li>
+                    <li>Enter your <strong>Reference Number</strong> and attach your <strong>Receipt</strong> below.</li>
                   </ol>
                 </div>
               </div>
 
-              <!-- Right: Upload Receipt & Reference Number (7 cols) -->
-              <div class="md:col-span-7 flex flex-col justify-between space-y-6">
-
-                <!-- Reference Number Input -->
-                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5">
-                  <label for="gcash-ref-input" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                    GCash Reference Number <span class="text-red-500">*</span>
-                  </label>
-                  <p class="text-[11px] text-slate-500 mb-2">
-                    Enter the 13-digit Reference Number found on your GCash transaction receipt.
-                  </p>
-                  <input
-                    id="gcash-ref-input"
-                    type="text"
-                    [(ngModel)]="paymentRefNumber"
-                    (ngModelChange)="onRefNumberChange()"
-                    placeholder="e.g. 1002 9384 7561 or 100293847561"
-                    class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition"
-                  />
-                  @if (paymentErrors['reference_number']) {
-                    <p class="text-xs text-red-600 mt-1.5 font-semibold">{{ paymentErrors['reference_number'] }}</p>
-                  }
-                </div>
-
-                <!-- Receipt Upload Box -->
-                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5">
-                  <div class="flex items-center justify-between mb-2">
-                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                      Upload GCash Payment Receipt / Screenshot <span class="text-red-500">*</span>
-                    </label>
-                    <span class="text-[10px] text-slate-400 font-medium">JPG, PNG, WEBP (Max 10MB)</span>
+              <!-- Right: Unified Payment Verification Card (7 cols) -->
+              <div class="md:col-span-7">
+                <div class="bg-slate-50/80 border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-2xs">
+                  <div class="flex items-center justify-between pb-4 border-b border-slate-200/80 mb-5">
+                    <div>
+                      <h3 class="text-sm font-black text-slate-900 flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-lg bg-orange-600 text-white font-black text-xs flex items-center justify-center">2</span>
+                        Payment Verification Details
+                      </h3>
+                      <p class="text-[11px] text-slate-500 mt-0.5">Enter your GCash transaction details below to verify payment.</p>
+                    </div>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-orange-100 text-orange-800">
+                      Required
+                    </span>
                   </div>
-                  <p class="text-[11px] text-slate-500 mb-3">
-                    Ensure that the Reference Number, Amount, and Date are clearly visible on the receipt image.
-                  </p>
 
-                  @if (uploadedReceipt(); as receipt) {
-                    <!-- Uploaded Receipt Preview Box -->
-                    <div class="bg-white border-2 border-emerald-300 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-4">
-                      <button
-                        type="button"
-                        (click)="openReceiptPreview()"
-                        title="Click to inspect uploaded receipt"
-                        class="relative group shrink-0 cursor-pointer">
-                        <img
-                          [src]="resolveFileUrl(receipt.file_url)"
-                          alt="GCash Receipt Preview"
-                          class="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-xl border border-slate-200 group-hover:border-orange-500 shadow-2xs transition"
-                        />
-                        <div class="absolute inset-0 bg-black/30 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
-                          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607zM10.5 7.5v6m3-3h-6" />
-                          </svg>
-                        </div>
-                      </button>
+                  <div class="space-y-4">
+                    <!-- 1. Reference Number Input -->
+                    <div>
+                      <label for="gcash-ref-input" class="block text-xs font-bold text-slate-800 mb-1">
+                        GCash Reference Number <span class="text-red-500">*</span>
+                      </label>
+                      <p class="text-[11px] text-slate-500 mb-1.5">
+                        Enter the 13-digit Reference Number found on your GCash transaction receipt.
+                      </p>
+                      <input
+                        id="gcash-ref-input"
+                        type="text"
+                        [(ngModel)]="paymentRefNumber"
+                        (ngModelChange)="onRefNumberChange()"
+                        placeholder="e.g. 1002 9384 7561 or 100293847561"
+                        class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition"
+                      />
+                      @if (paymentErrors['reference_number']) {
+                        <p class="text-xs text-red-600 mt-1.5 font-semibold">{{ paymentErrors['reference_number'] }}</p>
+                      }
+                    </div>
 
-                      <div class="flex-1 min-w-0 text-center sm:text-left">
-                        <div class="flex items-center justify-center sm:justify-start gap-2">
-                          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            <svg class="w-3 h-3 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
-                              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                            </svg>
-                            <span>Receipt Attached</span>
-                          </span>
-                        </div>
-                        <p class="font-bold text-slate-900 text-sm mt-1 truncate">{{ receipt.original_name }}</p>
-                        <p class="text-[11px] text-slate-500 mt-0.5">{{ formatSize(receipt.size) }} &bull; Ready for barangay verification</p>
+                    <!-- Divider / connection -->
+                    <div class="pt-2 border-t border-slate-200/60"></div>
 
-                        <div class="mt-2.5 flex items-center justify-center sm:justify-start gap-3">
+                    <!-- 2. Receipt Upload Box -->
+                    <div>
+                      <div class="flex items-center justify-between mb-1">
+                        <label class="block text-xs font-bold text-slate-800">
+                          Upload GCash Payment Receipt / Screenshot <span class="text-red-500">*</span>
+                        </label>
+                        <span class="text-[10px] text-slate-400 font-medium">JPG, PNG, WEBP (Max 10MB)</span>
+                      </div>
+                      <p class="text-[11px] text-slate-500 mb-2.5">
+                        Ensure that the Reference Number, Amount (₱{{ svc.processing_fee | number:'1.2-2' }}), and Date are clearly visible.
+                      </p>
+
+                      @if (uploadedReceipt(); as receipt) {
+                        <!-- Uploaded Receipt Preview Box -->
+                        <div class="bg-white border-2 border-emerald-300 rounded-2xl p-3.5 flex flex-col sm:flex-row items-center gap-3.5">
                           <button
                             type="button"
                             (click)="openReceiptPreview()"
-                            class="text-xs font-bold text-orange-600 hover:text-orange-700 hover:underline cursor-pointer flex items-center gap-1">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            <span>Inspect Image</span>
+                            title="Click to inspect uploaded receipt"
+                            class="relative group shrink-0 cursor-pointer">
+                            <img
+                              [src]="resolveFileUrl(receipt.file_url)"
+                              alt="GCash Receipt Preview"
+                              class="w-20 h-20 sm:w-22 sm:h-22 object-cover rounded-xl border border-slate-200 group-hover:border-orange-500 shadow-2xs transition"
+                            />
+                            <div class="absolute inset-0 bg-black/30 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607zM10.5 7.5v6m3-3h-6" />
+                              </svg>
+                            </div>
                           </button>
-                          <span class="text-slate-300">|</span>
-                          <button
-                            type="button"
-                            (click)="removeUploadedReceipt()"
-                            class="text-xs font-bold text-red-500 hover:text-red-700 cursor-pointer">
-                            Change Receipt
-                          </button>
+
+                          <div class="flex-1 min-w-0 text-center sm:text-left">
+                            <div class="flex items-center justify-center sm:justify-start gap-2">
+                              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <svg class="w-3 h-3 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                                <span>Receipt Attached</span>
+                              </span>
+                            </div>
+                            <p class="font-bold text-slate-900 text-sm mt-1 truncate">{{ receipt.original_name }}</p>
+                            <p class="text-[11px] text-slate-500 mt-0.5">{{ formatSize(receipt.size) }} &bull; Ready for barangay verification</p>
+
+                            <div class="mt-2 flex items-center justify-center sm:justify-start gap-3">
+                              <button
+                                type="button"
+                                (click)="openReceiptPreview()"
+                                class="text-xs font-bold text-orange-600 hover:text-orange-700 hover:underline cursor-pointer flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                <span>Inspect Image</span>
+                              </button>
+                              <span class="text-slate-300">|</span>
+                              <button
+                                type="button"
+                                (click)="removeUploadedReceipt()"
+                                class="text-xs font-bold text-red-500 hover:text-red-700 cursor-pointer">
+                                Change Receipt
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  } @else {
-                    <!-- Drag & Drop / Upload Trigger Area -->
-                    <div>
-                      <label
-                        for="receipt-file-upload"
-                        class="border-2 border-dashed border-slate-300 hover:border-orange-500 rounded-2xl p-6 bg-white flex flex-col items-center justify-center text-center cursor-pointer transition group">
-                        <div class="w-12 h-12 rounded-xl bg-orange-50 border border-orange-200 text-orange-600 flex items-center justify-center mb-2 group-hover:scale-105 transition">
-                          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                      } @else {
+                        <!-- Drag & Drop / Upload Trigger Area -->
+                        <div>
+                          <label
+                            for="receipt-file-upload"
+                            class="border-2 border-dashed border-slate-300 hover:border-orange-500 rounded-2xl p-5 bg-white flex flex-col items-center justify-center text-center cursor-pointer transition group">
+                            <div class="w-11 h-11 rounded-xl bg-orange-50 border border-orange-200 text-orange-600 flex items-center justify-center mb-1.5 group-hover:scale-105 transition">
+                              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                              </svg>
+                            </div>
+                            <span class="text-xs font-bold text-slate-800">
+                              Click to select GCash Receipt image
+                            </span>
+                            <span class="text-[11px] text-slate-400 mt-0.5">
+                              Upload screenshot or downloaded official receipt (JPG, PNG)
+                            </span>
+                          </label>
+                          <input
+                            id="receipt-file-upload"
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp"
+                            class="sr-only"
+                            (change)="onReceiptFileSelected($event)"
+                          />
+                        </div>
+                      }
+
+                      @if (uploadingReceipt()) {
+                        <div class="mt-2.5 flex items-center gap-2 text-xs text-orange-600 font-semibold">
+                          <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                           </svg>
+                          <span>Validating and uploading GCash receipt...</span>
                         </div>
-                        <span class="text-xs font-bold text-slate-800">
-                          Click to select GCash Receipt image
-                        </span>
-                        <span class="text-[11px] text-slate-400 mt-1">
-                          Upload screenshot or downloaded official receipt (JPG, PNG)
-                        </span>
-                      </label>
-                      <input
-                        id="receipt-file-upload"
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        class="sr-only"
-                        (change)="onReceiptFileSelected($event)"
-                      />
-                    </div>
-                  }
+                      }
 
-                  @if (uploadingReceipt()) {
-                    <div class="mt-3 flex items-center gap-2 text-xs text-orange-600 font-semibold">
-                      <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                      </svg>
-                      <span>Validating and uploading GCash receipt...</span>
+                      @if (paymentErrors['receipt']) {
+                        <div class="mt-2.5 rounded-xl bg-red-50 border border-red-200 p-3 text-xs text-red-700 flex items-start gap-2">
+                          <svg class="w-4 h-4 text-red-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                          </svg>
+                          <div>
+                            <p class="font-bold">Receipt Error</p>
+                            <p class="mt-0.5 leading-relaxed">{{ paymentErrors['receipt'] }}</p>
+                          </div>
+                        </div>
+                      }
                     </div>
-                  }
-
-                  @if (paymentErrors['receipt']) {
-                    <div class="mt-3 rounded-xl bg-red-50 border border-red-200 p-3 text-xs text-red-700 flex items-start gap-2">
-                      <svg class="w-4 h-4 text-red-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                      </svg>
-                      <div>
-                        <p class="font-bold">Receipt Error</p>
-                        <p class="mt-0.5 leading-relaxed">{{ paymentErrors['receipt'] }}</p>
-                      </div>
-                    </div>
-                  }
+                  </div>
                 </div>
-
               </div>
             </div>
 

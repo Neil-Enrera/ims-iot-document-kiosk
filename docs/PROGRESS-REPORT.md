@@ -14,6 +14,11 @@
 | **Total** | **85** | **56** | **19** | **0** |
 
 > **Note:** TASK-BACKEND-012 (Payment API) and TASK-FRONTEND-011 (Payment UI) removed per DEC-008.
+> - **GCash Payment Section UI Consolidation & Official QR Code Asset Update** (`online-portal/src/app/features/apply/apply.component.ts` L560-730, `public/gcash-qr.png`):
+>   - **Updated Official GCash QR Asset**: Replaced `public/gcash-qr.png` with the high-clarity official GCash QR image, styled at `w-52 h-52 sm:w-60 sm:h-60` with crisp contrast, clean borders, and clear account labels for immediate phone scanning.
+>   - **Consolidated Payment Verification Section**: Unified the GCash Reference Number input and Receipt Upload / Screenshot dropzone into a single coherent **"Payment Verification Details"** card in Step 3 of the application wizard, grouping all verification inputs in one continuous step.
+>   - **Verification**: Verified `online-portal` builds with 0 errors (`npx ng build online-portal --configuration=development`).
+>
 > - **GCash Payment & Receipt Upload for Online Portal & Admin Verification Review** (`online-portal/src/app/features/apply/apply.component.ts`, `online-portal/src/app/features/requests/requests.component.ts`, `admin-panel/src/app/features/requests/requests.component.ts`, `public/gcash-qr.png`):
 >   - **Resident Wizard Flow**: Reordered application steps to: `Application Form (Step 1)` &rarr; `Requirements (Step 2)` &rarr; `GCash Payment & Receipt Upload (Step 3, paid services only)` &rarr; `Review & Submit (Step 4)` &rarr; `Confirmation (Step 5)`. Free services automatically skip Step 3.
 >   - **Official GCash QR & Instructions**: Displayed high-resolution official Barangay San Manuel GCash QR code (`public/gcash-qr.png`), account details (`Barangay San Manuel Treasurer`, `0917-827-4638`), dynamic fee amount (`₱{{ svc.processing_fee }}`), and step-by-step payment instructions.
