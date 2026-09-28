@@ -14,6 +14,12 @@
 | **Total** | **85** | **56** | **19** | **0** |
 
 > **Note:** TASK-BACKEND-012 (Payment API) and TASK-FRONTEND-011 (Payment UI) removed per DEC-008.
+> - **Cloud VPS Hosting Configuration & Dual Camera Integration** (`frontend/kiosk-app/src/environments/environment.prod.ts`, `hardware/kiosk-server/index.js`, `hardware/arduino/kiosk_rfid_esp8266/src/main.cpp`):
+>   - **AWS Lightsail Cloud Production Environment**: Configured `environment.prod.ts` with AWS Lightsail static IP (`13.250.176.247`), connecting the backend API (port 3000) and Hardware WebSocket (port 3001) directly to the cloud instance, eliminating the need for staff to run servers locally.
+>   - **Dual Camera Setup with Seamless Switching**: Enabled dual-camera architecture supporting both the **Tablet's Built-in Front Camera** (`navigator.mediaDevices.getUserMedia`) and the external **ESP32-CAM**, with automatic fallback if the ESP32-CAM is offline.
+>   - **ESP8266 RFID Cloud Routing**: Updated firmware host target in `main.cpp` to `13.250.176.247:3001` so card scans are dispatched directly to the cloud WebSocket server.
+>   - **Verification**: Verified `kiosk-app` compiles cleanly with 0 errors (`npx ng build kiosk-app --configuration=development`).
+>
 > - **GCash Payment Section UI Consolidation & 13-Digit Numeric Reference Number Restriction** (`online-portal/src/app/features/apply/apply.component.ts` L560-730, L1695-1715, L1935-1995, `public/gcash-qr.png`):
 >   - **Updated Official GCash QR Asset**: Replaced `public/gcash-qr.png` with the high-clarity official GCash QR image, styled at `w-52 h-52 sm:w-60 sm:h-60` with crisp contrast, clean borders, and clear account labels for immediate phone scanning.
 >   - **Consolidated Payment Verification Section**: Unified the GCash Reference Number input and Receipt Upload / Screenshot dropzone into a single coherent **"Payment Verification Details"** card in Step 3 of the application wizard, grouping all verification inputs in one continuous step.

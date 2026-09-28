@@ -449,6 +449,55 @@ app.post('/api/arduino/rfid/verify', async (req, res) => {
   }
 });
 
+// ESP32-CAM MJPEG stream proxy (HTTP port 3001)
+const ESP32_CAM_IP = process.env.ESP32_CAM_IP || '192.168.100.200';
+
+app.get('/esp32/stream', (req, res) => {
+  const proxyReq = http.get(`http://${ESP32_CAM_IP}/stream`, (proxyRes) => {
+    const headers = {
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'Access-Control-Allow-Origin': '*'
+    };
+    if (proxyRes.headers['content-type']) {
+      headers['Content-Type'] = proxyRes.headers['content-type'];
+    }
+    res.writeHead(200, headers);
+    proxyRes.pipe(res);
+  });
+  proxyReq.on('error', (err) => {
+    if (!res.headersSent) res.status(502).json({ error: 'ESP32-CAM unreachable' });
+  });
+  req.on('close', () => proxyReq.destroy());
+});
+
+// ESP32-CAM single capture proxy (HTTP port 3001)
+app.get('/esp32/capture', (req, res) => {
+  const proxyReq = http.get(`http://${ESP32_CAM_IP}/capture`, (proxyRes) => {
+    const contentType = proxyRes.headers['content-type'] || 'image/jpeg';
+    res.writeHead(200, {
+      'Content-Type': contentType,
+      'Cache-Control': 'no-cache',
+      'Access-Control-Allow-Origin': '*'
+    });
+    proxyRes.pipe(res);
+  });
+  proxyReq.on('error', (err) => {
+    if (!res.headersSent) res.status(502).json({ error: 'ESP32-CAM unreachable' });
+  });
+});
+
+// ESP32-CAM photo upload endpoint (Outbound push from ESP32)
+app.post('/api/esp32/upload-photo', (req, res) => {
+  const { image } = req.body;
+  if (!image) return res.status(400).json({ error: 'Image data required' });
+  broadcastToKiosks({
+    type: 'esp32_photo',
+    image: image.startsWith('data:') ? image : `data:image/jpeg;base64,${image}`
+  });
+  res.json({ success: true, message: 'Photo received and broadcast to kiosks' });
+});
+
 // ============================================================
 // Start Server & Graceful Shutdown
 // ============================================================
