@@ -18,6 +18,7 @@ router.post('/kiosk/rfid/verify', ...rfidVerifyValidation, validate, controller.
 router.get('/kiosk/status-display', restrictStatusDisplayToLan, controller.getStatusDisplay);
 router.get('/kiosk/status-display/stream', restrictStatusDisplayToLan, controller.getStatusDisplayStream);
 router.get('/kiosk/hardware/status', controller.getHardwareStatus);
+router.get('/kiosk/barangay-id/config', controller.getBarangayIdConfig);
 router.get('/kiosk/settings', controller.getKioskSettings);
 router.get('/kiosk/residents/:id/previous-requests', controller.getResidentPreviousRequestsForService);
 
