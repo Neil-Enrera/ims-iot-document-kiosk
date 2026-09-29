@@ -272,10 +272,15 @@ export interface BarangayIdApplication {
   id_card_path: string | null;
   id_card_mime: string | null;
   id_card_size: number | null;
-  id_card_generated_at: string | null;
   created_at: string;
   updated_at: string;
   reviewed_by_name: string | null;
+  resident_code?: string | null;
+  card_uid?: string | null;
+  rfid_status?: string | null;
+  rfid_card_id?: number | null;
+  rfid_issued_date?: string | null;
+  rfid_expiration_date?: string | null;
 }
 
 export interface AuditLog {

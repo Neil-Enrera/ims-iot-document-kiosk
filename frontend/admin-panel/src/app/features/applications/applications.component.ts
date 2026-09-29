@@ -1,11 +1,12 @@
-import { Component, OnInit, OnDestroy, signal, ViewChild, ElementRef, AfterViewChecked } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, ViewChild, ElementRef, AfterViewChecked, HostListener } from '@angular/core';
 import { DatePipe, CommonModule } from '@angular/common';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { renderAsync } from 'docx-preview';
 import { Observable, of } from 'rxjs';
 import { NotificationService } from '../notifications/notification.service';
-import { BarangayIdApplication, Service, DocumentRequest, RequestStatusHistory } from '../../shared/interfaces/api.interfaces';
-import { ApplicationService, ServiceService, RequestService, DocumentService } from '../../shared/services';
+import { BarangayIdApplication, Service, DocumentRequest, RequestStatusHistory, RfidCard, Resident } from '../../shared/interfaces/api.interfaces';
+import { ApplicationService, ServiceService, RequestService, DocumentService, RfidService, ResidentService } from '../../shared/services';
 import { TableComponent, TableColumn } from '../../shared/components/table.component';
 import { CardComponent } from '../../shared/components/card.component';
 import { InputComponent } from '../../shared/components/input.component';
@@ -32,18 +33,18 @@ interface UploadedRequirement {
   selector: 'app-applications',
   standalone: true,
   imports: [
-    CommonModule,
+    CommonModule, FormsModule,
     TableComponent, CardComponent, InputComponent, PaginationComponent,
     ButtonComponent, ModalComponent, ConfirmDialogComponent, DocumentPreviewModalComponent,
-    DatePipe, ServiceFormComponent, RouterLink
+    DatePipe, ServiceFormComponent
   ],
   template: `
     <div>
       <!-- Header -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Barangay ID Requests</h1>
-          <p class="text-sm text-slate-500 mt-1">Review and process new Barangay ID registrations, renewals, and card replacements.</p>
+          <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Barangay ID Application</h1>
+          <p class="text-sm text-slate-500 mt-1">Review, approve, and register physical RFID Barangay ID cards for residents.</p>
         </div>
         <button
           type="button"
@@ -99,7 +100,7 @@ interface UploadedRequirement {
               <!-- Search Input -->
               <div class="flex-1 min-w-[240px]">
                 <app-input
-                  placeholder="Search application number or applicant name..."
+                  placeholder="Search application number, applicant name, or card UID..."
                   [value]="search()"
                   (valueChange)="onSearch($event)"
                 />
@@ -199,15 +200,17 @@ interface UploadedRequirement {
             [cellTemplates]="{
               application_number: appNumCell,
               full_name: applicantCell,
+              contact_info: contactCell,
               created_at: dateCell,
-              status: statusCell
+              status: statusCell,
+              card_uid: rfidCell
             }"
             (onSort)="onSort($event)"
             (onRowClick)="openDetail($event)"
           >
             <!-- APPLICATION # Template -->
             <ng-template #appNumCell let-row="row">
-              <span class="text-sm font-semibold text-slate-900">
+              <span class="text-sm font-semibold text-slate-900 font-mono">
                 {{ row.application_number }}
               </span>
             </ng-template>
@@ -236,6 +239,14 @@ interface UploadedRequirement {
               </div>
             </ng-template>
 
+            <!-- CONTACT Template -->
+            <ng-template #contactCell let-row="row">
+              <div class="leading-tight text-xs">
+                <p class="text-slate-800 font-medium">{{ row.contact_number || '-' }}</p>
+                <p class="text-[11px] text-slate-400 truncate max-w-[160px]">{{ row.email || '-' }}</p>
+              </div>
+            </ng-template>
+
             <!-- DATE SUBMITTED Template -->
             <ng-template #dateCell let-row="row">
               <div class="leading-tight">
@@ -246,15 +257,31 @@ interface UploadedRequirement {
 
             <!-- STATUS Template -->
             <ng-template #statusCell let-row="row">
-              <div class="flex items-center justify-between gap-3">
-                <span [class]="'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ' + statusChipClass(row.status)">
-                  <span class="w-1.5 h-1.5 rounded-full" [class]="statusDotClass(row.status)"></span>
-                  {{ formatStatusLabel(row.status) }}
+              <span [class]="'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ' + statusChipClass(row.status)">
+                <span class="w-1.5 h-1.5 rounded-full" [class]="statusDotClass(row.status)"></span>
+                {{ formatStatusLabel(row.status) }}
+              </span>
+            </ng-template>
+
+            <!-- RFID CARD Template -->
+            <ng-template #rfidCell let-row="row">
+              @if (row.card_uid) {
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-orange-50 text-orange-800 border border-orange-200">
+                  <svg class="w-3.5 h-3.5 text-orange-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 9.5h8M7 12h8" stroke-linecap="round"/>
+                  </svg>
+                  {{ row.card_uid }}
                 </span>
-                <svg class="w-4 h-4 text-slate-300 group-hover:text-orange-500 transition-colors shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-                </svg>
-              </div>
+              } @else if (row.status === 'APPROVED') {
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                  <svg class="w-3 h-3 text-amber-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                  </svg>
+                  Pending RFID
+                </span>
+              } @else {
+                <span class="text-xs text-slate-400 italic">Not Registered</span>
+              }
             </ng-template>
           </app-table>
 
@@ -334,7 +361,7 @@ interface UploadedRequirement {
             trackBy="request_id"
             emptyMessage="No Barangay ID renewal or replacement requests found"
             [cellTemplates]="{
-              request_number: reqNumCell,
+              request_number: requestNumCell,
               resident_name: residentCell,
               service_name: serviceTypeCell,
               request_date: renewalDateCell,
@@ -345,8 +372,10 @@ interface UploadedRequirement {
             (onRowClick)="openRenewalDetail($event)"
           >
             <!-- REQUEST # -->
-            <ng-template #reqNumCell let-row="row">
-              <span class="text-sm font-semibold text-slate-900">{{ row.request_number }}</span>
+            <ng-template #requestNumCell let-row="row">
+              <span class="text-sm font-semibold text-slate-900 font-mono">
+                {{ row.request_number }}
+              </span>
             </ng-template>
 
             <!-- RESIDENT -->
@@ -428,7 +457,7 @@ interface UploadedRequirement {
         </app-card>
       }
 
-      <!-- ================= MODAL: APPLICATION DETAIL (TAB 1) ================= -->
+      <!-- ================= MODAL: APPLICATION DETAIL REVIEW (TAB 1) ================= -->
       <app-modal [open]="showDetail()" [title]="selected()?.application_number || 'Application Details'" (onClose)="closeDetail()" [containerClass]="(cardPreviewBlob() || cardPreviewUrl()) ? 'max-w-6xl' : 'max-w-2xl'" [bodyClass]="(cardPreviewBlob() || cardPreviewUrl()) ? '!overflow-hidden flex flex-col h-[75vh]' : ''">
         @if (selected(); as app) {
           <div class="flex flex-col lg:flex-row gap-6 h-full min-h-0">
@@ -440,9 +469,9 @@ interface UploadedRequirement {
               <div class="flex items-start justify-between gap-4 pb-4 border-b border-gray-100">
                 <div>
                   <p class="text-xl font-bold text-gray-900">{{ app.full_name }}</p>
-                  <p class="text-xs text-gray-400 mt-0.5">Submitted on {{ app.created_at }}</p>
+                  <p class="text-xs text-gray-400 mt-0.5">Submitted on {{ formatSubmissionDate(app.created_at) }} at {{ formatSubmissionTime(app.created_at) }}</p>
                 </div>
-                <span [class]="'shrink-0 px-3 py-1 rounded-full text-xs font-bold ' + statusChipClass(app.status)">{{ app.status }}</span>
+                <span [class]="'shrink-0 px-3 py-1 rounded-full text-xs font-bold border ' + statusChipClass(app.status)">{{ formatStatusLabel(app.status) }}</span>
               </div>
 
               <!-- Photo and Signature -->
@@ -503,14 +532,14 @@ interface UploadedRequirement {
                   </div>
                   @if (imageUrl(app.signature)) {
                     <div
-                      class="relative group cursor-pointer overflow-hidden rounded-xl border border-gray-200 bg-white p-2 shadow-xs transition hover:border-orange-300"
+                      class="relative group cursor-pointer overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xs transition hover:border-orange-300 p-2"
                       (click)="openImagePreview(imageUrl(app.signature), app.full_name + ' — Signature Specimen')"
                       title="Click to view full signature">
-                      <img [src]="imageUrl(app.signature)" alt="Applicant signature"
-                           class="w-full h-40 object-contain group-hover:scale-105 transition duration-200"
+                      <img [src]="imageUrl(app.signature)" alt="Signature"
+                           class="w-full h-36 object-contain group-hover:scale-105 transition duration-200"
                            (error)="$any($event.target).style.display='none'">
-                      <div class="absolute inset-0 bg-slate-900/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-slate-800 text-xs font-semibold gap-1.5 bg-white/70 backdrop-blur-[1px]">
-                        <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div class="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-semibold gap-1.5 backdrop-blur-[1px] rounded-xl">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                         </svg>
                         Click to enlarge
@@ -521,32 +550,38 @@ interface UploadedRequirement {
                       <svg class="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
                       </svg>
-                      <p class="text-xs text-gray-400">No signature submitted</p>
+                      <p class="text-xs text-gray-400">No signature provided</p>
                     </div>
                   }
                 </div>
               </div>
 
-              <!-- Biodata Details -->
-              <div class="bg-gray-50 rounded-xl border border-gray-100 p-4">
-                <p class="text-[11px] font-bold uppercase tracking-wide text-gray-400 mb-3">Personal Information</p>
-                <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3 text-sm">
+              <!-- Personal Information -->
+              <div class="bg-gray-50 rounded-xl p-4 space-y-3">
+                <p class="text-[11px] font-bold uppercase tracking-wide text-gray-400">Personal Information</p>
+                <div class="grid grid-cols-3 gap-3 text-sm">
                   <div><p class="text-[11px] text-gray-400 font-medium">Birth Date</p><p class="text-gray-800 font-semibold">{{ app.birth_date || '-' }}</p></div>
-                  <div><p class="text-[11px] text-gray-400 font-medium">Gender</p><p class="text-gray-800 font-semibold">{{ app.gender || '-' }}</p></div>
-                  <div><p class="text-[11px] text-gray-400 font-medium">Civil Status</p><p class="text-gray-800 font-semibold">{{ app.civil_status || '-' }}</p></div>
-                  <div><p class="text-[11px] text-gray-400 font-medium">Occupation</p><p class="text-gray-800 font-semibold">{{ app.occupation || '-' }}</p></div>
+                  <div><p class="text-[11px] text-gray-400 font-medium">Gender</p><p class="text-gray-800 font-semibold capitalize">{{ app.gender || '-' }}</p></div>
+                  <div><p class="text-[11px] text-gray-400 font-medium">Civil Status</p><p class="text-gray-800 font-semibold capitalize">{{ app.civil_status || '-' }}</p></div>
                   <div><p class="text-[11px] text-gray-400 font-medium">Blood Type</p><p class="text-gray-800 font-semibold">{{ app.blood_type || '-' }}</p></div>
-                  <div><p class="text-[11px] text-gray-400 font-medium">Contact #</p><p class="text-gray-800 font-semibold">{{ app.contact_number || '-' }}</p></div>
-                  <div class="col-span-2 sm:col-span-3"><p class="text-[11px] text-gray-400 font-medium">Home Address</p><p class="text-gray-800 font-semibold">{{ app.address_line || '-' }}</p></div>
-                  <div class="col-span-2"><p class="text-[11px] text-gray-400 font-medium">Email Address</p><p class="text-gray-800 font-semibold">{{ app.email || '-' }}</p></div>
+                  <div><p class="text-[11px] text-gray-400 font-medium">Occupation</p><p class="text-gray-800 font-semibold">{{ app.occupation || '-' }}</p></div>
+                  <div><p class="text-[11px] text-gray-400 font-medium">Phone #</p><p class="text-gray-800 font-semibold">{{ app.contact_number || '-' }}</p></div>
+                </div>
+                <div class="pt-2 border-t border-gray-200">
+                  <p class="text-[11px] text-gray-400 font-medium">Email Address</p>
+                  <p class="text-gray-800 font-semibold text-sm">{{ app.email || '-' }}</p>
+                </div>
+                <div class="pt-2 border-t border-gray-200">
+                  <p class="text-[11px] text-gray-400 font-medium">Address Line</p>
+                  <p class="text-gray-800 font-semibold text-sm">{{ app.address_line || '-' }}</p>
                 </div>
               </div>
 
               <!-- Emergency Contact -->
-              <div class="bg-amber-50/60 rounded-xl border border-amber-100 p-4">
-                <p class="text-[11px] font-bold uppercase tracking-wide text-amber-600 mb-3">Emergency Contact</p>
-                <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                  <div><p class="text-[11px] text-gray-400 font-medium">Name</p><p class="text-gray-800 font-semibold">{{ app.emergency_contact_name || '-' }}</p></div>
+              <div class="bg-gray-50 rounded-xl p-4 space-y-2">
+                <p class="text-[11px] font-bold uppercase tracking-wide text-gray-400">Emergency Contact</p>
+                <div class="grid grid-cols-2 gap-3 text-sm">
+                  <div><p class="text-[11px] text-gray-400 font-medium">Contact Person</p><p class="text-gray-800 font-semibold">{{ app.emergency_contact_name || '-' }}</p></div>
                   <div><p class="text-[11px] text-gray-400 font-medium">Phone #</p><p class="text-gray-800 font-semibold">{{ app.emergency_contact_number || '-' }}</p></div>
                 </div>
               </div>
@@ -590,19 +625,22 @@ interface UploadedRequirement {
                 </div>
               }
 
-              <!-- Approved Card Issued Details -->
-              @if (app.status === 'APPROVED' && app.id_number) {
-                <div class="border border-green-200 rounded-xl bg-green-50/40 p-4 space-y-3">
-                  <p class="text-[11px] font-bold uppercase tracking-wide text-green-700 mb-2">Issued Barangay ID</p>
-                  <div class="grid grid-cols-3 gap-3 text-sm">
-                    <div><p class="text-[11px] text-gray-400 font-medium">ID Number</p><p class="text-gray-800 font-bold">{{ app.id_number }}</p></div>
-                    <div><p class="text-[11px] text-gray-400 font-medium">Issued On</p><p class="text-gray-800 font-semibold">{{ app.id_issued_at ? (app.id_issued_at | date: 'mediumDate') : '-' }}</p></div>
-                    <div><p class="text-[11px] text-gray-400 font-medium">Expires</p><p class="text-gray-800 font-semibold">{{ app.id_expiration_date ? (app.id_expiration_date | date: 'mediumDate') : '-' }}</p></div>
+              <!-- Approved Card Issued Details & RFID Section -->
+              @if (app.status === 'APPROVED') {
+                <div class="border border-green-200 rounded-xl bg-green-50/40 p-4 space-y-4">
+                  <div>
+                    <p class="text-[11px] font-bold uppercase tracking-wide text-green-700 mb-2">Issued Barangay ID Details</p>
+                    <div class="grid grid-cols-3 gap-3 text-sm">
+                      <div><p class="text-[11px] text-gray-400 font-medium">ID Number</p><p class="text-gray-800 font-bold">{{ app.id_number || 'Generated' }}</p></div>
+                      <div><p class="text-[11px] text-gray-400 font-medium">Issued On</p><p class="text-gray-800 font-semibold">{{ app.id_issued_at ? (app.id_issued_at | date: 'mediumDate') : '-' }}</p></div>
+                      <div><p class="text-[11px] text-gray-400 font-medium">Expires</p><p class="text-gray-800 font-semibold">{{ app.id_expiration_date ? (app.id_expiration_date | date: 'mediumDate') : '-' }}</p></div>
+                    </div>
                   </div>
+
                   @if (app.id_card_path) {
                     <div class="flex items-center justify-between rounded-lg border border-green-200 bg-white px-3 py-2.5">
                       <div>
-                        <p class="text-xs font-bold text-gray-700">Official Generated ID Card</p>
+                        <p class="text-xs font-bold text-gray-700">Official Generated ID Card Document</p>
                         <p class="text-[10px] text-gray-400">Click to preview the live card template</p>
                       </div>
                       <div class="flex items-center gap-3">
@@ -611,17 +649,68 @@ interface UploadedRequirement {
                       </div>
                     </div>
                   }
-                  @if (app.resident_id) {
-                    <div class="flex items-center justify-between pt-2 border-t border-green-200">
-                      <p class="text-xs text-slate-600">Physical RFID card registration:</p>
-                      <a [routerLink]="['/rfid']" [queryParams]="{ new: '1', residentId: app.resident_id }" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-600 hover:bg-orange-700 active:scale-[0.98] text-white text-xs font-semibold shadow-xs transition-all">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                          <rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 9.5h8M7 12h8" stroke-linecap="round"/>
-                        </svg>
-                        Assign RFID Card
-                      </a>
-                    </div>
-                  }
+
+                  <!-- Physical RFID Card Registration Status in Application -->
+                  <div class="pt-3 border-t border-green-200/80">
+                    <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500 mb-2">Physical RFID Card Assignment</p>
+                    
+                    @if (app.card_uid) {
+                      <div class="p-3 bg-white border border-emerald-300 rounded-xl space-y-2 shadow-2xs">
+                        <div class="flex items-center justify-between">
+                          <div class="flex items-center gap-2">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold bg-orange-50 text-orange-800 border border-orange-200">
+                              <svg class="w-3.5 h-3.5 text-orange-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 9.5h8M7 12h8" stroke-linecap="round"/>
+                              </svg>
+                              {{ app.card_uid }}
+                            </span>
+                            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">
+                              {{ app.rfid_status || 'ACTIVE' }}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            (click)="openRfidModalForApplication(app)"
+                            class="text-xs text-orange-600 hover:text-orange-800 font-bold underline cursor-pointer"
+                          >
+                            Re-issue / Update Card
+                          </button>
+                        </div>
+                        <div class="flex items-center gap-4 text-xs text-slate-500 pt-1">
+                          @if (app.rfid_issued_date) {
+                            <span>Issued: <strong class="text-slate-700">{{ app.rfid_issued_date | date:'mediumDate' }}</strong></span>
+                          }
+                          @if (app.rfid_expiration_date) {
+                            <span>Expires: <strong class="text-slate-700">{{ app.rfid_expiration_date | date:'mediumDate' }}</strong></span>
+                          }
+                        </div>
+                      </div>
+                    } @else {
+                      <div class="p-3 bg-orange-50/70 border border-orange-200 rounded-xl flex items-center justify-between gap-3 shadow-2xs">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                          <div class="w-8 h-8 rounded-lg bg-orange-500 text-white flex items-center justify-center shrink-0">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                              <rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 9.5h8M7 12h8" stroke-linecap="round"/>
+                            </svg>
+                          </div>
+                          <div>
+                            <p class="text-xs font-bold text-orange-950">RFID Card Pending Registration</p>
+                            <p class="text-[11px] text-orange-800">Scan or assign physical RFID Card UID to activate kiosk RFID access.</p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          (click)="openRfidModalForApplication(app)"
+                          class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold shadow-xs transition shrink-0 cursor-pointer"
+                        >
+                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                          </svg>
+                          Assign RFID Card
+                        </button>
+                      </div>
+                    }
+                  </div>
                 </div>
               }
             </div>
@@ -748,10 +837,9 @@ interface UploadedRequirement {
                         </div>
                         <a [href]="resolveFileUrl(doc.file_url)" target="_blank" class="px-3.5 py-2 rounded-xl bg-slate-700 hover:bg-slate-800 text-white font-bold text-xs shrink-0 transition flex items-center gap-1.5 cursor-pointer">
                           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
                           </svg>
-                          <span>View Document</span>
+                          <span>Open File</span>
                         </a>
                       </div>
                     }
@@ -760,93 +848,59 @@ interface UploadedRequirement {
               }
             </div>
 
-            <!-- Application Form Data Summary -->
-            <div class="bg-gray-50 rounded-2xl border border-slate-200 p-4 space-y-3">
-              <p class="text-xs font-bold uppercase tracking-wide text-slate-600 pb-2 border-b border-slate-200">Resident & Renewal Information</p>
-              <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
-                <div><span class="text-slate-500 block">Resident Name:</span><span class="font-bold text-slate-800">{{ req.resident_name }}</span></div>
-                <div><span class="text-slate-500 block">Processing Fee:</span><span class="font-bold text-slate-800">₱{{ req.processing_fee | number: '1.2-2' }}</span></div>
-                <div><span class="text-slate-500 block">Purpose / Reason:</span><span class="font-bold text-slate-800">{{ req.purpose || req.form_data?.['replacement_reason'] || '-' }}</span></div>
-                @if (req.form_data?.['address']) {
-                  <div class="col-span-2 sm:col-span-3"><span class="text-slate-500 block">Address:</span><span class="font-bold text-slate-800">{{ req.form_data?.['address'] }}</span></div>
-                }
-                @if (req.form_data?.['emergency_contact_name']) {
-                  <div><span class="text-slate-500 block">Emergency Contact:</span><span class="font-bold text-slate-800">{{ req.form_data?.['emergency_contact_name'] }}</span></div>
-                  <div><span class="text-slate-500 block">Emergency Phone:</span><span class="font-bold text-slate-800">{{ req.form_data?.['emergency_contact_number'] }}</span></div>
-                }
-              </div>
-            </div>
-
             <!-- Barangay ID Template Preview & Verification Section -->
-            <div class="border border-indigo-200 rounded-2xl bg-indigo-50/50 p-5 space-y-3">
-              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="p-4 bg-orange-50/50 border border-orange-200 rounded-2xl space-y-3">
+              <div class="flex items-center justify-between">
                 <div>
-                  <h4 class="text-xs font-bold text-indigo-900 uppercase tracking-wide flex items-center gap-2">
-                    <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M15 8h2M15 12h2M7 16h10"/>
+                  <h4 class="text-xs font-bold text-orange-950 uppercase tracking-wide flex items-center gap-1.5">
+                    <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 9.5h8M7 12h8" stroke-linecap="round"/>
                     </svg>
                     Barangay ID Template Preview
                   </h4>
-                  <p class="text-xs text-indigo-700/80 mt-0.5">Preview the generated ID card with resident data and newly uploaded 2×2 photo before approval.</p>
+                  <p class="text-[11px] text-slate-500 mt-0.5">Generate and inspect the official Barangay ID card template with newly uploaded photo before approval.</p>
                 </div>
                 <button
                   type="button"
-                  [disabled]="previewing()"
                   (click)="previewRenewalTemplate(req)"
-                  class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition cursor-pointer shrink-0 disabled:opacity-50"
+                  [disabled]="previewing()"
+                  class="px-4 py-2 bg-white hover:bg-orange-50 text-orange-700 font-bold text-xs border border-orange-300 rounded-xl shadow-2xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
-                  @if (previewing()) {
-                    <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                    </svg>
-                    <span>Generating Preview...</span>
-                  } @else {
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                    </svg>
-                    <span>Preview ID Template</span>
-                  }
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  </svg>
+                  <span>{{ previewing() ? 'Loading Preview...' : 'Preview Card Template' }}</span>
                 </button>
               </div>
             </div>
 
-            <!-- Workflow Status & Actions (Approve / Reject / RFID Registration) -->
-            <div class="border border-slate-200 rounded-2xl bg-white p-5 space-y-4">
-              <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wide">Review & Verification Decision</h4>
-
-              <!-- If Pending / Under Review / Processing: Approve or Reject buttons -->
-              @if (req.status_id === 1 || req.status_id === 2 || req.status_id === 3 || req.status_id === 4 || req.status_id === 5 || req.status_id === 11) {
-                <div class="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl bg-slate-50 border border-slate-200">
-                  <div>
-                    <p class="text-xs font-bold text-slate-800">Complete Admin Verification</p>
-                    <p class="text-[11px] text-slate-500 mt-0.5">Verify the resident details, uploaded 2×2 photo, and template preview above.</p>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <button
-                      type="button"
-                      [disabled]="renewalActionLoading()"
-                      (click)="rejectRenewal(req)"
-                      class="px-4 py-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 font-bold text-xs transition cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
-                    >
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                      </svg>
-                      <span>Reject</span>
-                    </button>
-                    <button
-                      type="button"
-                      [disabled]="renewalActionLoading()"
-                      (click)="approveRenewal(req)"
-                      class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
-                    >
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/>
-                      </svg>
-                      <span>Approve Renewal</span>
-                    </button>
-                  </div>
+            <!-- Action Controls (Depending on status) -->
+            <div class="space-y-3 pt-2">
+              @if (req.status_id === 1 || req.status_id === 4) {
+                <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
+                  <button
+                    type="button"
+                    [disabled]="renewalActionLoading()"
+                    (click)="rejectRenewal(req)"
+                    class="px-4 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                    <span>Reject Request</span>
+                  </button>
+                  <button
+                    type="button"
+                    [disabled]="renewalActionLoading()"
+                    (click)="approveRenewal(req)"
+                    class="px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <span>Approve & Proceed to RFID</span>
+                  </button>
                 </div>
               }
 
@@ -860,20 +914,19 @@ interface UploadedRequirement {
                     <span>Renewal Approved — Ready for physical RFID Card Registration</span>
                   </div>
                   <p class="text-xs text-emerald-800">
-                    The renewal has been approved. The Admin can now register the resident's new RFID card UID in the RFID Card Registration page.
+                    The renewal has been approved. The Admin can now register the resident's new RFID card UID below.
                   </p>
                   <div class="flex items-center gap-2 pt-1">
-                    <a
-                      [routerLink]="['/rfid']"
-                      [queryParams]="{ new: '1', residentId: req.resident_id, requestId: req.request_id, fromRenewal: '1' }"
-                      (click)="closeRenewalDetail()"
-                      class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-xs transition"
+                    <button
+                      type="button"
+                      (click)="openRfidModalForRenewal(req)"
+                      class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-xs transition cursor-pointer"
                     >
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 9.5h8M7 12h8" stroke-linecap="round"/>
                       </svg>
-                      <span>Proceed to RFID Card Registration</span>
-                    </a>
+                      <span>Open RFID Card Registration</span>
+                    </button>
                     <button
                       type="button"
                       [disabled]="renewalActionLoading()"
@@ -907,6 +960,156 @@ interface UploadedRequirement {
             <!-- Footer -->
             <div class="flex justify-end pt-2">
               <button type="button" (click)="closeRenewalDetail()" class="px-5 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold text-xs transition cursor-pointer">Close</button>
+            </div>
+          </div>
+        }
+      </app-modal>
+
+      <!-- ================= MODAL: RFID CARD REGISTRATION & ASSIGNMENT ================= -->
+      <app-modal [open]="showRfidModal()" title="Register Physical RFID Card" (onClose)="closeRfidModal()" containerClass="max-w-2xl">
+        @if (rfidResident(); as res) {
+          <div class="space-y-4">
+            <!-- Resident Header Card -->
+            <div class="bg-[#fff9f3] border border-orange-200 rounded-2xl p-4 flex items-center justify-between">
+              <div class="flex items-center gap-3.5 min-w-0">
+                <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-slate-50 border-2 border-orange-500 p-0.5 shadow-xs flex items-center justify-center text-slate-400 shrink-0 overflow-hidden">
+                  @if (res.photo) {
+                    <img [src]="imageUrl(res.photo)" alt="Photo" class="w-full h-full object-cover rounded-full" (error)="$any($event.target).style.display='none'">
+                  } @else {
+                    <div class="w-full h-full rounded-full bg-orange-100 text-orange-700 font-bold text-sm flex items-center justify-center">
+                      {{ getInitials(res.full_name || res.resident_name) }}
+                    </div>
+                  }
+                </div>
+                <div class="min-w-0">
+                  <h3 class="text-base font-bold text-slate-900 leading-snug">{{ res.full_name || res.resident_name || 'Resident' }}</h3>
+                  <p class="font-bold text-slate-600 text-xs mt-0.5 font-mono">{{ res.resident_code || res.application_number || 'ID Applicant' }}</p>
+                  <div class="mt-0.5">
+                    @if (res.card_uid) {
+                      <span class="text-emerald-700 font-bold text-xs">Active Card: {{ res.card_uid }}</span>
+                    } @else {
+                      <span class="text-orange-600 font-bold text-xs">Pending RFID Registration</span>
+                    }
+                  </div>
+                </div>
+              </div>
+
+              <div class="text-right flex flex-col items-end gap-1.5 shrink-0 pl-4 border-l border-orange-200">
+                <span class="px-3 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-100/70 text-emerald-700 border border-emerald-200">
+                  APPROVED
+                </span>
+                @if (res.application_number) {
+                  <span class="text-[11px] text-slate-500 font-mono font-bold">{{ res.application_number }}</span>
+                }
+              </div>
+            </div>
+
+            <!-- RFID Input & Scanner Box -->
+            <div class="bg-orange-50/50 border border-orange-200 rounded-xl p-4 space-y-3">
+              <div class="flex items-center gap-2 text-orange-900 font-bold text-sm">
+                <svg class="w-4 h-4 text-orange-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 9.5h8M7 12h8" stroke-linecap="round"/>
+                </svg>
+                <span>{{ res.card_uid ? 'Re-issue / Update RFID Card' : 'Register New RFID Card' }}</span>
+              </div>
+              <p class="text-xs text-slate-600">
+                Tap the physical RFID card on the USB reader or type the UID manually to activate the Barangay ID.
+              </p>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="space-y-1">
+                  <div class="flex items-center justify-between">
+                    <label class="block text-xs font-bold text-slate-700">
+                      Card UID <span class="text-rose-500">*</span>
+                    </label>
+                    @if (scanDetected()) {
+                      <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 animate-pulse">
+                        <svg class="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        Auto-detected via USB Reader
+                      </span>
+                    } @else {
+                      <span class="text-[11px] text-slate-400 font-medium flex items-center gap-1">
+                        <svg class="w-3 h-3 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+                        Tap card or type UID
+                      </span>
+                    }
+                  </div>
+                  <div class="relative">
+                    <input
+                      type="text"
+                      [value]="regCardUid()"
+                      (input)="onCardUidInput($any($event.target).value)"
+                      placeholder="e.g. 04A1B2C3D4"
+                      [class]="'w-full h-10 px-3 pr-9 border rounded-lg text-sm font-mono text-slate-900 bg-white focus:outline-none focus:ring-2 shadow-2xs transition ' + (uidStatus()?.type === 'duplicate' ? 'border-rose-400 focus:ring-rose-500 bg-rose-50/20' : (uidStatus()?.type === 'available' ? 'border-emerald-400 focus:ring-emerald-500 bg-emerald-50/20' : 'border-slate-300 focus:ring-orange-500'))"
+                    />
+                    @if (uidChecking()) {
+                      <div class="absolute right-3 top-3">
+                        <div class="w-4 h-4 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                    } @else if (uidStatus()?.type === 'available') {
+                      <div class="absolute right-3 top-2.5 text-emerald-600" title="Card UID is available">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                      </div>
+                    } @else if (uidStatus()?.type === 'duplicate') {
+                      <div class="absolute right-3 top-2.5 text-rose-500" title="Card UID already registered">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                      </div>
+                    }
+                  </div>
+
+                  @if (uidStatus()?.type === 'available') {
+                    <p class="text-[11px] text-emerald-700 font-semibold flex items-center gap-1 mt-1">
+                      <svg class="w-3 h-3 text-emerald-600 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                      {{ uidStatus()?.message }}
+                    </p>
+                  } @else if (uidStatus()?.type === 'duplicate') {
+                    <p class="text-[11px] text-rose-600 font-semibold flex items-center gap-1 mt-1">
+                      <svg class="w-3 h-3 text-rose-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                      {{ uidStatus()?.message }}
+                    </p>
+                  }
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Expiration Date <span class="text-slate-400 font-normal">(Default 3 Years, Editable)</span></label>
+                  <input
+                    type="date"
+                    [value]="regExpirationDate()"
+                    (input)="regExpirationDate.set($any($event.target).value)"
+                    class="w-full h-10 px-3 border border-slate-300 rounded-lg text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 shadow-2xs"
+                  />
+                </div>
+              </div>
+
+              @if (regError() && uidStatus()?.type !== 'duplicate') {
+                <p class="text-xs text-rose-600 font-medium flex items-center gap-1">
+                  <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                  {{ regError() }}
+                </p>
+              }
+
+              <div class="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  (click)="closeRfidModal()"
+                  class="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold transition cursor-pointer"
+                >
+                  Skip / Register Later
+                </button>
+                <button
+                  type="button"
+                  (click)="registerRfidCard()"
+                  [disabled]="registeringRfid() || !regCardUid() || uidStatus()?.type === 'duplicate'"
+                  class="inline-flex items-center gap-1.5 px-4 py-2 bg-orange-600 hover:bg-orange-700 active:scale-[0.98] text-white text-xs font-bold rounded-xl shadow-2xs transition disabled:opacity-50 cursor-pointer"
+                >
+                  @if (registeringRfid()) {
+                    <div class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Registering...</span>
+                  } @else {
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                    <span>Confirm & Register Card</span>
+                  }
+                </button>
+              </div>
             </div>
           </div>
         }
@@ -948,32 +1151,29 @@ interface UploadedRequirement {
         }
       </app-modal>
 
-      <!-- Image Preview / Lightbox Modal -->
+      <!-- Lightbox Image Preview Modal -->
       <app-modal [open]="previewImageModal()" [title]="previewImageTitle()" (onClose)="closeImagePreview()" containerClass="max-w-3xl">
-        <div class="flex flex-col items-center justify-center p-2 gap-3">
-          <!-- Toolbar with Zoom Controls -->
-          <div class="w-full flex items-center justify-between px-3.5 py-2 bg-slate-100/80 rounded-xl border border-slate-200">
-            <span class="text-xs font-semibold text-slate-600 truncate max-w-[200px] sm:max-w-sm">{{ previewImageTitle() }}</span>
-            <div class="flex items-center gap-1.5 shrink-0">
+        <div class="space-y-3">
+          <!-- Zoom Controls Header -->
+          <div class="flex items-center justify-between px-2 py-1 bg-slate-100 rounded-xl border border-slate-200">
+            <span class="text-xs font-bold text-slate-700">Zoom: {{ imageZoomPercent() }}</span>
+            <div class="flex items-center gap-1.5">
               <button
                 type="button"
                 (click)="zoomOutImage()"
-                class="w-8 h-8 rounded-lg bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-sm flex items-center justify-center transition shadow-xs cursor-pointer"
-                title="Zoom Out">
-                −
+                class="px-2.5 py-1 rounded-lg bg-white border border-slate-300 hover:bg-slate-50 text-xs font-bold text-slate-700 shadow-2xs cursor-pointer">
+                -
               </button>
               <button
                 type="button"
                 (click)="resetImageZoom()"
-                class="h-8 px-2.5 rounded-lg bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold tabular-nums flex items-center justify-center transition shadow-xs cursor-pointer"
-                title="Reset Zoom (100%)">
-                {{ imageZoomPercent() }}
+                class="px-2.5 py-1 rounded-lg bg-white border border-slate-300 hover:bg-slate-50 text-xs font-semibold text-slate-700 shadow-2xs cursor-pointer">
+                Reset
               </button>
               <button
                 type="button"
                 (click)="zoomInImage()"
-                class="w-8 h-8 rounded-lg bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-sm flex items-center justify-center transition shadow-xs cursor-pointer"
-                title="Zoom In">
+                class="px-2.5 py-1 rounded-lg bg-white border border-slate-300 hover:bg-slate-50 text-xs font-bold text-slate-700 shadow-2xs cursor-pointer">
                 +
               </button>
             </div>
@@ -1026,6 +1226,25 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
   showActionConfirm = signal(false);
   pendingAction = signal<'approve' | 'reject' | null>(null);
 
+  // --- RFID Registration Modal & Scanner State ---
+  showRfidModal = signal(false);
+  rfidResident = signal<any | null>(null);
+  rfidRequestId = signal<number | null>(null);
+  regCardUid = signal('');
+  regExpirationDate = signal(this.computeDefaultExpiry());
+  scanDetected = signal(false);
+  uidChecking = signal(false);
+  uidStatus = signal<{ type: 'available' | 'duplicate' | 'invalid' | 'self'; message: string } | null>(null);
+  regError = signal('');
+  registeringRfid = signal(false);
+
+  private uidCheckTimer: any = null;
+  private scanDetectedTimer: any = null;
+  private scanBuffer: string = '';
+  private lastKeyTime: number = 0;
+  private readonly MAX_KEY_INTERVAL_MS = 65;
+
+  // --- Image Lightbox & Document Preview State ---
   previewImageModal = signal(false);
   previewImageUrl = signal<string>('');
   previewImageTitle = signal<string>('');
@@ -1060,8 +1279,10 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
   columns: TableColumn[] = [
     { key: 'application_number', label: 'APPLICATION #', sortable: true },
     { key: 'full_name', label: 'APPLICANT', sortable: true },
+    { key: 'contact_info', label: 'CONTACT', sortable: false },
     { key: 'created_at', label: 'DATE SUBMITTED', sortable: true },
-    { key: 'status', label: 'STATUS', sortable: true }
+    { key: 'status', label: 'STATUS', sortable: true },
+    { key: 'card_uid', label: 'RFID CARD', sortable: false }
   ];
 
   // --- Tab 2: Renewals & Replacements State ---
@@ -1099,7 +1320,16 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
   ];
 
   private sseSubscription: any = null;
-  private readonly assetBase = environment.apiUrl.replace(/\/api\/v1$/, '');
+  readonly assetBase = environment.apiUrl.replace(/\/api\/v1$/, '');
+
+  computeDefaultExpiry(): string {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() + 3);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
 
   constructor(
     private applicationService: ApplicationService,
@@ -1107,6 +1337,8 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
     private documentService: DocumentService,
     private notificationService: NotificationService,
     private serviceService: ServiceService,
+    private rfidService: RfidService,
+    private residentService: ResidentService,
     private toast: ToastService,
     private route: ActivatedRoute,
     private router: Router
@@ -1152,6 +1384,18 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
           });
         }
         this.router.navigate([], { queryParams: { requestId: null }, queryParamsHandling: 'merge' });
+      } else if (params['residentId']) {
+        const resId = parseInt(params['residentId'], 10);
+        if (resId) {
+          this.residentService.getById(resId).subscribe({
+            next: (res) => {
+              if (res.data) {
+                this.openRfidModalForApplication(res.data);
+              }
+            }
+          });
+        }
+        this.router.navigate([], { queryParams: { residentId: null }, queryParamsHandling: 'merge' });
       }
     });
   }
@@ -1165,38 +1409,37 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
 
   setTab(tab: 'applications' | 'renewals') {
     this.activeTab.set(tab);
-    if (tab === 'applications') {
-      this.loadApplications();
-    } else {
-      this.loadRenewals();
-    }
   }
 
   ngAfterViewChecked() {
-    const blob = this.cardPreviewBlob();
-    const url = this.cardPreviewUrl();
-    if ((blob || url) && (this.renderedBlobKey !== blob || this.renderedUrlKey !== url)) {
+    if (this.previewContainer && (this.cardPreviewBlob() || this.cardPreviewUrl())) {
+      const container = this.previewContainer.nativeElement;
+      const blob = this.cardPreviewBlob();
+      const url = this.cardPreviewUrl();
+
+      if (blob && this.renderedBlobKey === blob) return;
+      if (url && this.renderedUrlKey === url) return;
+
       this.renderedBlobKey = blob;
       this.renderedUrlKey = url;
+      container.innerHTML = '';
 
       setTimeout(() => {
-        if (!this.previewContainer?.nativeElement) return;
-        const container = this.previewContainer.nativeElement;
-        container.innerHTML = '';
-
         if (blob) {
-          if (blob.type === 'application/pdf') {
-            const blobUrl = URL.createObjectURL(blob);
+          const isPdf = blob.type === 'application/pdf';
+          if (isPdf) {
+            const objectUrl = URL.createObjectURL(blob);
             const iframe = document.createElement('iframe');
             iframe.style.width = '100%';
             iframe.style.height = '60vh';
             iframe.style.minHeight = '450px';
             iframe.style.border = '0';
-            iframe.src = blobUrl;
+            iframe.src = objectUrl;
             container.appendChild(iframe);
           } else {
-            renderAsync(blob, container).catch(err => {
-              console.error('Error rendering ID draft preview:', err);
+            renderAsync(blob, container, undefined, { inWrapper: false, ignoreWidth: false }).catch(err => {
+              console.error('docx preview render failed:', err);
+              container.innerHTML = '<div class="p-6 text-center text-red-500 text-xs font-semibold">Failed to render live document preview.</div>';
             });
           }
         } else if (url) {
@@ -1245,7 +1488,7 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
 
   private connectToUpdates() {
     this.sseSubscription = this.notificationService.sse$.subscribe(event => {
-      if (event?.type?.startsWith('application-')) {
+      if (event?.type?.startsWith('application-') || event?.type?.startsWith('rfid-')) {
         this.loadApplications();
       }
       if (event?.type?.startsWith('request-')) {
@@ -1346,6 +1589,228 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
     this.closePreviewPane();
   }
 
+  // --- RFID Modal & Scanner Logic ---
+  @HostListener('window:keydown', ['$event'])
+  onWindowKeyDown(event: KeyboardEvent) {
+    if (!this.showRfidModal()) return;
+
+    const currentTime = Date.now();
+    const key = event.key;
+
+    if (key === 'Enter') {
+      const buffer = this.scanBuffer.trim();
+      const timeSinceLastKey = currentTime - this.lastKeyTime;
+
+      if (buffer.length >= 4 && buffer.length <= 32 && timeSinceLastKey <= 150) {
+        event.preventDefault();
+        event.stopPropagation();
+        this.processScannedUid(buffer);
+      }
+      this.scanBuffer = '';
+      this.lastKeyTime = 0;
+      return;
+    }
+
+    if (key.length !== 1) {
+      if (this.lastKeyTime > 0 && currentTime - this.lastKeyTime > this.MAX_KEY_INTERVAL_MS) {
+        this.scanBuffer = '';
+        this.lastKeyTime = 0;
+      }
+      return;
+    }
+
+    if (this.lastKeyTime > 0 && (currentTime - this.lastKeyTime) > this.MAX_KEY_INTERVAL_MS) {
+      this.scanBuffer = key;
+    } else {
+      this.scanBuffer += key;
+    }
+    this.lastKeyTime = currentTime;
+  }
+
+  processScannedUid(rawUid: string) {
+    const cleanUid = rawUid.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    if (!cleanUid) return;
+
+    this.regCardUid.set(cleanUid);
+    this.scanDetected.set(true);
+    if (this.scanDetectedTimer) clearTimeout(this.scanDetectedTimer);
+    this.scanDetectedTimer = setTimeout(() => this.scanDetected.set(false), 4000);
+
+    this.validateCardUid(cleanUid);
+  }
+
+  onCardUidInput(value: string) {
+    const clean = value.trim().toUpperCase();
+    this.regCardUid.set(clean);
+    this.regError.set('');
+    if (this.uidCheckTimer) clearTimeout(this.uidCheckTimer);
+
+    if (!clean) {
+      this.uidStatus.set(null);
+      return;
+    }
+
+    this.uidCheckTimer = setTimeout(() => {
+      this.validateCardUid(clean);
+    }, 300);
+  }
+
+  validateCardUid(uid: string) {
+    const cleanUid = uid.trim().toUpperCase();
+    if (!cleanUid) {
+      this.uidStatus.set(null);
+      return;
+    }
+    if (cleanUid.length < 4) {
+      this.uidStatus.set({ type: 'invalid', message: 'Card UID must be at least 4 characters.' });
+      return;
+    }
+
+    this.uidChecking.set(true);
+    this.rfidService.getByUid(cleanUid).subscribe({
+      next: (res) => {
+        this.uidChecking.set(false);
+        if (res?.data?.resident) {
+          const r = res.data.resident;
+          const resName = `${r.first_name || ''} ${r.last_name || ''}`.trim() || r.resident_name || 'Resident';
+          const resCode = r.resident_code || `RES-${r.resident_id}`;
+          const currentRes = this.rfidResident();
+          if (currentRes && (currentRes.resident_id === r.resident_id || currentRes.id === r.resident_id)) {
+            this.uidStatus.set({ type: 'self', message: 'This card is currently linked to this resident.' });
+            this.regError.set('');
+          } else {
+            this.uidStatus.set({ type: 'duplicate', message: `Already assigned to ${resName} (${resCode})` });
+            this.regError.set(`Card UID is already assigned to ${resName} (${resCode}). Please use a different card.`);
+          }
+        } else {
+          this.uidStatus.set({ type: 'available', message: 'Card UID is available for registration.' });
+          this.regError.set('');
+        }
+      },
+      error: (err) => {
+        this.uidChecking.set(false);
+        if (err.status === 404) {
+          this.uidStatus.set({ type: 'available', message: 'Card UID is available for registration.' });
+          this.regError.set('');
+        } else {
+          this.uidStatus.set(null);
+        }
+      }
+    });
+  }
+
+  openRfidModalForApplication(app: any) {
+    this.rfidResident.set({
+      resident_id: app.resident_id,
+      full_name: app.full_name || `${app.first_name || ''} ${app.last_name || ''}`.trim() || app.resident_name,
+      resident_code: app.resident_code,
+      application_number: app.application_number,
+      photo: app.photo,
+      card_uid: app.card_uid,
+      rfid_status: app.rfid_status,
+      application_id: app.application_id
+    });
+    this.rfidRequestId.set(null);
+    this.regCardUid.set(app.card_uid || '');
+    this.regExpirationDate.set(app.rfid_expiration_date ? app.rfid_expiration_date.split('T')[0] : this.computeDefaultExpiry());
+    this.regError.set('');
+    this.scanDetected.set(false);
+    this.uidStatus.set(null);
+    this.uidChecking.set(false);
+    this.scanBuffer = '';
+    this.lastKeyTime = 0;
+    this.showRfidModal.set(true);
+  }
+
+  openRfidModalForRenewal(req: DocumentRequest) {
+    this.rfidResident.set({
+      resident_id: req.resident_id,
+      full_name: req.resident_name,
+      resident_code: req.resident_code,
+      application_number: req.request_number,
+      photo: req.form_data ? (req.form_data as any).photo : null,
+      isRenewal: true
+    });
+    this.rfidRequestId.set(req.request_id);
+    this.regCardUid.set('');
+    this.regExpirationDate.set(this.computeDefaultExpiry());
+    this.regError.set('');
+    this.scanDetected.set(false);
+    this.uidStatus.set(null);
+    this.uidChecking.set(false);
+    this.scanBuffer = '';
+    this.lastKeyTime = 0;
+    this.showRfidModal.set(true);
+  }
+
+  closeRfidModal() {
+    this.showRfidModal.set(false);
+    this.rfidResident.set(null);
+    this.rfidRequestId.set(null);
+    this.regCardUid.set('');
+    this.regExpirationDate.set(this.computeDefaultExpiry());
+    this.regError.set('');
+    this.scanDetected.set(false);
+    this.uidStatus.set(null);
+    this.uidChecking.set(false);
+    this.scanBuffer = '';
+    this.lastKeyTime = 0;
+  }
+
+  registerRfidCard() {
+    const res = this.rfidResident();
+    const cardUid = this.regCardUid().trim();
+    if (!res || !cardUid) {
+      this.regError.set('Card UID is required.');
+      return;
+    }
+    if (this.uidStatus()?.type === 'duplicate') {
+      this.regError.set('Please provide an available RFID card UID.');
+      return;
+    }
+
+    const residentId = res.resident_id || res.id;
+    if (!residentId) {
+      this.regError.set('Missing resident identification.');
+      return;
+    }
+
+    this.registeringRfid.set(true);
+    this.regError.set('');
+
+    this.rfidService.register({
+      residentId,
+      cardUid,
+      expirationDate: this.regExpirationDate() || undefined,
+      requestId: this.rfidRequestId() || undefined
+    }).subscribe({
+      next: (resp) => {
+        this.registeringRfid.set(false);
+        this.toast.success('RFID Card Registered', `Card UID ${cardUid} registered successfully to ${res.full_name}!`);
+        this.closeRfidModal();
+        this.loadApplications();
+        this.loadRenewals();
+
+        // Update currently opened application modal if same
+        const curApp = this.selected();
+        if (curApp && (curApp.resident_id === residentId || curApp.application_id === res.application_id)) {
+          this.selected.set({
+            ...curApp,
+            card_uid: cardUid,
+            rfid_status: 'ACTIVE',
+            rfid_expiration_date: this.regExpirationDate()
+          });
+        }
+      },
+      error: (err) => {
+        this.registeringRfid.set(false);
+        const msg = err.error?.message || 'Failed to register RFID card.';
+        this.regError.set(msg);
+        this.toast.error('Registration Failed', msg);
+      }
+    });
+  }
+
   // --- Renewal Handlers ---
   onRenewalSearch(value: string) {
     this.renewalSearch.set(value);
@@ -1417,7 +1882,6 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
         this.renewalActionLoading.set(false);
         this.toast.success('Status updated successfully.');
         this.loadRenewals();
-        // Refresh selected renewal
         this.requestService.getById(req.request_id).subscribe({
           next: (res) => {
             if (res.data) this.selectedRenewal.set(res.data);
@@ -1433,24 +1897,17 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
 
   approveRenewal(req: DocumentRequest) {
     if (this.renewalActionLoading()) return;
-    const confirmApprove = confirm(`Approve Barangay ID Renewal request for ${req.resident_name}?\n\nOnce approved, you will be directed to RFID Card Registration to confirm and assign the physical card.`);
+    const confirmApprove = confirm(`Approve Barangay ID Renewal request for ${req.resident_name}?\n\nOnce approved, you will proceed to RFID Card Registration to assign the new physical card.`);
     if (!confirmApprove) return;
 
     this.renewalActionLoading.set(true);
     this.requestService.changeStatus(req.request_id, 6, 'Barangay ID Renewal approved and ready for RFID Card Registration.').subscribe({
       next: () => {
         this.renewalActionLoading.set(false);
-        this.toast.success('ID Renewal approved! Directing to RFID ID Registration...');
+        this.toast.success('ID Renewal approved! Opening RFID Registration...');
         this.loadRenewals();
         this.closeRenewalDetail();
-        this.router.navigate(['/rfid'], {
-          queryParams: {
-            residentId: req.resident_id,
-            requestId: req.request_id,
-            fromRenewal: '1',
-            new: '1'
-          }
-        });
+        this.openRfidModalForRenewal(req);
       },
       error: (err) => {
         this.renewalActionLoading.set(false);
@@ -1591,7 +2048,7 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
   }
 
   // --- Image Lightbox Helpers ---
-  imageUrl(path: string | null): string {
+  imageUrl(path: string | null | undefined): string {
     if (!path) return '';
     if (path.startsWith('data:') || path.startsWith('blob:') || path.startsWith('http://') || path.startsWith('https://')) {
       return path;
@@ -1786,7 +2243,7 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
     const action = this.pendingAction();
     if (!app || !action) return '';
     if (action === 'approve') {
-      return `Approve application ${app.application_number} for ${app.full_name}? A permanent resident record will be created, an official Barangay ID number assigned, and the ID card generated.`;
+      return `Approve application ${app.application_number} for ${app.full_name}? A permanent resident record will be created, an official Barangay ID number assigned, and you will proceed directly to physical RFID Card registration.`;
     }
     return `Reject application ${app.application_number} for ${app.full_name}?`;
   }
@@ -1861,16 +2318,36 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
       reject: () => this.applicationService.reject(app.application_id, remarks)
     };
     calls[action]().subscribe({
-      next: () => {
+      next: (res: any) => {
         this.saving.set(false);
         this.showActionConfirm.set(false);
-        this.closeDetail();
-        this.loadApplications();
+
+        if (action === 'approve') {
+          this.toast.success('Application Approved', `Application ${app.application_number} approved! Opening RFID Card Registration...`);
+          this.loadApplications();
+          this.closeDetail();
+
+          // Automatically open the RFID Card Registration modal for this resident!
+          const approvedApp = res?.data?.application || app;
+          const resObj = res?.data?.resident;
+          const residentId = resObj?.resident_id || approvedApp?.resident_id || app.resident_id;
+
+          this.openRfidModalForApplication({
+            ...app,
+            ...approvedApp,
+            resident_id: residentId,
+            resident_code: resObj?.resident_code || app.resident_code
+          });
+        } else {
+          this.toast.success('Application Rejected', `Application ${app.application_number} has been rejected.`);
+          this.closeDetail();
+          this.loadApplications();
+        }
       },
       error: (err: any) => {
         this.saving.set(false);
         this.showActionConfirm.set(false);
-        alert(err.error?.message || 'Action failed.');
+        this.toast.error('Action Failed', err.error?.message || 'Action failed.');
       }
     });
   }
@@ -1900,17 +2377,18 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
           next: () => {
             this.savingConfig.set(false);
             this.showConfig.set(false);
+            this.toast.success('Configuration Saved', 'Barangay ID service configuration updated.');
             this.loadBarangayIdService();
           },
           error: (err) => {
             this.savingConfig.set(false);
-            alert(err.error?.message || 'Config saved, but the template could not be uploaded.');
+            this.toast.error('Template Error', err.error?.message || 'Config saved, but the template could not be uploaded.');
           }
         });
       },
       error: (err) => {
         this.savingConfig.set(false);
-        alert(err.error?.message || 'Failed to save configuration.');
+        this.toast.error('Save Failed', err.error?.message || 'Failed to save configuration.');
       }
     });
   }

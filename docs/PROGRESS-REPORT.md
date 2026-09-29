@@ -14,6 +14,15 @@
 | **Total** | **85** | **56** | **19** | **0** |
 
 > **Note:** TASK-BACKEND-012 (Payment API) and TASK-FRONTEND-011 (Payment UI) removed per DEC-008.
+> - **Admin-side Barangay ID Application & RFID Registration Workflow Consolidation** (`admin-panel/src/app/features/applications/applications.component.ts`, `admin-panel/src/app/core/layouts/layout.component.ts`, `admin-panel/src/app/app.routes.ts`, `backend/src/repositories/application.repository.js`, `admin-panel/src/app/shared/interfaces/api.interfaces.ts`, `admin-panel/src/app/shared/services/index.ts`):
+>   - **Module Renaming & Navigation**: Renamed "Barangay ID Requests" to **"Barangay ID Application"** across the Admin sidebar navigation, page titles, subtitles, breadcrumbs, search filters, and table views.
+>   - **Unified Application Record**: Retained single record storage in `barangay_id_applications` without creating duplicate RFID requests.
+>   - **Application Review & Direct RFID Registration Stage**: Clicking an application opens the detailed Barangay ID Application Review modal. Upon clicking **Approve**, the application transitions to the RFID registration stage and automatically launches the integrated **RFID Card Registration modal** for that resident.
+>   - **RFID Scanner & Validation Logic**: Integrated live RFID USB card scanner listener (`@HostListener`), instant card UID duplication verification against `/rfid/uid/:uid`, editable 3-year expiration date, and one-click card registration (`POST /rfid/register`).
+>   - **Live Application State Update**: Successful RFID card registration updates the active card UID badge on the Barangay ID Application record and marks the application ready/registered while preserving full audit history.
+>   - **Removed Standalone Module**: Removed standalone "RFID Card Registration" navigation menu item and redirected `/rfid` directly to `/applications`.
+>   - **Verification**: Verified `npm run build:admin` compiles cleanly with 0 errors.
+>
 > - **RFID WebSocket Server & Online Portal Services Restoration on Cloud VPS** (`hardware/kiosk-server/index.js` L500-520, `backend/src/routes/kiosk.routes.js` L18-24, `database/migrations/026-029`):
 >   - **Kiosk Hardware WebSocket Service (`ims-kiosk-server`)**: Resolved PM2 crash caused by duplicate declaration in `index.js`, installed npm dependencies on the VPS, and started `ims-kiosk-server` on port 3001. Restored WebSocket connectivity for the ESP8266 RFID reader (`ws://13.250.176.247:3001/ws?type=arduino`) and kiosk tablet frontend.
 >   - **Database Migrations Executed on VPS**: Executed migrations `026` (`portal_accounts`), `027` (`source`), `028` (`Barangay ID Renewal`), and `029` (`remove replacement`) on the production MySQL database.

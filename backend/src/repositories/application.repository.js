@@ -1,17 +1,37 @@
 const pool = require('../config/database');
 
 const findAll = async ({ search, status, dateFrom, dateTo, page, limit, sortBy, sortOrder }) => {
-  let query = 'SELECT a.*, CONCAT(IFNULL(u.first_name, ""), " ", IFNULL(u.last_name, "")) AS reviewed_by_name FROM barangay_id_applications a LEFT JOIN users u ON a.reviewed_by = u.user_id';
+  let query = `SELECT a.*,
+                      CONCAT(IFNULL(u.first_name, ""), " ", IFNULL(u.last_name, "")) AS reviewed_by_name,
+                      r.resident_code,
+                      rc.card_uid,
+                      rc.status AS rfid_status,
+                      rc.rfid_card_id,
+                      rc.issued_date AS rfid_issued_date,
+                      rc.expiration_date AS rfid_expiration_date
+               FROM barangay_id_applications a
+               LEFT JOIN users u ON a.reviewed_by = u.user_id
+               LEFT JOIN residents r ON a.resident_id = r.resident_id
+               LEFT JOIN (
+                 SELECT rc1.resident_id, rc1.card_uid, rc1.status, rc1.rfid_card_id, rc1.issued_date, rc1.expiration_date
+                 FROM rfid_cards rc1
+                 INNER JOIN (
+                   SELECT resident_id, MAX(rfid_card_id) AS max_card_id
+                   FROM rfid_cards
+                   WHERE status IN ('ACTIVE', 'Active')
+                   GROUP BY resident_id
+                 ) rc_latest ON rc1.rfid_card_id = rc_latest.max_card_id
+               ) rc ON rc.resident_id = a.resident_id`;
   let countQuery = 'SELECT COUNT(*) AS total FROM barangay_id_applications a';
   const conditions = [];
   const params = [];
   const countParams = [];
 
   if (search) {
-    conditions.push('(a.application_number LIKE ? OR a.first_name LIKE ? OR a.last_name LIKE ? OR CONCAT(a.first_name, " ", a.last_name) LIKE ? OR a.address_line LIKE ?)');
+    conditions.push('(a.application_number LIKE ? OR a.first_name LIKE ? OR a.last_name LIKE ? OR CONCAT(a.first_name, " ", a.last_name) LIKE ? OR a.address_line LIKE ? OR rc.card_uid LIKE ?)');
     const term = `%${search}%`;
-    params.push(term, term, term, term, term);
-    countParams.push(term, term, term, term, term);
+    params.push(term, term, term, term, term, term);
+    countParams.push(term, term, term, term, term, term);
   }
 
   if (status) {
@@ -57,9 +77,27 @@ const findAll = async ({ search, status, dateFrom, dateTo, page, limit, sortBy, 
 
 const findById = async (applicationId) => {
   const [rows] = await pool.query(
-    `SELECT a.*, CONCAT(IFNULL(u.first_name, ""), " ", IFNULL(u.last_name, "")) AS reviewed_by_name
+    `SELECT a.*,
+            CONCAT(IFNULL(u.first_name, ""), " ", IFNULL(u.last_name, "")) AS reviewed_by_name,
+            r.resident_code,
+            rc.card_uid,
+            rc.status AS rfid_status,
+            rc.rfid_card_id,
+            rc.issued_date AS rfid_issued_date,
+            rc.expiration_date AS rfid_expiration_date
      FROM barangay_id_applications a
      LEFT JOIN users u ON a.reviewed_by = u.user_id
+     LEFT JOIN residents r ON a.resident_id = r.resident_id
+     LEFT JOIN (
+       SELECT rc1.resident_id, rc1.card_uid, rc1.status, rc1.rfid_card_id, rc1.issued_date, rc1.expiration_date
+       FROM rfid_cards rc1
+       INNER JOIN (
+         SELECT resident_id, MAX(rfid_card_id) AS max_card_id
+         FROM rfid_cards
+         WHERE status IN ('ACTIVE', 'Active')
+         GROUP BY resident_id
+       ) rc_latest ON rc1.rfid_card_id = rc_latest.max_card_id
+     ) rc ON rc.resident_id = a.resident_id
      WHERE a.application_id = ?`,
     [applicationId]
   );

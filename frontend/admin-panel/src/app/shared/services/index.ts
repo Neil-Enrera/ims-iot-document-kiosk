@@ -78,7 +78,7 @@ export class RfidService {
     return this.api.get<RfidCard>(`/rfid/${id}`);
   }
 
-  register(data: { residentId: number; cardUid: string }) {
+  register(data: { residentId: number; cardUid: string; issuedDate?: string; expirationDate?: string; requestId?: number }) {
     return this.api.post<RfidCard>('/rfid', data);
   }
 

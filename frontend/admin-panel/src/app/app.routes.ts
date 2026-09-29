@@ -22,7 +22,7 @@ export const routes: Routes = [
       { path: 'requests', loadComponent: () => import('./features/requests/requests.component').then(m => m.RequestsComponent) },
       { path: 'applications', loadComponent: () => import('./features/applications/applications.component').then(m => m.ApplicationsComponent) },
       { path: 'services', loadComponent: () => import('./features/services/services.component').then(m => m.ServicesComponent) },
-      { path: 'rfid', loadComponent: () => import('./features/rfid/rfid.component').then(m => m.RfidComponent) },
+      { path: 'rfid', redirectTo: 'applications', pathMatch: 'full' },
       { path: 'users', loadComponent: () => import('./features/users/users.component').then(m => m.UsersComponent), canActivate: [authGuard, adminGuard] },
       { path: 'reports', loadComponent: () => import('./features/reports/reports.component').then(m => m.ReportsComponent), canActivate: [authGuard, adminGuard] },
       { path: 'settings', loadComponent: () => import('./features/settings/settings.component').then(m => m.SettingsComponent), canActivate: [authGuard, adminGuard] },

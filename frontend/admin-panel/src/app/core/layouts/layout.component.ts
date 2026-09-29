@@ -313,9 +313,8 @@ export class LayoutComponent implements OnInit, OnDestroy {
       { label: 'Dashboard', route: '/dashboard', icon: 'dashboard' },
       { label: 'Residents', route: '/residents', icon: 'residents' },
       { label: 'Document Requests', route: '/requests', icon: 'requests' },
-      { label: 'Barangay ID Requests', route: '/applications', icon: 'applications' },
-      { label: 'Services', route: '/services', icon: 'services' },
-      { label: 'RFID Card Registration', route: '/rfid', icon: 'rfid' }
+      { label: 'Barangay ID Application', route: '/applications', icon: 'applications' },
+      { label: 'Services', route: '/services', icon: 'services' }
     ];
     if (this.auth.isAdmin()) {
       items.push(
