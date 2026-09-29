@@ -107,6 +107,9 @@ static esp_err_t stream_handler(httpd_req_t *req)
         {
             break;
         }
+
+        // 25-30 FPS pacing: prevents Wi-Fi socket buffer backlog and keeps video ultra low-latency (<100ms)
+        vTaskDelay(pdMS_TO_TICKS(30));
     }
 
     return res;

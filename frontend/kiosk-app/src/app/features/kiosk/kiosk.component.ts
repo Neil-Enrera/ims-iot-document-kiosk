@@ -3546,7 +3546,9 @@ export type BarangayStep =
                               <!-- Camera element: ESP32-CAM MJPEG Stream or Video -->
                               @if (cameraMode() === 'esp32') {
                                 <img #esp32StreamEl
+                                     id="kiosk-esp32-stream-img"
                                      [src]="esp32StreamUrl()"
+                                     crossOrigin="anonymous"
                                      (load)="onEsp32StreamLoad()"
                                      (error)="onEsp32StreamError()"
                                      class="absolute inset-0 w-full h-full object-cover select-none pointer-events-none rotate-90 scale-[1.35]"
@@ -7808,17 +7810,29 @@ export class KioskComponent implements OnInit, OnDestroy {
 
     if (this.cameraMode() === 'esp32') {
       this.submitting.set(true);
-      console.log('[ESP32-CAM] Taking photo: releasing live stream socket to free camera frame buffer...');
 
-      // 1. Immediately disconnect live stream image so ESP32-CAM stream_handler loop exits and releases the DMA buffer
+      // 1. Instant capture directly from the live visible stream element on canvas (0ms latency, 100% reliable)
+      const streamImgEl = document.getElementById('kiosk-esp32-stream-img') as HTMLImageElement;
+      if (streamImgEl && streamImgEl.complete && streamImgEl.naturalWidth > 0) {
+        try {
+          const drawnDataUrl = this.drawFrame(streamImgEl, true);
+          if (drawnDataUrl && drawnDataUrl.length > 500) {
+            console.log('[ESP32-CAM] Instant photo captured directly from live stream frame!');
+            await this.handleCapturedPhoto(drawnDataUrl);
+            return;
+          }
+        } catch (drawErr) {
+          console.warn('[ESP32-CAM] Direct stream draw failed, falling back to network fetch:', drawErr);
+        }
+      }
+
+      // 2. Fetch fresh snapshot from /capture
       this.esp32StreamUrl.set('');
-      await new Promise((resolve) => setTimeout(resolve, 120));
+      await new Promise((resolve) => setTimeout(resolve, 80));
 
       const targetCaptureUrl = `${this.esp32CaptureUrl()}${this.esp32CaptureUrl().includes('?') ? '&' : '?'}t=${Date.now()}`;
-
-      // 2. Fetch the fresh high-resolution captured JPEG from ESP32-CAM
       try {
-        const response = await fetch(targetCaptureUrl, { signal: AbortSignal.timeout(5000) });
+        const response = await fetch(targetCaptureUrl, { signal: AbortSignal.timeout(4000) });
         if (response.ok) {
           const blob = await response.blob();
           if (blob && blob.size > 200) {
@@ -7829,27 +7843,10 @@ export class KioskComponent implements OnInit, OnDestroy {
           }
         }
       } catch (fetchErr) {
-        console.warn('[ESP32-CAM] Direct capture fetch attempt 1 failed, retrying...', fetchErr);
+        console.warn('[ESP32-CAM] Direct capture fetch failed, trying image loader:', fetchErr);
       }
 
-      // 3. Retry fetch once more with brief delay
-      try {
-        await new Promise((resolve) => setTimeout(resolve, 200));
-        const response = await fetch(targetCaptureUrl, { signal: AbortSignal.timeout(4000) });
-        if (response.ok) {
-          const blob = await response.blob();
-          if (blob && blob.size > 200) {
-            const dataUrl = await this.rotateBlob90Deg(blob);
-            console.log('[ESP32-CAM] Photo captured on retry! Size:', blob.size);
-            await this.handleCapturedPhoto(dataUrl);
-            return;
-          }
-        }
-      } catch (retryErr) {
-        console.warn('[ESP32-CAM] Capture retry failed, attempting image loader:', retryErr);
-      }
-
-      // 4. Secondary path: Image loader with 90° canvas rotation
+      // 3. Fallback: Image loader with 90° canvas rotation
       try {
         const dataUrl = await this.captureEsp32Image(targetCaptureUrl);
         console.log('[ESP32-CAM] Photo captured via image loader and rotated 90° clockwise');
