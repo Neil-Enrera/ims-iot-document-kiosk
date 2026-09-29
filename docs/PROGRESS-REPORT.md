@@ -13,7 +13,19 @@
 | 07 - Deployment | 10 | 1 | 9 | 0 |
 | **Total** | **85** | **56** | **19** | **0** |
 
-> **Note:** TASK-BACKEND-012 (Payment API) and TASK-FRONTEND-011 (Payment UI) removed per DEC-008.
+> - **Admin Barangay ID Application RFID Table Column Removal, Persistent Card UID Loading & Mark as Released Workflow** (`applications.component.ts`, `application.repository.js`, `application.service.js`, `application.controller.js`, `application.routes.js`, `application.validation.js`, `api.interfaces.ts`, `shared/services/index.ts`, `database/migrations/032-add-released-status-to-barangay-id-applications.sql`):
+>   - **Removed RFID CARD Column**: Removed the "RFID CARD" column completely from the Barangay ID Application table (`applications.component.ts` L1323-1330) and removed its associated cell template.
+>   - **Persistent Card UID Loading**:
+>     - Fixed root cause of Card UID disappearance: joined `rfid_cards` on `COALESCE(a.resident_id, r.resident_id)` in `application.repository.js` (`findAll` and `findById`), guaranteeing that once an RFID card is registered, the Card UID is loaded directly from the database record rather than relying on ephemeral frontend state.
+>     - Updated `openDetail()` to fetch fresh record data by `application_id` via `ApplicationService.getById()`, ensuring the Card UID remains visible after closing and reopening the modal and after refreshing the page.
+>     - Immediate reactive update in modal and table signals upon successful RFID card registration.
+>   - **Mark as Released Action & Public Status Display Integration**:
+>     - Added `RELEASED` status enum to `barangay_id_applications`, along with `released_at` and `released_by` fields (migration `032`).
+>     - Implemented `POST /api/v1/applications/:id/release` in backend routes, controller, service, and repository with audit logging and SSE event broadcasting.
+>     - Added "Mark as Released" button in the Barangay ID Application modal once an RFID card is registered. Clicking it updates the application status to `RELEASED`.
+>     - Releasing the application automatically excludes the resident's entry from "Ready for Release" on the public Kiosk Status Display board and triggers real-time status board refresh via WebSocket/SSE.
+>   - **Verification**: Verified database migration executed successfully, all backend endpoints tested, and Angular admin workspace compiles with 0 errors (`npm run build:admin`).
+>
 > - **Admin-side Barangay ID Application & RFID Registration Workflow Consolidation** (`admin-panel/src/app/features/applications/applications.component.ts`, `admin-panel/src/app/core/layouts/layout.component.ts`, `admin-panel/src/app/app.routes.ts`, `backend/src/repositories/application.repository.js`, `admin-panel/src/app/shared/interfaces/api.interfaces.ts`, `admin-panel/src/app/shared/services/index.ts`):
 >   - **Module Renaming & Navigation**: Renamed "Barangay ID Requests" to **"Barangay ID Application"** across the Admin sidebar navigation, page titles, subtitles, breadcrumbs, search filters, and table views.
 >   - **Unified Application Record**: Retained single record storage in `barangay_id_applications` without creating duplicate RFID requests.

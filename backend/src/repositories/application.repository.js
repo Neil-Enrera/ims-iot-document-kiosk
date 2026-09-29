@@ -3,7 +3,7 @@ const pool = require('../config/database');
 const findAll = async ({ search, status, dateFrom, dateTo, page, limit, sortBy, sortOrder }) => {
   let query = `SELECT a.*,
                       CONCAT(IFNULL(u.first_name, ""), " ", IFNULL(u.last_name, "")) AS reviewed_by_name,
-                      r.resident_code,
+                      COALESCE(r.resident_code, CONCAT('RES-', a.resident_id)) AS resident_code,
                       rc.card_uid,
                       rc.status AS rfid_status,
                       rc.rfid_card_id,
@@ -11,7 +11,7 @@ const findAll = async ({ search, status, dateFrom, dateTo, page, limit, sortBy, 
                       rc.expiration_date AS rfid_expiration_date
                FROM barangay_id_applications a
                LEFT JOIN users u ON a.reviewed_by = u.user_id
-               LEFT JOIN residents r ON a.resident_id = r.resident_id
+               LEFT JOIN residents r ON (a.resident_id = r.resident_id OR (a.resident_id IS NULL AND a.first_name = r.first_name AND a.last_name = r.last_name))
                LEFT JOIN (
                  SELECT rc1.resident_id, rc1.card_uid, rc1.status, rc1.rfid_card_id, rc1.issued_date, rc1.expiration_date
                  FROM rfid_cards rc1
@@ -24,8 +24,23 @@ const findAll = async ({ search, status, dateFrom, dateTo, page, limit, sortBy, 
                    FROM rfid_cards
                    GROUP BY resident_id
                  ) rc_latest ON rc1.rfid_card_id = rc_latest.max_card_id
-               ) rc ON rc.resident_id = a.resident_id`;
-  let countQuery = 'SELECT COUNT(*) AS total FROM barangay_id_applications a';
+               ) rc ON rc.resident_id = COALESCE(a.resident_id, r.resident_id)`;
+  let countQuery = `SELECT COUNT(*) AS total 
+                    FROM barangay_id_applications a
+                    LEFT JOIN residents r ON (a.resident_id = r.resident_id OR (a.resident_id IS NULL AND a.first_name = r.first_name AND a.last_name = r.last_name))
+                    LEFT JOIN (
+                      SELECT rc1.resident_id, rc1.card_uid, rc1.status, rc1.rfid_card_id
+                      FROM rfid_cards rc1
+                      INNER JOIN (
+                        SELECT resident_id, 
+                               COALESCE(
+                                 MAX(CASE WHEN UPPER(status) = 'ACTIVE' THEN rfid_card_id END),
+                                 MAX(rfid_card_id)
+                               ) AS max_card_id
+                        FROM rfid_cards
+                        GROUP BY resident_id
+                      ) rc_latest ON rc1.rfid_card_id = rc_latest.max_card_id
+                    ) rc ON rc.resident_id = COALESCE(a.resident_id, r.resident_id)`;
   const conditions = [];
   const params = [];
   const countParams = [];
@@ -82,7 +97,7 @@ const findById = async (applicationId) => {
   const [rows] = await pool.query(
     `SELECT a.*,
             CONCAT(IFNULL(u.first_name, ""), " ", IFNULL(u.last_name, "")) AS reviewed_by_name,
-            r.resident_code,
+            COALESCE(r.resident_code, CONCAT('RES-', a.resident_id)) AS resident_code,
             rc.card_uid,
             rc.status AS rfid_status,
             rc.rfid_card_id,
@@ -90,7 +105,7 @@ const findById = async (applicationId) => {
             rc.expiration_date AS rfid_expiration_date
      FROM barangay_id_applications a
      LEFT JOIN users u ON a.reviewed_by = u.user_id
-     LEFT JOIN residents r ON a.resident_id = r.resident_id
+     LEFT JOIN residents r ON (a.resident_id = r.resident_id OR (a.resident_id IS NULL AND a.first_name = r.first_name AND a.last_name = r.last_name))
      LEFT JOIN (
        SELECT rc1.resident_id, rc1.card_uid, rc1.status, rc1.rfid_card_id, rc1.issued_date, rc1.expiration_date
        FROM rfid_cards rc1
@@ -103,7 +118,7 @@ const findById = async (applicationId) => {
          FROM rfid_cards
          GROUP BY resident_id
        ) rc_latest ON rc1.rfid_card_id = rc_latest.max_card_id
-     ) rc ON rc.resident_id = a.resident_id
+     ) rc ON rc.resident_id = COALESCE(a.resident_id, r.resident_id)
      WHERE a.application_id = ?`,
     [applicationId]
   );
@@ -147,6 +162,16 @@ const updateStatus = async (applicationId, status, reviewedBy, remarks, resident
          resident_id = COALESCE(?, resident_id)
      WHERE application_id = ?`,
     [status, reviewedBy, remarks || null, residentId, applicationId]
+  );
+  return result.affectedRows > 0;
+};
+
+const markReleased = async (applicationId, userId) => {
+  const [result] = await pool.query(
+    `UPDATE barangay_id_applications
+     SET status = 'RELEASED', released_at = NOW(), released_by = ?
+     WHERE application_id = ?`,
+    [userId || null, applicationId]
   );
   return result.affectedRows > 0;
 };
@@ -208,4 +233,4 @@ const parseJsonField = (value) => {
   return value;
 };
 
-module.exports = { findAll, findById, findByNumber, create, updateStatus, recordIdIssuance, updateIdCard, findMaxIdNumber, generateApplicationNumber };
+module.exports = { findAll, findById, findByNumber, create, updateStatus, markReleased, recordIdIssuance, updateIdCard, findMaxIdNumber, generateApplicationNumber };

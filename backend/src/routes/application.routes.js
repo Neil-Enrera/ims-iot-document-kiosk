@@ -11,5 +11,6 @@ router.get('/:id', authenticate, authorize('Administrator', 'Barangay Secretary'
 router.post('/:id/preview', authenticate, authorize('Administrator', 'Barangay Secretary', 'Barangay Captain'), ...reviewValidation, validate, applicationController.preview);
 router.post('/:id/approve', authenticate, authorize('Administrator', 'Barangay Secretary', 'Barangay Captain'), ...reviewValidation, validate, applicationController.approve);
 router.post('/:id/reject', authenticate, authorize('Administrator', 'Barangay Secretary', 'Barangay Captain'), ...reviewValidation, validate, applicationController.reject);
+router.post('/:id/release', authenticate, authorize('Administrator', 'Barangay Secretary', 'Barangay Captain'), ...reviewValidation, validate, applicationController.release);
 
 module.exports = router;

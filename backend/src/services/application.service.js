@@ -299,6 +299,53 @@ const rejectApplication = async (applicationId, userId, remarks, ipAddress) => {
   return { success: true, message: 'Application rejected.', data: updated };
 };
 
+const releaseApplication = async (applicationId, userId, ipAddress) => {
+  const application = await applicationRepository.findById(applicationId);
+  if (!application) {
+    return { success: false, message: 'Application not found.' };
+  }
+  if (application.status === 'RELEASED') {
+    return { success: true, message: 'Application is already marked as released.', data: application };
+  }
+  if (application.status !== 'APPROVED') {
+    return { success: false, message: 'Only approved applications can be marked as released.' };
+  }
+
+  await applicationRepository.markReleased(applicationId, userId);
+
+  try {
+    const auditRepository = require('../repositories/audit.repository');
+    await auditRepository.log({
+      userId,
+      action: `Marked Barangay ID application #${applicationId} (${application.application_number}) as Released`,
+      module: 'BarangayID',
+      ipAddress: ipAddress || '127.0.0.1'
+    });
+  } catch (auditError) {
+    console.error('Failed to create release audit log:', auditError);
+  }
+
+  const updated = await applicationRepository.findById(applicationId);
+
+  sseManager.broadcastEvent('application-updated', {
+    applicationId,
+    applicationNumber: application.application_number,
+    status: 'RELEASED'
+  });
+
+  // Update Public Status Display stream so the entry is removed from Ready for Release board immediately
+  try {
+    const { broadcastStatusDisplayUpdate } = require('../controllers/kiosk.controller');
+    broadcastStatusDisplayUpdate().catch(() => {});
+  } catch {}
+
+  return {
+    success: true,
+    message: `Application ${application.application_number} marked as released.`,
+    data: updated
+  };
+};
+
 const saveImage = (base64DataUrl, subdir, prefix) => {
   if (!base64DataUrl) return null;
   try {
@@ -385,5 +432,6 @@ module.exports = {
   previewApplication,
   approveApplication,
   rejectApplication,
+  releaseApplication,
   getPendingCount
 };

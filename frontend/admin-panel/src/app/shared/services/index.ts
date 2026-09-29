@@ -254,6 +254,10 @@ export class ApplicationService {
   reject(id: number, remarks?: string) {
     return this.api.post<BarangayIdApplication>(`/applications/${id}/reject`, { remarks });
   }
+
+  release(id: number) {
+    return this.api.post<BarangayIdApplication>(`/applications/${id}/release`, {});
+  }
 }
 
 @Injectable({ providedIn: 'root' })

@@ -78,4 +78,15 @@ const reject = async (req, res) => {
   }
 };
 
-module.exports = { getAll, getById, preview, approve, reject };
+const release = async (req, res) => {
+  try {
+    const result = await applicationService.releaseApplication(req.params.id, req.user.userId, req.ip);
+    if (!result.success) return errorResponse(res, 400, result.message);
+    return successResponse(res, result.message, result.data);
+  } catch (error) {
+    console.error('Application release error:', error);
+    return errorResponse(res, 500, 'Internal server error.');
+  }
+};
+
+module.exports = { getAll, getById, preview, approve, reject, release };

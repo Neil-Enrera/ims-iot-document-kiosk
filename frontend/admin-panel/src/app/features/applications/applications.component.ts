@@ -202,8 +202,7 @@ interface UploadedRequirement {
               full_name: applicantCell,
               contact_info: contactCell,
               created_at: dateCell,
-              status: statusCell,
-              card_uid: rfidCell
+              status: statusCell
             }"
             (onSort)="onSort($event)"
             (onRowClick)="openDetail($event)"
@@ -261,32 +260,6 @@ interface UploadedRequirement {
                 <span class="w-1.5 h-1.5 rounded-full" [class]="statusDotClass(row.status)"></span>
                 {{ formatStatusLabel(row.status) }}
               </span>
-            </ng-template>
-
-            <!-- RFID CARD Template -->
-            <ng-template #rfidCell let-row="row">
-              @if (row.card_uid) {
-                <div class="flex items-center gap-1.5 flex-wrap">
-                  <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-orange-50 text-orange-800 border border-orange-200">
-                    <svg class="w-3.5 h-3.5 text-orange-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 9.5h8M7 12h8" stroke-linecap="round"/>
-                    </svg>
-                    {{ row.card_uid }}
-                  </span>
-                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">
-                    {{ row.rfid_status || 'ACTIVE' }}
-                  </span>
-                </div>
-              } @else if (row.status === 'APPROVED') {
-                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
-                  <svg class="w-3 h-3 text-amber-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-                  </svg>
-                  Pending RFID
-                </span>
-              } @else {
-                <span class="text-xs text-slate-400 italic">Not Registered</span>
-              }
             </ng-template>
           </app-table>
 
@@ -630,9 +603,30 @@ interface UploadedRequirement {
                 </div>
               }
 
-              <!-- Approved Card Issued Details & RFID Section -->
-              @if (app.status === 'APPROVED') {
+              <!-- Approved or Released Card Issued Details & RFID Section -->
+              @if (app.status === 'APPROVED' || app.status === 'RELEASED') {
                 <div class="border border-green-200 rounded-xl bg-green-50/40 p-4 space-y-4">
+                  @if (app.status === 'RELEASED') {
+                    <div class="p-3 bg-emerald-50 border border-emerald-300 rounded-xl flex items-center justify-between gap-3 shadow-2xs">
+                      <div class="flex items-center gap-2.5 min-w-0">
+                        <div class="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                          </svg>
+                        </div>
+                        <div>
+                          <p class="text-xs font-bold text-emerald-950">Barangay ID Released</p>
+                          <p class="text-[11px] text-emerald-800">Physical ID card has been issued and claimed by the resident.</p>
+                        </div>
+                      </div>
+                      @if (app.released_at) {
+                        <span class="text-xs font-semibold text-emerald-900 bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200">
+                          Released: {{ app.released_at | date:'mediumDate' }}
+                        </span>
+                      }
+                    </div>
+                  }
+
                   <div>
                     <p class="text-[11px] font-bold uppercase tracking-wide text-green-700 mb-2">Issued Barangay ID Details</p>
                     <div class="grid grid-cols-3 gap-3 text-sm">
@@ -686,8 +680,8 @@ interface UploadedRequirement {
                     <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500 mb-2">Physical RFID Card Assignment</p>
                     
                     @if (app.card_uid) {
-                      <div class="p-3 bg-white border border-emerald-300 rounded-xl space-y-2 shadow-2xs">
-                        <div class="flex items-center justify-between">
+                      <div class="p-3 bg-white border border-emerald-300 rounded-xl space-y-3 shadow-2xs">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
                           <div class="flex items-center gap-2">
                             <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold bg-orange-50 text-orange-800 border border-orange-200">
                               <svg class="w-3.5 h-3.5 text-orange-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -699,15 +693,34 @@ interface UploadedRequirement {
                               {{ app.rfid_status || 'ACTIVE' }}
                             </span>
                           </div>
-                          <button
-                            type="button"
-                            (click)="openRfidModalForApplication(app)"
-                            class="text-xs text-orange-600 hover:text-orange-800 font-bold underline cursor-pointer"
-                          >
-                            Re-issue / Update Card
-                          </button>
+                          <div class="flex items-center gap-2">
+                            @if (app.status === 'APPROVED') {
+                              <button
+                                type="button"
+                                (click)="markAsReleased(app)"
+                                [disabled]="releasing()"
+                                class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-2xs transition cursor-pointer disabled:opacity-50"
+                              >
+                                @if (releasing()) {
+                                  <div class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                } @else {
+                                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                  </svg>
+                                }
+                                Mark as Released
+                              </button>
+                            }
+                            <button
+                              type="button"
+                              (click)="openRfidModalForApplication(app)"
+                              class="text-xs text-orange-600 hover:text-orange-800 font-bold underline cursor-pointer"
+                            >
+                              Re-issue / Update Card
+                            </button>
+                          </div>
                         </div>
-                        <div class="flex items-center gap-4 text-xs text-slate-500 pt-1">
+                        <div class="flex items-center gap-4 text-xs text-slate-500 pt-1 border-t border-slate-100">
                           @if (app.rfid_issued_date) {
                             <span>Issued: <strong class="text-slate-700">{{ app.rfid_issued_date | date:'mediumDate' }}</strong></span>
                           }
@@ -1294,11 +1307,13 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
   barangayIdService = signal<Service | null>(null);
   showConfig = signal(false);
   savingConfig = signal(false);
+  releasing = signal(false);
 
   statusOptions = [
     { value: '', label: 'All Statuses' },
     { value: 'PENDING', label: 'Pending' },
     { value: 'APPROVED', label: 'Approved' },
+    { value: 'RELEASED', label: 'Released' },
     { value: 'RETURNED', label: 'Returned' },
     { value: 'REJECTED', label: 'Rejected' }
   ];
@@ -1312,8 +1327,7 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
     { key: 'full_name', label: 'APPLICANT', sortable: true },
     { key: 'contact_info', label: 'CONTACT', sortable: false },
     { key: 'created_at', label: 'DATE SUBMITTED', sortable: true },
-    { key: 'status', label: 'STATUS', sortable: true },
-    { key: 'card_uid', label: 'RFID CARD', sortable: false }
+    { key: 'status', label: 'STATUS', sortable: true }
   ];
 
   // --- Tab 2: Renewals & Replacements State ---
@@ -2269,7 +2283,8 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
     const s = (status || '').toUpperCase();
     switch (s) {
       case 'PENDING': return 'bg-amber-50 text-amber-800 border-amber-200';
-      case 'APPROVED': return 'bg-emerald-50 text-emerald-800 border-emerald-200';
+      case 'APPROVED': return 'bg-blue-50 text-blue-800 border-blue-200';
+      case 'RELEASED': return 'bg-emerald-50 text-emerald-800 border-emerald-200';
       case 'RETURNED': return 'bg-rose-50 text-rose-800 border-rose-200';
       case 'REJECTED': return 'bg-red-50 text-red-800 border-red-200';
       default: return 'bg-slate-50 text-slate-700 border-slate-200';
@@ -2280,7 +2295,8 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
     const s = (status || '').toUpperCase();
     switch (s) {
       case 'PENDING': return 'bg-amber-500';
-      case 'APPROVED': return 'bg-emerald-500';
+      case 'APPROVED': return 'bg-blue-500';
+      case 'RELEASED': return 'bg-emerald-500';
       case 'RETURNED': return 'bg-rose-500';
       case 'REJECTED': return 'bg-red-500';
       default: return 'bg-slate-400';
@@ -2292,10 +2308,45 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
     switch (s) {
       case 'PENDING': return 'Pending';
       case 'APPROVED': return 'Approved';
+      case 'RELEASED': return 'Released';
       case 'RETURNED': return 'Returned';
       case 'REJECTED': return 'Rejected';
       default: return status || 'Unknown';
     }
+  }
+
+  markAsReleased(app: ApplicationRow) {
+    if (!app || this.releasing()) return;
+    const confirmRelease = confirm(`Mark Barangay ID Application ${app.application_number} for ${app.full_name} as Released?\n\nThis confirms the physical ID card has been issued to the resident and removes their entry from the public Status Display.`);
+    if (!confirmRelease) return;
+
+    this.releasing.set(true);
+    this.applicationService.release(app.application_id).subscribe({
+      next: (res) => {
+        this.releasing.set(false);
+        this.toast.success('Application Released', `Application ${app.application_number} has been marked as Released!`);
+
+        const updated = res?.data || {};
+        if (this.selected()?.application_id === app.application_id) {
+          this.selected.set({
+            ...this.selected()!,
+            ...updated,
+            status: 'RELEASED',
+            released_at: updated.released_at || new Date().toISOString()
+          });
+        }
+
+        this.applications.update(apps =>
+          apps.map(a => a.application_id === app.application_id ? { ...a, status: 'RELEASED', released_at: new Date().toISOString() } : a)
+        );
+
+        this.loadApplications();
+      },
+      error: (err) => {
+        this.releasing.set(false);
+        this.toast.error('Release Failed', err?.error?.message || 'Failed to mark application as released.');
+      }
+    });
   }
 
   actionTitle(): string {

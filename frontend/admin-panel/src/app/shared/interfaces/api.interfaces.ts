@@ -281,6 +281,8 @@ export interface BarangayIdApplication {
   rfid_card_id?: number | null;
   rfid_issued_date?: string | null;
   rfid_expiration_date?: string | null;
+  released_at?: string | null;
+  released_by?: number | null;
 }
 
 export interface AuditLog {
