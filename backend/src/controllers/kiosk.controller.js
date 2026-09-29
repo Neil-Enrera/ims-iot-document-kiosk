@@ -357,7 +357,8 @@ const fetchStatusDisplayData = async () => {
      FROM requests rq
      JOIN request_statuses rs ON rq.status_id = rs.status_id
      LEFT JOIN services s ON rq.service_id = s.service_id
-     WHERE rs.status_name IN ('Submitted', 'Waiting for Requirements', 'Requirements Received', 'Under Review', 'Document Processing', 'Ready for Release', 'Resubmitted')
+     WHERE COALESCE(rq.source, 'Kiosk') = 'Kiosk'
+       AND rs.status_name IN ('Submitted', 'Waiting for Requirements', 'Requirements Received', 'Under Review', 'Document Processing', 'Ready for Release', 'Resubmitted')
        AND NOT (rs.status_name = 'Ready for Release' AND rq.expires_at IS NOT NULL AND rq.expires_at < NOW())
      ORDER BY rq.request_id ASC`
   );
