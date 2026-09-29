@@ -98,10 +98,10 @@ const findAll = async ({ search, status, residentId, resident_id, page = 1, limi
   }
 
   if (search) {
-    conditions.push('(rc.card_uid LIKE ? OR r.first_name LIKE ? OR r.last_name LIKE ? OR r.resident_code LIKE ?)');
+    conditions.push('(rc.card_uid LIKE ? OR r.first_name LIKE ? OR r.last_name LIKE ? OR CONCAT(r.last_name, ", ", r.first_name) LIKE ? OR CONCAT(r.first_name, " ", r.last_name) LIKE ? OR r.resident_code LIKE ?)');
     const term = `%${search}%`;
-    params.push(term, term, term, term);
-    countParams.push(term, term, term, term);
+    params.push(term, term, term, term, term, term);
+    countParams.push(term, term, term, term, term, term);
   }
 
   if (status) {
@@ -156,15 +156,17 @@ const findAll = async ({ search, status, residentId, resident_id, page = 1, limi
   const [countResult] = await pool.query(countQuery, countParams);
 
   const cards = rows.map(row => {
-    const parts = [
-      row.last_name ? `${row.last_name},` : '',
-      row.first_name,
-      row.middle_name ? `${row.middle_name.charAt(0)}.` : '',
-      row.suffix
-    ].filter(Boolean);
+    let resName = '-';
+    if (row.last_name && row.first_name) {
+      const mid = row.middle_name ? ` ${row.middle_name}` : '';
+      const sfx = row.suffix ? ` ${row.suffix}` : '';
+      resName = `${row.last_name}, ${row.first_name}${mid}${sfx}`;
+    } else {
+      resName = row.first_name || row.last_name || '-';
+    }
     return {
       ...row,
-      resident_name: parts.join(' ') || '-'
+      resident_name: resName
     };
   });
 

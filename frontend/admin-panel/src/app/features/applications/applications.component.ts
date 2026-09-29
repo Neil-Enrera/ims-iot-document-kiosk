@@ -266,12 +266,17 @@ interface UploadedRequirement {
             <!-- RFID CARD Template -->
             <ng-template #rfidCell let-row="row">
               @if (row.card_uid) {
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-orange-50 text-orange-800 border border-orange-200">
-                  <svg class="w-3.5 h-3.5 text-orange-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 9.5h8M7 12h8" stroke-linecap="round"/>
-                  </svg>
-                  {{ row.card_uid }}
-                </span>
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-orange-50 text-orange-800 border border-orange-200">
+                    <svg class="w-3.5 h-3.5 text-orange-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 9.5h8M7 12h8" stroke-linecap="round"/>
+                    </svg>
+                    {{ row.card_uid }}
+                  </span>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    {{ row.rfid_status || 'ACTIVE' }}
+                  </span>
+                </div>
               } @else if (row.status === 'APPROVED') {
                 <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
                   <svg class="w-3 h-3 text-amber-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -638,14 +643,40 @@ interface UploadedRequirement {
                   </div>
 
                   @if (app.id_card_path) {
-                    <div class="flex items-center justify-between rounded-lg border border-green-200 bg-white px-3 py-2.5">
-                      <div>
-                        <p class="text-xs font-bold text-gray-700">Official Generated ID Card Document</p>
-                        <p class="text-[10px] text-gray-400">Click to preview the live card template</p>
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 shadow-2xs">
+                      <div class="flex items-center gap-2.5 min-w-0">
+                        <div class="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                          </svg>
+                        </div>
+                        <div class="min-w-0">
+                          <p class="text-xs font-bold text-emerald-950 truncate">Official Generated ID Card Document</p>
+                          <p class="text-[11px] text-emerald-700/80">Click Preview to inspect or Download the ready-to-print file</p>
+                        </div>
                       </div>
-                      <div class="flex items-center gap-3">
-                        <button type="button" (click)="previewIdCard(app)" class="text-blue-600 hover:text-blue-800 text-xs font-bold cursor-pointer">Preview</button>
-                        <a [href]="idCardUrl(app)" target="_blank" class="text-blue-600 hover:text-blue-800 text-xs font-bold">Download</a>
+                      <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                        <button
+                          type="button"
+                          (click)="previewIdCard(app)"
+                          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-300 bg-white hover:bg-blue-50 text-blue-700 text-xs font-bold shadow-2xs transition cursor-pointer"
+                        >
+                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                          </svg>
+                          Preview
+                        </button>
+                        <a
+                          [href]="idCardUrl(app)"
+                          target="_blank"
+                          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-300 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-2xs transition cursor-pointer"
+                        >
+                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                          </svg>
+                          Download
+                        </a>
                       </div>
                     </div>
                   }
@@ -1539,9 +1570,14 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
     });
   }
 
-  private fullName(app: BarangayIdApplication): string {
-    const parts = [app.first_name, app.middle_name, app.last_name, app.suffix].filter(Boolean);
-    return parts.join(' ');
+  private fullName(app: any): string {
+    if (!app) return '-';
+    if (app.last_name && app.first_name) {
+      const mid = app.middle_name ? ` ${app.middle_name}` : '';
+      const sfx = app.suffix ? ` ${app.suffix}` : '';
+      return `${app.last_name}, ${app.first_name}${mid}${sfx}`;
+    }
+    return app.full_name || app.resident_name || app.first_name || app.last_name || '-';
   }
 
   onSearch(value: string) {
@@ -1581,6 +1617,19 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
     this.selected.set(row);
     this.remarks.set('');
     this.showDetail.set(true);
+
+    // Fetch fresh record from backend by application_id so latest RFID card UID, status, etc. are loaded immediately
+    this.applicationService.getById(row.application_id).subscribe({
+      next: (res) => {
+        if (res.data) {
+          const fresh = res.data as BarangayIdApplication;
+          this.selected.set({
+            ...fresh,
+            full_name: this.fullName(fresh)
+          });
+        }
+      }
+    });
   }
 
   closeDetail() {
@@ -1788,8 +1837,22 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
         this.registeringRfid.set(false);
         this.toast.success('RFID Card Registered', `Card UID ${cardUid} registered successfully to ${res.full_name}!`);
         this.closeRfidModal();
-        this.loadApplications();
-        this.loadRenewals();
+
+        // Update application in table signal immediately
+        this.applications.update(apps =>
+          apps.map(a => {
+            if (a.resident_id === residentId || a.application_id === res.application_id) {
+              return {
+                ...a,
+                card_uid: cardUid,
+                rfid_status: 'ACTIVE',
+                rfid_expiration_date: this.regExpirationDate(),
+                rfid_issued_date: new Date().toISOString()
+              };
+            }
+            return a;
+          })
+        );
 
         // Update currently opened application modal if same
         const curApp = this.selected();
@@ -1798,9 +1861,13 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
             ...curApp,
             card_uid: cardUid,
             rfid_status: 'ACTIVE',
-            rfid_expiration_date: this.regExpirationDate()
+            rfid_expiration_date: this.regExpirationDate(),
+            rfid_issued_date: new Date().toISOString()
           });
         }
+
+        this.loadApplications();
+        this.loadRenewals();
       },
       error: (err) => {
         this.registeringRfid.set(false);

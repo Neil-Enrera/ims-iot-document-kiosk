@@ -16,9 +16,12 @@ const findAll = async ({ search, status, dateFrom, dateTo, page, limit, sortBy, 
                  SELECT rc1.resident_id, rc1.card_uid, rc1.status, rc1.rfid_card_id, rc1.issued_date, rc1.expiration_date
                  FROM rfid_cards rc1
                  INNER JOIN (
-                   SELECT resident_id, MAX(rfid_card_id) AS max_card_id
+                   SELECT resident_id, 
+                          COALESCE(
+                            MAX(CASE WHEN UPPER(status) = 'ACTIVE' THEN rfid_card_id END),
+                            MAX(rfid_card_id)
+                          ) AS max_card_id
                    FROM rfid_cards
-                   WHERE status IN ('ACTIVE', 'Active')
                    GROUP BY resident_id
                  ) rc_latest ON rc1.rfid_card_id = rc_latest.max_card_id
                ) rc ON rc.resident_id = a.resident_id`;
@@ -28,10 +31,10 @@ const findAll = async ({ search, status, dateFrom, dateTo, page, limit, sortBy, 
   const countParams = [];
 
   if (search) {
-    conditions.push('(a.application_number LIKE ? OR a.first_name LIKE ? OR a.last_name LIKE ? OR CONCAT(a.first_name, " ", a.last_name) LIKE ? OR a.address_line LIKE ? OR rc.card_uid LIKE ?)');
+    conditions.push('(a.application_number LIKE ? OR a.first_name LIKE ? OR a.last_name LIKE ? OR CONCAT(a.last_name, ", ", a.first_name) LIKE ? OR CONCAT(a.first_name, " ", a.last_name) LIKE ? OR a.address_line LIKE ? OR rc.card_uid LIKE ?)');
     const term = `%${search}%`;
-    params.push(term, term, term, term, term, term);
-    countParams.push(term, term, term, term, term, term);
+    params.push(term, term, term, term, term, term, term);
+    countParams.push(term, term, term, term, term, term, term);
   }
 
   if (status) {
@@ -92,9 +95,12 @@ const findById = async (applicationId) => {
        SELECT rc1.resident_id, rc1.card_uid, rc1.status, rc1.rfid_card_id, rc1.issued_date, rc1.expiration_date
        FROM rfid_cards rc1
        INNER JOIN (
-         SELECT resident_id, MAX(rfid_card_id) AS max_card_id
+         SELECT resident_id, 
+                COALESCE(
+                  MAX(CASE WHEN UPPER(status) = 'ACTIVE' THEN rfid_card_id END),
+                  MAX(rfid_card_id)
+                ) AS max_card_id
          FROM rfid_cards
-         WHERE status IN ('ACTIVE', 'Active')
          GROUP BY resident_id
        ) rc_latest ON rc1.rfid_card_id = rc_latest.max_card_id
      ) rc ON rc.resident_id = a.resident_id

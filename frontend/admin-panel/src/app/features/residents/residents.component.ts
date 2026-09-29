@@ -381,7 +381,7 @@ import { environment } from '../../../environments/environment';
                 <span class="font-mono text-xs font-bold text-orange-700 bg-orange-100/80 px-2.5 py-1 rounded-md">{{ tx.request_number }}</span>
                 <h3 class="text-base font-bold text-slate-900 mt-1.5">{{ tx.service_name }}</h3>
                 <p class="text-xs text-slate-500">
-                  Resident: <strong class="text-slate-800">{{ tx.resident_name || (selectedResident()?.first_name + ' ' + selectedResident()?.last_name) }}</strong>
+                  Resident: <strong class="text-slate-800">{{ tx.resident_name || formatResidentName(selectedResident()) }}</strong>
                   · Resident ID: <span class="font-mono font-semibold">{{ tx.resident_code || selectedResident()?.resident_code }}</span>
                 </p>
               </div>
@@ -696,13 +696,12 @@ export class ResidentsComponent implements OnInit, OnDestroy {
 
   formatResidentName(res: any): string {
     if (!res) return '';
-    const parts = [
-      res.last_name ? `${res.last_name},` : '',
-      res.first_name,
-      res.middle_name ? `${res.middle_name.charAt(0)}.` : '',
-      res.suffix
-    ].filter(Boolean);
-    return parts.join(' ') || '-';
+    if (res.last_name && res.first_name) {
+      const mid = res.middle_name ? ` ${res.middle_name}` : '';
+      const sfx = res.suffix ? ` ${res.suffix}` : '';
+      return `${res.last_name}, ${res.first_name}${mid}${sfx}`;
+    }
+    return res.full_name || res.resident_name || res.first_name || res.last_name || '-';
   }
 
   getInitials(res: any): string {

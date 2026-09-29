@@ -2,7 +2,7 @@ const pool = require('../config/database');
 
 const getRequestsReport = async ({ dateFrom, dateTo, serviceId, statusId, residentId, page, limit }) => {
   let query = `SELECT rq.request_number, rq.request_date, rs.status_name, s.service_name, s.processing_fee,
-    CONCAT(r.first_name, ' ', r.last_name) AS resident_name, r.resident_code
+    TRIM(CONCAT(r.last_name, ', ', r.first_name, IF(r.middle_name IS NOT NULL AND r.middle_name != '', CONCAT(' ', r.middle_name), ''), IF(r.suffix IS NOT NULL AND r.suffix != '', CONCAT(' ', r.suffix), ''))) AS resident_name, r.resident_code
     FROM requests rq
     JOIN request_statuses rs ON rq.status_id = rs.status_id
     JOIN services s ON rq.service_id = s.service_id
@@ -36,7 +36,7 @@ const getRequestsReport = async ({ dateFrom, dateTo, serviceId, statusId, reside
 };
 
 const getResidentsReport = async ({ dateFrom, dateTo, status, page, limit }) => {
-  let query = `SELECT r.resident_code, r.first_name, r.last_name, r.birth_date, r.gender, r.status,
+  let query = `SELECT r.resident_code, r.first_name, r.last_name, r.middle_name, r.suffix, r.birth_date, r.gender, r.status,
     b.barangay_name, r.created_at
     FROM residents r JOIN barangays b ON r.barangay_id = b.barangay_id`;
   let countQuery = 'SELECT COUNT(*) AS total FROM residents r';

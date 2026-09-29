@@ -869,8 +869,13 @@ export class RfidComponent implements OnInit, OnDestroy {
   }
 
   formatResidentName(res: RfidCard): string {
-    const parts = [res.first_name, res.middle_name, res.last_name, res.suffix].filter(Boolean);
-    return parts.join(' ') || res.resident_name || '-';
+    if (!res) return '-';
+    if (res.last_name && res.first_name) {
+      const mid = res.middle_name ? ` ${res.middle_name}` : '';
+      const sfx = res.suffix ? ` ${res.suffix}` : '';
+      return `${res.last_name}, ${res.first_name}${mid}${sfx}`;
+    }
+    return res.resident_name || res.first_name || res.last_name || '-';
   }
 
   formatFullAddress(res: RfidCard): string {

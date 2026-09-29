@@ -4,7 +4,7 @@ const findAll = async ({ search, statusId, residentId, serviceId, dateFrom, date
   let query = `SELECT rq.*, rs.status_name, s.service_name, s.processing_fee,
     (rq.status_id = 6 AND rq.expires_at IS NOT NULL AND rq.expires_at < NOW()) AS is_expired,
     COALESCE(
-      CONCAT(r.first_name, ' ', IFNULL(r.middle_name, ''), ' ', r.last_name),
+      TRIM(CONCAT(r.last_name, ', ', r.first_name, IF(r.middle_name IS NOT NULL AND r.middle_name != '', CONCAT(' ', r.middle_name), ''), IF(r.suffix IS NOT NULL AND r.suffix != '', CONCAT(' ', r.suffix), ''))),
       JSON_UNQUOTE(JSON_EXTRACT(rq.form_data, '$._guest.full_name'))
     ) AS resident_name,
     COALESCE(r.resident_code, 'GUEST') AS resident_code,
@@ -69,10 +69,10 @@ const findAll = async ({ search, statusId, residentId, serviceId, dateFrom, date
   const countParams = [];
 
   if (search) {
-    conditions.push('(rq.request_number LIKE ? OR r.first_name LIKE ? OR r.last_name LIKE ? OR s.service_name LIKE ? OR JSON_UNQUOTE(JSON_EXTRACT(rq.form_data, \'$._guest.full_name\')) LIKE ?)');
+    conditions.push('(rq.request_number LIKE ? OR r.first_name LIKE ? OR r.last_name LIKE ? OR CONCAT(r.last_name, ", ", r.first_name) LIKE ? OR CONCAT(r.first_name, " ", r.last_name) LIKE ? OR s.service_name LIKE ? OR JSON_UNQUOTE(JSON_EXTRACT(rq.form_data, \'$._guest.full_name\')) LIKE ?)');
     const term = `%${search}%`;
-    params.push(term, term, term, term, term);
-    countParams.push(term, term, term, term, term);
+    params.push(term, term, term, term, term, term, term);
+    countParams.push(term, term, term, term, term, term, term);
   }
 
   if (statusId) {
@@ -159,7 +159,7 @@ const findById = async (requestId) => {
     `SELECT rq.*, rs.status_name, s.service_name, s.processing_fee,
       (rq.status_id = 6 AND rq.expires_at IS NOT NULL AND rq.expires_at < NOW()) AS is_expired,
       COALESCE(
-        CONCAT(r.first_name, ' ', IFNULL(r.middle_name, ''), ' ', r.last_name),
+        TRIM(CONCAT(r.last_name, ', ', r.first_name, IF(r.middle_name IS NOT NULL AND r.middle_name != '', CONCAT(' ', r.middle_name), ''), IF(r.suffix IS NOT NULL AND r.suffix != '', CONCAT(' ', r.suffix), ''))),
         JSON_UNQUOTE(JSON_EXTRACT(rq.form_data, '$._guest.full_name'))
       ) AS resident_name,
       COALESCE(r.resident_code, 'GUEST') AS resident_code, r.contact_number, r.email, r.address_line,
