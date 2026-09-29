@@ -1040,11 +1040,6 @@ interface UploadedRequirement {
                 </div>
               }
             </div>
-
-            <!-- Footer -->
-            <div class="flex justify-end pt-2">
-              <button type="button" (click)="closeRenewalDetail()" class="px-5 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold text-xs transition cursor-pointer">Close</button>
-            </div>
           </div>
         }
       </app-modal>
