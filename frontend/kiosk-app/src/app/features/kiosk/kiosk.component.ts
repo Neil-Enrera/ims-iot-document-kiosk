@@ -4349,22 +4349,8 @@ export type BarangayStep =
                     <!-- Bottom actions -->
                     <div class="mt-5 sm:mt-6 flex flex-col items-center gap-4">
                       <div class="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
-                        <button type="button" (click)="previewBarangayId()" [disabled]="previewing()"
-                                class="inline-flex items-center justify-center gap-2.5 min-h-[64px] min-w-[220px] px-7 rounded-xl bg-white border-2 border-[#16A34A]/30 text-[#15803D] hover:bg-[#F0FDF4] active:scale-[0.98] text-base sm:text-lg font-semibold shadow-sm transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#16A34A]/20 disabled:opacity-60 disabled:cursor-not-allowed">
-                          @if (previewing()) {
-                            <svg class="w-6 h-6 animate-spin text-[#16A34A]" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-                              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"/>
-                            </svg>
-                          } @else {
-                            <svg class="w-6 h-6 text-[#16A34A]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
-                              <path stroke-linecap="round" stroke-linejoin="round" d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>
-                            </svg>
-                          }
-                          {{ t('bar.review.preview') }}
-                        </button>
                         <button type="button" (click)="submitBarangay()" [disabled]="submitting()"
-                                class="inline-flex items-center justify-center gap-2.5 min-h-[64px] w-[250px] sm:w-[280px] px-7 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white text-base sm:text-lg font-semibold shadow-[0_4px_14px_rgba(249,115,22,0.35)] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40 disabled:opacity-60 disabled:cursor-not-allowed">
+                                class="inline-flex items-center justify-center gap-2.5 min-h-[64px] w-[260px] sm:w-[300px] px-8 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white text-base sm:text-lg font-semibold shadow-[0_4px_14px_rgba(249,115,22,0.35)] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40 disabled:opacity-60 disabled:cursor-not-allowed">
                           {{ t('bar.review.submit') }}
                           <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 6l6 6-6 6"/>
