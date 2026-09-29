@@ -1514,8 +1514,8 @@ export type BarangayStep =
                   </button>
                 </div>
 
-                <div class="w-[76px] h-[76px] sm:w-[88px] sm:h-[88px] rounded-full bg-white border-2 border-[#F97316]/30 shadow-sm overflow-hidden flex items-center justify-center">
-                  <img src="Barangay Logo.png" alt="Barangay San Manuel logo" class="w-full h-full object-cover">
+                <div class="w-[76px] h-[76px] sm:w-[88px] sm:h-[88px] rounded-full bg-white border-2 border-[#F97316]/30 shadow-sm overflow-hidden flex items-center justify-center shrink-0">
+                  <img src="Barangay%20Logo.png" alt="Barangay San Manuel Seal" class="w-full h-full object-contain p-1.5" />
                 </div>
 
                 <!-- RFID verification status (RFID-authenticated resident only) -->
@@ -1827,8 +1827,8 @@ export type BarangayStep =
                       </svg>
                     </div>
                     <div class="min-w-0">
-                      <p class="text-[12px] font-semibold text-[#0F172A] leading-tight truncate">{{ t('landing.footer.needHelp') }}</p>
-                      <p class="text-[11px] text-[#64748B] leading-tight truncate">{{ t('landing.footer.approachStaff') }}</p>
+                      <p class="text-[12px] font-semibold text-[#0F172A] leading-tight truncate">{{ t('landing.footer.assistance') }}</p>
+                      <p class="text-[11px] text-[#64748B] leading-tight truncate">{{ t('landing.footer.assistanceDesc') }}</p>
                     </div>
                   </div>
 
@@ -3125,6 +3125,39 @@ export type BarangayStep =
                                   <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
                                 </svg>
                                 {{ t('err.bar.contact') }}
+                              </p>
+                            }
+                          </div>
+
+                          <!-- Email Address (Optional, used for Online Portal Account) -->
+                          <div>
+                            <label for="barangay-email" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
+                              {{ t('bar.form.email') }}
+                            </label>
+                            <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
+                                 [class.border-[#DC2626]]="barangayInvalid('email')">
+                              <div class="shrink-0 w-11 sm:w-12 min-h-[54px] sm:min-h-[58px] bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                                <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                  <rect x="2" y="4" width="20" height="16" rx="2"/><path stroke-linecap="round" stroke-linejoin="round" d="M22 6l-10 7L2 6"/>
+                                </svg>
+                              </div>
+                              <input id="barangay-email" type="email" name="email" [(ngModel)]="barangayForm.email"
+                                     [placeholder]="t('bar.form.emailPh')" autocomplete="email" maxlength="100"
+                                     class="flex-1 min-w-0 px-3 sm:px-4 py-3 text-[15px] sm:text-[17px] text-[#0F172A] placeholder:text-[#94A3B8] bg-transparent outline-none border-none" />
+                              @if (barangayForm.email && !barangayInvalid('email')) {
+                                <div class="shrink-0 pr-4 text-[#10B981]" aria-hidden="true">
+                                  <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                  </svg>
+                                </div>
+                              }
+                            </div>
+                            @if (barangayInvalid('email')) {
+                              <p class="mt-2 flex items-center gap-1.5 text-base font-medium text-[#B91C1C]">
+                                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                  <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
+                                </svg>
+                                {{ t('err.bar.email') }}
                               </p>
                             }
                           </div>
@@ -5214,18 +5247,56 @@ export class KioskComponent implements OnInit, OnDestroy {
     });
   }
 
+  private normalizeBarangayService(svc: any): any {
+    if (!svc) return null;
+    const fields: FormField[] = Array.isArray(svc.form_fields) ? [...svc.form_fields] : [];
+    
+    // Ensure contact_number exists
+    const hasContact = fields.some(f => (f.key || '').toLowerCase().replace(/[\s_-]/g, '') === 'contactnumber' || (f.key || '').toLowerCase() === 'contact' || (f.key || '').toLowerCase() === 'phone');
+    if (!hasContact) {
+      const emIdx = fields.findIndex(f => (f.key || '').toLowerCase().includes('emergency'));
+      const contactField: FormField = {
+        key: 'contact_number',
+        label: 'Contact Number',
+        type: 'tel',
+        required: true,
+        placeholder: '09XX XXX XXXX'
+      };
+      if (emIdx !== -1) fields.splice(emIdx, 0, contactField);
+      else fields.push(contactField);
+    }
+
+    // Ensure email exists
+    const hasEmail = fields.some(f => (f.key || '').toLowerCase() === 'email');
+    if (!hasEmail) {
+      const contactIdx = fields.findIndex(f => (f.key || '').toLowerCase().includes('contact_number') || (f.key || '').toLowerCase() === 'contact');
+      const emailField: FormField = {
+        key: 'email',
+        label: 'Email Address (Optional)',
+        type: 'email',
+        required: false,
+        placeholder: 'you@example.com'
+      };
+      if (contactIdx !== -1) fields.splice(contactIdx + 1, 0, emailField);
+      else fields.push(emailField);
+    }
+
+    return { ...svc, form_fields: fields };
+  }
+
   private loadBarangayService() {
     this.kioskService.getBarangayIdConfig().subscribe({
       next: (result: any) => {
         if (result?.data) {
-          this.barangayService.set(result.data);
+          this.barangayService.set(this.normalizeBarangayService(result.data));
         }
       },
       error: () => {
         // Fallback in case endpoint is not reached
         this.kioskService.getServices().subscribe({
           next: (result: any) => {
-            this.barangayService.set((result?.data || []).find((s: Service) => s.service_name && s.service_name.trim().toLowerCase() === 'barangay id') || null);
+            const found = (result?.data || []).find((s: Service) => s.service_name && s.service_name.trim().toLowerCase() === 'barangay id') || null;
+            this.barangayService.set(this.normalizeBarangayService(found));
           }
         });
       }
@@ -6105,7 +6176,9 @@ export class KioskComponent implements OnInit, OnDestroy {
       relative_name: 'doc.form.relativeName',
       block: 'doc.form.block',
       lot: 'doc.form.lot',
-      subdivision: 'doc.form.subdivision'
+      subdivision: 'doc.form.subdivision',
+      contact_number: 'bar.form.contact',
+      email: 'bar.form.email'
     };
     return map[(field.key || '').toLowerCase()] ? this.t(map[(field.key || '').toLowerCase()]) : field.label;
   }
@@ -6116,7 +6189,9 @@ export class KioskComponent implements OnInit, OnDestroy {
       relative_name: 'doc.form.relativeNamePh',
       block: 'doc.form.blockPh',
       lot: 'doc.form.lotPh',
-      subdivision: 'doc.form.subdivisionPh'
+      subdivision: 'doc.form.subdivisionPh',
+      contact_number: 'bar.form.contactPh',
+      email: 'bar.form.emailPh'
     };
     return map[(field.key || '').toLowerCase()] ? this.t(map[(field.key || '').toLowerCase()]) : (field.placeholder || '');
   }
@@ -7583,6 +7658,7 @@ export class KioskComponent implements OnInit, OnDestroy {
       this.stream.getTracks().forEach(t => t.stop());
       this.stream = null;
     }
+    this.esp32StreamUrl.set('');
     this.cameraReady.set(false);
   }
 

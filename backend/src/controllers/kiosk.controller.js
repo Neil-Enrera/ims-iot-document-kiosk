@@ -162,10 +162,39 @@ const getBarangayIdConfig = async (req, res) => {
     );
     if (rows.length === 0) return errorResponse(res, 404, 'Barangay ID configuration not found.');
     const s = rows[0];
+    let formFields = parseJsonField(s.form_fields);
+    if (Array.isArray(formFields)) {
+      const hasContact = formFields.some(f => (f.key || '').toLowerCase().replace(/[\s_-]/g, '') === 'contactnumber' || f.key === 'phone' || f.key === 'contact');
+      if (!hasContact) {
+        const emIdx = formFields.findIndex(f => (f.key || '').toLowerCase().includes('emergency'));
+        const contactField = {
+          key: 'contact_number',
+          label: 'Contact Number',
+          type: 'tel',
+          required: true,
+          placeholder: '09XX XXX XXXX'
+        };
+        if (emIdx !== -1) formFields.splice(emIdx, 0, contactField);
+        else formFields.push(contactField);
+      }
+      const hasEmail = formFields.some(f => (f.key || '').toLowerCase() === 'email');
+      if (!hasEmail) {
+        const contactIdx = formFields.findIndex(f => (f.key || '').toLowerCase().includes('contact_number') || f.key === 'contact');
+        const emailField = {
+          key: 'email',
+          label: 'Email Address (Optional)',
+          type: 'email',
+          required: false,
+          placeholder: 'you@example.com'
+        };
+        if (contactIdx !== -1) formFields.splice(contactIdx + 1, 0, emailField);
+        else formFields.push(emailField);
+      }
+    }
     return successResponse(res, 'Barangay ID configuration retrieved.', {
       ...s,
       requirements: parseJsonField(s.requirements),
-      form_fields: parseJsonField(s.form_fields),
+      form_fields: formFields,
       has_template: !!s.template_path
     });
   } catch (error) {

@@ -429,6 +429,7 @@ export const en: TranslationDictionary = {
   'err.bar.civilStatus': 'Civil status is required.',
   'err.bar.address': 'Address is required.',
   'err.bar.contact': 'Contact number is required.',
+  'err.bar.email': 'Please enter a valid email address.',
   'err.bar.emergencyName': 'Emergency contact name is required.',
   'err.bar.emergencyNumber': 'Emergency contact number is required.',
   'err.photoRequired': 'A photo is required for your Barangay ID.',

@@ -411,6 +411,7 @@ export const fil: TranslationDictionary = {
   'err.bar.civilStatus': 'Kinakailangan ang katayuang sibil.',
   'err.bar.address': 'Kinakailangan ang tirahan.',
   'err.bar.contact': 'Kinakailangan ang numero ng telepono.',
+  'err.bar.email': 'Pakiusap maglagay ng wastong email address.',
   'err.bar.emergencyName': 'Kinakailangan ang pangalan ng emergency contact.',
   'err.bar.emergencyNumber': 'Kinakailangan ang numero ng emergency contact.',
   'err.photoRequired': 'Kinakailangan ang larawan para sa iyong Barangay ID.',
