@@ -93,6 +93,10 @@ export class RfidService {
   updateStatus(id: number, status: string) {
     return this.api.patch(`/rfid/${id}/status`, { status });
   }
+
+  delete(id: number) {
+    return this.api.delete(`/rfid/${id}`);
+  }
 }
 
 @Injectable({ providedIn: 'root' })

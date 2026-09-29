@@ -3129,7 +3129,7 @@ export type BarangayStep =
                             }
                           </div>
 
-                          <!-- Email Address (Optional, used for Online Portal Account) -->
+                          <!-- Email Address (Used for Online Portal Account) -->
                           <div>
                             <label for="barangay-email" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
                               {{ t('bar.form.email') }}
@@ -5128,7 +5128,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     private kioskStateService: KioskStateService,
     private translations: TranslationService,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) { }
 
   private dateTimeTimer: any;
 
@@ -5188,7 +5188,7 @@ export class KioskComponent implements OnInit, OnDestroy {
 
     // Restart camera if we were in a photo step
     if ((savedState.mode === 'documents' && savedState.currentStep === 'photo') ||
-        (savedState.mode === 'barangay' && savedState.barangayStep === 'photo')) {
+      (savedState.mode === 'barangay' && savedState.barangayStep === 'photo')) {
       setTimeout(() => this.startCamera(), 100);
     }
   }
@@ -5250,7 +5250,7 @@ export class KioskComponent implements OnInit, OnDestroy {
   private normalizeBarangayService(svc: any): any {
     if (!svc) return null;
     const fields: FormField[] = Array.isArray(svc.form_fields) ? [...svc.form_fields] : [];
-    
+
     // Ensure contact_number exists
     const hasContact = fields.some(f => (f.key || '').toLowerCase().replace(/[\s_-]/g, '') === 'contactnumber' || (f.key || '').toLowerCase() === 'contact' || (f.key || '').toLowerCase() === 'phone');
     if (!hasContact) {
@@ -5272,7 +5272,7 @@ export class KioskComponent implements OnInit, OnDestroy {
       const contactIdx = fields.findIndex(f => (f.key || '').toLowerCase().includes('contact_number') || (f.key || '').toLowerCase() === 'contact');
       const emailField: FormField = {
         key: 'email',
-        label: 'Email Address (Optional)',
+        label: 'Email Address',
         type: 'email',
         required: false,
         placeholder: 'you@example.com'
@@ -6744,12 +6744,12 @@ export class KioskComponent implements OnInit, OnDestroy {
     const label = (field.label || '').toLowerCase();
     // If it's a person/name/relative field without "number/phone/mobile", it's a name, not a phone
     if ((key.includes('person') || label.includes('person') || key.includes('name') || label.includes('name')) &&
-        !(key.includes('number') || label.includes('number') || key.includes('phone') || label.includes('phone') || key.includes('mobile') || label.includes('mobile') || key.includes('num') || label.includes('num'))) {
+      !(key.includes('number') || label.includes('number') || key.includes('phone') || label.includes('phone') || key.includes('mobile') || label.includes('mobile') || key.includes('num') || label.includes('num'))) {
       return false;
     }
     return key.includes('phone') || key.includes('mobile') || label.includes('phone') || label.includes('mobile') ||
-           key.includes('contact_number') || key.includes('contactnumber') || label.includes('contact number') ||
-           key.includes('tel') || label.includes('tel');
+      key.includes('contact_number') || key.includes('contactnumber') || label.includes('contact number') ||
+      key.includes('tel') || label.includes('tel');
   }
 
   isFieldNumber(field: FormField): boolean {
@@ -7217,7 +7217,7 @@ export class KioskComponent implements OnInit, OnDestroy {
           for (let y = minY; y < maxY; y++) {
             const yOffset = y * analysisWidth;
             for (let x = minX; x < maxX; x++) {
-              const lap = 
+              const lap =
                 gray[yOffset - analysisWidth + x] +
                 gray[yOffset + analysisWidth + x] +
                 gray[yOffset + x - 1] +

@@ -11,6 +11,7 @@ import { CardComponent } from '../../shared/components/card.component';
 import { InputComponent } from '../../shared/components/input.component';
 import { PaginationComponent } from '../../shared/components/pagination.component';
 import { ModalComponent } from '../../shared/components/modal.component';
+import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.component';
 import { environment } from '../../../environments/environment';
 
 @Component({
@@ -18,7 +19,7 @@ import { environment } from '../../../environments/environment';
   standalone: true,
   imports: [
     CommonModule, FormsModule, TableComponent,
-    CardComponent, InputComponent, PaginationComponent, ModalComponent, DatePipe
+    CardComponent, InputComponent, PaginationComponent, ModalComponent, ConfirmDialogComponent, DatePipe
   ],
   template: `
     <div>
@@ -334,21 +335,28 @@ import { environment } from '../../../environments/environment';
                   </div>
                 </div>
               } @else {
-                <!-- Registered Card Information (Active Card Details & Controls) -->
-                <div class="bg-emerald-50/50 border border-emerald-200 rounded-xl p-4 space-y-3">
+                <!-- Registered Card Information (Active or Suspended Card Details & Controls) -->
+                <div [class]="'border rounded-xl p-4 space-y-3 ' + (isCardActive(res) ? 'bg-emerald-50/50 border-emerald-200' : 'bg-amber-50/50 border-amber-200')">
                   <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2 text-emerald-900 font-bold text-sm">
-                      <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                      </svg>
-                      <span>Active RFID Card Assigned</span>
+                    <div class="flex items-center gap-2 font-bold text-sm" [class]="isCardActive(res) ? 'text-emerald-900' : 'text-amber-900'">
+                      @if (isCardActive(res)) {
+                        <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                        <span>Active RFID Card Assigned</span>
+                      } @else {
+                        <svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                          <circle cx="12" cy="12" r="10"/><line x1="10" y1="15" x2="10" y2="9"/><line x1="14" y1="15" x2="14" y2="9"/>
+                        </svg>
+                        <span>Suspended RFID Card</span>
+                      }
                     </div>
-                    <span [class]="'px-2.5 py-0.5 rounded-full text-xs font-bold border ' + (res.status === 'Active' || res.status === 'ACTIVE' || res.card_status === 'Active' || res.card_status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-amber-100 text-amber-800 border-amber-300')">
+                    <span [class]="'px-2.5 py-0.5 rounded-full text-xs font-bold border ' + (isCardActive(res) ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-amber-100 text-amber-800 border-amber-300')">
                       {{ formatCardStatus(res.status || res.card_status) }}
                     </span>
                   </div>
 
-                  <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs bg-white/80 p-3 rounded-lg border border-emerald-100">
+                  <div [class]="'grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs bg-white/80 p-3 rounded-lg border ' + (isCardActive(res) ? 'border-emerald-100' : 'border-amber-100')">
                     <div>
                       <span class="text-slate-400 font-medium block">Card UID</span>
                       <span class="font-mono font-bold text-slate-900 text-sm">{{ res.card_uid }}</span>
@@ -363,11 +371,17 @@ import { environment } from '../../../environments/environment';
                     </div>
                   </div>
 
-                  <p class="text-[11px] text-slate-500 italic">
-                    This resident is already linked to an active RFID card. Duplicate registration for this resident is prevented.
-                  </p>
+                  @if (isCardActive(res)) {
+                    <p class="text-[11px] text-slate-500 italic">
+                      This resident is linked to an active RFID card. The card can be used for identification and document processing at the Kiosk.
+                    </p>
+                  } @else {
+                    <p class="text-[11px] text-amber-700 italic">
+                      This RFID card is currently suspended and cannot authenticate at the Kiosk. Activate to restore access, or delete to unlink the card.
+                    </p>
+                  }
 
-                  <div class="flex flex-wrap items-center justify-between pt-2 border-t border-emerald-100 text-xs gap-2">
+                  <div [class]="'flex flex-wrap items-center justify-between pt-2 border-t text-xs gap-2 ' + (isCardActive(res) ? 'border-emerald-100' : 'border-amber-100')">
                     <span class="text-slate-500 font-medium">Actions:</span>
                     <div class="flex items-center gap-2 flex-wrap">
                       <button
@@ -379,30 +393,36 @@ import { environment } from '../../../environments/environment';
                         <span>Re-issue / Renew Card</span>
                       </button>
                       @if (res.rfid_card_id) {
-                        <button
-                          type="button"
-                          [disabled]="res.status === 'Active' || res.status === 'ACTIVE' || updating()"
-                          (click)="updateCardStatus(res.rfid_card_id!, 'Active')"
-                          class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-40 transition cursor-pointer"
-                        >
-                          Activate
-                        </button>
-                        <button
-                          type="button"
-                          [disabled]="res.status === 'Suspended' || res.status === 'SUSPENDED' || updating()"
-                          (click)="updateCardStatus(res.rfid_card_id!, 'Suspended')"
-                          class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-amber-500 hover:bg-amber-600 text-white disabled:opacity-40 transition cursor-pointer"
-                        >
-                          Suspend
-                        </button>
-                        <button
-                          type="button"
-                          [disabled]="res.status === 'Revoked' || res.status === 'REVOKED' || updating()"
-                          (click)="updateCardStatus(res.rfid_card_id!, 'Revoked')"
-                          class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-rose-600 hover:bg-rose-700 text-white disabled:opacity-40 transition cursor-pointer"
-                        >
-                          Revoke
-                        </button>
+                        @if (isCardActive(res)) {
+                          <button
+                            type="button"
+                            [disabled]="updating()"
+                            (click)="updateCardStatus(res.rfid_card_id!, 'SUSPENDED')"
+                            class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-amber-500 hover:bg-amber-600 text-white disabled:opacity-40 transition cursor-pointer flex items-center gap-1"
+                          >
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="10" y1="15" x2="10" y2="9"/><line x1="14" y1="15" x2="14" y2="9"/></svg>
+                            <span>Suspend</span>
+                          </button>
+                        } @else if (isCardSuspended(res)) {
+                          <button
+                            type="button"
+                            [disabled]="updating()"
+                            (click)="updateCardStatus(res.rfid_card_id!, 'ACTIVE')"
+                            class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-40 transition cursor-pointer flex items-center gap-1"
+                          >
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <span>Activate</span>
+                          </button>
+                          <button
+                            type="button"
+                            [disabled]="updating() || deleting()"
+                            (click)="openDeleteConfirm()"
+                            class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-rose-600 hover:bg-rose-700 text-white disabled:opacity-40 transition cursor-pointer flex items-center gap-1"
+                          >
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            <span>Delete</span>
+                          </button>
+                        }
                       }
                     </div>
                   </div>
@@ -447,6 +467,17 @@ import { environment } from '../../../environments/environment';
           </div>
         }
       </app-modal>
+
+      <!-- Delete Card Confirmation Dialog -->
+      <app-confirm-dialog
+        [open]="showDeleteConfirm()"
+        title="Delete RFID Card"
+        message="Are you sure you want to delete this RFID card? The card UID will be permanently unlinked from this resident. The resident record will remain intact."
+        confirmText="Delete Card"
+        variant="danger"
+        (onConfirm)="confirmDelete()"
+        (onCancel)="cancelDelete()"
+      />
     </div>
   `
 })
@@ -468,6 +499,8 @@ export class RfidComponent implements OnInit, OnDestroy {
   regError = signal('');
   registering = signal(false);
   updating = signal(false);
+  deleting = signal(false);
+  showDeleteConfirm = signal(false);
 
   // Renewal / Reissue request linking state
   currentRequestId = signal<number | null>(null);
@@ -673,6 +706,7 @@ export class RfidComponent implements OnInit, OnDestroy {
 
   closeModal() {
     this.showModal.set(false);
+    this.showDeleteConfirm.set(false);
     this.selectedResident.set(null);
     this.regCardUid.set('');
     this.regExpirationDate.set(this.computeDefaultExpiry());
@@ -804,11 +838,26 @@ export class RfidComponent implements OnInit, OnDestroy {
     });
   }
 
+  hasLinkedCard(res: RfidCard | null | undefined): boolean {
+    if (!res) return false;
+    const status = (res.status || res.card_status || '').toUpperCase();
+    return !!(res.card_uid && res.rfid_card_id && status !== 'CANCELLED' && status !== 'REVOKED' && status !== 'DELETED' && status !== 'INACTIVE');
+  }
+
   isRegistered(res: RfidCard): boolean {
-    return (
-      res.registration_status === 'Registered' ||
-      (!!res.card_uid && (res.status === 'Active' || res.status === 'ACTIVE' || res.card_status === 'Active' || res.card_status === 'ACTIVE'))
-    );
+    return this.hasLinkedCard(res);
+  }
+
+  isCardActive(res: RfidCard | null | undefined): boolean {
+    if (!res) return false;
+    const status = (res.status || res.card_status || '').toUpperCase();
+    return status === 'ACTIVE';
+  }
+
+  isCardSuspended(res: RfidCard | null | undefined): boolean {
+    if (!res) return false;
+    const status = (res.status || res.card_status || '').toUpperCase();
+    return status === 'SUSPENDED';
   }
 
   photoUrl(photo: string | null | undefined): string {
@@ -857,6 +906,63 @@ export class RfidComponent implements OnInit, OnDestroy {
     if (s === 'CANCELLED') return 'Cancelled';
     if (s === 'REVOKED') return 'Revoked';
     return status;
+  }
+
+  openDeleteConfirm() {
+    this.showDeleteConfirm.set(true);
+  }
+
+  cancelDelete() {
+    this.showDeleteConfirm.set(false);
+  }
+
+  confirmDelete() {
+    const res = this.selectedResident();
+    if (!res || !res.rfid_card_id) {
+      this.showDeleteConfirm.set(false);
+      return;
+    }
+
+    if (this.isCardActive(res)) {
+      this.toastService.warning('Cannot Delete', 'Active cards cannot be deleted directly. Please suspend the card first.');
+      this.showDeleteConfirm.set(false);
+      return;
+    }
+
+    this.deleting.set(true);
+    this.rfidService.delete(res.rfid_card_id).subscribe({
+      next: () => {
+        this.deleting.set(false);
+        this.showDeleteConfirm.set(false);
+        this.toastService.success('RFID Card Deleted', `Card unlinked from ${this.formatResidentName(res)}.`);
+
+        // Clear card data from selected resident so it shows the registration form
+        const current = this.selectedResident();
+        if (current) {
+          this.selectedResident.set({
+            ...current,
+            rfid_card_id: undefined,
+            card_uid: undefined,
+            status: undefined,
+            card_status: undefined,
+            issued_date: undefined,
+            expiration_date: undefined,
+            registration_status: 'Not Registered'
+          });
+        }
+        this.regCardUid.set('');
+        this.regExpirationDate.set(this.computeDefaultExpiry());
+        this.regError.set('');
+        this.reissueMode.set(false);
+        this.fromRenewal.set(false);
+        this.loadCards();
+      },
+      error: (err) => {
+        this.deleting.set(false);
+        this.showDeleteConfirm.set(false);
+        this.toastService.error('Error', err.error?.message || 'Failed to delete RFID card.');
+      }
+    });
   }
 
   registerCard(res: RfidCard) {
@@ -916,25 +1022,32 @@ export class RfidComponent implements OnInit, OnDestroy {
     });
   }
 
-  updateCardStatus(id: number, status: string) {
+  updateCardStatus(id: number, status: 'ACTIVE' | 'SUSPENDED') {
     this.updating.set(true);
     this.rfidService.updateStatus(id, status).subscribe({
       next: () => {
         this.updating.set(false);
-        this.toastService.info('Card Status Updated', `Status changed to ${status}`);
+        const displayStatus = status === 'ACTIVE' ? 'Active' : 'Suspended';
+        if (status === 'ACTIVE') {
+          this.toastService.success('Card Activated', 'RFID card is now Active and ready for Kiosk use.');
+        } else {
+          this.toastService.warning('Card Suspended', 'RFID card has been Suspended and disabled for Kiosk use.');
+        }
+
         const current = this.selectedResident();
         if (current) {
           this.selectedResident.set({
             ...current,
-            status,
-            card_status: status
+            status: displayStatus,
+            card_status: displayStatus,
+            registration_status: status === 'ACTIVE' ? 'Registered' : 'Not Registered'
           });
         }
         this.loadCards();
       },
       error: (err) => {
         this.updating.set(false);
-        alert(err.error?.message || 'Failed to update RFID card status.');
+        this.toastService.error('Error', err.error?.message || 'Failed to update RFID card status.');
       }
     });
   }

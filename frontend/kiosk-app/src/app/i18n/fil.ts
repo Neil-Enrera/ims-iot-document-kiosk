@@ -1,7 +1,7 @@
 import { TranslationDictionary } from './en';
 
 export const fil: TranslationDictionary = {
-  'landing.welcome': 'MALIGAY NA PAGDATING',
+  'landing.welcome': 'MALIGAYANG PAGDATING',
   'landing.barangayName': 'Barangay San Manuel',
   'landing.subtitle': 'Document Request Kiosk',
   'landing.prompt': 'Paki-pili kung paano mo nais magpatuloy.',

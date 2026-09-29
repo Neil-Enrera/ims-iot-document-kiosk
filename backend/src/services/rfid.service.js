@@ -45,13 +45,13 @@ const syncRenewalAndReleaseOnRfid = async ({ residentId, requestId, userId }) =>
 
     // Also update any pending first-timer barangay_id_applications for this resident
     const [activeApps] = await pool.query(
-      "SELECT application_id, status FROM barangay_id_applications WHERE (resident_id = ? OR applicant_id = ?) AND status IN ('PENDING', 'APPROVED')",
-      [residentId, residentId]
+      "SELECT application_id, status FROM barangay_id_applications WHERE resident_id = ? AND status IN ('PENDING', 'APPROVED')",
+      [residentId]
     );
     for (const appRow of activeApps) {
       try {
         await pool.query(
-          "UPDATE barangay_id_applications SET status = 'APPROVED', reviewed_at = NOW(), rejection_reason = NULL WHERE application_id = ?",
+          "UPDATE barangay_id_applications SET status = 'APPROVED', reviewed_at = NOW(), review_remarks = NULL WHERE application_id = ?",
           [appRow.application_id]
         );
       } catch (e) {
@@ -163,6 +163,10 @@ const getResidentByUid = async (cardUid) => {
     return { success: false, message: 'RFID card not found.' };
   }
 
+  if (card.status !== 'ACTIVE' && card.status !== 'Active') {
+    return { success: false, message: 'RFID card is not active or has been suspended.' };
+  }
+
   const { resident, rfid } = splitResidentAndRfid(card);
 
   return { success: true, message: 'Resident retrieved successfully.', data: { resident, rfid } };
@@ -224,7 +228,8 @@ const updateCardStatus = async (rfidCardId, status) => {
     return { success: false, message: 'RFID card not found.' };
   }
 
-  await rfidRepository.updateStatus(rfidCardId, status);
+  const normalizedStatus = String(status).toUpperCase();
+  await rfidRepository.updateStatus(rfidCardId, normalizedStatus);
   const updated = await rfidRepository.findById(rfidCardId);
 
   return { success: true, message: 'RFID card status updated successfully.', data: updated };
@@ -253,6 +258,10 @@ const deleteCard = async (rfidCardId) => {
   const card = await rfidRepository.findById(rfidCardId);
   if (!card) {
     return { success: false, message: 'RFID card not found.' };
+  }
+
+  if (card.status === 'ACTIVE' || card.status === 'Active') {
+    return { success: false, message: 'Active RFID card cannot be deleted directly. Please suspend the card first.' };
   }
 
   await rfidRepository.remove(rfidCardId);
