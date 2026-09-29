@@ -4,6 +4,7 @@ import { DatePipe, CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { ResidentService, RfidService, RequestService, ApplicationService, DocumentService } from '../../shared/services';
+import { ToastService } from '../../shared/components/toast.service';
 import { NotificationService } from '../notifications/notification.service';
 import { Resident } from '../../shared/interfaces/api.interfaces';
 import { TableComponent, TableColumn } from '../../shared/components/table.component';
@@ -727,7 +728,8 @@ export class ResidentsComponent implements OnInit, OnDestroy {
     private documentService: DocumentService,
     private notificationService: NotificationService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private toast: ToastService
   ) { }
 
   ngOnInit() {
@@ -896,10 +898,11 @@ export class ResidentsComponent implements OnInit, OnDestroy {
       next: () => {
         this.showArchiveConfirm.set(false);
         this.targetResident.set(null);
+        this.toast.success('Resident archived successfully.');
         this.loadResidents();
       },
       error: (err) => {
-        alert(err.error?.message || 'Failed to archive resident.');
+        this.toast.error(err.error?.message || 'Failed to archive resident.');
       }
     });
   }
@@ -915,10 +918,11 @@ export class ResidentsComponent implements OnInit, OnDestroy {
       next: () => {
         this.showRestoreConfirm.set(false);
         this.targetResident.set(null);
+        this.toast.success('Resident restored successfully.');
         this.loadResidents();
       },
       error: (err) => {
-        alert(err.error?.message || 'Failed to restore resident.');
+        this.toast.error(err.error?.message || 'Failed to restore resident.');
       }
     });
   }
@@ -1019,7 +1023,7 @@ export class ResidentsComponent implements OnInit, OnDestroy {
             },
             error: () => {
               this.previewDocumentLoading.set(false);
-              alert('Could not load the generated document preview.');
+              this.toast.error('Could not load the generated document preview.');
             }
           });
         } else {
@@ -1040,30 +1044,30 @@ export class ResidentsComponent implements OnInit, OnDestroy {
                       },
                       error: () => {
                         this.previewDocumentLoading.set(false);
-                        alert('Could not load the generated document preview.');
+                        this.toast.error('Could not load the generated document preview.');
                       }
                     });
                   } else {
                     this.previewDocumentLoading.set(false);
-                    alert('No document template was produced.');
+                    this.toast.warning('No document template was produced.');
                   }
                 },
                 error: () => {
                   this.previewDocumentLoading.set(false);
-                  alert('Failed to list generated document.');
+                  this.toast.error('Failed to list generated document.');
                 }
               });
             },
             error: (err) => {
               this.previewDocumentLoading.set(false);
-              alert(err.error?.message || 'A document template is not yet available for this request.');
+              this.toast.warning(err.error?.message || 'A document template is not yet available for this request.');
             }
           });
         }
       },
       error: () => {
         this.previewDocumentLoading.set(false);
-        alert('Failed to check documents for this request.');
+        this.toast.error('Failed to check documents for this request.');
       }
     });
   }
@@ -1187,25 +1191,31 @@ export class ResidentsComponent implements OnInit, OnDestroy {
       next: () => {
         this.newCardUid = '';
         this.loadResidentRfid(res);
-        alert('RFID Card registered successfully!');
+        this.toast.success('RFID Card registered successfully!');
       },
       error: (err) => {
-        alert(err.error?.message || 'Failed to register card.');
+        this.toast.error(err.error?.message || 'Failed to register card.');
       }
     });
   }
 
   activateRfid(cardId: number, res: Resident) {
     this.rfidService.updateStatus(cardId, 'Active').subscribe({
-      next: () => this.loadResidentRfid(res),
-      error: (err) => alert(err.error?.message || 'Failed to activate card.')
+      next: () => {
+        this.toast.success('Card activated successfully.');
+        this.loadResidentRfid(res);
+      },
+      error: (err) => this.toast.error(err.error?.message || 'Failed to activate card.')
     });
   }
 
   deactivateRfid(cardId: number, res: Resident) {
     this.rfidService.updateStatus(cardId, 'Revoked').subscribe({
-      next: () => this.loadResidentRfid(res),
-      error: (err) => alert(err.error?.message || 'Failed to deactivate card.')
+      next: () => {
+        this.toast.success('Card deactivated successfully.');
+        this.loadResidentRfid(res);
+      },
+      error: (err) => this.toast.error(err.error?.message || 'Failed to deactivate card.')
     });
   }
 }

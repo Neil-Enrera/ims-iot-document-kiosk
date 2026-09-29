@@ -13,7 +13,6 @@ import { InputComponent } from '../../shared/components/input.component';
 import { PaginationComponent } from '../../shared/components/pagination.component';
 import { ButtonComponent } from '../../shared/components/button.component';
 import { ModalComponent } from '../../shared/components/modal.component';
-import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.component';
 import { DocumentPreviewModalComponent } from '../../shared/components/document-preview-modal.component';
 import { ToastService } from '../../shared/components/toast.service';
 import { ServiceFormComponent } from '../services/service-form.component';
@@ -35,7 +34,7 @@ interface UploadedRequirement {
   imports: [
     CommonModule, FormsModule,
     TableComponent, CardComponent, InputComponent, PaginationComponent,
-    ButtonComponent, ModalComponent, ConfirmDialogComponent, DocumentPreviewModalComponent,
+    ButtonComponent, ModalComponent, DocumentPreviewModalComponent,
     DatePipe, ServiceFormComponent
   ],
   template: `
@@ -1159,16 +1158,292 @@ interface UploadedRequirement {
         }
       </app-modal>
 
-      <!-- Action Confirmation Dialog -->
-      <app-confirm-dialog
-        [open]="showActionConfirm()"
-        [title]="actionTitle()"
-        [message]="actionMessage()"
-        [confirmText]="actionConfirmText()"
-        [variant]="pendingAction() === 'approve' ? 'primary' : 'danger'"
-        (onCancel)="showActionConfirm.set(false)"
-        (onConfirm)="confirmAction()"
-      />
+      <!-- ================= MODAL: APPROVE APPLICATION ================= -->
+      <app-modal
+        [open]="showActionConfirm() && pendingAction() === 'approve'"
+        title="Approve Barangay ID Application"
+        (onClose)="showActionConfirm.set(false)"
+        containerClass="max-w-md"
+      >
+        @if (selected(); as app) {
+          <div class="space-y-4">
+            <!-- Resident & Application Summary Card -->
+            <div class="p-4 bg-orange-50/70 border border-orange-200 rounded-2xl flex items-center gap-3.5">
+              <div class="w-12 h-12 rounded-xl bg-orange-500 text-white flex items-center justify-center shrink-0 shadow-2xs font-bold text-lg">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+              </div>
+              <div class="min-w-0">
+                <p class="text-xs font-mono font-bold text-orange-800">{{ app.application_number }}</p>
+                <h4 class="text-sm font-bold text-slate-900 truncate">{{ app.full_name }}</h4>
+                <p class="text-[11px] text-slate-500">{{ app.contact_number || app.email || 'Resident Applicant' }}</p>
+              </div>
+            </div>
+
+            <!-- Workflow explanation -->
+            <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+              <p class="text-xs font-bold text-slate-800">What happens after approval:</p>
+              <ul class="text-xs text-slate-600 space-y-1.5 list-disc list-inside">
+                <li>Creates / activates permanent resident record in the system.</li>
+                <li>Generates official Barangay ID document and assigns ID number.</li>
+                <li>Proceeds directly to physical RFID Card Registration.</li>
+              </ul>
+            </div>
+
+            <!-- Optional Remarks -->
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">Remarks (Optional)</label>
+              <textarea
+                [value]="remarks()"
+                (input)="remarks.set($any($event.target).value)"
+                rows="2"
+                class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="Add any internal approval remarks..."></textarea>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                (click)="showActionConfirm.set(false)"
+                [disabled]="saving()"
+                class="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition cursor-pointer">
+                Cancel
+              </button>
+              <button
+                type="button"
+                (click)="confirmAction()"
+                [disabled]="saving()"
+                class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 shadow-2xs transition cursor-pointer disabled:opacity-50">
+                @if (saving()) {
+                  <div class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Approving...</span>
+                } @else {
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                  <span>Approve Application</span>
+                }
+              </button>
+            </div>
+          </div>
+        }
+      </app-modal>
+
+      <!-- ================= MODAL: REJECT APPLICATION ================= -->
+      <app-modal
+        [open]="showActionConfirm() && pendingAction() === 'reject'"
+        title="Reject Barangay ID Application"
+        (onClose)="showActionConfirm.set(false)"
+        containerClass="max-w-md"
+      >
+        @if (selected(); as app) {
+          <div class="space-y-4">
+            <div class="p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </div>
+              <div class="min-w-0">
+                <p class="text-xs font-mono font-bold text-rose-800">{{ app.application_number }}</p>
+                <h4 class="text-sm font-bold text-slate-900 truncate">{{ app.full_name }}</h4>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">Rejection Reason *</label>
+              <textarea
+                [value]="remarks()"
+                (input)="remarks.set($any($event.target).value)"
+                rows="3"
+                class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                placeholder="State the reason why this application is being rejected..."></textarea>
+            </div>
+
+            <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                (click)="showActionConfirm.set(false)"
+                [disabled]="saving()"
+                class="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition cursor-pointer">
+                Cancel
+              </button>
+              <button
+                type="button"
+                (click)="confirmAction()"
+                [disabled]="saving()"
+                class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl text-white bg-rose-600 hover:bg-rose-700 shadow-2xs transition cursor-pointer disabled:opacity-50">
+                @if (saving()) {
+                  <div class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Rejecting...</span>
+                } @else {
+                  <span>Reject Application</span>
+                }
+              </button>
+            </div>
+          </div>
+        }
+      </app-modal>
+
+      <!-- ================= MODAL: MARK AS RELEASED ================= -->
+      <app-modal
+        [open]="showReleaseConfirm()"
+        title="Mark Barangay ID as Released"
+        (onClose)="cancelReleaseConfirm()"
+        containerClass="max-w-md"
+      >
+        @if (releasingApp(); as app) {
+          <div class="space-y-4">
+            <div class="p-4 bg-emerald-50/70 border border-emerald-200 rounded-2xl flex items-center gap-3.5">
+              <div class="w-12 h-12 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-2xs font-bold text-lg">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                </svg>
+              </div>
+              <div class="min-w-0">
+                <p class="text-xs font-mono font-bold text-emerald-800">{{ app.application_number }}</p>
+                <h4 class="text-sm font-bold text-slate-900 truncate">{{ app.full_name }}</h4>
+                <p class="text-xs font-mono text-slate-600 mt-0.5">Card UID: {{ app.card_uid || 'Registered' }}</p>
+              </div>
+            </div>
+
+            <p class="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+              This confirms the physical Barangay ID card has been issued to the resident and removes their entry from the public Status Display.
+            </p>
+
+            <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                (click)="cancelReleaseConfirm()"
+                [disabled]="releasing()"
+                class="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition cursor-pointer">
+                Cancel
+              </button>
+              <button
+                type="button"
+                (click)="confirmReleaseAction()"
+                [disabled]="releasing()"
+                class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 shadow-2xs transition cursor-pointer disabled:opacity-50">
+                @if (releasing()) {
+                  <div class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Releasing...</span>
+                } @else {
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                  <span>Mark as Released</span>
+                }
+              </button>
+            </div>
+          </div>
+        }
+      </app-modal>
+
+      <!-- ================= MODAL: APPROVE ID RENEWAL ================= -->
+      <app-modal
+        [open]="showRenewalApproveModal()"
+        title="Approve ID Renewal Request"
+        (onClose)="showRenewalApproveModal.set(false)"
+        containerClass="max-w-md"
+      >
+        @if (targetRenewal(); as req) {
+          <div class="space-y-4">
+            <div class="p-4 bg-orange-50/70 border border-orange-200 rounded-2xl flex items-center gap-3.5">
+              <div class="w-12 h-12 rounded-xl bg-orange-500 text-white flex items-center justify-center shrink-0 shadow-2xs font-bold">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+              </div>
+              <div class="min-w-0">
+                <p class="text-xs font-mono font-bold text-orange-800">{{ req.request_number }}</p>
+                <h4 class="text-sm font-bold text-slate-900 truncate">{{ req.resident_name }}</h4>
+                <p class="text-[11px] text-slate-500">Barangay ID Renewal Request</p>
+              </div>
+            </div>
+
+            <p class="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+              Once approved, you will proceed directly to physical RFID Card Registration to assign the new card.
+            </p>
+
+            <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                (click)="showRenewalApproveModal.set(false)"
+                [disabled]="renewalActionLoading()"
+                class="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition cursor-pointer">
+                Cancel
+              </button>
+              <button
+                type="button"
+                (click)="confirmApproveRenewalAction()"
+                [disabled]="renewalActionLoading()"
+                class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 shadow-2xs transition cursor-pointer disabled:opacity-50">
+                @if (renewalActionLoading()) {
+                  <div class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Approving...</span>
+                } @else {
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                  <span>Approve Renewal</span>
+                }
+              </button>
+            </div>
+          </div>
+        }
+      </app-modal>
+
+      <!-- ================= MODAL: REJECT ID RENEWAL ================= -->
+      <app-modal
+        [open]="showRenewalRejectModal()"
+        title="Reject ID Renewal Request"
+        (onClose)="showRenewalRejectModal.set(false)"
+        containerClass="max-w-md"
+      >
+        @if (targetRenewal(); as req) {
+          <div class="space-y-4">
+            <div class="p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </div>
+              <div class="min-w-0">
+                <p class="text-xs font-mono font-bold text-rose-800">{{ req.request_number }}</p>
+                <h4 class="text-sm font-bold text-slate-900 truncate">{{ req.resident_name }}</h4>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">Rejection Reason *</label>
+              <textarea
+                [value]="renewalRejectionReason()"
+                (input)="renewalRejectionReason.set($any($event.target).value)"
+                rows="3"
+                class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                placeholder="State the reason for rejecting this renewal..."></textarea>
+            </div>
+
+            <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                (click)="showRenewalRejectModal.set(false)"
+                [disabled]="renewalActionLoading()"
+                class="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition cursor-pointer">
+                Cancel
+              </button>
+              <button
+                type="button"
+                (click)="confirmRejectRenewalAction()"
+                [disabled]="renewalActionLoading()"
+                class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl text-white bg-rose-600 hover:bg-rose-700 shadow-2xs transition cursor-pointer disabled:opacity-50">
+                @if (renewalActionLoading()) {
+                  <div class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Rejecting...</span>
+                } @else {
+                  <span>Reject Renewal</span>
+                }
+              </button>
+            </div>
+          </div>
+        }
+      </app-modal>
 
       <!-- Issued ID Card Preview -->
       <app-document-preview-modal
@@ -1269,6 +1544,16 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
 
   showActionConfirm = signal(false);
   pendingAction = signal<'approve' | 'reject' | null>(null);
+
+  // --- Release Confirmation Modal State ---
+  showReleaseConfirm = signal(false);
+  releasingApp = signal<ApplicationRow | null>(null);
+
+  // --- Renewal Confirmation States ---
+  showRenewalApproveModal = signal(false);
+  showRenewalRejectModal = signal(false);
+  targetRenewal = signal<DocumentRequest | null>(null);
+  renewalRejectionReason = signal('');
 
   // --- RFID Registration Modal & Scanner State ---
   showRfidModal = signal(false);
@@ -1978,13 +2263,19 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
 
   approveRenewal(req: DocumentRequest) {
     if (this.renewalActionLoading()) return;
-    const confirmApprove = confirm(`Approve Barangay ID Renewal request for ${req.resident_name}?\n\nOnce approved, you will proceed to RFID Card Registration to assign the new physical card.`);
-    if (!confirmApprove) return;
+    this.targetRenewal.set(req);
+    this.showRenewalApproveModal.set(true);
+  }
+
+  confirmApproveRenewalAction() {
+    const req = this.targetRenewal();
+    if (!req || this.renewalActionLoading()) return;
 
     this.renewalActionLoading.set(true);
     this.requestService.changeStatus(req.request_id, 6, 'Barangay ID Renewal approved and ready for RFID Card Registration.').subscribe({
       next: () => {
         this.renewalActionLoading.set(false);
+        this.showRenewalApproveModal.set(false);
         this.toast.success('ID Renewal approved! Opening RFID Registration...');
         this.loadRenewals();
         this.closeRenewalDetail();
@@ -1999,18 +2290,26 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
 
   rejectRenewal(req: DocumentRequest) {
     if (this.renewalActionLoading()) return;
-    const reason = prompt(`Enter rejection reason for ${req.resident_name}'s ID Renewal request:`);
-    if (reason === null) return;
-    const cleanReason = reason.trim();
-    if (!cleanReason) {
-      alert('A rejection reason is required.');
+    this.targetRenewal.set(req);
+    this.renewalRejectionReason.set('');
+    this.showRenewalRejectModal.set(true);
+  }
+
+  confirmRejectRenewalAction() {
+    const req = this.targetRenewal();
+    const reason = this.renewalRejectionReason().trim();
+    if (!req || this.renewalActionLoading()) return;
+
+    if (!reason) {
+      this.toast.warning('A rejection reason is required.');
       return;
     }
 
     this.renewalActionLoading.set(true);
-    this.requestService.reject(req.request_id, cleanReason).subscribe({
+    this.requestService.reject(req.request_id, reason).subscribe({
       next: () => {
         this.renewalActionLoading.set(false);
+        this.showRenewalRejectModal.set(false);
         this.toast.success('ID Renewal request rejected.');
         this.loadRenewals();
         if (this.selectedRenewal()?.request_id === req.request_id) {
@@ -2315,15 +2614,27 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
     }
   }
 
-  markAsReleased(app: ApplicationRow) {
+  promptMarkAsReleased(app: ApplicationRow) {
     if (!app || this.releasing()) return;
-    const confirmRelease = confirm(`Mark Barangay ID Application ${app.application_number} for ${app.full_name} as Released?\n\nThis confirms the physical ID card has been issued to the resident and removes their entry from the public Status Display.`);
-    if (!confirmRelease) return;
+    this.releasingApp.set(app);
+    this.showReleaseConfirm.set(true);
+  }
+
+  cancelReleaseConfirm() {
+    this.showReleaseConfirm.set(false);
+    this.releasingApp.set(null);
+  }
+
+  confirmReleaseAction() {
+    const app = this.releasingApp();
+    if (!app || this.releasing()) return;
 
     this.releasing.set(true);
     this.applicationService.release(app.application_id).subscribe({
       next: (res) => {
         this.releasing.set(false);
+        this.showReleaseConfirm.set(false);
+        this.releasingApp.set(null);
         this.toast.success('Application Released', `Application ${app.application_number} has been marked as Released!`);
 
         const updated = res?.data || {};
@@ -2347,6 +2658,10 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
         this.toast.error('Release Failed', err?.error?.message || 'Failed to mark application as released.');
       }
     });
+  }
+
+  markAsReleased(app: ApplicationRow) {
+    this.promptMarkAsReleased(app);
   }
 
   actionTitle(): string {
@@ -2405,10 +2720,10 @@ export class ApplicationsComponent implements OnInit, OnDestroy, AfterViewChecke
               const parsed = JSON.parse(text);
               msg = parsed?.message || msg;
             } catch { /* ignore non-JSON error bodies */ }
-            alert(msg);
+            this.toast.error('Preview Error', msg);
           });
         } else {
-          alert(err?.error?.message || msg);
+          this.toast.error('Preview Error', err?.error?.message || msg);
         }
       }
     });

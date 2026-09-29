@@ -1,6 +1,7 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { UserService } from '../../shared/services';
+import { ToastService } from '../../shared/components/toast.service';
 import { User } from '../../shared/interfaces/api.interfaces';
 import { TableComponent, TableColumn } from '../../shared/components/table.component';
 import { ButtonComponent } from '../../shared/components/button.component';
@@ -155,7 +156,7 @@ export class UsersComponent implements OnInit {
     { key: 'last_login', label: 'Last Login' }
   ];
 
-  constructor(private userService: UserService) {}
+  constructor(private userService: UserService, private toast: ToastService) {}
 
   isUserActive(status?: string): boolean {
     return (status || '').toUpperCase() === 'ACTIVE';
@@ -229,16 +230,31 @@ export class UsersComponent implements OnInit {
       : this.userService.create(data);
 
     request.subscribe({
-      next: () => { this.closeForm(); this.loadUsers(); },
-      error: (err) => { this.saving.set(false); alert(err.error?.message || 'Failed to save user.'); }
+      next: () => {
+        this.saving.set(false);
+        this.closeForm();
+        this.toast.success(this.editingUser() ? 'User updated successfully.' : 'User created successfully.');
+        this.loadUsers();
+      },
+      error: (err) => {
+        this.saving.set(false);
+        this.toast.error(err.error?.message || 'Failed to save user.');
+      }
     });
   }
 
   confirmDelete() {
     if (!this.deletingUser()) return;
     this.userService.delete(this.deletingUser()!.user_id).subscribe({
-      next: () => { this.showDeleteConfirm.set(false); this.deletingUser.set(null); this.loadUsers(); },
-      error: (err) => { alert(err.error?.message || 'Failed to delete user.'); }
+      next: () => {
+        this.showDeleteConfirm.set(false);
+        this.deletingUser.set(null);
+        this.toast.success('User deleted successfully.');
+        this.loadUsers();
+      },
+      error: (err) => {
+        this.toast.error(err.error?.message || 'Failed to delete user.');
+      }
     });
   }
 }

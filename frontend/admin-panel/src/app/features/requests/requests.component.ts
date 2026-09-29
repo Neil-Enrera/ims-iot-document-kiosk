@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { renderAsync } from 'docx-preview';
 import { RequestService, DocumentService, ServiceService, DocumentPdfExportService } from '../../shared/services';
+import { ToastService } from '../../shared/components/toast.service';
 import { NotificationService } from '../notifications/notification.service';
 import { DocumentRequest, RequestStatusHistory, GeneratedDocument, Service } from '../../shared/interfaces/api.interfaces';
 import { TableComponent, TableColumn } from '../../shared/components/table.component';
@@ -737,8 +738,8 @@ interface StatusOption {
                         
                         @if (doc.approval_status === 'pending') {
                           <span class="text-slate-300">|</span>
-                          <button type="button" (click)="reviewDocument(doc, 'approved')" class="text-emerald-700 font-bold hover:underline cursor-pointer">Approve</button>
-                          <button type="button" (click)="reviewDocument(doc, 'rejected')" class="text-rose-700 font-bold hover:underline cursor-pointer">Reject</button>
+                          <button type="button" (click)="openReviewDocDialog(doc, 'approved')" class="text-emerald-700 font-bold hover:underline cursor-pointer">Approve</button>
+                          <button type="button" (click)="openReviewDocDialog(doc, 'rejected')" class="text-rose-700 font-bold hover:underline cursor-pointer">Reject</button>
                         }
                       </div>
                     </div>
@@ -1109,6 +1110,64 @@ interface StatusOption {
         (onDownload)="downloadPreviewDocument()"
       />
 
+      <!-- ================= DOCUMENT REVIEW MODAL ================= -->
+      <app-modal
+        [open]="showReviewDocModal()"
+        [title]="reviewDocStatus() === 'approved' ? 'Approve Generated Document' : 'Reject Generated Document'"
+        (onClose)="closeReviewDocDialog()"
+        containerClass="max-w-md"
+      >
+        <div class="space-y-4">
+          <div class="p-3.5 rounded-2xl border" [class]="reviewDocStatus() === 'approved' ? 'bg-emerald-50/70 border-emerald-200 text-emerald-900' : 'bg-rose-50/70 border-rose-200 text-rose-900'">
+            <p class="text-xs font-bold font-mono">{{ reviewingDoc()?.file_name }}</p>
+            <p class="text-xs mt-1" [class]="reviewDocStatus() === 'approved' ? 'text-emerald-800' : 'text-rose-800'">
+              @if (reviewDocStatus() === 'approved') {
+                Approving this document marks it as officially vetted and ready for release.
+              } @else {
+                Please provide a rejection note explaining why this generated document cannot be approved.
+              }
+            </p>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
+              {{ reviewDocStatus() === 'approved' ? 'Remarks (Optional)' : 'Rejection Reason *' }}
+            </label>
+            <textarea
+              [value]="reviewDocRemarks()"
+              (input)="reviewDocRemarks.set($any($event.target).value)"
+              rows="3"
+              class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              [placeholder]="reviewDocStatus() === 'approved' ? 'Add any optional notes...' : 'State the reason for rejection...'"></textarea>
+          </div>
+
+          @if (reviewDocError()) {
+            <p class="text-xs font-semibold text-rose-600 bg-rose-50 p-2.5 rounded-xl border border-rose-200">{{ reviewDocError() }}</p>
+          }
+
+          <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+            <button
+              type="button"
+              (click)="closeReviewDocDialog()"
+              [disabled]="submittingReview()"
+              class="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition cursor-pointer">
+              Cancel
+            </button>
+            <button
+              type="button"
+              (click)="confirmReviewDoc()"
+              [disabled]="submittingReview()"
+              [class]="'px-4 py-2 text-xs font-bold rounded-xl text-white shadow-xs transition cursor-pointer ' + (reviewDocStatus() === 'approved' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-rose-600 hover:bg-rose-700')">
+              @if (submittingReview()) {
+                <span>Processing...</span>
+              } @else {
+                <span>{{ reviewDocStatus() === 'approved' ? 'Approve Document' : 'Reject Document' }}</span>
+              }
+            </button>
+          </div>
+        </div>
+      </app-modal>
+
       <!-- ================= IMAGE INSPECTION MODAL (2x2 Photo & Receipt) ================= -->
       <app-modal
         [open]="showImageModal()"
@@ -1202,6 +1261,14 @@ export class RequestsComponent implements OnInit, OnDestroy {
   actionLoading = signal(false);
   actionError = signal('');
 
+  // Document Review Modal State
+  showReviewDocModal = signal(false);
+  reviewingDoc = signal<GeneratedDocument | null>(null);
+  reviewDocStatus = signal<'approved' | 'rejected' | 'returned'>('approved');
+  reviewDocRemarks = signal('');
+  reviewDocError = signal('');
+  submittingReview = signal(false);
+
   // Complete 7-Step Workflow Order
   stepperSteps = [
     { id: 1, label: 'Submitted' },
@@ -1253,7 +1320,8 @@ export class RequestsComponent implements OnInit, OnDestroy {
     private notificationService: NotificationService,
     private pdfExportService: DocumentPdfExportService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private toast: ToastService
   ) {}
 
   ngOnInit() {
@@ -1599,11 +1667,12 @@ export class RequestsComponent implements OnInit, OnDestroy {
       next: () => {
         this.showForm.set(false);
         this.saving.set(false);
+        this.toast.success('Request Created', 'Document request created successfully.');
         this.loadRequests();
       },
       error: (err) => {
         this.saving.set(false);
-        alert(err.error?.message || 'Failed to create request.');
+        this.toast.error('Creation Failed', err.error?.message || 'Failed to create request.');
       }
     });
   }
@@ -2174,22 +2243,50 @@ export class RequestsComponent implements OnInit, OnDestroy {
     }
   }
 
-  reviewDocument(doc: GeneratedDocument, status: 'approved' | 'rejected' | 'returned') {
+  openReviewDocDialog(doc: GeneratedDocument, status: 'approved' | 'rejected' | 'returned') {
+    this.reviewingDoc.set(doc);
+    this.reviewDocStatus.set(status);
+    this.reviewDocRemarks.set('');
+    this.reviewDocError.set('');
+    this.showReviewDocModal.set(true);
+  }
+
+  closeReviewDocDialog() {
+    this.showReviewDocModal.set(false);
+    this.reviewingDoc.set(null);
+    this.reviewDocRemarks.set('');
+    this.reviewDocError.set('');
+    this.submittingReview.set(false);
+  }
+
+  confirmReviewDoc() {
+    const doc = this.reviewingDoc();
+    const status = this.reviewDocStatus();
     const request = this.selectedRequest();
-    if (!request) return;
+    if (!doc || !request) return;
 
-    const remarks = status === 'approved' ? '' : prompt(`Enter remarks for ${status}:`);
-    if (status !== 'approved' && remarks === null) return;
+    const remarks = this.reviewDocRemarks().trim();
+    if (status !== 'approved' && !remarks) {
+      this.reviewDocError.set('A rejection note or remarks is required.');
+      return;
+    }
 
-    this.reviewing.set(true);
-    this.documentService.review(request.request_id, doc.document_id, status, remarks || '').subscribe({
+    this.submittingReview.set(true);
+    this.reviewDocError.set('');
+
+    this.documentService.review(request.request_id, doc.document_id, status, remarks).subscribe({
       next: () => {
-        this.reviewing.set(false);
+        this.submittingReview.set(false);
+        this.closeReviewDocDialog();
+        this.toast.success(
+          status === 'approved' ? 'Document Approved' : (status === 'rejected' ? 'Document Rejected' : 'Document Returned'),
+          `Review for ${doc.file_name} saved.`
+        );
         this.loadDocuments(request.request_id);
       },
       error: (err) => {
-        this.reviewing.set(false);
-        this.docError.set(err.error?.message || 'Failed to review document.');
+        this.submittingReview.set(false);
+        this.reviewDocError.set(err.error?.message || 'Failed to review document.');
       }
     });
   }

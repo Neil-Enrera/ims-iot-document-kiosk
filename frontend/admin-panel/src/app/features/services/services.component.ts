@@ -2,6 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { Observable, of } from 'rxjs';
 import { ServiceService } from '../../shared/services';
+import { ToastService } from '../../shared/components/toast.service';
 import { Service } from '../../shared/interfaces/api.interfaces';
 import { TableComponent, TableColumn } from '../../shared/components/table.component';
 import { ButtonComponent } from '../../shared/components/button.component';
@@ -133,7 +134,7 @@ export class ServicesComponent implements OnInit {
     { key: 'is_active', label: 'Status', align: 'center', width: '11%' }
   ];
 
-  constructor(private serviceService: ServiceService) {}
+  constructor(private serviceService: ServiceService, private toast: ToastService) {}
 
   ngOnInit() { this.loadServices(); }
 
@@ -190,14 +191,24 @@ export class ServicesComponent implements OnInit {
       next: (res) => {
         const serviceId = res.data.service_id;
         this.handleTemplate(serviceId, data).subscribe({
-          next: () => { this.closeForm(); this.loadServices(); },
-          error: (err) => {
+          next: () => {
             this.saving.set(false);
-            alert(err.error?.message || 'Service saved, but the template could not be uploaded.');
+            this.closeForm();
+            this.toast.success(this.editingService() ? 'Service updated successfully.' : 'Service created successfully.');
+            this.loadServices();
+          },
+          error: () => {
+            this.saving.set(false);
+            this.closeForm();
+            this.toast.warning('Service saved, but the template could not be uploaded.');
+            this.loadServices();
           }
         });
       },
-      error: (err) => { this.saving.set(false); alert(err.error?.message || 'Failed to save service.'); }
+      error: (err) => {
+        this.saving.set(false);
+        this.toast.error(err.error?.message || 'Failed to save service.');
+      }
     });
   }
 
@@ -214,8 +225,15 @@ export class ServicesComponent implements OnInit {
   confirmDelete() {
     if (!this.deletingService()) return;
     this.serviceService.delete(this.deletingService()!.service_id).subscribe({
-      next: () => { this.showDeleteConfirm.set(false); this.deletingService.set(null); this.loadServices(); },
-      error: (err) => { alert(err.error?.message || 'Failed to delete service.'); }
+      next: () => {
+        this.showDeleteConfirm.set(false);
+        this.deletingService.set(null);
+        this.toast.success('Service deleted successfully.');
+        this.loadServices();
+      },
+      error: (err) => {
+        this.toast.error(err.error?.message || 'Failed to delete service.');
+      }
     });
   }
 }
