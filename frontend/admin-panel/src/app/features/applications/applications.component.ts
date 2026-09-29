@@ -675,64 +675,105 @@ interface UploadedRequirement {
                   }
 
                   <!-- Physical RFID Card Registration Status in Application -->
-                  <div class="pt-3 border-t border-green-200/80">
-                    <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500 mb-2">Physical RFID Card Assignment</p>
+                  <div class="pt-3 border-t border-emerald-200/60">
+                    <div class="flex items-center justify-between mb-2.5">
+                      <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5 text-orange-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                          <rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 9.5h8M7 12h8" stroke-linecap="round"/>
+                        </svg>
+                        Physical RFID Card Assignment
+                      </p>
+                      @if (app.card_uid) {
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                          {{ app.rfid_status || 'ACTIVE' }}
+                        </span>
+                      }
+                    </div>
                     
                     @if (app.card_uid) {
-                      <div class="p-3 bg-white border border-emerald-300 rounded-xl space-y-3 shadow-2xs">
-                        <div class="flex flex-wrap items-center justify-between gap-2">
-                          <div class="flex items-center gap-2">
-                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold bg-orange-50 text-orange-800 border border-orange-200">
-                              <svg class="w-3.5 h-3.5 text-orange-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 9.5h8M7 12h8" stroke-linecap="round"/>
+                      <div class="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs space-y-3.5">
+                        <!-- Top Row: Card Info & Actions -->
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <!-- Left: UID Chip & Title -->
+                          <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-orange-50 border border-orange-200/80 text-orange-600 flex items-center justify-center shrink-0 shadow-2xs">
+                              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <rect x="3" y="6" width="18" height="12" rx="2"/>
+                                <path d="M7 10h4M7 14h6" stroke-linecap="round"/>
                               </svg>
-                              {{ app.card_uid }}
-                            </span>
-                            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">
-                              {{ app.rfid_status || 'ACTIVE' }}
-                            </span>
+                            </div>
+                            <div class="min-w-0">
+                              <p class="text-[11px] font-semibold text-slate-400">Card UID</p>
+                              <div class="flex items-center gap-2 mt-0.5">
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono font-bold bg-slate-900 text-amber-300 shadow-2xs tracking-wider">
+                                  {{ app.card_uid }}
+                                </span>
+                              </div>
+                            </div>
                           </div>
-                          <div class="flex items-center gap-2">
+
+                          <!-- Right: Action Buttons -->
+                          <div class="flex items-center flex-wrap gap-2 shrink-0">
+                            <button
+                              type="button"
+                              (click)="openRfidModalForApplication(app)"
+                              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold shadow-2xs transition cursor-pointer"
+                              title="Re-assign or update registered RFID UID"
+                            >
+                              <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                              </svg>
+                              <span>Re-issue Card</span>
+                            </button>
+
                             @if (app.status === 'APPROVED') {
                               <button
                                 type="button"
                                 (click)="markAsReleased(app)"
                                 [disabled]="releasing()"
-                                class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-2xs transition cursor-pointer disabled:opacity-50"
+                                class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-bold shadow-xs hover:shadow transition active:scale-[0.98] cursor-pointer disabled:opacity-50"
                               >
                                 @if (releasing()) {
                                   <div class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                  <span>Releasing...</span>
                                 } @else {
                                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                                   </svg>
+                                  <span>Mark as Released</span>
                                 }
-                                Mark as Released
                               </button>
                             }
-                            <button
-                              type="button"
-                              (click)="openRfidModalForApplication(app)"
-                              class="text-xs text-orange-600 hover:text-orange-800 font-bold underline cursor-pointer"
-                            >
-                              Re-issue / Update Card
-                            </button>
                           </div>
                         </div>
-                        <div class="flex items-center gap-4 text-xs text-slate-500 pt-1 border-t border-slate-100">
-                          @if (app.rfid_issued_date) {
-                            <span>Issued: <strong class="text-slate-700">{{ app.rfid_issued_date | date:'mediumDate' }}</strong></span>
-                          }
-                          @if (app.rfid_expiration_date) {
-                            <span>Expires: <strong class="text-slate-700">{{ app.rfid_expiration_date | date:'mediumDate' }}</strong></span>
-                          }
+
+                        <!-- Bottom Strip: Metadata -->
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-3 border-t border-slate-100 text-xs">
+                          <div class="bg-slate-50/80 rounded-xl p-2.5 border border-slate-100">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wide block">Issued Date</span>
+                            <span class="font-semibold text-slate-800">{{ (app.rfid_issued_date ? (app.rfid_issued_date | date:'mediumDate') : (app.id_issued_at ? (app.id_issued_at | date:'mediumDate') : 'Today')) }}</span>
+                          </div>
+                          <div class="bg-slate-50/80 rounded-xl p-2.5 border border-slate-100">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wide block">Expiration Date</span>
+                            <span class="font-semibold text-slate-800">{{ (app.rfid_expiration_date ? (app.rfid_expiration_date | date:'mediumDate') : (app.id_expiration_date ? (app.id_expiration_date | date:'mediumDate') : '-')) }}</span>
+                          </div>
+                          <div class="col-span-2 sm:col-span-1 bg-slate-50/80 rounded-xl p-2.5 border border-slate-100 flex items-center justify-between">
+                            <div>
+                              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wide block">Kiosk Access</span>
+                              <span class="font-bold text-emerald-700 flex items-center gap-1 mt-0.5">
+                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                                Enabled
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     } @else {
-                      <div class="p-3 bg-orange-50/70 border border-orange-200 rounded-xl flex items-center justify-between gap-3 shadow-2xs">
-                        <div class="flex items-center gap-2.5 min-w-0">
-                          <div class="w-8 h-8 rounded-lg bg-orange-500 text-white flex items-center justify-center shrink-0">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <div class="p-4 bg-orange-50/70 border border-orange-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                        <div class="flex items-center gap-3 min-w-0">
+                          <div class="w-10 h-10 rounded-xl bg-orange-500 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                               <rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 9.5h8M7 12h8" stroke-linecap="round"/>
                             </svg>
                           </div>
@@ -744,12 +785,12 @@ interface UploadedRequirement {
                         <button
                           type="button"
                           (click)="openRfidModalForApplication(app)"
-                          class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold shadow-xs transition shrink-0 cursor-pointer"
+                          class="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold shadow-xs transition shrink-0 cursor-pointer"
                         >
                           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
                           </svg>
-                          Assign RFID Card
+                          <span>Assign RFID Card</span>
                         </button>
                       </div>
                     }
