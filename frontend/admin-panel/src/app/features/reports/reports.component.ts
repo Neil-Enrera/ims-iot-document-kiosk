@@ -40,6 +40,18 @@ import { ButtonComponent } from '../../shared/components/button.component';
               </svg>
               Generate
             </button>
+            @if (startDate() || endDate()) {
+              <button
+                type="button"
+                (click)="resetFilters()"
+                class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 border border-slate-300 bg-white hover:bg-slate-50 text-slate-600 font-semibold text-sm rounded-xl shadow-xs transition cursor-pointer"
+                title="Clear date filters and view all records">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+                Clear
+              </button>
+            }
             <button
               type="button"
               (click)="exportPdf()"
@@ -113,19 +125,6 @@ import { ButtonComponent } from '../../shared/components/button.component';
             </span>
           </ng-template>
         </app-table>
-
-        <!-- Bottom Total Row -->
-        @if (reportData().length > 0) {
-          <div class="mt-4 p-3 bg-orange-50/60 border border-orange-200/80 rounded-xl flex items-center justify-between text-sm">
-            <div class="flex items-center gap-2">
-              <span class="font-bold text-slate-900">Total:</span>
-              <span class="font-bold text-orange-700">PHP {{ formatAmount(totalFees) }}</span>
-            </div>
-            <div class="font-semibold text-slate-600">
-              {{ reportData().length }} request(s)
-            </div>
-          </div>
-        }
       </app-card>
     </div>
   `
@@ -153,10 +152,8 @@ export class ReportsComponent implements OnInit {
   ) { }
 
   ngOnInit() {
-    const today = new Date();
-    const isoDate = today.toISOString().split('T')[0];
-    this.startDate.set(isoDate);
-    this.endDate.set(isoDate);
+    this.startDate.set('');
+    this.endDate.set('');
     this.loadReport();
   }
 
@@ -168,9 +165,19 @@ export class ReportsComponent implements OnInit {
     this.endDate.set(val);
   }
 
+  resetFilters() {
+    this.startDate.set('');
+    this.endDate.set('');
+    this.loadReport();
+  }
+
   loadReport() {
     this.loading.set(true);
-    this.reportService.getRequests({ dateFrom: this.startDate(), dateTo: this.endDate() }).subscribe({
+    const params: any = { limit: 5000 };
+    if (this.startDate()) params.dateFrom = this.startDate();
+    if (this.endDate()) params.dateTo = this.endDate();
+
+    this.reportService.getRequests(params).subscribe({
       next: (res: any) => {
         this.reportData.set(res.data || []);
         this.loading.set(false);
