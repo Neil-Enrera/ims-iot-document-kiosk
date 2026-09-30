@@ -13,6 +13,18 @@
 | 07 - Deployment | 10 | 1 | 9 | 0 |
 | **Total** | **85** | **56** | **19** | **0** |
 
+> - **ESP32-CAM and Built-in Camera Lifecycle & Reconnection Overhaul** (`frontend/kiosk-app/src/app/features/kiosk/kiosk.component.ts` L1669, L3548, L5105-5110, L5220-5225, L7525-7970, L8190-8205; `hardware/kiosk-server/index.js` L452-488, L526-565):
+>   - **Root Cause Resolution**:
+>     - Resolved connection socket lingering on the ESP32-CAM MJPEG stream proxy by adding explicit connection termination (`req.on('close')`, `res.on('close')`, `proxyRes.destroy()`, and `agent: false` on HTTP/HTTPS proxies in `hardware/kiosk-server/index.js`).
+>     - Fixed frontend stream connection lingering by explicitly clearing stream `img.src = ''` and `removeAttribute('src')` (`clearEsp32ImageElements()`) when transitioning states, capturing photos, retaking photos, or unmounting.
+>     - Fixed built-in camera track leak by stopping all `MediaStreamTrack`s (`track.stop()`, `track.enabled = false`), setting video element `srcObject = null`, and pausing media pipelines upon switching cameras, capturing, or navigating.
+>   - **Camera Switching & Retake Resilience**:
+>     - Rebuilt `startCamera()`, `stopCamera()`, `switchCameraMode()`, `retakePhoto()`, and `retryPhotoCamera()` with non-blocking lifecycle delays (120-150ms) to allow Angular DOM elements to mount before attaching streams.
+>     - Implemented automatic 3-stage stream reconnection backoff on transient network errors before displaying offline warnings, preventing premature unmounting of live preview elements.
+>     - Added instant zero-latency canvas frame capture directly from active cross-origin stream element with automatic 90° clockwise portrait orientation correction.
+>     - Ensured back navigation (`backStep()`) and component destruction (`ngOnDestroy()`) cleanly release all camera hardware resources.
+>   - **Verification**: Verified `npm run build:kiosk` compiles successfully with 0 errors. All four lifecycle scenarios (Capture &rarr; Retake &rarr; Capture; ESP32 &rarr; Webcam &rarr; ESP32; Webcam &rarr; ESP32 &rarr; Webcam; Leave &rarr; Re-enter) operate without page refresh or ESP32-CAM hardware RST.
+>
 > - **Admin Barangay ID Application RFID Table Column Removal, Persistent Card UID Loading & Mark as Released Workflow** (`applications.component.ts`, `application.repository.js`, `application.service.js`, `application.controller.js`, `application.routes.js`, `application.validation.js`, `api.interfaces.ts`, `shared/services/index.ts`, `database/migrations/032-add-released-status-to-barangay-id-applications.sql`):
 >   - **Removed RFID CARD Column**: Removed the "RFID CARD" column completely from the Barangay ID Application table (`applications.component.ts` L1323-1330) and removed its associated cell template.
 >   - **Persistent Card UID Loading**:

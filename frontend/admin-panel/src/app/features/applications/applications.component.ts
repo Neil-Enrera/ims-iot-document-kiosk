@@ -706,7 +706,10 @@ interface UploadedRequirement {
                             <div class="min-w-0">
                               <p class="text-[11px] font-semibold text-slate-400">Card UID</p>
                               <div class="flex items-center gap-2 mt-0.5">
-                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono font-bold bg-slate-900 text-amber-300 shadow-2xs tracking-wider">
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-mono font-bold bg-orange-50 text-orange-800 border border-orange-200/90 shadow-2xs tracking-wider">
+                                  <svg class="w-3.5 h-3.5 text-orange-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 9.5h8M7 12h8" stroke-linecap="round"/>
+                                  </svg>
                                   {{ app.card_uid }}
                                 </span>
                               </div>

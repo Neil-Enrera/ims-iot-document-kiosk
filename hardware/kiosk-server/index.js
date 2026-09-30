@@ -453,10 +453,14 @@ app.post('/api/arduino/rfid/verify', async (req, res) => {
 const ESP32_CAM_IP = process.env.ESP32_CAM_IP || '192.168.100.200';
 
 app.get('/esp32/stream', (req, res) => {
-  const proxyReq = http.get(`http://${ESP32_CAM_IP}/stream`, (proxyRes) => {
+  let proxyResRef = null;
+  const proxyReq = http.get(`http://${ESP32_CAM_IP}/stream`, { agent: false, timeout: 15000 }, (proxyRes) => {
+    proxyResRef = proxyRes;
     const headers = {
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
+      'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+      'Connection': 'close',
       'Access-Control-Allow-Origin': '*'
     };
     if (proxyRes.headers['content-type']) {
@@ -464,27 +468,68 @@ app.get('/esp32/stream', (req, res) => {
     }
     res.writeHead(200, headers);
     proxyRes.pipe(res);
+
+    proxyRes.on('error', () => {
+      try { proxyRes.destroy(); } catch {}
+      try { proxyReq.destroy(); } catch {}
+    });
   });
+
+  const cleanup = () => {
+    if (proxyResRef) {
+      try { proxyResRef.destroy(); } catch {}
+    }
+    try { proxyReq.destroy(); } catch {}
+  };
+
   proxyReq.on('error', (err) => {
     if (!res.headersSent) res.status(502).json({ error: 'ESP32-CAM unreachable' });
+    cleanup();
   });
-  req.on('close', () => proxyReq.destroy());
+  proxyReq.on('timeout', () => {
+    cleanup();
+    if (!res.headersSent) res.status(504).json({ error: 'ESP32-CAM stream timeout' });
+  });
+
+  req.on('close', cleanup);
+  res.on('close', cleanup);
 });
 
 // ESP32-CAM single capture proxy (HTTP port 3001)
 app.get('/esp32/capture', (req, res) => {
-  const proxyReq = http.get(`http://${ESP32_CAM_IP}/capture`, (proxyRes) => {
+  let proxyResRef = null;
+  const proxyReq = http.get(`http://${ESP32_CAM_IP}/capture`, { agent: false, timeout: 8000 }, (proxyRes) => {
+    proxyResRef = proxyRes;
     const contentType = proxyRes.headers['content-type'] || 'image/jpeg';
     res.writeHead(200, {
       'Content-Type': contentType,
-      'Cache-Control': 'no-cache',
+      'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+      'Connection': 'close',
       'Access-Control-Allow-Origin': '*'
     });
     proxyRes.pipe(res);
   });
+
+  const cleanup = () => {
+    if (proxyResRef) {
+      try { proxyResRef.destroy(); } catch {}
+    }
+    try { proxyReq.destroy(); } catch {}
+  };
+
   proxyReq.on('error', (err) => {
     if (!res.headersSent) res.status(502).json({ error: 'ESP32-CAM unreachable' });
+    cleanup();
   });
+  proxyReq.on('timeout', () => {
+    cleanup();
+    if (!res.headersSent) res.status(504).json({ error: 'ESP32-CAM capture timeout' });
+  });
+
+  req.on('close', cleanup);
+  res.on('close', cleanup);
 });
 
 // ESP32-CAM photo upload endpoint (Outbound push from ESP32)
@@ -526,10 +571,14 @@ if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
   // ESP32-CAM MJPEG stream proxy
   httpsApp.get('/esp32/stream', (req, res) => {
     console.log('[ESP32 Proxy] Stream request');
-    const proxyReq = http.get(`http://${ESP32_CAM_IP}/stream`, (proxyRes) => {
+    let proxyResRef = null;
+    const proxyReq = http.get(`http://${ESP32_CAM_IP}/stream`, { agent: false, timeout: 15000 }, (proxyRes) => {
+      proxyResRef = proxyRes;
       const headers = {
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
+        'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'Connection': 'close',
         'Access-Control-Allow-Origin': '*'
       };
       if (proxyRes.headers['content-type']) {
@@ -537,30 +586,71 @@ if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
       }
       res.writeHead(200, headers);
       proxyRes.pipe(res);
+
+      proxyRes.on('error', () => {
+        try { proxyRes.destroy(); } catch {}
+        try { proxyReq.destroy(); } catch {}
+      });
     });
+
+    const cleanup = () => {
+      if (proxyResRef) {
+        try { proxyResRef.destroy(); } catch {}
+      }
+      try { proxyReq.destroy(); } catch {}
+    };
+
     proxyReq.on('error', (err) => {
       console.error('[ESP32 Proxy] Stream error:', err.message);
       if (!res.headersSent) res.status(502).json({ error: 'ESP32-CAM unreachable' });
+      cleanup();
     });
-    req.on('close', () => proxyReq.destroy());
+    proxyReq.on('timeout', () => {
+      cleanup();
+      if (!res.headersSent) res.status(504).json({ error: 'ESP32-CAM stream timeout' });
+    });
+
+    req.on('close', cleanup);
+    res.on('close', cleanup);
   });
 
   // ESP32-CAM single capture proxy
   httpsApp.get('/esp32/capture', (req, res) => {
     console.log('[ESP32 Proxy] Capture request');
-    const proxyReq = http.get(`http://${ESP32_CAM_IP}/capture`, (proxyRes) => {
+    let proxyResRef = null;
+    const proxyReq = http.get(`http://${ESP32_CAM_IP}/capture`, { agent: false, timeout: 8000 }, (proxyRes) => {
+      proxyResRef = proxyRes;
       const contentType = proxyRes.headers['content-type'] || 'image/jpeg';
       res.writeHead(200, {
         'Content-Type': contentType,
-        'Cache-Control': 'no-cache',
+        'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'Connection': 'close',
         'Access-Control-Allow-Origin': '*'
       });
       proxyRes.pipe(res);
     });
+
+    const cleanup = () => {
+      if (proxyResRef) {
+        try { proxyResRef.destroy(); } catch {}
+      }
+      try { proxyReq.destroy(); } catch {}
+    };
+
     proxyReq.on('error', (err) => {
       console.error('[ESP32 Proxy] Capture error:', err.message);
       if (!res.headersSent) res.status(502).json({ error: 'ESP32-CAM unreachable' });
+      cleanup();
     });
+    proxyReq.on('timeout', () => {
+      cleanup();
+      if (!res.headersSent) res.status(504).json({ error: 'ESP32-CAM capture timeout' });
+    });
+
+    req.on('close', cleanup);
+    res.on('close', cleanup);
   });
 
   // ESP32-CAM status check proxy

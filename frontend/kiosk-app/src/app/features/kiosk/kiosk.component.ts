@@ -1667,7 +1667,9 @@ export type BarangayStep =
                               <!-- Camera element: ESP32-CAM MJPEG Stream or Video -->
                               @if (cameraMode() === 'esp32') {
                                 <img #esp32StreamEl
+                                     id="doc-esp32-stream-img"
                                      [src]="esp32StreamUrl()"
+                                     crossOrigin="anonymous"
                                      (load)="onEsp32StreamLoad()"
                                      (error)="onEsp32StreamError()"
                                      class="absolute inset-0 w-full h-full object-cover select-none pointer-events-none rotate-90 scale-[1.35]"
@@ -5103,6 +5105,9 @@ export class KioskComponent implements OnInit, OnDestroy {
   };
 
   private stream: MediaStream | null = null;
+  private esp32RetryCount = 0;
+  private esp32RetryTimer: any = null;
+  private cameraInitTimer: any = null;
   private idleTimer: any;
   private searchDebounce: any;
   private rfidScanSub: any = null;
@@ -5216,6 +5221,8 @@ export class KioskComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.stopCamera();
+    if (this.cameraInitTimer) clearTimeout(this.cameraInitTimer);
+    if (this.esp32RetryTimer) clearTimeout(this.esp32RetryTimer);
     this.rfidScanService.disconnect();
     if (this.rfidScanSub) this.rfidScanSub.unsubscribe();
     if (this.rfidConnectionSub) this.rfidConnectionSub.unsubscribe();
@@ -7518,13 +7525,38 @@ export class KioskComponent implements OnInit, OnDestroy {
   // CAMERA
   // ============================================================
 
+  private clearEsp32ImageElements() {
+    const ids = ['kiosk-esp32-stream-img', 'doc-esp32-stream-img'];
+    ids.forEach(id => {
+      const el = document.getElementById(id) as HTMLImageElement;
+      if (el) {
+        try {
+          el.src = '';
+          el.removeAttribute('src');
+        } catch {}
+      }
+    });
+    if (this.esp32StreamEl?.nativeElement) {
+      try {
+        this.esp32StreamEl.nativeElement.src = '';
+        this.esp32StreamEl.nativeElement.removeAttribute('src');
+      } catch {}
+    }
+  }
+
   startCamera(target?: HTMLVideoElement) {
+    if (this.cameraInitTimer) {
+      clearTimeout(this.cameraInitTimer);
+      this.cameraInitTimer = null;
+    }
+
     if (this.cameraMode() === 'esp32') {
-      const baseStreamUrl = environment.esp32CamStreamUrl;
-      this.esp32StreamUrl.set(`${baseStreamUrl}?t=${Date.now()}`);
-      this.cameraReady.set(true);
+      this.cameraReady.set(false);
       this.esp32Error.set(false);
       this.errorMessage.set('');
+      const baseStreamUrl = environment.esp32CamStreamUrl;
+      const url = `${baseStreamUrl}${baseStreamUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
+      this.esp32StreamUrl.set(url);
       return;
     }
 
@@ -7532,6 +7564,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     if (this.stream) {
       if (el && el.srcObject !== this.stream) {
         el.srcObject = this.stream;
+        el.play().catch(() => {});
         this.cameraReady.set(true);
       }
       return;
@@ -7551,7 +7584,10 @@ export class KioskComponent implements OnInit, OnDestroy {
         .then(stream => {
           this.stream = stream;
           const currentEl = target || this.videoEl?.nativeElement || this.inlineVideoEl?.nativeElement;
-          if (currentEl) currentEl.srcObject = stream;
+          if (currentEl) {
+            currentEl.srcObject = stream;
+            currentEl.play().catch(() => {});
+          }
           this.errorMessage.set('');
           this.cameraReady.set(true);
           return stream;
@@ -7583,22 +7619,45 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.cameraReady.set(true);
     this.esp32Error.set(false);
     this.errorMessage.set('');
+    this.esp32RetryCount = 0;
+    if (this.esp32RetryTimer) {
+      clearTimeout(this.esp32RetryTimer);
+      this.esp32RetryTimer = null;
+    }
   }
 
   onEsp32StreamError() {
     if (!this.esp32StreamUrl() || this.submitting() || this.capturedPhoto()) {
       return;
     }
-    console.warn('[ESP32-CAM] Stream error or camera offline');
+    console.warn(`[ESP32-CAM] Stream error / reconnecting (attempt ${this.esp32RetryCount + 1}/3)`);
+    if (this.esp32RetryCount < 3) {
+      this.esp32RetryCount++;
+      if (this.esp32RetryTimer) clearTimeout(this.esp32RetryTimer);
+      this.esp32RetryTimer = setTimeout(() => {
+        if (this.cameraMode() === 'esp32' && !this.capturedPhoto()) {
+          const baseStreamUrl = environment.esp32CamStreamUrl;
+          this.esp32StreamUrl.set(`${baseStreamUrl}${baseStreamUrl.includes('?') ? '&' : '?'}t=${Date.now()}`);
+        }
+      }, 350);
+      return;
+    }
     this.esp32Error.set(true);
     this.cameraReady.set(false);
   }
 
   switchCameraMode(mode: 'esp32' | 'webcam') {
+    if (this.cameraMode() === mode) return;
     this.stopCamera();
     this.cameraMode.set(mode);
+    this.esp32Error.set(false);
     this.errorMessage.set('');
-    this.startCamera();
+    this.cameraReady.set(false);
+    this.esp32RetryCount = 0;
+    if (this.cameraInitTimer) clearTimeout(this.cameraInitTimer);
+    this.cameraInitTimer = setTimeout(() => {
+      this.startCamera();
+    }, 120);
     this.saveState();
   }
 
@@ -7624,7 +7683,10 @@ export class KioskComponent implements OnInit, OnDestroy {
         .then(stream => {
           this.stream = stream;
           const el = target || this.videoEl?.nativeElement || this.inlineVideoEl?.nativeElement;
-          if (el) el.srcObject = stream;
+          if (el) {
+            el.srcObject = stream;
+            el.play().catch(() => {});
+          }
           this.errorMessage.set('');
           this.cameraReady.set(true);
           return stream;
@@ -7642,19 +7704,56 @@ export class KioskComponent implements OnInit, OnDestroy {
   }
 
   stopCamera() {
+    if (this.cameraInitTimer) {
+      clearTimeout(this.cameraInitTimer);
+      this.cameraInitTimer = null;
+    }
+    if (this.esp32RetryTimer) {
+      clearTimeout(this.esp32RetryTimer);
+      this.esp32RetryTimer = null;
+    }
     if (this.stream) {
-      this.stream.getTracks().forEach(t => t.stop());
+      try {
+        this.stream.getTracks().forEach(track => {
+          track.stop();
+          track.enabled = false;
+        });
+      } catch (e) {
+        console.warn('[Camera] Error stopping stream tracks:', e);
+      }
       this.stream = null;
     }
+    const v1 = this.videoEl?.nativeElement;
+    if (v1) {
+      try {
+        v1.srcObject = null;
+        v1.pause();
+        v1.removeAttribute('src');
+        v1.load();
+      } catch {}
+    }
+    const v2 = this.inlineVideoEl?.nativeElement;
+    if (v2) {
+      try {
+        v2.srcObject = null;
+        v2.pause();
+        v2.removeAttribute('src');
+        v2.load();
+      } catch {}
+    }
+    this.clearEsp32ImageElements();
     this.esp32StreamUrl.set('');
     this.cameraReady.set(false);
   }
 
   retryPhotoCamera() {
+    this.esp32RetryCount = 0;
     this.errorMessage.set('');
     this.cameraReady.set(false);
     this.esp32Error.set(false);
-    setTimeout(() => this.startCamera(), 100);
+    this.stopCamera();
+    if (this.cameraInitTimer) clearTimeout(this.cameraInitTimer);
+    this.cameraInitTimer = setTimeout(() => this.startCamera(), 150);
   }
 
   private drawFrame(el: any, rotate90: boolean = false): string {
@@ -7775,7 +7874,7 @@ export class KioskComponent implements OnInit, OnDestroy {
   private async handleCapturedPhoto(dataUrl: string) {
     this.capturedPhoto.set(dataUrl);
     this.errorMessage.set('');
-    this.esp32StreamUrl.set(''); // Free socket while photo preview is shown
+    this.stopCamera(); // Free socket and stop tracks while photo preview is shown
     this.submitting.set(false);
     this.saveState();
 
@@ -7812,7 +7911,7 @@ export class KioskComponent implements OnInit, OnDestroy {
       this.submitting.set(true);
 
       // 1. Instant capture directly from the live visible stream element on canvas (0ms latency, 100% reliable)
-      const streamImgEl = document.getElementById('kiosk-esp32-stream-img') as HTMLImageElement;
+      const streamImgEl = (document.getElementById('kiosk-esp32-stream-img') || document.getElementById('doc-esp32-stream-img') || this.esp32StreamEl?.nativeElement) as HTMLImageElement;
       if (streamImgEl && streamImgEl.complete && streamImgEl.naturalWidth > 0) {
         try {
           const drawnDataUrl = this.drawFrame(streamImgEl, true);
@@ -7827,7 +7926,7 @@ export class KioskComponent implements OnInit, OnDestroy {
       }
 
       // 2. Fetch fresh snapshot from /capture
-      this.esp32StreamUrl.set('');
+      this.stopCamera();
       await new Promise((resolve) => setTimeout(resolve, 80));
 
       const targetCaptureUrl = `${this.esp32CaptureUrl()}${this.esp32CaptureUrl().includes('?') ? '&' : '?'}t=${Date.now()}`;
@@ -7946,17 +8045,17 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.capturedPhoto.set(null);
     this.photoValid.set(false);
     this.errorMessage.set('');
+    this.esp32Error.set(false);
     this.photoQualityError.set('');
+    this.cameraReady.set(false);
+    this.esp32RetryCount = 0;
     if (this.photoQualityErrorTimer) {
       clearTimeout(this.photoQualityErrorTimer);
       this.photoQualityErrorTimer = null;
     }
-    if (this.cameraMode() === 'esp32') {
-      this.esp32StreamUrl.set(`${environment.esp32CamStreamUrl}?t=${Date.now()}`);
-      this.cameraReady.set(true);
-    } else {
-      setTimeout(() => this.startCamera(), 100);
-    }
+    this.stopCamera();
+    if (this.cameraInitTimer) clearTimeout(this.cameraInitTimer);
+    this.cameraInitTimer = setTimeout(() => this.startCamera(), 120);
     this.saveState();
   }
 
@@ -8091,6 +8190,12 @@ export class KioskComponent implements OnInit, OnDestroy {
         this.barangayStep.set('photo');
         this.capturedPhoto.set(null);
         setTimeout(() => this.startCamera(), 100);
+        this.saveState();
+        return;
+      }
+      if (step === 'photo') {
+        this.stopCamera();
+        this.barangayStep.set('form');
         this.saveState();
         return;
       }
