@@ -636,17 +636,11 @@ export type BarangayStep =
                   @for (service of services(); track service.service_id) {
                     <button type="button"
                             (click)="toggleService(service)"
-                            [attr.aria-disabled]="isServiceDisabled(service)"
                             [class.border-[#F97316]]="isServiceSelected(service)"
                             [class.bg-[#FFF7ED]]="isServiceSelected(service)"
-                            [class.opacity-45]="isServiceDisabled(service)"
-                            [class.bg-slate-50]="isServiceDisabled(service)"
-                            [class.border-slate-200]="isServiceDisabled(service)"
-                            [class.cursor-not-allowed]="isServiceDisabled(service)"
                             class="w-full text-left flex items-center gap-4 sm:gap-5 rounded-[18px] border-2 border-[#E5E7EB] bg-white shadow-[0_2px_14px_rgba(15,23,42,0.07)] px-4 sm:px-6 py-4 sm:py-5 transition-all duration-150 hover:border-[#F97316]/50 hover:bg-[#FFF7ED]/40 hover:shadow-[0_4px_18px_rgba(249,115,22,0.12)] active:border-[#F97316] active:bg-[#FFF7ED] active:scale-[0.995] focus:outline-none focus:ring-4 focus:ring-[#F97316]/30 [@media(max-height:880px)]:py-3">
                       <!-- Left: icon in a light-orange rounded square -->
                       <div class="shrink-0 w-[56px] h-[56px] sm:w-[64px] sm:h-[64px] rounded-[14px] sm:rounded-[16px] bg-[#FFF7ED] border border-[#F97316]/15 flex items-center justify-center text-[#F97316] [@media(max-height:880px)]:w-[52px] [@media(max-height:880px)]:h-[52px]"
-                           [class.grayscale]="isServiceDisabled(service)"
                            aria-hidden="true">
                         <svg class="w-8 h-8 sm:w-9 sm:h-9" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                           <path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z" stroke-linecap="round" stroke-linejoin="round"/>
@@ -658,11 +652,6 @@ export type BarangayStep =
                       <div class="flex-1 min-w-0 flex flex-col justify-center">
                         <div class="flex items-center gap-2 flex-wrap">
                           <h2 class="text-[clamp(1.125rem,1.4vw,1.5rem)] font-bold text-[#0F172A] leading-snug tracking-tight uppercase break-words">{{ service.service_name }}</h2>
-                          @if (isServiceDisabled(service)) {
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-600 uppercase tracking-wide">
-                              {{ t('doc.services.limitReachedBadge') }}
-                            </span>
-                          }
                         </div>
                         @if (service.description) {
                           <p class="text-[clamp(0.875rem,1vw,0.9375rem)] font-medium text-[#64748B] leading-snug mt-0.5 sm:mt-1 line-clamp-3">{{ service.description }}</p>
@@ -686,12 +675,6 @@ export type BarangayStep =
                               <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                             </svg>
                           </div>
-                        } @else if (isServiceDisabled(service)) {
-                          <div class="shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-200 flex items-center justify-center text-slate-400" aria-hidden="true">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
-                            </svg>
-                          </div>
                         } @else {
                           <svg class="w-7 h-7 sm:w-8 sm:h-8 text-[#F97316] shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
@@ -703,23 +686,27 @@ export type BarangayStep =
                 </div>
               </main>
 
-              <!-- Multi-select action bar -->
+              <!-- Single-service action bar -->
               <div class="relative z-10 shrink-0 px-4 sm:px-8 pb-1 pt-0.5">
                 <div class="mx-auto w-full max-w-[980px] flex flex-wrap items-center gap-3 bg-white/90 backdrop-blur-sm border border-[#E5E7EB] rounded-2xl shadow-sm px-4 sm:px-5 py-2.5">
-                  <p class="flex-1 min-w-[160px] text-[13px] sm:text-[14px] font-semibold text-[#0F172A]">
-                    @if (selectedServiceCount() > 0) {
-                      {{ selectedServiceCount() }}/2 {{ selectedServiceCount() === 1 ? t('doc.services.selected') : t('doc.services.selectedPlural') }} ·
-                      @if (selectedTotalFee() > 0) {
-                        ₱{{ formatServiceFee(selectedTotalFee()) }}
-                      } @else {
-                        {{ t('doc.services.free') }}
-                      }
+                  <div class="flex-1 min-w-[160px]">
+                    @if (selectedService()) {
+                      <p class="text-[13px] sm:text-[14px] font-semibold text-[#0F172A] truncate">
+                        <span class="font-bold text-[#F97316]">{{ selectedService()!.service_name }}</span> ·
+                        @if (selectedTotalFee() > 0) {
+                          ₱{{ formatServiceFee(selectedTotalFee()) }}
+                        } @else {
+                          {{ t('doc.services.free') }}
+                        }
+                      </p>
                     } @else {
-                      {{ t('doc.services.hint') }}
+                      <p class="text-[13px] sm:text-[14px] font-semibold text-[#64748B]">
+                        {{ t('doc.services.hint') }}
+                      </p>
                     }
-                  </p>
+                  </div>
                   <button (click)="proceedFromServices()"
-                          [disabled]="selectedServiceCount() === 0"
+                          [disabled]="!selectedService()"
                           class="flex items-center justify-center gap-2 min-h-[48px] px-6 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.98] text-white text-base font-bold shadow-[0_4px_14px_rgba(249,115,22,0.35)] transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-[#F97316]/40 disabled:opacity-50 disabled:cursor-not-allowed">
                     {{ t('common.continue') }}
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
@@ -2342,16 +2329,7 @@ export type BarangayStep =
                     </div>
 
                     <div class="mt-2.5 mx-auto max-w-[720px] rounded-[16px] border-2 border-[#F97316]/40 bg-[#FFF7ED] px-5 py-2.5 sm:py-3">
-                      @if (requestNumbers().length > 1) {
-                        <p class="text-[13px] sm:text-sm font-bold tracking-[0.14em] text-[#F97316] uppercase mb-1.5">{{ t('doc.success.yourRequestNumbers') }}</p>
-                        <div class="flex flex-wrap items-center justify-center gap-2">
-                          @for (num of requestNumbers(); track num) {
-                            <span class="px-3 py-1 rounded-lg bg-white border border-[#F97316]/30 text-[clamp(1.125rem,1.6vw,1.75rem)] font-bold tracking-wide text-[#0F172A] leading-tight">{{ num }}</span>
-                          }
-                        </div>
-                      } @else {
-                        <p class="text-[clamp(1.75rem,2.6vw,2.75rem)] font-bold tracking-wide text-[#0F172A] break-all leading-tight">{{ requestNumber() }}</p>
-                      }
+                      <p class="text-[clamp(1.75rem,2.6vw,2.75rem)] font-bold tracking-wide text-[#0F172A] break-all leading-tight">{{ requestNumber() }}</p>
                     </div>
 
                     <div class="flex items-center justify-center gap-2 mt-2.5">
@@ -5679,9 +5657,9 @@ export class KioskComponent implements OnInit, OnDestroy {
 
   toggleService(service: Service) {
     const current = this.selectedServices();
-    const exists = current.some(s => s.service_id === service.service_id);
-    if (exists) {
-      this.selectedServices.set(current.filter(s => s.service_id !== service.service_id));
+    const isSelected = current.some(s => s.service_id === service.service_id);
+    if (isSelected) {
+      this.selectedServices.set([]);
       this.serviceForms.update(m => {
         const copy = { ...m };
         delete copy[service.service_id];
@@ -5692,15 +5670,19 @@ export class KioskComponent implements OnInit, OnDestroy {
         delete copy[service.service_id];
         return copy;
       });
-      if (this.serviceError()) this.serviceError.set('');
     } else {
-      if (current.length >= 2) {
-        this.serviceError.set(this.t('doc.services.maxLimitReached'));
-        return;
-      }
-      this.selectedServices.set([...current, service]);
-      if (this.serviceError()) this.serviceError.set('');
+      this.selectedServices.set([service]);
+      this.serviceIndex.set(0);
+      this.serviceForms.update(m => {
+        const existingForm = m[service.service_id] ?? {};
+        return { [service.service_id]: existingForm };
+      });
+      this.servicePhotos.update(m => {
+        const existingPhoto = m[service.service_id] ?? '';
+        return { [service.service_id]: existingPhoto };
+      });
     }
+    if (this.serviceError()) this.serviceError.set('');
     this.saveState();
   }
 
@@ -5708,8 +5690,8 @@ export class KioskComponent implements OnInit, OnDestroy {
     return this.selectedServices().some(s => s.service_id === service.service_id);
   }
 
-  isServiceDisabled(service: Service): boolean {
-    return !this.isServiceSelected(service) && this.selectedServices().length >= 2;
+  isServiceDisabled(_service: Service): boolean {
+    return false;
   }
 
   selectedServiceCount(): number {
@@ -5717,7 +5699,8 @@ export class KioskComponent implements OnInit, OnDestroy {
   }
 
   selectedTotalFee(): number {
-    return this.selectedServices().reduce((sum, s) => sum + (Number(s.processing_fee) || 0), 0);
+    const svc = this.selectedService();
+    return svc ? (Number(svc.processing_fee) || 0) : 0;
   }
 
   proceedFromServices() {
@@ -6121,37 +6104,10 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.servicePhotos.update(m => ({ ...m, [svc.service_id]: this.capturedPhoto() ?? '' }));
   }
 
-  // After a service's form (+ photo) is done, move to the next selected service
-  // or land on the review step when all services are filled.
+  // After service form (+ photo) is done, advance directly to the review step.
   private advanceOrReview() {
-    const idx = this.serviceIndex();
-    if (idx + 1 < this.selectedServices().length) {
-      this.serviceIndex.set(idx + 1);
-      this.reusedRequestInfo.set(null);
-      const nextSvc = this.selectedService();
-      if (this.resident() && this.rfidCard() && nextSvc) {
-        this.checkingPreviousRequests.set(true);
-        this.kioskService.getPreviousRequestsForService(this.resident()!.resident_id, nextSvc.service_id).subscribe({
-          next: (res) => {
-            this.checkingPreviousRequests.set(false);
-            if (res.success && res.data && res.data.length > 0) {
-              this.previousRequests.set(res.data);
-              this.showRequestAgainModal.set(true);
-            } else {
-              this.continueToRequirementsFresh();
-            }
-          },
-          error: () => {
-            this.checkingPreviousRequests.set(false);
-            this.continueToRequirementsFresh();
-          }
-        });
-      } else {
-        this.continueToRequirementsFresh();
-      }
-    } else {
-      this.currentStep.set('review');
-    }
+    this.serviceIndex.set(0);
+    this.currentStep.set('review');
     this.resetIdleTimer();
     this.saveState();
   }
@@ -8314,7 +8270,8 @@ export class KioskComponent implements OnInit, OnDestroy {
   submitRequest() {
     if (this.submitting()) return; // re-entry guard: never double-submit
     const selected = this.selectedServices();
-    if (selected.length === 0) {
+    const singleSvc = selected[0];
+    if (!singleSvc) {
       this.errorMessage.set(this.t('err.missingService'));
       return;
     }
@@ -8323,17 +8280,23 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.errorMessage.set('');
     if (!this.submissionKey) this.submissionKey = this.newIdempotencyKey();
 
-    // Capture the last active service's in-progress values before building the payload.
+    // Capture the active service's in-progress values before building the payload.
     this.stashActiveForm();
 
-    const services = selected.map(svc => ({
-      service_id: svc.service_id,
-      form_data: this.serviceForms()[svc.service_id] ?? {},
-      photo: this.servicePhotos()[svc.service_id] || undefined
-    }));
+    const singleFormData = this.serviceForms()[singleSvc.service_id] ?? {};
+    const singlePhoto = this.servicePhotos()[singleSvc.service_id] || undefined;
+
+    const services = [{
+      service_id: singleSvc.service_id,
+      form_data: singleFormData,
+      photo: singlePhoto
+    }];
 
     const resident = this.resident();
     const data: any = {
+      service_id: singleSvc.service_id,
+      form_data: singleFormData,
+      photo: singlePhoto,
       services,
       idempotency_key: this.submissionKey
     };
@@ -8377,10 +8340,9 @@ export class KioskComponent implements OnInit, OnDestroy {
 
     this.kioskService.createRequest(data).subscribe({
       next: (result: any) => {
-        // Same key means only one request row exists (server is idempotent).
-        const requests = result?.data?.requests || [];
-        this.requestNumbers.set(requests.map((r: any) => r.request_number).filter(Boolean));
-        this.requestNumber.set(result?.data?.request_number || requests[0]?.request_number || 'N/A');
+        const singleNumber = result?.data?.request_number || result?.data?.requests?.[0]?.request_number || 'N/A';
+        this.requestNumbers.set([singleNumber]);
+        this.requestNumber.set(singleNumber);
         this.currentStep.set('success');
         this.submitting.set(false);
         this.submissionKey = ''; // done: next request is a fresh submission
