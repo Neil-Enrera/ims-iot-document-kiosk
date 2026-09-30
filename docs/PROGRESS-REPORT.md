@@ -13,6 +13,12 @@
 | 07 - Deployment | 10 | 1 | 9 | 0 |
 | **Total** | **85** | **56** | **19** | **0** |
 
+> - **Scan Barangay ID Screen Button Update** (`frontend/kiosk-app/src/app/features/kiosk/kiosk.component.ts` L320-330; `frontend/kiosk-app/src/app/i18n/en.ts` L45; `frontend/kiosk-app/src/app/i18n/fil.ts` L38):
+>   - Removed the "Find My Record" (`rfid.findRecord`) button from the "Scan Barangay ID" page (`rfidStep() === 'scan'`).
+>   - Refined the "Apply for Barangay ID" action button on the scan screen to serve as the direct secondary option.
+>   - Updated offline/not-detected warning text in English and Tagalog i18n dictionaries to prompt users to tap their card or apply for an ID.
+>   - Verified `npm run build:kiosk` compiles successfully with 0 errors.
+>
 > - **Barangay ID Application Step 2 Label Fix & Required Email Field Integration** (`frontend/kiosk-app/src/app/features/kiosk/kiosk.component.ts` L2570, L2764, L3145, L5274-5288, L7058, L7136-7144; `frontend/kiosk-app/src/app/i18n/en.ts` L268, L305; `frontend/kiosk-app/src/app/i18n/fil.ts` L257, L294; `backend/src/services/application.service.js` L63-68):
 >   - **Step 2 Progress Indicator Label**: Corrected the Step 2 step label in the Requirements and Form screens from "Select Document" (`progress.selectDoc`) to **"Capture Photo"** (`progress.capturePhoto`), matching the actual ID photo capture workflow.
 >   - **Mandatory Email Field & Validation**:
