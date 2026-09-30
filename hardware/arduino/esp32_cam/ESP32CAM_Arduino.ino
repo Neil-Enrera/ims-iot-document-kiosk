@@ -429,7 +429,11 @@ void setup()
         s->set_vflip(s, 0);          // Vertical flip
     }
 
-    // Use DHCP to automatically receive an IP from any Wi-Fi network / Hotspot
+    // Reset any cached static IP from ESP32 NVS memory and force dynamic DHCP
+    WiFi.disconnect(true);
+    delay(200);
+    WiFi.config(INADDR_NONE, INADDR_NONE, INADDR_NONE);
+    WiFi.setHostname("esp32-cam-kiosk");
     WiFi.mode(WIFI_STA);
 
     // Connect to Wi-Fi
