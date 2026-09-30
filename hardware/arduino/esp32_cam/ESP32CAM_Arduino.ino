@@ -429,16 +429,8 @@ void setup()
         s->set_vflip(s, 0);          // Vertical flip
     }
 
-    // Configure Static IP Address so it NEVER changes between reboots or power supplies
-    IPAddress local_IP(192, 168, 100, 200);
-    IPAddress gateway(192, 168, 100, 1);
-    IPAddress subnet(255, 255, 255, 0);
-    IPAddress primaryDNS(8, 8, 8, 8);
-    IPAddress secondaryDNS(1, 1, 1, 1);
-
-    if (!WiFi.config(local_IP, gateway, subnet, primaryDNS, secondaryDNS)) {
-        Serial.println("[Wi-Fi] Static IP configuration failed, using DHCP fallback");
-    }
+    // Use DHCP to automatically receive an IP from any Wi-Fi network / Hotspot
+    WiFi.mode(WIFI_STA);
 
     // Connect to Wi-Fi
     Serial.printf("[Wi-Fi] Connecting to %s", ssid);
