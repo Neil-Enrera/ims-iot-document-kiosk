@@ -22,8 +22,8 @@
 // Wi-Fi Settings
 // =========================
 
-const char* WIFI_SSID     = "HUAWEI-2.4G-n82P";
-const char* WIFI_PASSWORD = "j2JFAcy4";
+const char* WIFI_SSID     = "Issei";
+const char* WIFI_PASSWORD = "hahaha123";
 
 // Wi-Fi reconnect timing
 unsigned long lastWiFiCheck = 0;
