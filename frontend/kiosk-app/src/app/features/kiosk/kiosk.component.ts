@@ -1675,7 +1675,14 @@ export type BarangayStep =
                                      class="absolute inset-0 w-full h-full object-cover select-none pointer-events-none rotate-90 scale-[1.35]"
                                      alt="ESP32-CAM Live Preview" />
                               } @else {
-                                <video #videoEl autoplay playsinline class="absolute inset-0 w-full h-full object-cover"></video>
+                                <video #videoEl
+                                       id="doc-webcam-video"
+                                       autoplay
+                                       playsinline
+                                       muted
+                                       [muted]="true"
+                                       (loadedmetadata)="onVideoMetadataLoaded($event)"
+                                       class="absolute inset-0 w-full h-full object-cover"></video>
                               }
 
                               <!-- Face-positioning guide (fades out slightly when the camera is live) -->
@@ -3556,7 +3563,14 @@ export type BarangayStep =
                                      class="absolute inset-0 w-full h-full object-cover select-none pointer-events-none rotate-90 scale-[1.35]"
                                      alt="ESP32-CAM Live Preview" />
                               } @else {
-                                <video #videoEl autoplay playsinline class="absolute inset-0 w-full h-full object-cover"></video>
+                                <video #videoEl
+                                       id="kiosk-webcam-video"
+                                       autoplay
+                                       playsinline
+                                       muted
+                                       [muted]="true"
+                                       (loadedmetadata)="onVideoMetadataLoaded($event)"
+                                       class="absolute inset-0 w-full h-full object-cover"></video>
                               }
 
                               <!-- Face-positioning guide (fades out slightly when the camera is live) -->
@@ -4882,28 +4896,22 @@ export type BarangayStep =
   `
 })
 export class KioskComponent implements OnInit, OnDestroy {
-  private _videoEl!: ElementRef<HTMLVideoElement>;
+  private _videoEl?: ElementRef<HTMLVideoElement>;
   @ViewChild('videoEl') set videoEl(el: ElementRef<HTMLVideoElement> | undefined) {
-    if (el) {
-      this._videoEl = el;
-      if (this.stream && el.nativeElement) {
-        el.nativeElement.srcObject = this.stream;
-        this.cameraReady.set(true);
-      }
+    this._videoEl = el;
+    if (el?.nativeElement && this.stream && this.cameraMode() === 'webcam') {
+      this.attachStreamToVideo(this.stream);
     }
   }
   get videoEl(): ElementRef<HTMLVideoElement> | undefined {
     return this._videoEl;
   }
 
-  private _inlineVideoEl!: ElementRef<HTMLVideoElement>;
+  private _inlineVideoEl?: ElementRef<HTMLVideoElement>;
   @ViewChild('inlineVideoEl') set inlineVideoEl(el: ElementRef<HTMLVideoElement> | undefined) {
-    if (el) {
-      this._inlineVideoEl = el;
-      if (this.stream && el.nativeElement) {
-        el.nativeElement.srcObject = this.stream;
-        this.cameraReady.set(true);
-      }
+    this._inlineVideoEl = el;
+    if (el?.nativeElement && this.stream) {
+      this.attachStreamToVideo(this.stream);
     }
   }
   get inlineVideoEl(): ElementRef<HTMLVideoElement> | undefined {
@@ -7544,6 +7552,62 @@ export class KioskComponent implements OnInit, OnDestroy {
     }
   }
 
+  private attachStreamToVideo(stream: MediaStream) {
+    if (!stream) return;
+    const videoElements: (HTMLVideoElement | null)[] = [
+      document.getElementById('kiosk-webcam-video') as HTMLVideoElement,
+      document.getElementById('doc-webcam-video') as HTMLVideoElement,
+      this.videoEl?.nativeElement || null,
+      this.inlineVideoEl?.nativeElement || null
+    ];
+    let attached = false;
+    videoElements.forEach(el => {
+      if (el) {
+        try {
+          el.muted = true;
+          if (el.srcObject !== stream) {
+            el.srcObject = stream;
+          }
+          el.play().catch(e => console.warn('[Webcam] play() error:', e));
+          attached = true;
+        } catch (err) {
+          console.warn('[Webcam] Error attaching stream to element:', err);
+        }
+      }
+    });
+
+    if (attached) {
+      this.cameraReady.set(true);
+      this.errorMessage.set('');
+    } else {
+      setTimeout(() => {
+        const freshElements = [
+          document.getElementById('kiosk-webcam-video') as HTMLVideoElement,
+          document.getElementById('doc-webcam-video') as HTMLVideoElement,
+          this.videoEl?.nativeElement || null
+        ];
+        freshElements.forEach(freshEl => {
+          if (freshEl && freshEl.srcObject !== stream) {
+            freshEl.muted = true;
+            freshEl.srcObject = stream;
+            freshEl.play().catch(() => {});
+            this.cameraReady.set(true);
+            this.errorMessage.set('');
+          }
+        });
+      }, 60);
+    }
+  }
+
+  onVideoMetadataLoaded(event: Event) {
+    const video = event.target as HTMLVideoElement;
+    if (video) {
+      video.play().catch(e => console.warn('[Webcam] video.play() error:', e));
+      this.cameraReady.set(true);
+      this.errorMessage.set('');
+    }
+  }
+
   startCamera(target?: HTMLVideoElement) {
     if (this.cameraInitTimer) {
       clearTimeout(this.cameraInitTimer);
@@ -7560,59 +7624,70 @@ export class KioskComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const el = target || this.videoEl?.nativeElement || this.inlineVideoEl?.nativeElement;
-    if (this.stream) {
-      if (el && el.srcObject !== this.stream) {
-        el.srcObject = this.stream;
-        el.play().catch(() => {});
-        this.cameraReady.set(true);
-      }
+    // WEBCAM MODE
+    if (this.stream && this.stream.active && this.stream.getVideoTracks().some(t => t.readyState === 'live')) {
+      this.attachStreamToVideo(this.stream);
       return;
     }
+
     this.cameraReady.set(false);
+    this.errorMessage.set('');
 
-    // Helper to start stream with specific constraints
-    const getStream = (constraints: MediaStreamConstraints) => {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        const secureErr = 'Camera requires a secure HTTPS connection or localhost context.';
-        console.error(secureErr);
-        this.errorMessage.set(secureErr);
-        this.cameraReady.set(false);
-        return Promise.reject(new Error(secureErr));
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      const secureErr = 'Camera requires a secure HTTPS connection or localhost context.';
+      console.error(secureErr);
+      this.errorMessage.set(secureErr);
+      this.cameraReady.set(false);
+      return;
+    }
+
+    const constraintsList: MediaStreamConstraints[] = [
+      { video: { facingMode: 'user', width: { ideal: 1280, max: 1920 }, height: { ideal: 720, max: 1080 } } },
+      { video: { facingMode: 'user' } },
+      { video: true }
+    ];
+
+    const tryGetUserMedia = async () => {
+      let activeStream: MediaStream | null = null;
+      let lastErr: any = null;
+
+      for (const constraints of constraintsList) {
+        try {
+          activeStream = await navigator.mediaDevices.getUserMedia(constraints);
+          if (activeStream) break;
+        } catch (err) {
+          lastErr = err;
+          console.warn('[Webcam] getUserMedia attempt with constraints failed:', constraints, err);
+        }
       }
-      return navigator.mediaDevices.getUserMedia(constraints)
-        .then(stream => {
-          this.stream = stream;
-          const currentEl = target || this.videoEl?.nativeElement || this.inlineVideoEl?.nativeElement;
-          if (currentEl) {
-            currentEl.srcObject = stream;
-            currentEl.play().catch(() => {});
-          }
-          this.errorMessage.set('');
-          this.cameraReady.set(true);
-          return stream;
-        });
-    };
 
-    getStream({ video: { width: 640, height: 480, facingMode: 'user' } })
-      .then(() => {
-        return navigator.mediaDevices.enumerateDevices();
-      })
-      .then(devices => {
+      if (!activeStream) {
+        console.error('[Webcam] All getUserMedia attempts failed:', lastErr);
+        this.errorMessage.set(this.t('err.cameraDenied') || 'Camera access was denied or is unavailable.');
+        this.cameraReady.set(false);
+        return;
+      }
+
+      this.stream = activeStream;
+      this.errorMessage.set('');
+      this.attachStreamToVideo(activeStream);
+
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
         const videoDevices = devices.filter(device => device.kind === 'videoinput');
         this.availableCameras.set(videoDevices);
-        const activeTrack = this.stream?.getVideoTracks()[0];
+        const activeTrack = activeStream.getVideoTracks()[0];
         const settings = activeTrack ? activeTrack.getSettings() : null;
         if (settings && settings.deviceId) {
           const idx = videoDevices.findIndex(d => d.deviceId === settings.deviceId);
           if (idx !== -1) this.currentCameraIndex.set(idx);
         }
-      })
-      .catch((err) => {
-        console.error('Camera error:', err);
-        this.errorMessage.set(this.t('err.cameraDenied'));
-        this.cameraReady.set(false);
-      });
+      } catch (enumErr) {
+        console.warn('[Webcam] Device enumeration error:', enumErr);
+      }
+    };
+
+    tryGetUserMedia();
   }
 
   onEsp32StreamLoad() {
@@ -7672,34 +7747,27 @@ export class KioskComponent implements OnInit, OnDestroy {
     console.log('[Camera] User manual switch to camera:', targetDevice.label || `Camera ${nextIndex}`);
 
     if (this.stream) {
-      this.stream.getTracks().forEach(t => t.stop());
+      try {
+        this.stream.getTracks().forEach(t => t.stop());
+      } catch {}
       this.stream = null;
     }
     this.cameraReady.set(false);
 
-    // Helper to start stream with specific constraints
-    const getStream = (constraints: MediaStreamConstraints) => {
-      return navigator.mediaDevices.getUserMedia(constraints)
-        .then(stream => {
-          this.stream = stream;
-          const el = target || this.videoEl?.nativeElement || this.inlineVideoEl?.nativeElement;
-          if (el) {
-            el.srcObject = stream;
-            el.play().catch(() => {});
-          }
-          this.errorMessage.set('');
-          this.cameraReady.set(true);
-          return stream;
-        });
-    };
-
-    getStream({
-      video: {
-        deviceId: { exact: targetDevice.deviceId }
-      }
+    navigator.mediaDevices.getUserMedia({
+      video: { deviceId: { exact: targetDevice.deviceId } }
+    }).then(stream => {
+      this.stream = stream;
+      this.attachStreamToVideo(stream);
     }).catch(err => {
-      console.error('[Camera] Failed to switch camera:', err);
-      getStream({ video: true });
+      console.error('[Camera] Failed to switch camera by deviceId, falling back to default video:', err);
+      navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+        this.stream = stream;
+        this.attachStreamToVideo(stream);
+      }).catch(e => {
+        console.error('[Camera] Fallback camera switch failed:', e);
+        this.errorMessage.set(this.t('err.cameraDenied'));
+      });
     });
   }
 
@@ -7715,32 +7783,30 @@ export class KioskComponent implements OnInit, OnDestroy {
     if (this.stream) {
       try {
         this.stream.getTracks().forEach(track => {
-          track.stop();
-          track.enabled = false;
+          try {
+            track.stop();
+            track.enabled = false;
+          } catch {}
         });
       } catch (e) {
         console.warn('[Camera] Error stopping stream tracks:', e);
       }
       this.stream = null;
     }
-    const v1 = this.videoEl?.nativeElement;
-    if (v1) {
-      try {
-        v1.srcObject = null;
-        v1.pause();
-        v1.removeAttribute('src');
-        v1.load();
-      } catch {}
-    }
-    const v2 = this.inlineVideoEl?.nativeElement;
-    if (v2) {
-      try {
-        v2.srcObject = null;
-        v2.pause();
-        v2.removeAttribute('src');
-        v2.load();
-      } catch {}
-    }
+    const videoElements: (HTMLVideoElement | null)[] = [
+      document.getElementById('kiosk-webcam-video') as HTMLVideoElement,
+      document.getElementById('doc-webcam-video') as HTMLVideoElement,
+      this.videoEl?.nativeElement || null,
+      this.inlineVideoEl?.nativeElement || null
+    ];
+    videoElements.forEach(v => {
+      if (v) {
+        try {
+          v.srcObject = null;
+          v.pause();
+        } catch {}
+      }
+    });
     this.clearEsp32ImageElements();
     this.esp32StreamUrl.set('');
     this.cameraReady.set(false);
@@ -7981,8 +8047,11 @@ export class KioskComponent implements OnInit, OnDestroy {
         }
       });
     } else {
-      const el = this.videoEl?.nativeElement || this.inlineVideoEl?.nativeElement;
-      if (!el) return;
+      const el = (document.getElementById('kiosk-webcam-video') || document.getElementById('doc-webcam-video') || this.videoEl?.nativeElement || this.inlineVideoEl?.nativeElement) as HTMLVideoElement;
+      if (!el) {
+        console.error('[Webcam] No active video element found for capture');
+        return;
+      }
       const dataUrl = this.drawFrame(el);
       this.stopCamera();
       await this.handleCapturedPhoto(dataUrl);
