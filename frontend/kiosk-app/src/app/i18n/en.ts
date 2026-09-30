@@ -42,7 +42,7 @@ export const en: TranslationDictionary = {
   'rfid.waiting': 'Waiting for RFID card...',
   'rfid.found': 'Card detected!',
   'rfid.notDetected': 'RFID Scanner Not Detected',
-  'rfid.notDetectedDesc': 'The scanner hardware is not connected. Use "Find My Record" to continue manually.',
+  'rfid.notDetectedDesc': 'The scanner hardware is not connected. Please check scanner connection or apply for a Barangay ID.',
   'rfid.ready': 'RFID Scanner Ready',
   'rfid.readyDesc': 'Tap your RFID-enabled Barangay ID card on the scanner to begin.',
   'rfid.findRecord': 'Find My Record',

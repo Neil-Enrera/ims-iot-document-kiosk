@@ -35,7 +35,7 @@ export const fil: TranslationDictionary = {
   'rfid.waiting': 'Naghihintay para sa RFID card...',
   'rfid.found': 'Natukoy ang card!',
   'rfid.notDetected': 'Hindi Natukoy ang RFID Scanner',
-  'rfid.notDetectedDesc': 'Hindi konektado ang scanner hardware. Gamitin ang "Hanapin ang Aking Record" upang magpatuloy nang manwal.',
+  'rfid.notDetectedDesc': 'Hindi konektado ang scanner hardware. Pakisuri ang scanner o mag-apply ng Barangay ID.',
   'rfid.ready': 'Handa na ang RFID Scanner',
   'rfid.readyDesc': 'I-tap ang iyong RFID-enabled Barangay ID card sa scanner upang magsimula.',
   'rfid.findRecord': 'Hanapin ang Aking Record',

@@ -320,16 +320,13 @@ export type BarangayStep =
                     </div>
                   }
 
-                  <!-- Primary action -->
-                  <button (click)="rfidStep.set('search')"
-                          class="w-full max-w-xl min-h-[64px] sm:min-h-[80px] px-8 py-4 sm:py-5 rounded-xl bg-[#F97316] hover:bg-[#EA580C] active:scale-[0.995] text-white text-lg sm:text-xl font-semibold flex items-center justify-center transition-all focus:outline-none focus:ring-4 focus:ring-[#F97316]/30 shadow-sm">
-                    {{ t('rfid.findRecord') }}
-                  </button>
-
-                  <!-- Secondary action -->
+                  <!-- Apply for Barangay ID option -->
                   <button (click)="startBarangay()"
-                          class="mt-5 sm:mt-6 min-h-[56px] px-8 text-[#F97316] hover:text-[#EA580C] text-base sm:text-lg font-semibold hover:underline underline-offset-4 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[#F97316]/40">
-                    {{ t('landing.applyId.title') }}
+                          class="w-full max-w-xl min-h-[56px] sm:min-h-[64px] px-8 py-3.5 rounded-xl bg-white border-2 border-[#F97316] hover:bg-[#FFF7ED] active:scale-[0.995] text-[#0F172A] text-base sm:text-lg font-bold flex items-center justify-center gap-2.5 transition-all focus:outline-none focus:ring-4 focus:ring-[#F97316]/20 shadow-sm">
+                    <svg class="w-5 h-5 text-[#F97316]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
+                    </svg>
+                    <span>{{ t('landing.applyId.title') }}</span>
                   </button>
                 </div>
               </div>
