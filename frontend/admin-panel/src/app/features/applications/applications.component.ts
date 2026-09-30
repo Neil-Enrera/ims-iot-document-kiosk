@@ -540,7 +540,6 @@ interface UploadedRequirement {
                   <div><p class="text-[11px] text-gray-400 font-medium">Birth Date</p><p class="text-gray-800 font-semibold">{{ app.birth_date || '-' }}</p></div>
                   <div><p class="text-[11px] text-gray-400 font-medium">Gender</p><p class="text-gray-800 font-semibold capitalize">{{ app.gender || '-' }}</p></div>
                   <div><p class="text-[11px] text-gray-400 font-medium">Civil Status</p><p class="text-gray-800 font-semibold capitalize">{{ app.civil_status || '-' }}</p></div>
-                  <div><p class="text-[11px] text-gray-400 font-medium">Blood Type</p><p class="text-gray-800 font-semibold">{{ app.blood_type || '-' }}</p></div>
                   <div><p class="text-[11px] text-gray-400 font-medium">Occupation</p><p class="text-gray-800 font-semibold">{{ app.occupation || '-' }}</p></div>
                   <div><p class="text-[11px] text-gray-400 font-medium">Phone #</p><p class="text-gray-800 font-semibold">{{ app.contact_number || '-' }}</p></div>
                 </div>
