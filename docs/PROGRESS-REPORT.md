@@ -13,6 +13,17 @@
 | 07 - Deployment | 10 | 1 | 9 | 0 |
 | **Total** | **85** | **56** | **19** | **0** |
 
+> - **Barangay ID Application Step 2 Label Fix & Required Email Field Integration** (`frontend/kiosk-app/src/app/features/kiosk/kiosk.component.ts` L2570, L2764, L3145, L5274-5288, L7058, L7136-7144; `frontend/kiosk-app/src/app/i18n/en.ts` L268, L305; `frontend/kiosk-app/src/app/i18n/fil.ts` L257, L294; `backend/src/services/application.service.js` L63-68):
+>   - **Step 2 Progress Indicator Label**: Corrected the Step 2 step label in the Requirements and Form screens from "Select Document" (`progress.selectDoc`) to **"Capture Photo"** (`progress.capturePhoto`), matching the actual ID photo capture workflow.
+>   - **Mandatory Email Field & Validation**:
+>     - Removed "(Optional)" from all English and Tagalog requirement titles and form labels (`bar.requirements.req3.title`, `bar.form.email`).
+>     - Added the required asterisk indicator (`*`) to the email field label.
+>     - Enforced `required: true` across `normalizeBarangayService()`, `barangayInvalid('email')`, and `validateBarangayForm()`.
+>   - **ID Configuration Form-Field Integration**:
+>     - Verified that the Admin **Configure Barangay ID** modal (`app-service-form`) allows adding/editing custom form fields.
+>     - Ensured that any configured email field in `form_fields` retains its `required: true` validation, dynamically binds on the kiosk form, and is resolved into `application.email` upon application submission via `createApplication()` and upon approval via `resolveApplicationEmail()`.
+>   - **Verification**: Verified `npm run build:kiosk` and `npm run build:admin` build with 0 errors.
+>
 > - **ESP32-CAM Live Preview Smoothing & Configurable Email Field** (`frontend/kiosk-app/src/app/features/kiosk/kiosk.component.ts` L1672-1677, L3561-3566, L7617-7628; `backend/src/services/application.service.js` L115-135, L174-184, L213-228, L430-485; `database/seeds/data_only_seed.sql` L118; `database/seeds/full_data_seed.sql` L181):
 >   - **ESP32-CAM Preview Smoothing**:
 >     - Added hardware GPU compositing layers (`transform: rotate(90deg) scale(1.35) translateZ(0); will-change: transform; backface-visibility: hidden; transform-origin: center center;`) on `#doc-esp32-stream-img` and `#kiosk-esp32-stream-img` to eliminate layout reflows and stutter during MJPEG frame decoding.

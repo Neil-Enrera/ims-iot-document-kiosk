@@ -60,8 +60,12 @@ const createApplication = async (data, ipAddress) => {
   const photoPath = saveImage(data.photo, 'application-photos', 'app_photo');
   const signaturePath = saveImage(data.signature, 'application-signatures', 'app_signature');
 
+  const emailFieldKey = await getPortalEmailField();
+  const resolvedEmail = resolveApplicationEmail({ ...data, form_data: data.formData }, emailFieldKey, null) || data.email;
+
   const applicationId = await applicationRepository.create({
     ...data,
+    email: resolvedEmail || data.email || null,
     applicationNumber,
     photo: photoPath,
     signature: signaturePath

@@ -2567,7 +2567,7 @@ export type BarangayStep =
                   <li class="flex items-center gap-1.5 sm:gap-2.5" aria-hidden="true">
                     <span class="w-6 sm:w-10 h-[3px] rounded-full bg-[#E5E7EB]"></span>
                     <span class="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-base sm:text-lg font-bold text-[#94A3B8] bg-white border-2 border-[#CBD5E1]">2</span>
-                    <span class="hidden lg:block text-[14px] font-medium text-[#64748B] whitespace-nowrap">{{ t('progress.selectDoc') }}</span>
+                    <span class="hidden lg:block text-[14px] font-medium text-[#64748B] whitespace-nowrap">{{ t('progress.capturePhoto') }}</span>
                   </li>
                   <li class="flex items-center gap-1.5 sm:gap-2.5" aria-hidden="true">
                     <span class="w-6 sm:w-10 h-[3px] rounded-full bg-[#E5E7EB]"></span>
@@ -2761,7 +2761,7 @@ export type BarangayStep =
                   <li class="flex items-center gap-1.5 sm:gap-2.5" aria-hidden="true">
                     <span class="w-6 sm:w-10 h-[3px] rounded-full bg-[#E5E7EB]"></span>
                     <span class="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-base sm:text-lg font-bold text-[#94A3B8] bg-white border-2 border-[#CBD5E1]">2</span>
-                    <span class="hidden lg:block text-[14px] font-medium text-[#64748B] whitespace-nowrap">{{ t('progress.selectDoc') }}</span>
+                    <span class="hidden lg:block text-[14px] font-medium text-[#64748B] whitespace-nowrap">{{ t('progress.capturePhoto') }}</span>
                   </li>
                   <li class="flex items-center gap-1.5 sm:gap-2.5" aria-hidden="true">
                     <span class="w-6 sm:w-10 h-[3px] rounded-full bg-[#E5E7EB]"></span>
@@ -3142,7 +3142,7 @@ export type BarangayStep =
                           <!-- Email Address (Used for Online Portal Account) -->
                           <div>
                             <label for="barangay-email" class="block text-[15px] sm:text-[16px] font-semibold text-[#0F172A] mb-1.5">
-                              {{ t('bar.form.email') }}
+                              {{ t('bar.form.email') }} <span class="text-[#F97316]">*</span>
                             </label>
                             <div class="flex items-center rounded-xl border-2 border-[#E5E7EB] bg-white shadow-sm transition-all duration-150 focus-within:border-[#F97316] focus-within:ring-4 focus-within:ring-[#F97316]/15 overflow-hidden"
                                  [class.border-[#DC2626]]="barangayInvalid('email')">
@@ -5271,19 +5271,24 @@ export class KioskComponent implements OnInit, OnDestroy {
       else fields.push(contactField);
     }
 
-    // Ensure email exists
-    const hasEmail = fields.some(f => (f.key || '').toLowerCase() === 'email');
-    if (!hasEmail) {
+    // Ensure email exists and is required
+    const emailFieldIdx = fields.findIndex(f => (f.key || '').toLowerCase().includes('email'));
+    if (emailFieldIdx === -1) {
       const contactIdx = fields.findIndex(f => (f.key || '').toLowerCase().includes('contact_number') || (f.key || '').toLowerCase() === 'contact');
       const emailField: FormField = {
         key: 'email',
         label: 'Email Address',
         type: 'email',
-        required: false,
+        required: true,
         placeholder: 'you@example.com'
       };
       if (contactIdx !== -1) fields.splice(contactIdx + 1, 0, emailField);
       else fields.push(emailField);
+    } else {
+      fields[emailFieldIdx] = {
+        ...fields[emailFieldIdx],
+        required: true
+      };
     }
 
     return { ...svc, form_fields: fields };
@@ -7050,7 +7055,7 @@ export class KioskComponent implements OnInit, OnDestroy {
         return !clean || !/^(09\d{9}|\+639\d{9})$/.test(clean);
       }
       case 'email':
-        return !!(f.email && f.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim()));
+        return !f.email || !f.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim());
       case 'emergencyContactName':
         return !f.emergencyContactName.trim() || f.emergencyContactName.length > 100 || !/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(f.emergencyContactName.trim());
       case 'emergencyContactNumber': {
@@ -7131,8 +7136,12 @@ export class KioskComponent implements OnInit, OnDestroy {
         this.triggerFormError(this.t('err.invalidPhone', { field: this.t('bar.form.contact') || 'Contact Number' }), 3000);
         return;
       }
-      if (f.email && f.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim())) {
-        this.triggerFormError(this.t('err.invalidEmail', { field: this.t('bar.form.email') || 'Email' }), 3000);
+      if (!f.email || !f.email.trim()) {
+        this.triggerFormError(this.t('err.required', { field: this.t('bar.form.email') || 'Email Address' }) || 'Email Address is required.', 3000);
+        return;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim())) {
+        this.triggerFormError(this.t('err.invalidEmail', { field: this.t('bar.form.email') || 'Email Address' }) || 'Please enter a valid email address.', 3000);
         return;
       }
       if (f.emergencyContactName && f.emergencyContactName.trim() && !/^[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s\-\.\']+$/.test(f.emergencyContactName.trim())) {
