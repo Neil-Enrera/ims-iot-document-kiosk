@@ -178,6 +178,7 @@ INSERT INTO `system_settings` (`setting_id`, `setting_key`, `setting_value`, `se
 INSERT INTO `system_settings` (`setting_id`, `setting_key`, `setting_value`, `setting_type`, `category`, `description`, `is_readonly`, `updated_by`, `updated_at`) VALUES (14, 'document_claim_days', '15', 'number', 'document', 'Number of days a done (Ready for Release) document stays claimable before it is considered expired', 0, NULL, '2026-08-05 12:22:30');
 INSERT INTO `system_settings` (`setting_id`, `setting_key`, `setting_value`, `setting_type`, `category`, `description`, `is_readonly`, `updated_by`, `updated_at`) VALUES (15, 'id_validity_years', '3', 'number', 'barangay', 'Number of years a Barangay ID stays valid from its issue date', 0, 22, '2026-09-03 12:59:23');
 INSERT INTO `system_settings` (`setting_id`, `setting_key`, `setting_value`, `setting_type`, `category`, `description`, `is_readonly`, `updated_by`, `updated_at`) VALUES (16, 'barangay_id_min_age', '15', 'number', 'barangay', 'Minimum age eligible to apply for a Barangay ID (default: 15)', 0, 22, '2026-09-03 12:59:23');
+INSERT INTO `system_settings` (`setting_id`, `setting_key`, `setting_value`, `setting_type`, `category`, `description`, `is_readonly`, `updated_by`, `updated_at`) VALUES (17, 'portal_account_email_field', 'email', 'string', 'barangay', 'Field name used as the email address for Online Portal account creation and notifications (default: email)', 0, NULL, '2026-09-30 12:00:00');
 
 -- Table: request_statuses
 DELETE FROM `request_statuses`;

@@ -13,6 +13,17 @@
 | 07 - Deployment | 10 | 1 | 9 | 0 |
 | **Total** | **85** | **56** | **19** | **0** |
 
+> - **ESP32-CAM Live Preview Smoothing & Configurable Email Field** (`frontend/kiosk-app/src/app/features/kiosk/kiosk.component.ts` L1672-1677, L3561-3566, L7617-7628; `backend/src/services/application.service.js` L115-135, L174-184, L213-228, L430-485; `database/seeds/data_only_seed.sql` L118; `database/seeds/full_data_seed.sql` L181):
+>   - **ESP32-CAM Preview Smoothing**:
+>     - Added hardware GPU compositing layers (`transform: rotate(90deg) scale(1.35) translateZ(0); will-change: transform; backface-visibility: hidden; transform-origin: center center;`) on `#doc-esp32-stream-img` and `#kiosk-esp32-stream-img` to eliminate layout reflows and stutter during MJPEG frame decoding.
+>     - Streamlined `startCamera()` to prevent unnecessary stream reconnects and URL timestamp regenerations when the active stream is already connected and running normally.
+>     - Retained working tablet built-in camera `getUserMedia` constraints and clean camera switching/lifecycle.
+>   - **Configurable Application Email Field**:
+>     - Integrated `portal_account_email_field` in system configuration (`system_settings` table, default: `'email'`) and seed datasets.
+>     - Implemented `getPortalEmailField()` and `resolveApplicationEmail()` in `backend/src/services/application.service.js` to dynamically look up the configured email key from `form_data` (exact and case-insensitive), `application` attributes, or resident records, with graceful fallbacks.
+>     - Cleanly connected the resolved email to resident creation, `portalAccountService.createAccountForResident`, and email dispatch without duplicating or modifying existing email transport logic.
+>   - **Verification**: Verified zero compilation errors across `npm run build:kiosk` and `npm run build:admin`.
+>
 > - **ESP32-CAM and Built-in Camera Lifecycle & Reconnection Overhaul** (`frontend/kiosk-app/src/app/features/kiosk/kiosk.component.ts` L1669, L3548, L5105-5110, L5220-5225, L7525-7970, L8190-8205; `hardware/kiosk-server/index.js` L452-488, L526-565):
 >   - **Root Cause Resolution**:
 >     - Resolved connection socket lingering on the ESP32-CAM MJPEG stream proxy by adding explicit connection termination (`req.on('close')`, `res.on('close')`, `proxyRes.destroy()`, and `agent: false` on HTTP/HTTPS proxies in `hardware/kiosk-server/index.js`).

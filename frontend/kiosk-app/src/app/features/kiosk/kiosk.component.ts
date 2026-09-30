@@ -1672,7 +1672,8 @@ export type BarangayStep =
                                      crossOrigin="anonymous"
                                      (load)="onEsp32StreamLoad()"
                                      (error)="onEsp32StreamError()"
-                                     class="absolute inset-0 w-full h-full object-cover select-none pointer-events-none rotate-90 scale-[1.35]"
+                                     class="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
+                                     style="transform: rotate(90deg) scale(1.35) translateZ(0); will-change: transform; backface-visibility: hidden; transform-origin: center center;"
                                      alt="ESP32-CAM Live Preview" />
                               } @else {
                                 <video #videoEl
@@ -3560,7 +3561,8 @@ export type BarangayStep =
                                      crossOrigin="anonymous"
                                      (load)="onEsp32StreamLoad()"
                                      (error)="onEsp32StreamError()"
-                                     class="absolute inset-0 w-full h-full object-cover select-none pointer-events-none rotate-90 scale-[1.35]"
+                                     class="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
+                                     style="transform: rotate(90deg) scale(1.35) translateZ(0); will-change: transform; backface-visibility: hidden; transform-origin: center center;"
                                      alt="ESP32-CAM Live Preview" />
                               } @else {
                                 <video #videoEl
@@ -7615,12 +7617,14 @@ export class KioskComponent implements OnInit, OnDestroy {
     }
 
     if (this.cameraMode() === 'esp32') {
-      this.cameraReady.set(false);
       this.esp32Error.set(false);
       this.errorMessage.set('');
       const baseStreamUrl = environment.esp32CamStreamUrl;
-      const url = `${baseStreamUrl}${baseStreamUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
-      this.esp32StreamUrl.set(url);
+      const currentUrl = this.esp32StreamUrl();
+      if (!currentUrl || !currentUrl.startsWith(baseStreamUrl) || this.esp32Error() || !this.cameraReady()) {
+        const url = `${baseStreamUrl}${baseStreamUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
+        this.esp32StreamUrl.set(url);
+      }
       return;
     }
 

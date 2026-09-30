@@ -113,6 +113,9 @@ const approveApplication = async (applicationId, userId, remarks, ipAddress) => 
     return { success: false, message: 'Only pending applications can be approved.' };
   }
 
+  const emailFieldKey = await getPortalEmailField();
+  const targetEmail = resolveApplicationEmail(application, emailFieldKey, null);
+
   // Create the permanent resident record
   const residentCode = await residentService.generateResidentCode();
   const residentId = await residentRepository.create({
@@ -127,7 +130,7 @@ const approveApplication = async (applicationId, userId, remarks, ipAddress) => 
     barangayId: 1,
     addressLine: application.address_line,
     contactNumber: application.contact_number,
-    email: application.email,
+    email: targetEmail || application.email,
     bloodType: application.blood_type,
     emergencyContactName: application.emergency_contact_name,
     emergencyContactNumber: application.emergency_contact_number
@@ -176,9 +179,10 @@ const approveApplication = async (applicationId, userId, remarks, ipAddress) => 
       .filter(Boolean)
       .join(' ')
       .trim();
+    const portalEmail = resolveApplicationEmail(application, emailFieldKey, resident);
     const portalResult = await portalAccountService.createAccountForResident({
       residentId,
-      email: application.email,
+      email: portalEmail,
       fullName
     });
     if (portalResult.success && portalResult.data?.account) {
@@ -216,14 +220,14 @@ const approveApplication = async (applicationId, userId, remarks, ipAddress) => 
   // Send Ready for Release / ID approval email notification to the applicant
   try {
     const emailService = require('./email.service');
-    const targetEmail = application.email || resident?.email;
-    if (targetEmail) {
+    const notificationEmail = resolveApplicationEmail(application, emailFieldKey, resident);
+    if (notificationEmail) {
       const fullName = [application.first_name, application.middle_name, application.last_name]
         .filter(Boolean)
         .join(' ')
         .trim();
       await emailService.sendReadyForReleaseNotification({
-        email: targetEmail,
+        email: notificationEmail,
         name: fullName,
         requestNumber: application.application_number,
         serviceName: 'Barangay ID Application',
@@ -425,6 +429,59 @@ const findUserName = async (userId) => {
   return [rows[0].first_name, rows[0].last_name].filter(Boolean).join(' ').trim();
 };
 
+// Configurable email field used for Online Portal account creation and notifications (default: 'email').
+const getPortalEmailField = async () => {
+  try {
+    const [rows] = await pool.query(
+      "SELECT setting_value FROM system_settings WHERE setting_key = 'portal_account_email_field' LIMIT 1"
+    );
+    const fieldKey = rows[0]?.setting_value?.trim();
+    return fieldKey || 'email';
+  } catch {
+    return 'email';
+  }
+};
+
+const resolveApplicationEmail = (application, configuredField = 'email', resident = null) => {
+  const field = (configuredField || 'email').trim();
+  const formData = application?.form_data || {};
+
+  // 1. If configured field exists in form_data (exact or normalized key match)
+  if (formData && typeof formData === 'object') {
+    if (formData[field] && typeof formData[field] === 'string' && formData[field].trim()) {
+      return formData[field].trim();
+    }
+    const cleanKey = field.toLowerCase().replace(/[^a-z0-9]/g, '');
+    for (const [k, v] of Object.entries(formData)) {
+      if (typeof v === 'string' && v.trim() && k.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanKey) {
+        return v.trim();
+      }
+    }
+  }
+
+  // 2. If configured field matches a direct property on application
+  if (application && application[field] && typeof application[field] === 'string' && application[field].trim()) {
+    return application[field].trim();
+  }
+
+  // 3. Fallbacks to standard fields (application.email, resident.email, or any valid email in formData)
+  if (application?.email && typeof application.email === 'string' && application.email.trim()) {
+    return application.email.trim();
+  }
+  if (resident?.email && typeof resident.email === 'string' && resident.email.trim()) {
+    return resident.email.trim();
+  }
+  if (formData && typeof formData === 'object') {
+    for (const [k, v] of Object.entries(formData)) {
+      if (typeof v === 'string' && v.includes('@') && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim())) {
+        return v.trim();
+      }
+    }
+  }
+
+  return '';
+};
+
 module.exports = {
   getAllApplications,
   getApplicationById,
@@ -433,5 +490,7 @@ module.exports = {
   approveApplication,
   rejectApplication,
   releaseApplication,
-  getPendingCount
+  getPendingCount,
+  getPortalEmailField,
+  resolveApplicationEmail
 };
