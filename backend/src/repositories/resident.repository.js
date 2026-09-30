@@ -64,6 +64,21 @@ const findByCode = async (residentCode) => {
   return rows[0] || null;
 };
 
+const findByNameAndBirthDate = async (firstName, lastName, birthDate) => {
+  if (!firstName || !lastName) return null;
+  const cleanFirst = String(firstName).trim();
+  const cleanLast = String(lastName).trim();
+  let query = 'SELECT * FROM residents WHERE LOWER(TRIM(first_name)) = LOWER(TRIM(?)) AND LOWER(TRIM(last_name)) = LOWER(TRIM(?))';
+  const params = [cleanFirst, cleanLast];
+  if (birthDate) {
+    query += ' AND birth_date = ?';
+    params.push(birthDate);
+  }
+  query += ' ORDER BY resident_id ASC LIMIT 1';
+  const [rows] = await pool.query(query, params);
+  return rows[0] || null;
+};
+
 const create = async (data) => {
   const code = data.residentCode ?? data.resident_code;
   const firstName = data.firstName ?? data.first_name;
@@ -216,4 +231,4 @@ const remove = async (residentId) => {
   return result.affectedRows > 0;
 };
 
-module.exports = { findAll, findById, findByCode, create, update, updateStatus, updatePhoto, remove };
+module.exports = { findAll, findById, findByCode, findByNameAndBirthDate, create, update, updateStatus, updatePhoto, remove };

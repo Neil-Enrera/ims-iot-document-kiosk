@@ -98,11 +98,7 @@ const login = async (identifier, password) => {
 };
 
 const getMe = async (portalAccountId) => {
-  const row = await portalAccountRepository.findById(portalAccountId);
-  if (!row) {
-    return { success: false, message: 'Account not found.' };
-  }
-  const profile = await portalAccountRepository.findProfileByAccountId(row.account_id);
+  const profile = await portalAccountRepository.findProfileByPortalAccountId(portalAccountId);
   if (!profile) {
     return { success: false, message: 'Account not found.' };
   }
@@ -315,11 +311,11 @@ const updateProfile = async (portalAccountId, updateData) => {
     await portalAccountRepository.updateEmail(portalAccountId, String(updateData.email).trim().toLowerCase());
   }
 
-  const updatedProfile = await portalAccountRepository.findProfileByAccountId(account.account_id);
+  const updatedProfile = await portalAccountRepository.findProfileByPortalAccountId(portalAccountId);
   return {
     success: true,
     message: 'Profile updated successfully.',
-    data: toPublicAccount(updatedProfile)
+    data: toPublicAccount(updatedProfile || account)
   };
 };
 

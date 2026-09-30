@@ -60,11 +60,28 @@ const createApplication = async (data, ipAddress) => {
   const photoPath = saveImage(data.photo, 'application-photos', 'app_photo');
   const signaturePath = saveImage(data.signature, 'application-signatures', 'app_signature');
 
+  const mergedFormData = data.formData || data.form_data || {};
+  if (data.birthPlace && !mergedFormData.birth_place) mergedFormData.birth_place = data.birthPlace;
+  if (data.religion && !mergedFormData.religion) mergedFormData.religion = data.religion;
+  if (data.nationality && !mergedFormData.nationality) mergedFormData.nationality = data.nationality;
+  if (data.occupation && !mergedFormData.occupation) mergedFormData.occupation = data.occupation;
+  if (data.houseNumber && !mergedFormData.house_number) mergedFormData.house_number = data.houseNumber;
+  if (data.street && !mergedFormData.street) mergedFormData.street = data.street;
+  if (data.subdivision && !mergedFormData.subdivision) mergedFormData.subdivision = data.subdivision;
+  if (data.block && !mergedFormData.block) mergedFormData.block = data.block;
+  if (data.lot && !mergedFormData.lot) mergedFormData.lot = data.lot;
+  if (data.purokZone && !mergedFormData.purok_zone) mergedFormData.purok_zone = data.purokZone;
+  if (data.sitio && !mergedFormData.sitio) mergedFormData.sitio = data.sitio;
+  if (data.municipality && !mergedFormData.municipality) mergedFormData.municipality = data.municipality;
+  if (data.province && !mergedFormData.province) mergedFormData.province = data.province;
+  if (data.zipCode && !mergedFormData.zip_code) mergedFormData.zip_code = data.zipCode;
+
   const emailFieldKey = await getPortalEmailField();
-  const resolvedEmail = resolveApplicationEmail({ ...data, form_data: data.formData }, emailFieldKey, null) || data.email;
+  const resolvedEmail = resolveApplicationEmail({ ...data, form_data: mergedFormData }, emailFieldKey, null) || data.email;
 
   const applicationId = await applicationRepository.create({
     ...data,
+    formData: mergedFormData,
     email: resolvedEmail || data.email || null,
     applicationNumber,
     photo: photoPath,
@@ -120,25 +137,128 @@ const approveApplication = async (applicationId, userId, remarks, ipAddress) => 
   const emailFieldKey = await getPortalEmailField();
   const targetEmail = resolveApplicationEmail(application, emailFieldKey, null);
 
-  // Create the permanent resident record
-  const residentCode = await residentService.generateResidentCode();
-  const residentId = await residentRepository.create({
-    residentCode,
-    firstName: application.first_name,
-    middleName: application.middle_name,
-    lastName: application.last_name,
-    suffix: application.suffix,
-    birthDate: application.birth_date,
-    gender: application.gender,
-    civilStatus: application.civil_status,
-    barangayId: 1,
-    addressLine: application.address_line,
-    contactNumber: application.contact_number,
-    email: targetEmail || application.email,
-    bloodType: application.blood_type,
-    emergencyContactName: application.emergency_contact_name,
-    emergencyContactNumber: application.emergency_contact_number
-  });
+  let rawFormData = {};
+  if (application.form_data) {
+    if (typeof application.form_data === 'string') {
+      try { rawFormData = JSON.parse(application.form_data); } catch { rawFormData = {}; }
+    } else if (typeof application.form_data === 'object') {
+      rawFormData = application.form_data;
+    }
+  }
+
+  const birthPlace = rawFormData.birth_place || rawFormData.birthPlace || rawFormData.place_of_birth || rawFormData.placeOfBirth || application.birth_place || null;
+  const nationality = rawFormData.nationality || application.nationality || 'Filipino';
+  const religion = rawFormData.religion || application.religion || null;
+  const occupation = rawFormData.occupation || application.occupation || null;
+  const civilStatus = rawFormData.civil_status || rawFormData.civilStatus || application.civil_status || null;
+  const bloodType = rawFormData.blood_type || rawFormData.bloodType || application.blood_type || null;
+  const houseNumber = rawFormData.house_number || rawFormData.houseNumber || null;
+  const street = rawFormData.street || null;
+  const subdivision = rawFormData.subdivision || null;
+  const block = rawFormData.block || null;
+  const lot = rawFormData.lot || null;
+  const purokZone = rawFormData.purok_zone || rawFormData.purokZone || null;
+  const sitio = rawFormData.sitio || null;
+  const municipality = rawFormData.municipality || null;
+  const province = rawFormData.province || null;
+  const zipCode = rawFormData.zip_code || rawFormData.zipCode || null;
+  const emergencyContactName = rawFormData.emergency_contact_name || rawFormData.emergencyContactName || application.emergency_contact_name || null;
+  const emergencyContactNumber = rawFormData.emergency_contact_number || rawFormData.emergencyContactNumber || application.emergency_contact_number || null;
+  const contactNumber = rawFormData.contact_number || rawFormData.contactNumber || application.contact_number || null;
+  const email = targetEmail || rawFormData.email || application.email || null;
+  const addressLine = application.address_line || rawFormData.address_line || rawFormData.addressLine || null;
+
+  // Check if resident already exists to avoid duplicate resident records
+  let residentId = application.resident_id || null;
+  let residentCode = null;
+
+  if (residentId) {
+    const existing = await residentRepository.findById(residentId);
+    if (existing) {
+      residentCode = existing.resident_code;
+    } else {
+      residentId = null;
+    }
+  }
+
+  if (!residentId) {
+    const existingByName = await residentRepository.findByNameAndBirthDate(
+      application.first_name,
+      application.last_name,
+      application.birth_date
+    );
+    if (existingByName) {
+      residentId = existingByName.resident_id;
+      residentCode = existingByName.resident_code;
+    }
+  }
+
+  if (residentId) {
+    // Update existing resident record with approved application data
+    await residentRepository.update(residentId, {
+      firstName: application.first_name,
+      middleName: application.middle_name,
+      lastName: application.last_name,
+      suffix: application.suffix,
+      birthDate: application.birth_date,
+      birthPlace,
+      nationality,
+      religion,
+      occupation,
+      gender: application.gender,
+      civilStatus,
+      addressLine,
+      houseNumber,
+      street,
+      subdivision,
+      block,
+      lot,
+      purokZone,
+      sitio,
+      municipality,
+      province,
+      zipCode,
+      contactNumber,
+      email,
+      bloodType,
+      emergencyContactName,
+      emergencyContactNumber
+    });
+  } else {
+    // Create new resident record
+    residentCode = await residentService.generateResidentCode();
+    residentId = await residentRepository.create({
+      residentCode,
+      firstName: application.first_name,
+      middleName: application.middle_name,
+      lastName: application.last_name,
+      suffix: application.suffix,
+      birthDate: application.birth_date,
+      birthPlace,
+      nationality,
+      religion,
+      occupation,
+      gender: application.gender,
+      civilStatus,
+      barangayId: 1,
+      addressLine,
+      houseNumber,
+      street,
+      subdivision,
+      block,
+      lot,
+      purokZone,
+      sitio,
+      municipality,
+      province,
+      zipCode,
+      contactNumber,
+      email,
+      bloodType,
+      emergencyContactName,
+      emergencyContactNumber
+    });
+  }
 
   // Copy the captured photo to the resident record
   if (application.photo) {
@@ -186,6 +306,7 @@ const approveApplication = async (applicationId, userId, remarks, ipAddress) => 
     const portalEmail = resolveApplicationEmail(application, emailFieldKey, resident);
     const portalResult = await portalAccountService.createAccountForResident({
       residentId,
+      residentCode,
       email: portalEmail,
       fullName
     });

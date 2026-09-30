@@ -2109,6 +2109,22 @@ export type BarangayStep =
                             } @else {
                               <p class="text-[13px] sm:text-[14px] text-[#64748B]">{{ t('doc.form.noFields') }}</p>
                             }
+                            @if (servicePhotos()[svc.service_id]) {
+                              <div class="flex items-center justify-between gap-3 py-2 border-t border-[#F1F5F9] mt-1">
+                                <div class="flex items-center gap-2.5">
+                                  <div class="shrink-0 w-6 h-6 rounded-md bg-[#FFF7ED] flex items-center justify-center text-[#F97316]" aria-hidden="true">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                      <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                  </div>
+                                  <span class="text-[13px] sm:text-[14px] font-semibold text-[#0F172A]">{{ t('doc.review.photoTitle') }}</span>
+                                </div>
+                                <div class="shrink-0 w-10 h-10 rounded-lg overflow-hidden border border-[#E2E8F0] bg-slate-100 shadow-2xs">
+                                  <img [src]="resolvePhotoUrl(servicePhotos()[svc.service_id])" alt="Captured photo" class="w-full h-full object-cover" />
+                                </div>
+                              </div>
+                            }
                           </div>
                         }
                       </div>
@@ -8165,8 +8181,16 @@ export class KioskComponent implements OnInit, OnDestroy {
   }
 
   displayPhoto(): string | null {
-    if (this.capturedPhoto()) return this.capturedPhoto();
-    return this.resident()?.photo || null;
+    const svc = this.selectedService();
+    const svcPhoto = svc ? this.servicePhotos()[svc.service_id] : null;
+    const anySvcPhoto = Object.values(this.servicePhotos()).find(p => !!p);
+    const raw = this.capturedPhoto()
+      || svcPhoto
+      || anySvcPhoto
+      || this.inlinePhotos()['photo']
+      || this.resident()?.photo
+      || null;
+    return raw ? this.resolvePhotoUrl(raw) : null;
   }
 
   // ============================================================

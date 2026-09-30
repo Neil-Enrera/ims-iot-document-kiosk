@@ -200,6 +200,7 @@ export const fil: TranslationDictionary = {
   'doc.review.service': 'Serbisyo',
   'doc.review.fee': 'Bayad',
   'doc.review.details': 'Mga Detalye ng Aplikasyon',
+  'doc.review.photoTitle': 'Litrato ng Profile',
   'doc.review.submit': 'Isumite ang Kahilingan',
   'doc.review.edit': 'I-edit ang Impormasyon',
   'doc.review.previewTitle': 'Pag-preview ng Dokumento',

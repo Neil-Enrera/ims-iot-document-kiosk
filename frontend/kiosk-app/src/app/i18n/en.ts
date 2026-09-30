@@ -210,6 +210,7 @@ export const en: TranslationDictionary = {
   'doc.review.service': 'Service',
   'doc.review.fee': 'Fee',
   'doc.review.details': 'Application Details',
+  'doc.review.photoTitle': 'Profile Photo',
   'doc.review.submit': 'Submit Request',
   'doc.review.edit': 'Edit Information',
   'doc.review.previewTitle': 'Document Preview',

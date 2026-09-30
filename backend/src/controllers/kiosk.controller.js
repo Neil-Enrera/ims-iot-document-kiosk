@@ -230,18 +230,61 @@ const parseJsonField = (value) => {
 // Staff review the application, then approve -> creates resident + RFID assignment
 const createBarangayIdApplication = async (req, res) => {
   try {
+    const rawFormData = req.body.formData || req.body.form_data || {};
     const {
       firstName, middleName, lastName, suffix, birthDate, gender, civilStatus,
       addressLine, contactNumber, email, occupation, bloodType,
-      emergencyContactName, emergencyContactNumber, photo, signature, formData
+      emergencyContactName, emergencyContactNumber, photo, signature,
+      birthPlace, placeOfBirth, place_of_birth, nationality, religion,
+      houseNumber, house_number, street, subdivision, block, lot, purokZone, purok_zone,
+      sitio, municipality, province, zipCode, zip_code
     } = req.body;
+
+    const mergedFormData = {
+      ...rawFormData,
+      birth_place: birthPlace || placeOfBirth || place_of_birth || rawFormData.birth_place || rawFormData.birthPlace || rawFormData.place_of_birth || null,
+      nationality: nationality || rawFormData.nationality || 'Filipino',
+      religion: religion || rawFormData.religion || null,
+      occupation: occupation || rawFormData.occupation || null,
+      civil_status: civilStatus || rawFormData.civil_status || rawFormData.civilStatus || null,
+      blood_type: bloodType || rawFormData.blood_type || rawFormData.bloodType || null,
+      house_number: houseNumber || house_number || rawFormData.house_number || rawFormData.houseNumber || null,
+      street: street || rawFormData.street || null,
+      subdivision: subdivision || rawFormData.subdivision || null,
+      block: block || rawFormData.block || null,
+      lot: lot || rawFormData.lot || null,
+      purok_zone: purokZone || purok_zone || rawFormData.purok_zone || rawFormData.purokZone || null,
+      sitio: sitio || rawFormData.sitio || null,
+      municipality: municipality || rawFormData.municipality || null,
+      province: province || rawFormData.province || null,
+      zip_code: zipCode || zip_code || rawFormData.zip_code || rawFormData.zipCode || null,
+      emergency_contact_name: emergencyContactName || rawFormData.emergency_contact_name || rawFormData.emergencyContactName || null,
+      emergency_contact_number: emergencyContactNumber || rawFormData.emergency_contact_number || rawFormData.emergencyContactNumber || null,
+      contact_number: contactNumber || rawFormData.contact_number || rawFormData.contactNumber || null,
+      email: email || rawFormData.email || null,
+      address_line: addressLine || rawFormData.address_line || rawFormData.addressLine || null
+    };
 
     console.log('[Kiosk] createBarangayIdApplication body:', JSON.stringify({ firstName, lastName, hasPhoto: !!photo, hasSignature: !!signature }));
 
     const result = await applicationService.createApplication({
       firstName, middleName, lastName, suffix, birthDate, gender, civilStatus,
       addressLine, contactNumber, email, occupation, bloodType,
-      emergencyContactName, emergencyContactNumber, photo, signature, formData
+      emergencyContactName, emergencyContactNumber, photo, signature,
+      birthPlace: mergedFormData.birth_place,
+      nationality: mergedFormData.nationality,
+      religion: mergedFormData.religion,
+      houseNumber: mergedFormData.house_number,
+      street: mergedFormData.street,
+      subdivision: mergedFormData.subdivision,
+      block: mergedFormData.block,
+      lot: mergedFormData.lot,
+      purokZone: mergedFormData.purok_zone,
+      sitio: mergedFormData.sitio,
+      municipality: mergedFormData.municipality,
+      province: mergedFormData.province,
+      zipCode: mergedFormData.zip_code,
+      formData: mergedFormData
     }, req.ip);
 
     if (!result.success) return errorResponse(res, 400, result.message);

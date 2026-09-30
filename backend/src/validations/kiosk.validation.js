@@ -38,7 +38,9 @@ const calculateAge = (birthDate) => {
 
 const normalizeBarangayIdNames = (req, res, next) => {
   if (!req.body) req.body = {};
-  const formData = req.body.formData || {};
+  if (!req.body.formData && req.body.form_data) req.body.formData = req.body.form_data;
+  if (!req.body.form_data && req.body.formData) req.body.form_data = req.body.formData;
+  const formData = req.body.formData || req.body.form_data || {};
   const fullName = req.body.fullName || formData.full_name || formData.fullName;
   
   if ((!req.body.firstName || !req.body.lastName) && fullName) {
