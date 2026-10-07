@@ -5,6 +5,7 @@ const notificationService = require('../services/notification.service');
 const sseManager = require('../services/notification-sse');
 const fs = require('fs');
 const path = require('path');
+const { toUppercaseText, normalizeUppercase } = require('../utils/text.utils');
 
 const SUBMITTED_STATUS_ID = 1;
 const TERMINAL_STATUS_IDS = [7, 8, 9]; // Released, Rejected, Cancelled
@@ -305,7 +306,7 @@ const buildGuestSnapshot = (guest) => {
   putTrimmed('province', g.province);
   putTrimmed('zip_code', g.zip_code);
   putTrimmed('address', g.address);
-  return Object.keys(snapshot).length ? snapshot : null;
+  return Object.keys(snapshot).length ? normalizeUppercase(snapshot) : null;
 };
 
 const mergeGuestFormData = (formData, guestSnapshot) => {
@@ -489,9 +490,10 @@ const submitTransaction = async (input) => {
       const requestKey = idempotencyKey
         ? (services.length === 1 ? idempotencyKey : `${idempotencyKey}#${i}`)
         : null;
-      const storedFormData = guest
+      const rawFormData = guest
         ? mergeGuestFormData(s.form_data, guestSnapshot)
         : (s.form_data && Object.keys(s.form_data).length ? { ...s.form_data } : null);
+      const storedFormData = normalizeUppercase(rawFormData);
 
       const serviceSnapshot = {
         service_id: service.service_id,

@@ -1,4 +1,5 @@
 const residentRepository = require('../repositories/resident.repository');
+const { normalizeUppercase } = require('../utils/text.utils');
 
 const generateResidentCode = async () => {
   const [rows] = await require('../config/database').query(
@@ -24,16 +25,17 @@ const getResidentById = async (residentId) => {
 };
 
 const createResident = async (residentData) => {
-  if (residentData.residentCode) {
-    const existing = await residentRepository.findByCode(residentData.residentCode);
+  const normalized = normalizeUppercase(residentData);
+  if (normalized.residentCode) {
+    const existing = await residentRepository.findByCode(normalized.residentCode);
     if (existing) {
       return { success: false, message: 'Resident code already exists.' };
     }
   } else {
-    residentData.residentCode = await generateResidentCode();
+    normalized.residentCode = await generateResidentCode();
   }
 
-  const residentId = await residentRepository.create(residentData);
+  const residentId = await residentRepository.create(normalized);
   const resident = await residentRepository.findById(residentId);
 
   return { success: true, message: 'Resident created successfully.', data: resident };
@@ -45,7 +47,8 @@ const updateResident = async (residentId, residentData) => {
     return { success: false, message: 'Resident not found.' };
   }
 
-  await residentRepository.update(residentId, residentData);
+  const normalized = normalizeUppercase(residentData);
+  await residentRepository.update(residentId, normalized);
   const updated = await residentRepository.findById(residentId);
 
   return { success: true, message: 'Resident updated successfully.', data: updated };

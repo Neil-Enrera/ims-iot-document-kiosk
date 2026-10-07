@@ -3,6 +3,7 @@ const residentRepository = require('../repositories/resident.repository');
 const serviceRepository = require('../repositories/service.repository');
 const settingRepository = require('../repositories/setting.repository');
 const documentService = require('./document.service');
+const { toUppercaseText, normalizeUppercase } = require('../utils/text.utils');
 
 // Workflow: Submitted -> Waiting for Requirements -> Requirements Received
 //           -> Under Review -> Document Processing -> Ready for Release -> Released
@@ -49,7 +50,7 @@ const getRequestById = async (requestId) => {
   return { success: true, message: 'Request retrieved successfully.', data: { ...request, history } };
 };
 
-const createRequest = async ({ residentId, serviceId, purpose, remarks }) => {
+const createRequest = async ({ residentId, serviceId, purpose, remarks, formData }) => {
   const resident = await residentRepository.findById(residentId);
   if (!resident) {
     return { success: false, message: 'Resident not found.' };
@@ -68,8 +69,9 @@ const createRequest = async ({ residentId, serviceId, purpose, remarks }) => {
     residentId,
     serviceId,
     statusId: STATUS_IDS.SUBMITTED,
-    purpose,
-    remarks,
+    purpose: toUppercaseText(purpose),
+    remarks: toUppercaseText(remarks),
+    formData: normalizeUppercase(formData),
     requestDate: new Date().toISOString().slice(0, 19).replace('T', ' ')
   });
 
@@ -89,20 +91,20 @@ const updateRequest = async (requestId, body, userId) => {
   }
 
   const targetServiceId = serviceId || request.service_id;
-  const targetPurpose = purpose !== undefined ? purpose : request.purpose;
-  const targetRemarks = remarks !== undefined ? remarks : request.remarks;
-  const finalFormData = formData !== undefined ? formData : request.form_data;
+  const targetPurpose = purpose !== undefined ? toUppercaseText(purpose) : request.purpose;
+  const targetRemarks = remarks !== undefined ? toUppercaseText(remarks) : request.remarks;
+  const finalFormData = formData !== undefined ? normalizeUppercase(formData) : request.form_data;
 
   if (finalFormData && request.resident_id === null) {
     const currentGuest = request.form_data?._guest || {};
-    finalFormData._guest = {
+    finalFormData._guest = normalizeUppercase({
       ...currentGuest,
       full_name: finalFormData.full_name !== undefined ? finalFormData.full_name : currentGuest.full_name,
       birth_date: finalFormData.birth_date !== undefined ? finalFormData.birth_date : currentGuest.birth_date,
       address: finalFormData.address !== undefined ? finalFormData.address : currentGuest.address,
       contact_number: finalFormData.contact_number !== undefined ? finalFormData.contact_number : currentGuest.contact_number,
       email: finalFormData.email !== undefined ? finalFormData.email : currentGuest.email
-    };
+    });
   }
 
   await requestRepository.update(requestId, {

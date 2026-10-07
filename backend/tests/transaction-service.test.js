@@ -21,7 +21,7 @@ describe('Transaction request number formatting', () => {
 });
 
 describe('Guest snapshot builder', () => {
-  it('should keep only provided fields, trimmed', () => {
+  it('should keep only provided fields, trimmed and uppercased (preserving email)', () => {
     const snapshot = buildGuestSnapshot({
       full_name: '  Juan Dela Cruz ',
       middle_name: 'Santos',
@@ -31,10 +31,10 @@ describe('Guest snapshot builder', () => {
       email: 'juan@example.com'
     });
     assert.deepStrictEqual(snapshot, {
-      full_name: 'Juan Dela Cruz',
-      middle_name: 'Santos',
+      full_name: 'JUAN DELA CRUZ',
+      middle_name: 'SANTOS',
       birth_date: '1990-01-01',
-      address: 'Purok 1',
+      address: 'PUROK 1',
       contact_number: '09171234567',
       email: 'juan@example.com'
     });
@@ -48,7 +48,7 @@ describe('Guest snapshot builder', () => {
 
   it('should skip empty/blank optional fields', () => {
     const snapshot = buildGuestSnapshot({ full_name: 'Juan', email: '', address: '   ' });
-    assert.deepStrictEqual(snapshot, { full_name: 'Juan' });
+    assert.deepStrictEqual(snapshot, { full_name: 'JUAN' });
   });
 });
 
@@ -58,7 +58,7 @@ describe('Guest form-data merge', () => {
     const merged = mergeGuestFormData({ purpose: 'Barangay clearance' }, snapshot);
     assert.deepStrictEqual(merged, {
       purpose: 'Barangay clearance',
-      _guest: { full_name: 'Juan' }
+      _guest: { full_name: 'JUAN' }
     });
   });
 

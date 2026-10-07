@@ -3,6 +3,7 @@ const residentRepo = require('../repositories/resident.repository');
 const auditRepo = require('../repositories/audit.repository');
 const notificationService = require('./notification.service');
 const sseManager = require('./notification-sse');
+const { toUppercaseText, normalizeUppercase } = require('../utils/text.utils');
 
 const submitRequest = async ({ residentId, requestedChanges, reason, ipAddress }) => {
   const resident = await residentRepo.findById(residentId);
@@ -10,10 +11,13 @@ const submitRequest = async ({ residentId, requestedChanges, reason, ipAddress }
     return { success: false, message: 'Resident record not found.' };
   }
 
+  const normalizedChanges = normalizeUppercase(requestedChanges);
+  const normalizedReason = toUppercaseText(reason) || 'RESIDENT REQUESTED PROFILE INFORMATION UPDATE VIA KIOSK';
+
   const result = await residentUpdateRepo.create({
     residentId,
-    requestedChanges,
-    reason: reason || 'Resident requested profile information update via Kiosk'
+    requestedChanges: normalizedChanges,
+    reason: normalizedReason
   });
 
   await auditRepo.log({

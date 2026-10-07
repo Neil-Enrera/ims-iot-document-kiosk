@@ -11,6 +11,29 @@ body {
   font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
 }
 
+/* User-entered text inputs automatically displayed in uppercase */
+input[type="text"],
+input:not([type]),
+textarea,
+select {
+  text-transform: uppercase;
+}
+
+/* Explicitly preserve casing for email, password, url, numbers, dates, tel */
+input[type="email"],
+input[type="password"],
+input[type="url"],
+input[type="number"],
+input[type="tel"],
+input[type="date"],
+input[type="datetime-local"],
+input[type="file"],
+.normal-case,
+.preserve-case,
+.lowercase {
+  text-transform: none !important;
+}
+
 /* Focus visible for keyboard navigation */
 *:focus-visible {
   outline: 2px solid #EA580C;

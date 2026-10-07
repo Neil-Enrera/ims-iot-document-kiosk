@@ -8,6 +8,7 @@ const portalAccountService = require('../services/portal-account.service');
 const pool = require('../config/database');
 const fs = require('fs');
 const path = require('path');
+const { toUppercaseText, normalizeUppercase } = require('../utils/text.utils');
 
 const getAllApplications = async ({ search, status, page = 1, limit = 20, sortBy = 'application_id', sortOrder = 'DESC' }) => {
   const result = await applicationRepository.findAll({ search, status, page, limit, sortBy, sortOrder });
@@ -60,27 +61,30 @@ const createApplication = async (data, ipAddress) => {
   const photoPath = saveImage(data.photo, 'application-photos', 'app_photo');
   const signaturePath = saveImage(data.signature, 'application-signatures', 'app_signature');
 
-  const mergedFormData = data.formData || data.form_data || {};
-  if (data.birthPlace && !mergedFormData.birth_place) mergedFormData.birth_place = data.birthPlace;
-  if (data.religion && !mergedFormData.religion) mergedFormData.religion = data.religion;
-  if (data.nationality && !mergedFormData.nationality) mergedFormData.nationality = data.nationality;
-  if (data.occupation && !mergedFormData.occupation) mergedFormData.occupation = data.occupation;
-  if (data.houseNumber && !mergedFormData.house_number) mergedFormData.house_number = data.houseNumber;
-  if (data.street && !mergedFormData.street) mergedFormData.street = data.street;
-  if (data.subdivision && !mergedFormData.subdivision) mergedFormData.subdivision = data.subdivision;
-  if (data.block && !mergedFormData.block) mergedFormData.block = data.block;
-  if (data.lot && !mergedFormData.lot) mergedFormData.lot = data.lot;
-  if (data.purokZone && !mergedFormData.purok_zone) mergedFormData.purok_zone = data.purokZone;
-  if (data.sitio && !mergedFormData.sitio) mergedFormData.sitio = data.sitio;
-  if (data.municipality && !mergedFormData.municipality) mergedFormData.municipality = data.municipality;
-  if (data.province && !mergedFormData.province) mergedFormData.province = data.province;
-  if (data.zipCode && !mergedFormData.zip_code) mergedFormData.zip_code = data.zipCode;
+  const rawMerged = data.formData || data.form_data || {};
+  if (data.birthPlace && !rawMerged.birth_place) rawMerged.birth_place = data.birthPlace;
+  if (data.religion && !rawMerged.religion) rawMerged.religion = data.religion;
+  if (data.nationality && !rawMerged.nationality) rawMerged.nationality = data.nationality;
+  if (data.occupation && !rawMerged.occupation) rawMerged.occupation = data.occupation;
+  if (data.houseNumber && !rawMerged.house_number) rawMerged.house_number = data.houseNumber;
+  if (data.street && !rawMerged.street) rawMerged.street = data.street;
+  if (data.subdivision && !rawMerged.subdivision) rawMerged.subdivision = data.subdivision;
+  if (data.block && !rawMerged.block) rawMerged.block = data.block;
+  if (data.lot && !rawMerged.lot) rawMerged.lot = data.lot;
+  if (data.purokZone && !rawMerged.purok_zone) rawMerged.purok_zone = data.purokZone;
+  if (data.sitio && !rawMerged.sitio) rawMerged.sitio = data.sitio;
+  if (data.municipality && !rawMerged.municipality) rawMerged.municipality = data.municipality;
+  if (data.province && !rawMerged.province) rawMerged.province = data.province;
+  if (data.zipCode && !rawMerged.zip_code) rawMerged.zip_code = data.zipCode;
+
+  const mergedFormData = normalizeUppercase(rawMerged);
+  const normalizedData = normalizeUppercase(data);
 
   const emailFieldKey = await getPortalEmailField();
   const resolvedEmail = resolveApplicationEmail({ ...data, form_data: mergedFormData }, emailFieldKey, null) || data.email;
 
   const applicationId = await applicationRepository.create({
-    ...data,
+    ...normalizedData,
     formData: mergedFormData,
     email: resolvedEmail || data.email || null,
     applicationNumber,
@@ -238,70 +242,46 @@ const approveApplication = async (applicationId, userId, remarks, ipAddress) => 
     }
   }
 
+  const normalizedResidentData = {
+    firstName: toUppercaseText(application.first_name),
+    middleName: toUppercaseText(application.middle_name),
+    lastName: toUppercaseText(application.last_name),
+    suffix: toUppercaseText(application.suffix),
+    birthDate: application.birth_date,
+    birthPlace: toUppercaseText(birthPlace),
+    nationality: toUppercaseText(nationality) || 'FILIPINO',
+    religion: toUppercaseText(religion),
+    occupation: toUppercaseText(occupation),
+    gender: toUppercaseText(application.gender),
+    civilStatus: toUppercaseText(civilStatus),
+    addressLine: toUppercaseText(addressLine),
+    houseNumber: toUppercaseText(houseNumber),
+    street: toUppercaseText(street),
+    subdivision: toUppercaseText(subdivision),
+    block: toUppercaseText(block),
+    lot: toUppercaseText(lot),
+    purokZone: toUppercaseText(purokZone),
+    sitio: toUppercaseText(sitio),
+    municipality: toUppercaseText(municipality) || 'CITY OF SAN JOSE DEL MONTE',
+    province: toUppercaseText(province) || 'BULACAN',
+    zipCode: zipCode || '3023',
+    contactNumber: contactNumber || null,
+    email: email || null,
+    bloodType: toUppercaseText(bloodType),
+    emergencyContactName: toUppercaseText(emergencyContactName),
+    emergencyContactNumber: emergencyContactNumber || null
+  };
+
   if (residentId) {
     // Update existing resident record with approved application data
-    await residentRepository.update(residentId, {
-      firstName: application.first_name,
-      middleName: application.middle_name,
-      lastName: application.last_name,
-      suffix: application.suffix,
-      birthDate: application.birth_date,
-      birthPlace,
-      nationality,
-      religion,
-      occupation,
-      gender: application.gender,
-      civilStatus,
-      addressLine,
-      houseNumber,
-      street,
-      subdivision,
-      block,
-      lot,
-      purokZone,
-      sitio,
-      municipality,
-      province,
-      zipCode,
-      contactNumber,
-      email,
-      bloodType,
-      emergencyContactName,
-      emergencyContactNumber
-    });
+    await residentRepository.update(residentId, normalizedResidentData);
   } else {
     // Create new resident record
     residentCode = await residentService.generateResidentCode();
     residentId = await residentRepository.create({
       residentCode,
-      firstName: application.first_name,
-      middleName: application.middle_name,
-      lastName: application.last_name,
-      suffix: application.suffix,
-      birthDate: application.birth_date,
-      birthPlace,
-      nationality,
-      religion,
-      occupation,
-      gender: application.gender,
-      civilStatus,
-      barangayId: 1,
-      addressLine,
-      houseNumber,
-      street,
-      subdivision,
-      block,
-      lot,
-      purokZone,
-      sitio,
-      municipality,
-      province,
-      zipCode,
-      contactNumber,
-      email,
-      bloodType,
-      emergencyContactName,
-      emergencyContactNumber
+      ...normalizedResidentData,
+      barangayId: 1
     });
   }
 

@@ -1,4 +1,27 @@
 @import "tailwindcss";
+ 
+/* User-entered text inputs automatically displayed in uppercase */
+input[type="text"],
+input:not([type]),
+textarea,
+select {
+  text-transform: uppercase;
+}
+
+/* Explicitly preserve casing for email, password, url, numbers, dates, tel */
+input[type="email"],
+input[type="password"],
+input[type="url"],
+input[type="number"],
+input[type="tel"],
+input[type="date"],
+input[type="datetime-local"],
+input[type="file"],
+.normal-case,
+.preserve-case,
+.lowercase {
+  text-transform: none !important;
+}
 
 /* RFID radar pulse — expanding rings that fade out from the center */
 @keyframes rfid-pulse {
