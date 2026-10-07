@@ -146,27 +146,72 @@ const approveApplication = async (applicationId, userId, remarks, ipAddress) => 
     }
   }
 
-  const birthPlace = rawFormData.birth_place || rawFormData.birthPlace || rawFormData.place_of_birth || rawFormData.placeOfBirth || application.birth_place || null;
-  const nationality = rawFormData.nationality || application.nationality || 'Filipino';
-  const religion = rawFormData.religion || application.religion || null;
-  const occupation = rawFormData.occupation || application.occupation || null;
-  const civilStatus = rawFormData.civil_status || rawFormData.civilStatus || application.civil_status || null;
-  const bloodType = rawFormData.blood_type || rawFormData.bloodType || application.blood_type || null;
-  const houseNumber = rawFormData.house_number || rawFormData.houseNumber || null;
-  const street = rawFormData.street || null;
-  const subdivision = rawFormData.subdivision || null;
-  const block = rawFormData.block || null;
-  const lot = rawFormData.lot || null;
-  const purokZone = rawFormData.purok_zone || rawFormData.purokZone || null;
-  const sitio = rawFormData.sitio || null;
-  const municipality = rawFormData.municipality || null;
-  const province = rawFormData.province || null;
-  const zipCode = rawFormData.zip_code || rawFormData.zipCode || null;
-  const emergencyContactName = rawFormData.emergency_contact_name || rawFormData.emergencyContactName || application.emergency_contact_name || null;
-  const emergencyContactNumber = rawFormData.emergency_contact_number || rawFormData.emergencyContactNumber || application.emergency_contact_number || null;
-  const contactNumber = rawFormData.contact_number || rawFormData.contactNumber || application.contact_number || null;
-  const email = targetEmail || rawFormData.email || application.email || null;
-  const addressLine = application.address_line || rawFormData.address_line || rawFormData.addressLine || null;
+  const extractField = (sourceObj, ...keys) => {
+    if (!sourceObj || typeof sourceObj !== 'object') return null;
+    for (const k of keys) {
+      if (sourceObj[k] !== undefined && sourceObj[k] !== null && String(sourceObj[k]).trim() !== '') {
+        return String(sourceObj[k]).trim();
+      }
+    }
+    const objKeys = Object.keys(sourceObj);
+    for (const k of keys) {
+      const targetNorm = k.toLowerCase().replace(/[-_\s.]/g, '');
+      const found = objKeys.find(ok => ok.toLowerCase().replace(/[-_\s.]/g, '') === targetNorm);
+      if (found && sourceObj[found] !== undefined && sourceObj[found] !== null && String(sourceObj[found]).trim() !== '') {
+        return String(sourceObj[found]).trim();
+      }
+    }
+    return null;
+  };
+
+  const extractAddressPart = (addr, type) => {
+    if (!addr || typeof addr !== 'string') return null;
+    if (type === 'block') {
+      const m = addr.match(/blk\.?\s*([0-9a-zA-Z]+)/i) || addr.match(/block\s*([0-9a-zA-Z]+)/i);
+      return m ? m[1] : null;
+    }
+    if (type === 'lot') {
+      const m = addr.match(/lot\.?\s*([0-9a-zA-Z]+(?:\s+[a-zA-Z])?)/i);
+      return m ? m[1] : null;
+    }
+    if (type === 'street') {
+      const m = addr.match(/([a-zA-Z0-9\s]+?)\s*(?:st\.?|street)/i);
+      return m ? m[1].replace(/^(?:blk|block|lot)\.?\s*[0-9a-zA-Z]+,?\s*/i, '').trim() : null;
+    }
+    if (type === 'subdivision') {
+      const m = addr.match(/([a-zA-Z0-9\s]+?)\s*(?:subd\.?|subdivision|village|hills|homes|park)/i);
+      return m ? m[0].replace(/^,?\s*/, '').trim() : null;
+    }
+    if (type === 'purok') {
+      const m = addr.match(/purok\s*([0-9a-zA-Z]+)/i) || addr.match(/zone\s*([0-9a-zA-Z]+)/i);
+      return m ? m[0] : null;
+    }
+    return null;
+  };
+
+  const addressLine = application.address_line || extractField(rawFormData, 'address_line', 'addressLine', 'address', 'complete_address') || null;
+  const birthPlace = extractField(rawFormData, 'birth_place', 'birthPlace', 'place_of_birth', 'placeOfBirth', 'pob') || application.birth_place || null;
+  const nationality = extractField(rawFormData, 'nationality', 'citizenship') || application.nationality || 'Filipino';
+  const religion = extractField(rawFormData, 'religion') || application.religion || null;
+  const occupation = extractField(rawFormData, 'occupation', 'profession', 'job') || application.occupation || null;
+  const civilStatus = extractField(rawFormData, 'civil_status', 'civilStatus', 'marital_status', 'maritalStatus') || application.civil_status || null;
+  const bloodType = extractField(rawFormData, 'blood_type', 'bloodType', 'blood_group', 'bloodGroup') || application.blood_type || null;
+
+  const houseNumber = extractField(rawFormData, 'house_number', 'houseNumber', 'house_no', 'houseno') || null;
+  const block = extractField(rawFormData, 'block', 'block_no', 'blockno', 'blk') || extractAddressPart(addressLine, 'block');
+  const lot = extractField(rawFormData, 'lot', 'lot_no', 'lotno') || extractAddressPart(addressLine, 'lot');
+  const street = extractField(rawFormData, 'street', 'street_name', 'streetname', 'st') || extractAddressPart(addressLine, 'street');
+  const subdivision = extractField(rawFormData, 'subdivision', 'subd', 'village') || extractAddressPart(addressLine, 'subdivision');
+  const purokZone = extractField(rawFormData, 'purok_zone', 'purokZone', 'purok', 'zone') || extractAddressPart(addressLine, 'purok');
+  const sitio = extractField(rawFormData, 'sitio') || null;
+  const municipality = extractField(rawFormData, 'municipality', 'city') || 'City of San Jose del Monte';
+  const province = extractField(rawFormData, 'province') || 'Bulacan';
+  const zipCode = extractField(rawFormData, 'zip_code', 'zipCode', 'zip', 'postal_code') || '3023';
+
+  const emergencyContactName = extractField(rawFormData, 'emergency_contact_name', 'emergencyContactName', 'emergency_name', 'emergency_contact') || application.emergency_contact_name || null;
+  const emergencyContactNumber = extractField(rawFormData, 'emergency_contact_number', 'emergencyContactNumber', 'emergency_phone', 'emergency_contact_no') || application.emergency_contact_number || null;
+  const contactNumber = extractField(rawFormData, 'contact_number', 'contactNumber', 'phone', 'mobile') || application.contact_number || null;
+  const email = targetEmail || extractField(rawFormData, 'email', 'email_address') || application.email || null;
 
   // Check if resident already exists to avoid duplicate resident records
   let residentId = application.resident_id || null;

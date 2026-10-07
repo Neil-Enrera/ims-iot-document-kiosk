@@ -1372,89 +1372,138 @@ export class ApplyComponent implements OnInit {
   }
 
   private resolveResidentFieldValue(field: FormField, r: PortalAccount): any {
-    const key = (field.key || '').toLowerCase().replace(/[-_]/g, '');
-    const label = (field.label || '').toLowerCase().replace(/[-_]/g, '');
+    const key = (field.key || '').toLowerCase().replace(/[-_\s.]/g, '');
+    const label = (field.label || '').toLowerCase().replace(/[-_\s.]/g, '');
 
-    if (key === 'fullname' || label.includes('fullname') || label.includes('applicantname')) {
+    const isMatch = (...aliases: string[]) => {
+      return aliases.some(a => {
+        const normA = a.toLowerCase().replace(/[-_\s.]/g, '');
+        return key === normA || label === normA || key.includes(normA) || label.includes(normA);
+      });
+    };
+
+    // Full Name
+    if (isMatch('fullname', 'full_name', 'applicantname', 'applicant_name', 'requestedby', 'requested_by', 'residentname', 'resident_name', 'completename', 'nameofresident', 'name', 'applicant', 'claimant', 'resident') &&
+        !isMatch('emergency', 'relative', 'father', 'mother', 'spouse', 'guardian', 'officer', 'captain', 'kagawad', 'signatory')) {
       return this.residentFullName();
     }
-    if (key === 'firstname' || label.includes('firstname')) return r.first_name || '';
-    if (key === 'middlename' || label.includes('middlename')) return r.middle_name || '';
-    if (key === 'lastname' || label.includes('lastname')) return r.last_name || '';
-    if (key === 'suffix' || label.includes('suffix')) return r.suffix || '';
+    // First Name
+    if (isMatch('firstname', 'first_name', 'givenname') && !isMatch('emergency', 'relative', 'father', 'mother', 'spouse', 'guardian')) {
+      return r.first_name || '';
+    }
+    // Middle Name
+    if (isMatch('middlename', 'middle_name') && !isMatch('emergency', 'relative', 'father', 'mother', 'spouse', 'guardian')) {
+      return r.middle_name || '';
+    }
+    // Last Name
+    if (isMatch('lastname', 'last_name', 'surname', 'familyname') && !isMatch('emergency', 'relative', 'father', 'mother', 'spouse', 'guardian')) {
+      return r.last_name || '';
+    }
+    // Suffix
+    if (isMatch('suffix', 'namesuffix') && !isMatch('emergency', 'relative', 'father', 'mother', 'spouse', 'guardian')) {
+      return r.suffix || '';
+    }
 
-    if (key === 'birthdate' || key === 'dob' || label.includes('birthdate') || label.includes('dateofbirth')) {
+    // Birth Date
+    if (isMatch('birthdate', 'birth_date', 'dateofbirth', 'date_of_birth', 'dob', 'bdate')) {
       return this.formatDateForInput(r.birth_date);
     }
-    if (key === 'birthplace' || key === 'placeofbirth' || label.includes('birthplace') || label.includes('placeofbirth')) {
+    // Place of Birth
+    if (isMatch('birthplace', 'birth_place', 'placeofbirth', 'place_of_birth', 'pob')) {
       return r.birth_place || '';
     }
-    if (key === 'age' || label.includes('age')) {
+    // Age
+    if (isMatch('age', 'ageyears')) {
       return this.calculateAge(r.birth_date);
     }
-    if (key === 'gender' || key === 'sex' || label.includes('gender') || label.includes('sex')) {
+    // Gender / Sex
+    if (isMatch('gender', 'sex')) {
       return r.gender || '';
     }
-    if (key === 'civilstatus' || key === 'maritalstatus' || label.includes('civilstatus') || label.includes('maritalstatus')) {
+    // Civil Status
+    if (isMatch('civilstatus', 'civil_status', 'maritalstatus', 'marital_status')) {
       return r.civil_status || '';
     }
-    if (key === 'bloodtype' || label.includes('bloodtype')) {
+    // Blood Type
+    if (isMatch('bloodtype', 'blood_type')) {
       return r.blood_type || '';
     }
-    if (key === 'occupation' || key === 'profession' || label.includes('occupation') || label.includes('profession')) {
+    // Occupation
+    if (isMatch('occupation', 'profession', 'job')) {
       return r.occupation || '';
     }
-    if (key === 'nationality' || key === 'citizenship' || label.includes('nationality') || label.includes('citizenship')) {
+    // Nationality
+    if (isMatch('nationality', 'citizenship')) {
       return r.nationality || 'Filipino';
     }
-    if (key === 'religion' || label.includes('religion')) {
+    // Religion
+    if (isMatch('religion')) {
       return r.religion || '';
     }
-    if (key === 'contactnumber' || key === 'mobilenumber' || key === 'phone' || key === 'phonenumber' || label.includes('contactnumber') || label.includes('mobilenumber') || label.includes('phone')) {
+    // Contact Number
+    if (isMatch('contactnumber', 'contact_number', 'contactno', 'contact_no', 'mobilenumber', 'mobile_number', 'phone', 'phonenumber', 'phone_number', 'cellphone', 'tel') && !isMatch('emergency')) {
       return r.contact_number || '';
     }
-    if (key === 'email' || key === 'emailaddress' || label.includes('email')) {
+    // Email
+    if (isMatch('email', 'emailaddress', 'email_address')) {
       return r.email || '';
     }
-    if (key.includes('emergency') && (key.includes('name') || key.includes('person') || key.includes('contact'))) {
+    // Emergency Contact Person
+    if (isMatch('emergencycontactname', 'emergency_contact_name', 'emergencyname', 'emergency_name', 'emergencycontactperson', 'emergencycontact')) {
       return r.emergency_contact_name || '';
     }
-    if (key.includes('emergency') && (key.includes('number') || key.includes('phone') || key.includes('tel'))) {
+    // Emergency Contact Number
+    if (isMatch('emergencycontactnumber', 'emergency_contact_number', 'emergencycontactno', 'emergency_contact_no', 'emergencyphone', 'emergencymobile')) {
       return r.emergency_contact_number || '';
     }
 
-    if (key === 'block' || key === 'blockno' || key === 'blk' || label.includes('block')) {
-      return r.block || this.extractBlock(r.address_line);
+    // Address Breakdown
+    if (isMatch('block', 'blockno', 'block_no', 'blocknumber', 'blk')) {
+      return r.block || this.extractBlock(r.address_line) || '';
     }
-    if (key === 'lot' || key === 'lotno' || label.includes('lot')) {
-      return r.lot || this.extractLot(r.address_line);
+    if (isMatch('lot', 'lotno', 'lot_no', 'lotnumber')) {
+      return r.lot || this.extractLot(r.address_line) || '';
     }
-    if (key === 'houseno' || key === 'housenumber' || label.includes('houseno') || label.includes('housenumber')) {
+    if (isMatch('houseno', 'house_no', 'housenumber', 'house_number')) {
       return r.house_number || '';
     }
-    if (key === 'street' || key === 'streetname' || label.includes('street')) {
-      return r.street || this.extractStreet(r.address_line);
+    if (isMatch('street', 'streetname', 'street_name', 'st')) {
+      return r.street || this.extractStreet(r.address_line) || '';
     }
-    if (key === 'subdivision' || key === 'village' || label.includes('subdivision') || label.includes('village')) {
-      return r.subdivision || this.extractSubdivision(r.address_line);
+    if (isMatch('subdivision', 'subd', 'village')) {
+      return r.subdivision || this.extractSubdivision(r.address_line) || '';
     }
-    if (key === 'purok' || key === 'purokzone' || key === 'zone' || label.includes('purok') || label.includes('zone')) {
-      return r.purok_zone || this.extractPurok(r.address_line);
+    if (isMatch('purok', 'purokzone', 'purok_zone', 'zone', 'purokno', 'sitio')) {
+      return r.purok_zone || r.sitio || this.extractPurok(r.address_line) || '';
     }
-    if (key === 'barangay' || label.includes('barangay')) {
+    if (isMatch('barangay', 'barangayname', 'barangay_name')) {
       return r.barangay_name || 'San Manuel';
     }
-    if (key === 'municipality' || key === 'city' || label.includes('municipality') || label.includes('city')) {
+    if (isMatch('municipality', 'city', 'citymunicipality', 'city_municipality')) {
       return r.municipality || 'City of San Jose del Monte';
     }
-    if (key === 'province' || label.includes('province')) {
+    if (isMatch('province')) {
       return r.province || 'Bulacan';
     }
-    if (key === 'zipcode' || key === 'postalcode' || label.includes('zipcode') || label.includes('postalcode')) {
+    if (isMatch('zipcode', 'zip_code', 'postalcode', 'postal_code')) {
       return r.zip_code || '3023';
     }
-    if (key === 'address' || key === 'completeaddress' || key === 'addressline' || label.includes('address')) {
+    if (isMatch('completeaddress', 'complete_address', 'addressline', 'address_line', 'residentialaddress') ||
+        (isMatch('address') && !isMatch('email', 'block', 'lot', 'street', 'purok', 'zone', 'subdivision'))) {
       return r.address_line || 'Barangay San Manuel, City of San Jose del Monte, Bulacan';
+    }
+
+    // Generic fallback: check if r has matching property (case-insensitive)
+    const rObj = r as Record<string, any>;
+    if (rObj[field.key] !== undefined && rObj[field.key] !== null && rObj[field.key] !== '') {
+      return rObj[field.key];
+    }
+    for (const prop of Object.keys(rObj)) {
+      if (prop.toLowerCase().replace(/[-_\s.]/g, '') === key) {
+        if (rObj[prop] !== undefined && rObj[prop] !== null && rObj[prop] !== '') {
+          return rObj[prop];
+        }
+      }
     }
 
     return undefined;

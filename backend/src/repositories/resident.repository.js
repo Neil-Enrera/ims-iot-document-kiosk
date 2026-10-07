@@ -1,7 +1,7 @@
 const pool = require('../config/database');
 
 const findAll = async ({ search, status, barangayId, page, limit, sortBy, sortOrder }) => {
-  let query = 'SELECT r.*, b.barangay_name, rc.card_uid, rc.status AS rfid_card_status FROM residents r JOIN barangays b ON r.barangay_id = b.barangay_id LEFT JOIN rfid_cards rc ON rc.resident_id = r.resident_id AND rc.status = "ACTIVE"';
+  let query = 'SELECT r.*, b.barangay_name, rc.card_uid, rc.status AS rfid_card_status FROM residents r LEFT JOIN barangays b ON r.barangay_id = b.barangay_id LEFT JOIN rfid_cards rc ON rc.resident_id = r.resident_id AND rc.status = "ACTIVE"';
   let countQuery = 'SELECT COUNT(DISTINCT r.resident_id) AS total FROM residents r LEFT JOIN rfid_cards rc ON rc.resident_id = r.resident_id AND rc.status = "ACTIVE"';
   const conditions = [];
   const params = [];
@@ -51,7 +51,7 @@ const findById = async (residentId) => {
   const [rows] = await pool.query(
     `SELECT r.*, b.barangay_name, rc.card_uid, rc.status AS rfid_card_status, rc.issued_date AS rfid_issued_date, rc.expiration_date AS rfid_expiration_date
      FROM residents r 
-     JOIN barangays b ON r.barangay_id = b.barangay_id 
+     LEFT JOIN barangays b ON r.barangay_id = b.barangay_id 
      LEFT JOIN rfid_cards rc ON rc.resident_id = r.resident_id AND rc.status = 'ACTIVE'
      WHERE r.resident_id = ?`,
     [residentId]

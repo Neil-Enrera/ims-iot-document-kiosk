@@ -5950,7 +5950,8 @@ export class KioskComponent implements OnInit, OnDestroy {
     };
 
     // Full Name
-    if (isMatch('fullname', 'full_name', 'applicantname', 'residentname', 'completename', 'nameofresident') && !isMatch('emergency', 'relative', 'father', 'mother', 'spouse', 'guardian')) {
+    if (isMatch('fullname', 'full_name', 'applicantname', 'applicant_name', 'requestedby', 'requested_by', 'residentname', 'resident_name', 'completename', 'nameofresident', 'name', 'applicant', 'claimant', 'resident') &&
+        !isMatch('emergency', 'relative', 'father', 'mother', 'spouse', 'guardian', 'officer', 'captain', 'kagawad', 'signatory')) {
       const parts = [r.first_name, r.middle_name, r.last_name, r.suffix].filter(Boolean);
       return parts.join(' ');
     }
@@ -5971,11 +5972,11 @@ export class KioskComponent implements OnInit, OnDestroy {
       return r.suffix || '';
     }
     // Birth Date / DOB
-    if (isMatch('birthdate', 'birth_date', 'dateofbirth', 'dob', 'bdate')) {
+    if (isMatch('birthdate', 'birth_date', 'dateofbirth', 'date_of_birth', 'dob', 'bdate')) {
       return this.formatDate(r.birth_date);
     }
     // Place of Birth
-    if (isMatch('birthplace', 'birth_place', 'placeofbirth', 'pob')) {
+    if (isMatch('birthplace', 'birth_place', 'placeofbirth', 'place_of_birth', 'pob')) {
       return r.birth_place || '';
     }
     // Age
@@ -5988,7 +5989,7 @@ export class KioskComponent implements OnInit, OnDestroy {
       return r.gender || '';
     }
     // Civil Status
-    if (isMatch('civilstatus', 'civil_status', 'maritalstatus')) {
+    if (isMatch('civilstatus', 'civil_status', 'maritalstatus', 'marital_status')) {
       return r.civil_status || '';
     }
     // Blood Type
@@ -6008,12 +6009,20 @@ export class KioskComponent implements OnInit, OnDestroy {
       return r.religion || '';
     }
     // Contact Number
-    if (isMatch('contactnumber', 'contact_number', 'contactno', 'contact_no', 'phone', 'phonenumber', 'mobile', 'mobilenumber', 'cellphone', 'tel') && !isMatch('emergency')) {
+    if (isMatch('contactnumber', 'contact_number', 'contactno', 'contact_no', 'phone', 'phonenumber', 'phone_number', 'mobile', 'mobilenumber', 'mobile_number', 'cellphone', 'tel') && !isMatch('emergency')) {
       return r.contact_number || '';
     }
     // Email
     if (isMatch('email', 'emailaddress', 'email_address')) {
       return r.email || '';
+    }
+    // Emergency Contact Person
+    if (isMatch('emergencycontactname', 'emergency_contact_name', 'emergencyname', 'emergency_name', 'emergencycontactperson', 'emergencycontact')) {
+      return r.emergency_contact_name || '';
+    }
+    // Emergency Contact Number
+    if (isMatch('emergencycontactnumber', 'emergency_contact_number', 'emergencycontactno', 'emergency_contact_no', 'emergencyphone', 'emergencymobile')) {
+      return r.emergency_contact_number || '';
     }
     // Complete Address
     if (isMatch('completeaddress', 'complete_address', 'addressline', 'address_line', 'residentialaddress') || (isMatch('address') && !isMatch('email', 'block', 'lot', 'street', 'purok', 'zone', 'subdivision'))) {
@@ -6043,18 +6052,34 @@ export class KioskComponent implements OnInit, OnDestroy {
     if (isMatch('purok', 'zone', 'purokzone', 'purok_zone', 'purokno', 'sitio')) {
       return r.purok_zone || r.sitio || this.extractPurok(r.address_line) || '';
     }
-    // Emergency Contact Person
-    if (isMatch('emergencycontactname', 'emergency_contact_name', 'emergencyname', 'emergency_name', 'emergencycontactperson', 'emergencycontact')) {
-      return r.emergency_contact_name || '';
+    // Barangay
+    if (isMatch('barangay', 'barangayname', 'barangay_name')) {
+      return (r as any).barangay_name || 'San Manuel';
     }
-    // Emergency Contact Number
-    if (isMatch('emergencycontactnumber', 'emergency_contact_number', 'emergencycontactno', 'emergency_contact_no', 'emergencyphone', 'emergencymobile')) {
-      return r.emergency_contact_number || '';
+    // Municipality / City
+    if (isMatch('municipality', 'city', 'citymunicipality', 'city_municipality')) {
+      return r.municipality || 'City of San Jose del Monte';
+    }
+    // Province
+    if (isMatch('province')) {
+      return r.province || 'Bulacan';
+    }
+    // Zip Code
+    if (isMatch('zipcode', 'zip_code', 'postalcode', 'postal_code')) {
+      return r.zip_code || '3023';
     }
 
-    // Generic fallback: check if r has exact matching property
-    if ((r as any)[key] !== undefined && (r as any)[key] !== null) {
-      return (r as any)[key];
+    // Generic fallback: check if r has exact matching property or case-insensitive matching property
+    const rObj = r as Record<string, any>;
+    if (rObj[key] !== undefined && rObj[key] !== null && rObj[key] !== '') {
+      return rObj[key];
+    }
+    for (const prop of Object.keys(rObj)) {
+      if (prop.toLowerCase().replace(/[-_\s.]/g, '') === normKey) {
+        if (rObj[prop] !== undefined && rObj[prop] !== null && rObj[prop] !== '') {
+          return rObj[prop];
+        }
+      }
     }
 
     return null;
