@@ -180,7 +180,7 @@ const changeStatus = async (requestId, statusId, userId, remarks) => {
     }
   }
 
-  // When status changes to Ready for Release, trigger automated email notification
+  // When status changes to Ready for Release, trigger automated email notification asynchronously in the background
   if (statusId === STATUS_IDS.READY_FOR_RELEASE && request.status_id !== STATUS_IDS.READY_FOR_RELEASE) {
     try {
       const emailService = require('./email.service');
@@ -189,15 +189,24 @@ const changeStatus = async (requestId, statusId, userId, remarks) => {
       // If resident email is missing from the request/resident row, check portal_accounts as fallback
       if (!targetEmail && (updated?.resident_id || request.resident_id)) {
         const portalAccountRepo = require('../repositories/portal-account.repository');
-        const acc = await portalAccountRepo.findByResidentId(updated?.resident_id || request.resident_id);
-        if (acc && acc.email) {
-          targetEmail = acc.email;
-        }
-      }
-
-      if (targetEmail) {
+        portalAccountRepo.findByResidentId(updated?.resident_id || request.resident_id).then(acc => {
+          if (acc && acc.email) {
+            const isId = (updated?.service_name || request.service_name || '').toLowerCase().includes('id');
+            emailService.sendReadyForReleaseNotificationAsync({
+              email: acc.email,
+              name: updated?.resident_name || request.resident_name,
+              requestNumber: updated?.request_number || request.request_number,
+              serviceName: updated?.service_name || request.service_name || 'Document Request',
+              fee: updated?.processing_fee || request.processing_fee || 0,
+              isIdRequest: isId
+            });
+          }
+        }).catch(err => {
+          console.error(`[REQUEST SERVICE] Error looking up portal account for email notification:`, err.message);
+        });
+      } else if (targetEmail) {
         const isId = (updated?.service_name || request.service_name || '').toLowerCase().includes('id');
-        await emailService.sendReadyForReleaseNotification({
+        emailService.sendReadyForReleaseNotificationAsync({
           email: targetEmail,
           name: updated?.resident_name || request.resident_name,
           requestNumber: updated?.request_number || request.request_number,

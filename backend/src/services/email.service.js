@@ -15,12 +15,24 @@ const LOGO_CANDIDATE_PATHS = [
   path.resolve(process.cwd(), 'Barangay Logo.png')
 ];
 
+let cachedLogoPath = undefined;
+let cachedTransporter = null;
+
 function getResolvedLogoPath() {
+  if (cachedLogoPath !== undefined) {
+    return cachedLogoPath;
+  }
   for (const candidate of LOGO_CANDIDATE_PATHS) {
-    if (fs.existsSync(candidate)) {
-      return candidate;
+    try {
+      if (fs.existsSync(candidate)) {
+        cachedLogoPath = candidate;
+        return cachedLogoPath;
+      }
+    } catch {
+      // ignore path access error
     }
   }
+  cachedLogoPath = null;
   return null;
 }
 
@@ -37,11 +49,14 @@ function getLogoAttachments() {
       }
     ];
   }
-  console.warn('[EMAIL SERVICE] Warning: Barangay Logo file not found across candidate paths.');
   return [];
 }
 
 function getTransporter() {
+  if (cachedTransporter) {
+    return cachedTransporter;
+  }
+
   const host = process.env.SMTP_HOST || config.smtp?.host;
   const user = process.env.SMTP_USER || config.smtp?.user;
   const pass = (process.env.SMTP_PASS || config.smtp?.pass || '').replace(/\s+/g, '');
@@ -49,14 +64,57 @@ function getTransporter() {
   const secure = (process.env.SMTP_SECURE === 'true') || config.smtp?.secure || port === 465;
 
   if (host && user && pass) {
-    return nodemailer.createTransport({
-      host,
-      port,
-      secure,
-      auth: { user, pass }
-    });
+    try {
+      cachedTransporter = nodemailer.createTransport({
+        pool: true,
+        maxConnections: 3,
+        maxMessages: 100,
+        rateDelta: 1000,
+        rateLimit: 5,
+        host,
+        port,
+        secure,
+        auth: { user, pass },
+        connectionTimeout: 5000,
+        greetingTimeout: 5000,
+        socketTimeout: 10000,
+        dnsTimeout: 5000
+      });
+      return cachedTransporter;
+    } catch (err) {
+      console.error('[EMAIL SERVICE] Error initializing SMTP transporter:', err.message);
+      return null;
+    }
   }
   return null;
+}
+
+// Timeout helper to ensure email calls never hang or block server requests
+function sendMailWithTimeout(transporter, mailOptions, timeoutMs = 8000) {
+  return Promise.race([
+    transporter.sendMail(mailOptions),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(`SMTP request timed out after ${timeoutMs}ms`)), timeoutMs)
+    )
+  ]);
+}
+
+/**
+ * Executes an email task asynchronously in the background via setImmediate
+ * to avoid blocking any HTTP response cycle or event loop.
+ */
+function sendBackground(taskPromiseOrFn, label = 'email') {
+  setImmediate(async () => {
+    try {
+      if (typeof taskPromiseOrFn === 'function') {
+        await taskPromiseOrFn();
+      } else {
+        await taskPromiseOrFn;
+      }
+    } catch (err) {
+      console.error(`[EMAIL SERVICE] Background task (${label}) failed:`, err.message);
+    }
+  });
 }
 
 const sendVerificationCode = async ({ email, name, code, expiresMinutes = 10 }) => {
@@ -118,24 +176,22 @@ const sendVerificationCode = async ({ email, name, code, expiresMinutes = 10 }) 
 
   if (mailTransporter) {
     try {
-      const info = await mailTransporter.sendMail({
+      const info = await sendMailWithTimeout(mailTransporter, {
         from: config.smtp.from,
         to: email,
         subject: `Password Reset Verification Code: ${code} - Barangay San Manuel IMS`,
         text: `Your password reset verification code is: ${code}. It expires in ${expiresMinutes} minutes.`,
         html: htmlContent,
         attachments: getLogoAttachments()
-      });
-      console.log(`[EMAIL SERVICE] Verification code sent to ${email} (MessageID: ${info.messageId})`);
+      }, 8000);
+      console.log(`[EMAIL SERVICE] Verification code sent to ${email} (MessageID: ${info?.messageId || 'OK'})`);
       return { success: true, mode: 'smtp' };
     } catch (err) {
       console.error(`[EMAIL SERVICE] SMTP delivery failed to ${email}:`, err.message);
-      // Fallback log for development
       console.log(`[EMAIL SERVICE (FALLBACK)] Verification Code for ${email}: ${code}`);
       return { success: true, mode: 'fallback' };
     }
   } else {
-    // Development mode log
     console.log(`=======================================================`);
     console.log(`[EMAIL SERVICE (DEV MODE)] Verification Code for ${email}`);
     console.log(`Recipient: ${name || 'Administrator'} <${email}>`);
@@ -207,15 +263,15 @@ const sendLoginVerificationCode = async ({ email, name, code, expiresMinutes = 1
 
   if (mailTransporter) {
     try {
-      const info = await mailTransporter.sendMail({
+      const info = await sendMailWithTimeout(mailTransporter, {
         from: config.smtp.from,
         to: email,
         subject: `Admin Login Verification Code: ${code} - Barangay San Manuel IMS`,
         text: `Your login verification code is: ${code}. It expires in ${expiresMinutes} minutes.`,
         html: htmlContent,
         attachments: getLogoAttachments()
-      });
-      console.log(`[EMAIL SERVICE] Login verification code sent to ${email} (MessageID: ${info.messageId})`);
+      }, 8000);
+      console.log(`[EMAIL SERVICE] Login verification code sent to ${email} (MessageID: ${info?.messageId || 'OK'})`);
       return { success: true, mode: 'smtp' };
     } catch (err) {
       console.error(`[EMAIL SERVICE] SMTP delivery failed to ${email}:`, err.message);
@@ -309,15 +365,15 @@ const sendPortalCredentials = async ({ email, name, accountId, temporaryPassword
 
   if (mailTransporter) {
     try {
-      const info = await mailTransporter.sendMail({
+      const info = await sendMailWithTimeout(mailTransporter, {
         from: config.smtp.from,
         to: email,
         subject,
         text,
         html: htmlContent,
         attachments: getLogoAttachments()
-      });
-      console.log(`[EMAIL SERVICE] Portal credentials sent to ${email} (MessageID: ${info.messageId})`);
+      }, 8000);
+      console.log(`[EMAIL SERVICE] Portal credentials sent to ${email} (MessageID: ${info?.messageId || 'OK'})`);
       return { success: true, mode: 'smtp' };
     } catch (err) {
       console.error(`[EMAIL SERVICE] SMTP delivery failed to ${email}:`, err.message);
@@ -408,7 +464,7 @@ const sendContactUsMessage = async ({ fullName, email, phoneNumber, subject, mes
 
   if (mailTransporter) {
     try {
-      await mailTransporter.sendMail({
+      await sendMailWithTimeout(mailTransporter, {
         from: config.smtp.from,
         to: adminEmail,
         replyTo: email,
@@ -416,7 +472,7 @@ const sendContactUsMessage = async ({ fullName, email, phoneNumber, subject, mes
         text: textContent,
         html: htmlContent,
         attachments: getLogoAttachments()
-      });
+      }, 8000);
       console.log(`[EMAIL SERVICE] Contact form message sent to ${adminEmail} from ${email}`);
       return { success: true, mode: 'smtp' };
     } catch (err) {
@@ -447,7 +503,6 @@ const sendReadyForReleaseNotification = async ({
   portalUrl = ''
 }) => {
   const mailTransporter = getTransporter();
-  const dateStr = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila', dateStyle: 'medium' });
 
   const htmlContent = `
     <!DOCTYPE html>
@@ -559,15 +614,15 @@ const sendReadyForReleaseNotification = async ({
 
   if (mailTransporter) {
     try {
-      const info = await mailTransporter.sendMail({
+      const info = await sendMailWithTimeout(mailTransporter, {
         from: config.smtp.from,
         to: email,
         subject,
         text,
         html: htmlContent,
         attachments: getLogoAttachments()
-      });
-      console.log(`[EMAIL SERVICE] Ready for Release notification sent to ${email} (MessageID: ${info.messageId})`);
+      }, 8000);
+      console.log(`[EMAIL SERVICE] Ready for Release notification sent to ${email} (MessageID: ${info?.messageId || 'OK'})`);
       return { success: true, mode: 'smtp' };
     } catch (err) {
       console.error(`[EMAIL SERVICE] Ready for Release SMTP delivery failed to ${email}:`, err.message);
@@ -586,12 +641,43 @@ const sendReadyForReleaseNotification = async ({
   return { success: true, mode: 'dev' };
 };
 
+// Asynchronous background wrappers that return immediately without blocking callers
+const sendReadyForReleaseNotificationAsync = (params) => {
+  sendBackground(() => sendReadyForReleaseNotification(params), `ReadyForRelease:${params.requestNumber || params.email}`);
+  return Promise.resolve({ success: true, mode: 'queued' });
+};
+
+const sendPortalCredentialsAsync = (params) => {
+  sendBackground(() => sendPortalCredentials(params), `PortalCredentials:${params.accountId || params.email}`);
+  return Promise.resolve({ success: true, mode: 'queued' });
+};
+
+const sendContactUsMessageAsync = (params) => {
+  sendBackground(() => sendContactUsMessage(params), `ContactInquiry:${params.email}`);
+  return Promise.resolve({ success: true, mode: 'queued' });
+};
+
+const sendVerificationCodeAsync = (params) => {
+  sendBackground(() => sendVerificationCode(params), `VerificationCode:${params.email}`);
+  return Promise.resolve({ success: true, mode: 'queued' });
+};
+
+const sendLoginVerificationCodeAsync = (params) => {
+  sendBackground(() => sendLoginVerificationCode(params), `LoginOtp:${params.email}`);
+  return Promise.resolve({ success: true, mode: 'queued' });
+};
+
 module.exports = {
   sendVerificationCode,
   sendLoginVerificationCode,
   sendPortalCredentials,
   sendContactUsMessage,
-  sendReadyForReleaseNotification
+  sendReadyForReleaseNotification,
+  // Asynchronous non-blocking dispatchers
+  sendReadyForReleaseNotificationAsync,
+  sendPortalCredentialsAsync,
+  sendContactUsMessageAsync,
+  sendVerificationCodeAsync,
+  sendLoginVerificationCodeAsync,
+  sendBackground
 };
-
-

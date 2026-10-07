@@ -85,7 +85,7 @@ const createAccountForResident = async ({ residentId, residentCode, email, fullN
   const portalUrl = (config.app.frontendUrl || '').replace(/\/$/, '');
 
   try {
-    await emailService.sendPortalCredentials({
+    emailService.sendPortalCredentialsAsync({
       email: normalizedEmail,
       name: fullName,
       accountId: account.account_id,
@@ -93,7 +93,7 @@ const createAccountForResident = async ({ residentId, residentCode, email, fullN
       portalUrl
     });
   } catch (emailError) {
-    console.error('Failed to send portal credentials email:', emailError);
+    console.error('Failed to trigger portal credentials email:', emailError);
   }
 
   return {

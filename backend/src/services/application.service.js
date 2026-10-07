@@ -387,7 +387,7 @@ const approveApplication = async (applicationId, userId, remarks, ipAddress) => 
 
   const finalApplication = await applicationRepository.findById(applicationId);
 
-  // Send Ready for Release / ID approval email notification to the applicant
+  // Send Ready for Release / ID approval email notification to the applicant asynchronously in background
   try {
     const emailService = require('./email.service');
     const notificationEmail = resolveApplicationEmail(application, emailFieldKey, resident);
@@ -396,7 +396,7 @@ const approveApplication = async (applicationId, userId, remarks, ipAddress) => 
         .filter(Boolean)
         .join(' ')
         .trim();
-      await emailService.sendReadyForReleaseNotification({
+      emailService.sendReadyForReleaseNotificationAsync({
         email: notificationEmail,
         name: fullName,
         requestNumber: application.application_number,
@@ -406,7 +406,7 @@ const approveApplication = async (applicationId, userId, remarks, ipAddress) => 
       });
     }
   } catch (emailErr) {
-    console.error(`Failed to send Barangay ID application approval email for #${applicationId}:`, emailErr.message);
+    console.error(`Failed to trigger Barangay ID application approval email for #${applicationId}:`, emailErr.message);
   }
 
   try {

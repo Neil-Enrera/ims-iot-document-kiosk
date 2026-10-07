@@ -166,7 +166,7 @@ const contactUs = async (req, res) => {
       return errorResponse(res, 400, 'Message content is required.');
     }
 
-    await emailService.sendContactUsMessage({
+    emailService.sendContactUsMessageAsync({
       fullName: fullName.trim(),
       email: email.trim().toLowerCase(),
       phoneNumber: phoneNumber ? phoneNumber.trim() : null,
